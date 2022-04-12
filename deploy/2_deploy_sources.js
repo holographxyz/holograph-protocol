@@ -8,72 +8,44 @@ const {
     GAS,
     DEPLOYER
 } = require ('../config/env');
+const {removeX, hexify, throwError, web3Error, getContractArtifact, createNetworkPropsForUser} = require("./helpers/utils");
 
 const GENESIS = 'HolographGenesis';
-const GENESIS_CONTRACT = JSON.parse (fs.readFileSync ('./build/combined.json')).contracts [GENESIS + '.sol:' + GENESIS];
+const GENESIS_CONTRACT = getContractArtifact(GENESIS)
 
 const HOLOGRAPH = 'Holograph';
-const HOLOGRAPH_CONTRACT = JSON.parse (fs.readFileSync ('./build/combined.json')).contracts [HOLOGRAPH + '.sol:' + HOLOGRAPH];
+const HOLOGRAPH_CONTRACT = getContractArtifact(HOLOGRAPH)
 
 const HOLOGRAPH_BRIDGE = 'HolographBridge';
-const HOLOGRAPH_BRIDGE_CONTRACT = JSON.parse (fs.readFileSync ('./build/combined.json')).contracts [HOLOGRAPH_BRIDGE + '.sol:' + HOLOGRAPH_BRIDGE];
+const HOLOGRAPH_BRIDGE_CONTRACT = getContractArtifact(HOLOGRAPH_BRIDGE)
 
 const HOLOGRAPH_BRIDGE_PROXY = 'HolographBridgeProxy';
-const HOLOGRAPH_BRIDGE_PROXY_CONTRACT = JSON.parse (fs.readFileSync ('./build/combined.json')).contracts ['proxy/' + HOLOGRAPH_BRIDGE_PROXY + '.sol:' + HOLOGRAPH_BRIDGE_PROXY];
+const HOLOGRAPH_BRIDGE_PROXY_CONTRACT = getContractArtifact(HOLOGRAPH_BRIDGE_PROXY)
 
 const HOLOGRAPH_FACTORY = 'HolographFactory';
-const HOLOGRAPH_FACTORY_CONTRACT = JSON.parse (fs.readFileSync ('./build/combined.json')).contracts [HOLOGRAPH_FACTORY + '.sol:' + HOLOGRAPH_FACTORY];
+const HOLOGRAPH_FACTORY_CONTRACT = getContractArtifact(HOLOGRAPH_FACTORY)
 
 const HOLOGRAPH_FACTORY_PROXY = 'HolographFactoryProxy';
-const HOLOGRAPH_FACTORY_PROXY_CONTRACT = JSON.parse (fs.readFileSync ('./build/combined.json')).contracts ['proxy/' + HOLOGRAPH_FACTORY_PROXY + '.sol:' + HOLOGRAPH_FACTORY_PROXY];
+const HOLOGRAPH_FACTORY_PROXY_CONTRACT = getContractArtifact(HOLOGRAPH_FACTORY_PROXY)
 
 const HOLOGRAPH_REGISTRY = 'HolographRegistry';
-const HOLOGRAPH_REGISTRY_CONTRACT = JSON.parse (fs.readFileSync ('./build/combined.json')).contracts [HOLOGRAPH_REGISTRY + '.sol:' + HOLOGRAPH_REGISTRY];
+const HOLOGRAPH_REGISTRY_CONTRACT = getContractArtifact(HOLOGRAPH_REGISTRY)
 
 const HOLOGRAPH_REGISTRY_PROXY = 'HolographRegistryProxy';
-const HOLOGRAPH_REGISTRY_PROXY_CONTRACT = JSON.parse (fs.readFileSync ('./build/combined.json')).contracts ['proxy/' + HOLOGRAPH_REGISTRY_PROXY + '.sol:' + HOLOGRAPH_REGISTRY_PROXY];
+const HOLOGRAPH_REGISTRY_PROXY_CONTRACT = getContractArtifact(HOLOGRAPH_REGISTRY_PROXY)
 
 const PA1D = 'PA1D';
-const PA1D_CONTRACT = JSON.parse (fs.readFileSync ('./build/combined.json')).contracts [PA1D + '.sol:' + PA1D];
+const PA1D_CONTRACT = getContractArtifact(PA1D)
 
 const SECURE_STORAGE = 'SecureStorage';
-const SECURE_STORAGE_CONTRACT = JSON.parse (fs.readFileSync ('./build/combined.json')).contracts [SECURE_STORAGE + '.sol:' + SECURE_STORAGE];
+
+const SECURE_STORAGE_CONTRACT = getContractArtifact(SECURE_STORAGE)
 
 const SECURE_STORAGE_PROXY = 'SecureStorageProxy';
-const SECURE_STORAGE_PROXY_CONTRACT = JSON.parse (fs.readFileSync ('./build/combined.json')).contracts ['proxy/' + SECURE_STORAGE_PROXY + '.sol:' + SECURE_STORAGE_PROXY];
+const SECURE_STORAGE_PROXY_CONTRACT = getContractArtifact(SECURE_STORAGE_PROXY)
 
-const network = JSON.parse (fs.readFileSync ('./networks.json', 'utf8')) [NETWORK];
-const provider = new HDWalletProvider (DEPLOYER, network.rpc);
-const web3 = new Web3 (provider);
+const { network, provider, web3 } = createNetworkPropsForUser(DEPLOYER, NETWORK)
 
-const removeX = function (input) {
-    if (input.startsWith ('0x')) {
-        return input.substring (2);
-    } else {
-        return input;
-    }
-};
-
-const hexify = function (input, prepend) {
-	input = input.toLowerCase ().trim ();
-	if (input.startsWith ('0x')) {
-		input = input.substring (2);
-	}
-	input = input.replace (/[^0-9a-f]/g, '');
-	if (prepend) {
-	    input = '0x' + input;
-	}
-	return input;
-};
-
-const throwError = function (err) {
-    process.stderr.write (err + '\n');
-    process.exit (1);
-};
-
-const web3Error = function (err) {
-    throwError (err.toString ())
-};
 
 async function main () {
 

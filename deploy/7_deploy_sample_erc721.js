@@ -8,48 +8,18 @@ const {
     GAS,
     DEPLOYER
 } = require ('../config/env');
+const {removeX, hexify, throwError, web3Error, getContractArtifact, createNetworkPropsForUser} = require("./helpers/utils");
 
 const HOLOGRAPH_FACTORY = 'HolographFactory';
-const HOLOGRAPH_FACTORY_CONTRACT = JSON.parse (fs.readFileSync ('./build/combined.json')).contracts [HOLOGRAPH_FACTORY + '.sol:' + HOLOGRAPH_FACTORY];
+const HOLOGRAPH_FACTORY_CONTRACT = getContractArtifact(HOLOGRAPH_FACTORY)
 
 const HOLOGRAPH_FACTORY_PROXY = 'HolographFactoryProxy';
-const HOLOGRAPH_FACTORY_PROXY_CONTRACT = JSON.parse (fs.readFileSync ('./build/combined.json')).contracts ['proxy/' + HOLOGRAPH_FACTORY_PROXY + '.sol:' + HOLOGRAPH_FACTORY_PROXY];
+const HOLOGRAPH_FACTORY_PROXY_CONTRACT = getContractArtifact(HOLOGRAPH_FACTORY_PROXY)
 
 const SAMPLE_ERC721 = 'SampleERC721';
-const SAMPLE_ERC721_CONTRACT = JSON.parse (fs.readFileSync ('./build/combined.json')).contracts [SAMPLE_ERC721 + '.sol:' + SAMPLE_ERC721];
+const SAMPLE_ERC721_CONTRACT = getContractArtifact(SAMPLE_ERC721)
 
-const network = JSON.parse (fs.readFileSync ('./networks.json', 'utf8')) [NETWORK];
-const provider = new HDWalletProvider (DEPLOYER, network.rpc);
-const web3 = new Web3 (provider);
-
-const removeX = function (input) {
-    if (input.startsWith ('0x')) {
-        return input.substring (2);
-    } else {
-        return input;
-    }
-};
-
-const hexify = function (input, prepend) {
-	input = input.toLowerCase ().trim ();
-	if (input.startsWith ('0x')) {
-		input = input.substring (2);
-	}
-	input = input.replace (/[^0-9a-f]/g, '');
-	if (prepend) {
-	    input = '0x' + input;
-	}
-	return input;
-};
-
-const throwError = function (err) {
-    process.stderr.write (err + '\n');
-    process.exit (1);
-};
-
-const web3Error = function (err) {
-    throwError (err.toString ())
-};
+const { network, provider, web3 } = createNetworkPropsForUser(DEPLOYER, NETWORK)
 
 async function main () {
 
