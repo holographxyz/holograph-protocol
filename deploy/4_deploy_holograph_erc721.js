@@ -8,7 +8,7 @@ const {
     GAS,
     DEPLOYER
 } = require ('../config/env');
-const {removeX, throwError, web3Error, getContractArtifact, createNetworkPropsForUser} = require("./helpers/utils");
+const {removeX, throwError, web3Error, getContractArtifact, createNetworkPropsForUser, saveContractResult} = require("./helpers/utils");
 
 const GENESIS = 'HolographGenesis';
 const GENESIS_CONTRACT = getContractArtifact(GENESIS)
@@ -61,11 +61,8 @@ async function main () {
         if ('0x' + HOLOGRAPH_ERC721_CONTRACT ['bin-runtime'] != await web3.eth.getCode (holographErc721Address)) {
             throwError ('Could not properly compute CREATE2 address for holographErc721Address');
         }
-        fs.writeFileSync (
-            './data/' + NETWORK + '.' + HOLOGRAPH_ERC721 + '.address',
-            holographErc721Address
-        );
-        console.log ('holographErc721Address', holographErc721Address);
+
+        saveContractResult(NETWORK, HOLOGRAPH_ERC721, holographErc721Address)
 
     process.exit ();
 }

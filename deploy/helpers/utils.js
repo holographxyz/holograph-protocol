@@ -46,12 +46,12 @@ function createFactoryFromABI(web3, abi) {
     return new web3.eth.Contract (abi);
 }
 
-function saveContractResult(networkName, contractName, contractInstance) {
+function saveContractResult(networkName, contractName, contractAddress) {
     fs.writeFileSync (
         './data/' + networkName + '.' + contractName + '.address',
-        contractInstance.options.address
+        contractAddress
     );
-    console.log(`Deployed ${contractName} Contract : ${contractInstance.options.address}`)
+    console.log(`Deployed ${contractName} Contract: ${contractAddress}`)
 }
 
 

@@ -8,7 +8,7 @@ const {
     GAS,
     DEPLOYER
 } = require ('../config/env');
-const {removeX, hexify, throwError, web3Error, getContractArtifact, createNetworkPropsForUser} = require("./helpers/utils");
+const {removeX, hexify, throwError, web3Error, getContractArtifact, createNetworkPropsForUser, saveContractResult} = require("./helpers/utils");
 
 const HOLOGRAPH_FACTORY = 'HolographFactory';
 const HOLOGRAPH_FACTORY_CONTRACT = getContractArtifact(HOLOGRAPH_FACTORY)
@@ -87,11 +87,7 @@ async function main () {
         throwError (JSON.stringify (deploySampleErc721Result, null, 4));
     } else {
         let sampleErc721Address = deploySampleErc721Result.events.BridgeableContractDeployed.returnValues.contractAddress;
-        fs.writeFileSync (
-            './data/' + NETWORK + '.' + SAMPLE_ERC721 + '.address',
-            sampleErc721Address
-        );
-        console.log ('Deployed SampleERC721', sampleErc721Address);
+        saveContractResult(NETWORK, SAMPLE_ERC721, sampleErc721Address)
     }
 
     process.exit ();

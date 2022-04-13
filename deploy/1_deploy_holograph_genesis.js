@@ -29,6 +29,6 @@ HolographGenesisContract.deploy ({
     console.log ('Transaction Hash :', transactionHash);
 })
 .then (function (contractInstance) {
-    saveContractResult(NETWORK, ContractName, contractInstance)
+    saveContractResult(NETWORK, ContractName, contractInstance.options.address)
     process.exit();
 })

@@ -8,7 +8,7 @@ const {
     GAS,
     DEPLOYER
 } = require ('../config/env');
-const {removeX, hexify, throwError, web3Error, getContractArtifact, createNetworkPropsForUser} = require("./helpers/utils");
+const {removeX, hexify, throwError, web3Error, getContractArtifact, createNetworkPropsForUser, saveContractResult} = require("./helpers/utils");
 
 const GENESIS = 'HolographGenesis';
 const GENESIS_CONTRACT = getContractArtifact(GENESIS)
@@ -84,11 +84,8 @@ async function main () {
         if ('0x' + HOLOGRAPH_REGISTRY_CONTRACT ['bin-runtime'] != await web3.eth.getCode (holographRegistryAddress)) {
             throwError ('Could not properly compute CREATE2 address for holographRegistryAddress');
         }
-        fs.writeFileSync (
-            './data/' + NETWORK + '.' + HOLOGRAPH_REGISTRY + '.address',
-            holographRegistryAddress
-        );
-        console.log ('holographRegistryAddress', holographRegistryAddress);
+
+        saveContractResult(NETWORK, HOLOGRAPH_REGISTRY, holographRegistryAddress)
 
 // HolographRegistryProxy
         const holographRegistryProxyDeploymentResult = await FACTORY.methods.deploy (
@@ -127,11 +124,7 @@ async function main () {
         if ('0x' + HOLOGRAPH_REGISTRY_PROXY_CONTRACT ['bin-runtime'] != await web3.eth.getCode (holographRegistryProxyAddress)) {
             throwError ('Could not properly compute CREATE2 address for holographRegistryProxyAddress');
         }
-        fs.writeFileSync (
-            './data/' + NETWORK + '.' + HOLOGRAPH_REGISTRY_PROXY + '.address',
-            holographRegistryProxyAddress
-        );
-        console.log ('holographRegistryProxyAddress', holographRegistryProxyAddress);
+        saveContractResult(NETWORK, HOLOGRAPH_REGISTRY_PROXY, holographRegistryProxyAddress)
 
 // HolographFactory
         const holographFactoryDeploymentResult = await FACTORY.methods.deploy (
@@ -159,11 +152,7 @@ async function main () {
         if ('0x' + HOLOGRAPH_FACTORY_CONTRACT ['bin-runtime'] != await web3.eth.getCode (holographFactoryAddress)) {
             throwError ('Could not properly compute CREATE2 address for holographFactoryAddress');
         }
-        fs.writeFileSync (
-            './data/' + NETWORK + '.' + HOLOGRAPH_FACTORY + '.address',
-            holographFactoryAddress
-        );
-        console.log ('holographFactoryAddress', holographFactoryAddress);
+        saveContractResult(NETWORK, HOLOGRAPH_FACTORY, holographFactoryAddress)
 
 // SecureStorage
         const secureStorageDeploymentResult = await FACTORY.methods.deploy (
@@ -191,11 +180,7 @@ async function main () {
         if ('0x' + SECURE_STORAGE_CONTRACT ['bin-runtime'] != await web3.eth.getCode (secureStorageAddress)) {
             throwError ('Could not properly compute CREATE2 address for secureStorageAddress');
         }
-        fs.writeFileSync (
-            './data/' + NETWORK + '.' + SECURE_STORAGE + '.address',
-            secureStorageAddress
-        );
-        console.log ('secureStorageAddress', secureStorageAddress);
+        saveContractResult(NETWORK, SECURE_STORAGE, secureStorageAddress)
 
 // SecureStorageProxy
         const secureStorageProxyDeploymentResult = await FACTORY.methods.deploy (
@@ -229,11 +214,7 @@ async function main () {
         if ('0x' + SECURE_STORAGE_PROXY_CONTRACT ['bin-runtime'] != await web3.eth.getCode (secureStorageProxyAddress)) {
             throwError ('Could not properly compute CREATE2 address for secureStorageProxyAddress');
         }
-        fs.writeFileSync (
-            './data/' + NETWORK + '.' + SECURE_STORAGE_PROXY + '.address',
-            secureStorageProxyAddress
-        );
-        console.log ('secureStorageProxyAddress', secureStorageProxyAddress);
+        saveContractResult(NETWORK, SECURE_STORAGE_PROXY, secureStorageProxyAddress)
 
 // HolographFactoryProxy
         const holographFactoryProxyDeploymentResult = await FACTORY.methods.deploy (
@@ -267,11 +248,7 @@ async function main () {
         if ('0x' + HOLOGRAPH_FACTORY_PROXY_CONTRACT ['bin-runtime'] != await web3.eth.getCode (holographFactoryProxyAddress)) {
             throwError ('Could not properly compute CREATE2 address for holographFactoryProxyAddress');
         }
-        fs.writeFileSync (
-            './data/' + NETWORK + '.' + HOLOGRAPH_FACTORY_PROXY + '.address',
-            holographFactoryProxyAddress
-        );
-        console.log ('holographFactoryProxyAddress', holographFactoryProxyAddress);
+        saveContractResult(NETWORK, HOLOGRAPH_FACTORY_PROXY, holographFactoryProxyAddress)
 
 // HolographBridge
         const holographBridgeDeploymentResult = await FACTORY.methods.deploy (
@@ -299,11 +276,7 @@ async function main () {
         if ('0x' + HOLOGRAPH_BRIDGE_CONTRACT ['bin-runtime'] != await web3.eth.getCode (holographBridgeAddress)) {
             throwError ('Could not properly compute CREATE2 address for holographBridgeAddress');
         }
-        fs.writeFileSync (
-            './data/' + NETWORK + '.' + HOLOGRAPH_BRIDGE + '.address',
-            holographBridgeAddress
-        );
-        console.log ('holographBridgeAddress', holographBridgeAddress);
+        saveContractResult(NETWORK, HOLOGRAPH_BRIDGE, holographBridgeAddress)
 
 // HolographBridgeProxy
         const holographBridgeProxyDeploymentResult = await FACTORY.methods.deploy (
@@ -337,11 +310,7 @@ async function main () {
         if ('0x' + HOLOGRAPH_BRIDGE_PROXY_CONTRACT ['bin-runtime'] != await web3.eth.getCode (holographBridgeProxyAddress)) {
             throwError ('Could not properly compute CREATE2 address for holographBridgeProxyAddress');
         }
-        fs.writeFileSync (
-            './data/' + NETWORK + '.' + HOLOGRAPH_BRIDGE_PROXY + '.address',
-            holographBridgeProxyAddress
-        );
-        console.log ('holographBridgeProxyAddress', holographBridgeProxyAddress);
+        saveContractResult(NETWORK, HOLOGRAPH_BRIDGE_PROXY, holographBridgeProxyAddress)
 
 // Holograph
         const holographDeploymentResult = await FACTORY.methods.deploy (
@@ -375,11 +344,7 @@ async function main () {
         if ('0x' + HOLOGRAPH_CONTRACT ['bin-runtime'] != await web3.eth.getCode (holographAddress)) {
             throwError ('Could not properly compute CREATE2 address for holographAddress');
         }
-        fs.writeFileSync (
-            './data/' + NETWORK + '.' + HOLOGRAPH + '.address',
-            holographAddress
-        );
-        console.log ('holographAddress', holographAddress);
+        saveContractResult(NETWORK, HOLOGRAPH, holographAddress)
 
 // PA1D
         const pa1dDeploymentResult = await FACTORY.methods.deploy (
@@ -407,11 +372,7 @@ async function main () {
         if ('0x' + PA1D_CONTRACT ['bin-runtime'] != await web3.eth.getCode (pa1dAddress)) {
             throwError ('Could not properly compute CREATE2 address for pa1dAddress');
         }
-        fs.writeFileSync (
-            './data/' + NETWORK + '.' + PA1D + '.address',
-            pa1dAddress
-        );
-        console.log ('pa1dAddress', pa1dAddress);
+        saveContractResult(NETWORK, PA1D, pa1dAddress)
 
     process.exit ();
 }
