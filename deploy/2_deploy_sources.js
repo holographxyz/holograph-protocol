@@ -9,42 +9,8 @@ const {hexify, throwError, web3Error, getContractArtifact, createNetworkPropsFor
      generateExpectedAddress, getContractAddress, createFactoryAtAddress
 } = require("./helpers/utils");
 
-const GENESIS = 'HolographGenesis';
-const GENESIS_CONTRACT = getContractArtifact(GENESIS)
-
-const HOLOGRAPH = 'Holograph';
-const HOLOGRAPH_CONTRACT = getContractArtifact(HOLOGRAPH)
-
-const HOLOGRAPH_BRIDGE = 'HolographBridge';
-const HOLOGRAPH_BRIDGE_CONTRACT = getContractArtifact(HOLOGRAPH_BRIDGE)
-
-const HOLOGRAPH_BRIDGE_PROXY = 'HolographBridgeProxy';
-const HOLOGRAPH_BRIDGE_PROXY_CONTRACT = getContractArtifact(HOLOGRAPH_BRIDGE_PROXY)
-
-const HOLOGRAPH_FACTORY = 'HolographFactory';
-const HOLOGRAPH_FACTORY_CONTRACT = getContractArtifact(HOLOGRAPH_FACTORY)
-
-const HOLOGRAPH_FACTORY_PROXY = 'HolographFactoryProxy';
-const HOLOGRAPH_FACTORY_PROXY_CONTRACT = getContractArtifact(HOLOGRAPH_FACTORY_PROXY)
-
-const HOLOGRAPH_REGISTRY = 'HolographRegistry';
-const HOLOGRAPH_REGISTRY_CONTRACT = getContractArtifact(HOLOGRAPH_REGISTRY)
-
-const HOLOGRAPH_REGISTRY_PROXY = 'HolographRegistryProxy';
-const HOLOGRAPH_REGISTRY_PROXY_CONTRACT = getContractArtifact(HOLOGRAPH_REGISTRY_PROXY)
-
-const PA1D = 'PA1D';
-const PA1D_CONTRACT = getContractArtifact(PA1D)
-
-const SECURE_STORAGE = 'SecureStorage';
-const SECURE_STORAGE_CONTRACT = getContractArtifact(SECURE_STORAGE)
-
-const SECURE_STORAGE_PROXY = 'SecureStorageProxy';
-const SECURE_STORAGE_PROXY_CONTRACT = getContractArtifact(SECURE_STORAGE_PROXY)
-
-const { network, provider, web3 } = createNetworkPropsForUser(DEPLOYER, NETWORK)
-
 async function main () {
+    const { network, provider, web3 } = createNetworkPropsForUser(DEPLOYER, NETWORK)
     const salt = '0x000000000000000000000000';
 
     const defaultTXOptions = {
@@ -54,10 +20,15 @@ async function main () {
         gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
     }
 
+    const GENESIS = 'HolographGenesis';
+    const GENESIS_CONTRACT = getContractArtifact(GENESIS)
     const GENESIS_ADDRESS = getContractAddress(NETWORK, GENESIS)
     const GENESIS_FACTORY = createFactoryAtAddress(web3, GENESIS_CONTRACT.abi, GENESIS_ADDRESS)
 
 // HolographRegistry
+        const HOLOGRAPH_REGISTRY = 'HolographRegistry';
+        const HOLOGRAPH_REGISTRY_CONTRACT = getContractArtifact(HOLOGRAPH_REGISTRY)
+
         const holographRegistryDeploymentResult = await GENESIS_FACTORY.methods.deploy (
             salt, // bytes12 saltHash
             '0x' + HOLOGRAPH_REGISTRY_CONTRACT.bin, // bytes memory sourceCode
@@ -85,6 +56,9 @@ async function main () {
         saveContractResult(NETWORK, HOLOGRAPH_REGISTRY, holographRegistryAddress)
 
 // HolographRegistryProxy
+        const HOLOGRAPH_REGISTRY_PROXY = 'HolographRegistryProxy';
+        const HOLOGRAPH_REGISTRY_PROXY_CONTRACT = getContractArtifact(HOLOGRAPH_REGISTRY_PROXY)
+
         const holographRegistryProxyDeploymentResult = await GENESIS_FACTORY.methods.deploy (
             salt, // bytes12 saltHash
             '0x' + HOLOGRAPH_REGISTRY_PROXY_CONTRACT.bin, // bytes memory sourceCode
@@ -122,6 +96,8 @@ async function main () {
         saveContractResult(NETWORK, HOLOGRAPH_REGISTRY_PROXY, holographRegistryProxyAddress)
 
 // HolographFactory
+        const HOLOGRAPH_FACTORY = 'HolographFactory';
+        const HOLOGRAPH_FACTORY_CONTRACT = getContractArtifact(HOLOGRAPH_FACTORY)
         const holographFactoryDeploymentResult = await GENESIS_FACTORY.methods.deploy (
             salt, // bytes12 saltHash
             '0x' + HOLOGRAPH_FACTORY_CONTRACT.bin, // bytes memory sourceCode
@@ -153,6 +129,8 @@ async function main () {
         saveContractResult(NETWORK, HOLOGRAPH_FACTORY, holographFactoryAddress)
 
 // SecureStorage
+        const SECURE_STORAGE = 'SecureStorage';
+        const SECURE_STORAGE_CONTRACT = getContractArtifact(SECURE_STORAGE)
         const secureStorageDeploymentResult = await GENESIS_FACTORY.methods.deploy (
             salt, // bytes12 saltHash
             '0x' + SECURE_STORAGE_CONTRACT.bin, // bytes memory sourceCode
@@ -179,6 +157,8 @@ async function main () {
         saveContractResult(NETWORK, SECURE_STORAGE, secureStorageAddress)
 
 // SecureStorageProxy
+        const SECURE_STORAGE_PROXY = 'SecureStorageProxy';
+        const SECURE_STORAGE_PROXY_CONTRACT = getContractArtifact(SECURE_STORAGE_PROXY)
         const secureStorageProxyDeploymentResult = await GENESIS_FACTORY.methods.deploy (
             salt, // bytes12 saltHash
             '0x' + SECURE_STORAGE_PROXY_CONTRACT.bin, // bytes memory sourceCode
@@ -212,6 +192,8 @@ async function main () {
         saveContractResult(NETWORK, SECURE_STORAGE_PROXY, secureStorageProxyAddress)
 
 // HolographFactoryProxy
+        const HOLOGRAPH_FACTORY_PROXY = 'HolographFactoryProxy';
+        const HOLOGRAPH_FACTORY_PROXY_CONTRACT = getContractArtifact(HOLOGRAPH_FACTORY_PROXY)
         const holographFactoryProxyDeploymentResult = await GENESIS_FACTORY.methods.deploy (
             salt, // bytes12 saltHash
             '0x' + HOLOGRAPH_FACTORY_PROXY_CONTRACT.bin, // bytes memory sourceCode
@@ -244,6 +226,8 @@ async function main () {
         saveContractResult(NETWORK, HOLOGRAPH_FACTORY_PROXY, holographFactoryProxyAddress)
 
 // HolographBridge
+        const HOLOGRAPH_BRIDGE = 'HolographBridge';
+        const HOLOGRAPH_BRIDGE_CONTRACT = getContractArtifact(HOLOGRAPH_BRIDGE)
         const holographBridgeDeploymentResult = await GENESIS_FACTORY.methods.deploy (
             salt, // bytes12 saltHash
             '0x' + HOLOGRAPH_BRIDGE_CONTRACT.bin, // bytes memory sourceCode
@@ -275,6 +259,8 @@ async function main () {
         saveContractResult(NETWORK, HOLOGRAPH_BRIDGE, holographBridgeAddress)
 
 // HolographBridgeProxy
+        const HOLOGRAPH_BRIDGE_PROXY = 'HolographBridgeProxy';
+        const HOLOGRAPH_BRIDGE_PROXY_CONTRACT = getContractArtifact(HOLOGRAPH_BRIDGE_PROXY)
         const holographBridgeProxyDeploymentResult = await GENESIS_FACTORY.methods.deploy (
             salt, // bytes12 saltHash
             '0x' + HOLOGRAPH_BRIDGE_PROXY_CONTRACT.bin, // bytes memory sourceCode
@@ -307,6 +293,8 @@ async function main () {
         saveContractResult(NETWORK, HOLOGRAPH_BRIDGE_PROXY, holographBridgeProxyAddress)
 
 // Holograph
+        const HOLOGRAPH = 'Holograph';
+        const HOLOGRAPH_CONTRACT = getContractArtifact(HOLOGRAPH)
         const holographDeploymentResult = await GENESIS_FACTORY.methods.deploy (
             salt, // bytes12 saltHash
             '0x' + HOLOGRAPH_CONTRACT.bin, // bytes memory sourceCode
@@ -338,6 +326,8 @@ async function main () {
         saveContractResult(NETWORK, HOLOGRAPH, holographAddress)
 
 // PA1D
+        const PA1D = 'PA1D';
+        const PA1D_CONTRACT = getContractArtifact(PA1D)
         const pa1dDeploymentResult = await GENESIS_FACTORY.methods.deploy (
             salt, // bytes12 saltHash
             '0x' + PA1D_CONTRACT.bin, // bytes memory sourceCode

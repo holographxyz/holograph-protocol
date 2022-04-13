@@ -11,25 +11,21 @@ const {
 } = require ('../config/env');
 const {throwError, web3Error, getContractArtifact, getNetworkInfo} = require("./helpers/utils");
 
-
-const SAMPLE_ERC721 = 'SampleERC721';
-const SAMPLE_ERC721_CONTRACT = getContractArtifact(SAMPLE_ERC721)
-
-const HOLOGRAPH_ERC721 = 'HolographERC721';
-const HOLOGRAPH_ERC721_CONTRACT = getContractArtifact(HOLOGRAPH_ERC721)
-
-const HOLOGRAPHER = 'Holographer';
-const HOLOGRAPHER_CONTRACT = getContractArtifact(HOLOGRAPHER)
-
-const network = getNetworkInfo(NETWORK)
-const provider = new HDWalletProvider ([WALLET1, WALLET2], network.rpc, 0, 2);
-const web3 = new Web3 (provider);
-
 async function main () {
+    const network = getNetworkInfo(NETWORK)
+    const provider = new HDWalletProvider ([WALLET1, WALLET2], network.rpc, 0, 2);
+    const web3 = new Web3 (provider);
 
+    const SAMPLE_ERC721 = 'SampleERC721';
+    const SAMPLE_ERC721_CONTRACT = getContractArtifact(SAMPLE_ERC721)
     const ERC721_ADDRESS = fs.readFileSync ('./data/' + NETWORK + '.' + SAMPLE_ERC721 + '.address', 'utf8').trim ();
 
-    const FACTORY = new web3.eth.Contract (
+    const HOLOGRAPHER = 'Holographer';
+    const HOLOGRAPHER_CONTRACT = getContractArtifact(HOLOGRAPHER)
+    const HOLOGRAPH_ERC721 = 'HolographERC721';
+    const HOLOGRAPH_ERC721_CONTRACT = getContractArtifact(HOLOGRAPH_ERC721)
+
+    const HOLOGRAPH_ERC721_CONTRACT_FACTORY = new web3.eth.Contract (
         SAMPLE_ERC721_CONTRACT.abi.concat (HOLOGRAPHER_CONTRACT.abi).concat (HOLOGRAPH_ERC721_CONTRACT.abi),
         ERC721_ADDRESS
     );
@@ -38,14 +34,14 @@ async function main () {
 
     console.log ("\n");
 
-    console.log ('ownerOf', await FACTORY.methods.ownerOf (tokenId).call ({
+    console.log ('ownerOf', await HOLOGRAPH_ERC721_CONTRACT_FACTORY.methods.ownerOf (tokenId).call ({
         chainId: network.chain,
         from: provider.addresses [0],
         gas: web3.utils.toHex (1000000),
         gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
     }).catch (web3Error));
 
-    const transferResult = await FACTORY.methods.transferFrom (provider.addresses [0], provider.addresses [1], tokenId).send ({
+    const transferResult = await HOLOGRAPH_ERC721_CONTRACT_FACTORY.methods.transferFrom (provider.addresses [0], provider.addresses [1], tokenId).send ({
         chainId: network.chain,
         from: provider.addresses [0],
         gas: web3.utils.toHex (1000000),
@@ -64,14 +60,14 @@ async function main () {
         "\n"
     );
 
-    console.log ('ownerOf', await FACTORY.methods.ownerOf (tokenId).call ({
+    console.log ('ownerOf', await HOLOGRAPH_ERC721_CONTRACT_FACTORY.methods.ownerOf (tokenId).call ({
         chainId: network.chain,
         from: provider.addresses [0],
         gas: web3.utils.toHex (1000000),
         gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
     }).catch (web3Error));
 
-    const transferBackResult = await FACTORY.methods.transferFrom (provider.addresses [1], provider.addresses [0], tokenId).send ({
+    const transferBackResult = await HOLOGRAPH_ERC721_CONTRACT_FACTORY.methods.transferFrom (provider.addresses [1], provider.addresses [0], tokenId).send ({
         chainId: network.chain,
         from: provider.addresses [1],
         gas: web3.utils.toHex (1000000),

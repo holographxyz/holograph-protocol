@@ -9,16 +9,14 @@ const {throwError, web3Error, getContractArtifact, createNetworkPropsForUser, ge
     createFactoryAtAddress
 } = require("./helpers/utils");
 
-const HOLOGRAPH_REGISTRY = 'HolographRegistry';
-const HOLOGRAPH_REGISTRY_CONTRACT = getContractArtifact(HOLOGRAPH_REGISTRY)
-
-const HOLOGRAPH_REGISTRY_PROXY = 'HolographRegistryProxy';
-const HOLOGRAPH_REGISTRY_PROXY_CONTRACT = getContractArtifact(HOLOGRAPH_REGISTRY_PROXY)
-
-const { network, provider, web3 } = createNetworkPropsForUser(DEPLOYER, NETWORK)
-
 async function main () {
+    const { network, provider, web3 } = createNetworkPropsForUser(DEPLOYER, NETWORK)
+
+    const HOLOGRAPH_REGISTRY_PROXY = 'HolographRegistryProxy';
     const HOLOGRAPH_REGISTRY_PROXY_ADDRESS = getContractAddress(NETWORK, HOLOGRAPH_REGISTRY_PROXY)
+
+    const HOLOGRAPH_REGISTRY = 'HolographRegistry';
+    const HOLOGRAPH_REGISTRY_CONTRACT = getContractArtifact(HOLOGRAPH_REGISTRY)
 
     const HOLOGRAPH_ERC721 = 'HolographERC721';
     const HOLOGRAPH_ERC721_ADDRESS = getContractAddress(NETWORK, HOLOGRAPH_ERC721)

@@ -5,20 +5,18 @@ const {
     GAS,
     DEPLOYER
 } = require ('../config/env');
-const {throwError, web3Error, getContractArtifact, getNetworkInfo, createProviderAndWeb3, createNetworkPropsForUser,
+const {throwError, web3Error, getContractArtifact, createNetworkPropsForUser,
     getContractAddress, createFactoryAtAddress
 } = require("./helpers/utils");
 
-const HOLOGRAPH_REGISTRY = 'HolographRegistry';
-const HOLOGRAPH_REGISTRY_CONTRACT = getContractArtifact(HOLOGRAPH_REGISTRY)
-
-const HOLOGRAPH_REGISTRY_PROXY = 'HolographRegistryProxy';
-const HOLOGRAPH_REGISTRY_PROXY_CONTRACT = getContractArtifact(HOLOGRAPH_REGISTRY_PROXY)
-
-const { network, provider, web3 } = createNetworkPropsForUser(DEPLOYER, NETWORK)
-
 async function main () {
+    const { network, provider, web3 } = createNetworkPropsForUser(DEPLOYER, NETWORK)
+
+    const HOLOGRAPH_REGISTRY_PROXY = 'HolographRegistryProxy';
     const HOLOGRAPH_REGISTRY_PROXY_ADDRESS = getContractAddress(NETWORK, HOLOGRAPH_REGISTRY_PROXY)
+
+    const HOLOGRAPH_REGISTRY = 'HolographRegistry';
+    const HOLOGRAPH_REGISTRY_CONTRACT = getContractArtifact(HOLOGRAPH_REGISTRY)
 
     const PA1D = 'PA1D';
     const PA1D_ADDRESS = getContractAddress(NETWORK, PA1D)

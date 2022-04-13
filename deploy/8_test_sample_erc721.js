@@ -5,23 +5,22 @@ const {
     GAS,
     DEPLOYER
 } = require ('../config/env');
-const {web3Error, getContractArtifact, createNetworkPropsForUser, getContractAddress, createFactoryAtAddress} = require("./helpers/utils");
-
-const SAMPLE_ERC721 = 'SampleERC721';
-const SAMPLE_ERC721_CONTRACT = getContractArtifact(SAMPLE_ERC721)
-
-const HOLOGRAPH_ERC721 = 'HolographERC721';
-const HOLOGRAPH_ERC721_CONTRACT = getContractArtifact(HOLOGRAPH_ERC721)
-
-const HOLOGRAPHER = 'Holographer';
-const HOLOGRAPHER_CONTRACT = getContractArtifact(HOLOGRAPHER)
-
-const { network, provider, web3 } = createNetworkPropsForUser(DEPLOYER, NETWORK)
+const {web3Error, getContractArtifact, createNetworkPropsForUser, getContractAddress} = require("./helpers/utils");
 
 async function main () {
+    const { network, provider, web3 } = createNetworkPropsForUser(DEPLOYER, NETWORK)
 
+    const SAMPLE_ERC721 = 'SampleERC721';
+    const SAMPLE_ERC721_CONTRACT = getContractArtifact(SAMPLE_ERC721)
     const ERC721_ADDRESS = getContractAddress(NETWORK, SAMPLE_ERC721)
-    const FACTORY = new web3.eth.Contract (
+
+    const HOLOGRAPH_ERC721 = 'HolographERC721';
+    const HOLOGRAPH_ERC721_CONTRACT = getContractArtifact(HOLOGRAPH_ERC721)
+
+    const HOLOGRAPHER = 'Holographer';
+    const HOLOGRAPHER_CONTRACT = getContractArtifact(HOLOGRAPHER)
+
+    const HOLOGRAPH_ERC721_CONTRACT_FACTORY = new web3.eth.Contract (
         SAMPLE_ERC721_CONTRACT.abi.concat (HOLOGRAPHER_CONTRACT.abi).concat (HOLOGRAPH_ERC721_CONTRACT.abi),
         ERC721_ADDRESS
     );
@@ -48,56 +47,56 @@ async function main () {
 
     console.log ("\n");
 
-    console.log ('getHolographEnforcer', await FACTORY.methods.getHolographEnforcer ().call ({
+    console.log ('getHolographEnforcer', await HOLOGRAPH_ERC721_CONTRACT_FACTORY.methods.getHolographEnforcer ().call ({
         chainId: network.chain,
         from: provider.addresses [0],
         gas: web3.utils.toHex (1000000),
         gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
     }).catch (web3Error));
 
-    console.log ('getSecureStorage', await FACTORY.methods.getSecureStorage ().call ({
+    console.log ('getSecureStorage', await HOLOGRAPH_ERC721_CONTRACT_FACTORY.methods.getSecureStorage ().call ({
         chainId: network.chain,
         from: provider.addresses [0],
         gas: web3.utils.toHex (1000000),
         gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
     }).catch (web3Error));
 
-    console.log ('getSourceContract', await FACTORY.methods.getSourceContract ().call ({
+    console.log ('getSourceContract', await HOLOGRAPH_ERC721_CONTRACT_FACTORY.methods.getSourceContract ().call ({
         chainId: network.chain,
         from: provider.addresses [0],
         gas: web3.utils.toHex (1000000),
         gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
     }).catch (web3Error));
 
-    console.log ('test', await FACTORY.methods.test ().call ({
+    console.log ('test', await HOLOGRAPH_ERC721_CONTRACT_FACTORY.methods.test ().call ({
         chainId: network.chain,
         from: provider.addresses [0],
         gas: web3.utils.toHex (1000000),
         gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
     }).catch (web3Error));
 
-    console.log ('contractURI', await FACTORY.methods.contractURI ().call ({
+    console.log ('contractURI', await HOLOGRAPH_ERC721_CONTRACT_FACTORY.methods.contractURI ().call ({
         chainId: network.chain,
         from: provider.addresses [0],
         gas: web3.utils.toHex (1000000),
         gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
     }).catch (web3Error));
 
-    console.log ('name', await FACTORY.methods.name ().call ({
+    console.log ('name', await HOLOGRAPH_ERC721_CONTRACT_FACTORY.methods.name ().call ({
         chainId: network.chain,
         from: provider.addresses [0],
         gas: web3.utils.toHex (1000000),
         gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
     }).catch (web3Error));
 
-    console.log ('symbol', await FACTORY.methods.symbol ().call ({
+    console.log ('symbol', await HOLOGRAPH_ERC721_CONTRACT_FACTORY.methods.symbol ().call ({
         chainId: network.chain,
         from: provider.addresses [0],
         gas: web3.utils.toHex (1000000),
         gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
     }).catch (web3Error));
 
-    console.log ('getOriginChain', await FACTORY.methods.getOriginChain ().call ({
+    console.log ('getOriginChain', await HOLOGRAPH_ERC721_CONTRACT_FACTORY.methods.getOriginChain ().call ({
         chainId: network.chain,
         from: provider.addresses [0],
         gas: web3.utils.toHex (1000000),
