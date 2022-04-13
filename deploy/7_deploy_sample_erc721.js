@@ -1,14 +1,13 @@
 'use strict';
-
 const fs = require ('fs');
-const HDWalletProvider = require ('truffle-hdwallet-provider');
-const Web3 = require ('web3');
 const {
     NETWORK,
     GAS,
     DEPLOYER
 } = require ('../config/env');
-const {removeX, hexify, throwError, web3Error, getContractArtifact, createNetworkPropsForUser, saveContractResult} = require("./helpers/utils");
+const {removeX, hexify, throwError, web3Error, getContractArtifact, createNetworkPropsForUser, saveContractResult,
+    getContractAddress, createFactoryAtAddress
+} = require("./helpers/utils");
 
 const HOLOGRAPH_FACTORY = 'HolographFactory';
 const HOLOGRAPH_FACTORY_CONTRACT = getContractArtifact(HOLOGRAPH_FACTORY)
@@ -22,13 +21,8 @@ const SAMPLE_ERC721_CONTRACT = getContractArtifact(SAMPLE_ERC721)
 const { network, provider, web3 } = createNetworkPropsForUser(DEPLOYER, NETWORK)
 
 async function main () {
-
-    const HOLOGRAPH_FACTORY_PROXY_ADDRESS = fs.readFileSync ('./data/' + NETWORK + '.' + HOLOGRAPH_FACTORY_PROXY + '.address', 'utf8').trim ();
-
-    const FACTORY = new web3.eth.Contract (
-        HOLOGRAPH_FACTORY_CONTRACT.abi,
-        HOLOGRAPH_FACTORY_PROXY_ADDRESS
-    );
+    const HOLOGRAPH_FACTORY_PROXY_ADDRESS = getContractAddress(NETWORK, HOLOGRAPH_FACTORY_PROXY)
+    const HOLOGRAPH_FACTORY_PROXY_FACTORY = createFactoryAtAddress(web3, HOLOGRAPH_FACTORY_CONTRACT.abi, HOLOGRAPH_FACTORY_PROXY_ADDRESS)
 
     let config = [
         '0x0000000000000000000000000000000000486f6c6f6772617068455243373231', // bytes32 contractType
@@ -77,7 +71,7 @@ async function main () {
         provider.addresses [0]
     );
 
-    const deploySampleErc721Result = await FACTORY.methods.deployHolographableContract (config, signature, provider.addresses [0]).send ({
+    const deploySampleErc721Result = await HOLOGRAPH_FACTORY_PROXY_FACTORY.methods.deployHolographableContract (config, signature, provider.addresses [0]).send ({
         chainId: network.chain,
         from: provider.addresses [0],
         gas: web3.utils.toHex (5000000),

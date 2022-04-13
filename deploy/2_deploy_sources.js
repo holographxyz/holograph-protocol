@@ -1,14 +1,13 @@
 'use strict';
 
-const fs = require ('fs');
-const HDWalletProvider = require ('truffle-hdwallet-provider');
-const Web3 = require ('web3');
 const {
     NETWORK,
     GAS,
     DEPLOYER
 } = require ('../config/env');
-const {removeX, hexify, throwError, web3Error, getContractArtifact, createNetworkPropsForUser, saveContractResult} = require("./helpers/utils");
+const {hexify, throwError, web3Error, getContractArtifact, createNetworkPropsForUser, saveContractResult,
+     generateExpectedAddress, getContractAddress, createFactoryAtAddress
+} = require("./helpers/utils");
 
 const GENESIS = 'HolographGenesis';
 const GENESIS_CONTRACT = getContractArtifact(GENESIS)
@@ -38,7 +37,6 @@ const PA1D = 'PA1D';
 const PA1D_CONTRACT = getContractArtifact(PA1D)
 
 const SECURE_STORAGE = 'SecureStorage';
-
 const SECURE_STORAGE_CONTRACT = getContractArtifact(SECURE_STORAGE)
 
 const SECURE_STORAGE_PROXY = 'SecureStorageProxy';
@@ -46,38 +44,37 @@ const SECURE_STORAGE_PROXY_CONTRACT = getContractArtifact(SECURE_STORAGE_PROXY)
 
 const { network, provider, web3 } = createNetworkPropsForUser(DEPLOYER, NETWORK)
 
-
 async function main () {
-
-    const GENESIS_ADDRESS = fs.readFileSync ('./data/' + NETWORK + '.' + GENESIS + '.address', 'utf8').trim ();
-
-    const FACTORY = new web3.eth.Contract (
-        GENESIS_CONTRACT.abi,
-        GENESIS_ADDRESS
-    );
-
     const salt = '0x000000000000000000000000';
 
+    const defaultTXOptions = {
+        chainId: network.chain,
+        from: provider.addresses[0],
+        gas: web3.utils.toHex (1000000),
+        gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
+    }
+
+    const GENESIS_ADDRESS = getContractAddress(NETWORK, GENESIS)
+    const GENESIS_FACTORY = createFactoryAtAddress(web3, GENESIS_CONTRACT.abi, GENESIS_ADDRESS)
+
 // HolographRegistry
-        const holographRegistryDeploymentResult = await FACTORY.methods.deploy (
+        const holographRegistryDeploymentResult = await GENESIS_FACTORY.methods.deploy (
             salt, // bytes12 saltHash
             '0x' + HOLOGRAPH_REGISTRY_CONTRACT.bin, // bytes memory sourceCode
             web3.eth.abi.encodeParameters (
                 ['bytes32[]'],
                 [[]]
             ) // bytes memory initCode
-        ).send ({
-            chainId: network.chain,
-            from: provider.addresses [0],
-            gas: web3.utils.toHex (1000000),
-            gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
-        }).catch (web3Error);
-        let holographRegistryAddress = '0x' + removeX (web3.utils.keccak256 (
-            '0xff'
-            + removeX (GENESIS_ADDRESS)
-            + removeX (provider.addresses [0]) + removeX (salt)
-            + removeX (web3.utils.keccak256 ('0x' + HOLOGRAPH_REGISTRY_CONTRACT.bin))
-        )).substring (24);
+        ).send (defaultTXOptions).catch(web3Error);
+
+        let holographRegistryAddress = generateExpectedAddress({
+            genesisAddress: GENESIS_ADDRESS,
+            web3,
+            senderAddress: provider.addresses[0],
+            salt,
+            contractByteCode: HOLOGRAPH_REGISTRY_CONTRACT.bin
+        })
+
         if (!holographRegistryDeploymentResult.status) {
             throwError (JSON.stringify (holographRegistryDeploymentResult, null, 4));
         }
@@ -88,7 +85,7 @@ async function main () {
         saveContractResult(NETWORK, HOLOGRAPH_REGISTRY, holographRegistryAddress)
 
 // HolographRegistryProxy
-        const holographRegistryProxyDeploymentResult = await FACTORY.methods.deploy (
+        const holographRegistryProxyDeploymentResult = await GENESIS_FACTORY.methods.deploy (
             salt, // bytes12 saltHash
             '0x' + HOLOGRAPH_REGISTRY_PROXY_CONTRACT.bin, // bytes memory sourceCode
             web3.eth.abi.encodeParameters (
@@ -106,18 +103,16 @@ async function main () {
                     )
                 ]
             ) // bytes memory initCode
-        ).send ({
-            chainId: network.chain,
-            from: provider.addresses [0],
-            gas: web3.utils.toHex (1000000),
-            gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
-        }).catch (web3Error);
-        let holographRegistryProxyAddress = '0x' + removeX (web3.utils.keccak256 (
-            '0xff'
-            + removeX (GENESIS_ADDRESS)
-            + removeX (provider.addresses [0]) + removeX (salt)
-            + removeX (web3.utils.keccak256 ('0x' + HOLOGRAPH_REGISTRY_PROXY_CONTRACT.bin))
-        )).substring (24);
+        ).send (defaultTXOptions).catch(web3Error);
+
+        let holographRegistryProxyAddress = generateExpectedAddress({
+            genesisAddress: GENESIS_ADDRESS,
+            web3,
+            senderAddress: provider.addresses[0],
+            salt,
+            contractByteCode: HOLOGRAPH_REGISTRY_PROXY_CONTRACT.bin
+        })
+
         if (!holographRegistryProxyDeploymentResult.status) {
             throwError (JSON.stringify (holographRegistryProxyDeploymentResult, null, 4));
         }
@@ -127,7 +122,7 @@ async function main () {
         saveContractResult(NETWORK, HOLOGRAPH_REGISTRY_PROXY, holographRegistryProxyAddress)
 
 // HolographFactory
-        const holographFactoryDeploymentResult = await FACTORY.methods.deploy (
+        const holographFactoryDeploymentResult = await GENESIS_FACTORY.methods.deploy (
             salt, // bytes12 saltHash
             '0x' + HOLOGRAPH_FACTORY_CONTRACT.bin, // bytes memory sourceCode
             web3.eth.abi.encodeParameters (
@@ -139,13 +134,16 @@ async function main () {
             from: provider.addresses [0],
             gas: web3.utils.toHex (3000000),
             gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
-        }).catch (web3Error);
-        let holographFactoryAddress = '0x' + removeX (web3.utils.keccak256 (
-            '0xff'
-            + removeX (GENESIS_ADDRESS)
-            + removeX (provider.addresses [0]) + removeX (salt)
-            + removeX (web3.utils.keccak256 ('0x' + HOLOGRAPH_FACTORY_CONTRACT.bin))
-        )).substring (24);
+        }).catch(web3Error);
+
+        let holographFactoryAddress = generateExpectedAddress({
+            genesisAddress: GENESIS_ADDRESS,
+            web3,
+            senderAddress: provider.addresses[0],
+            salt,
+            contractByteCode: HOLOGRAPH_FACTORY_CONTRACT.bin
+        })
+
         if (!holographFactoryDeploymentResult.status) {
             throwError (JSON.stringify (holographFactoryDeploymentResult, null, 4));
         }
@@ -155,25 +153,23 @@ async function main () {
         saveContractResult(NETWORK, HOLOGRAPH_FACTORY, holographFactoryAddress)
 
 // SecureStorage
-        const secureStorageDeploymentResult = await FACTORY.methods.deploy (
+        const secureStorageDeploymentResult = await GENESIS_FACTORY.methods.deploy (
             salt, // bytes12 saltHash
             '0x' + SECURE_STORAGE_CONTRACT.bin, // bytes memory sourceCode
             web3.eth.abi.encodeParameters (
                 ['address'],
                 ['0x0000000000000000000000000000000000000000']
             ) // bytes memory initCode
-        ).send ({
-            chainId: network.chain,
-            from: provider.addresses [0],
-            gas: web3.utils.toHex (1000000),
-            gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
-        }).catch (web3Error);
-        let secureStorageAddress = '0x' + removeX (web3.utils.keccak256 (
-            '0xff'
-            + removeX (GENESIS_ADDRESS)
-            + removeX (provider.addresses [0]) + removeX (salt)
-            + removeX (web3.utils.keccak256 ('0x' + SECURE_STORAGE_CONTRACT.bin))
-        )).substring (24);
+        ).send (defaultTXOptions).catch(web3Error);
+
+        let secureStorageAddress = generateExpectedAddress({
+            genesisAddress: GENESIS_ADDRESS,
+            web3,
+            senderAddress: provider.addresses[0],
+            salt,
+            contractByteCode: SECURE_STORAGE_CONTRACT.bin
+        })
+
         if (!secureStorageDeploymentResult.status) {
             throwError (JSON.stringify (secureStorageDeploymentResult, null, 4));
         }
@@ -183,7 +179,7 @@ async function main () {
         saveContractResult(NETWORK, SECURE_STORAGE, secureStorageAddress)
 
 // SecureStorageProxy
-        const secureStorageProxyDeploymentResult = await FACTORY.methods.deploy (
+        const secureStorageProxyDeploymentResult = await GENESIS_FACTORY.methods.deploy (
             salt, // bytes12 saltHash
             '0x' + SECURE_STORAGE_PROXY_CONTRACT.bin, // bytes memory sourceCode
             web3.eth.abi.encodeParameters (
@@ -196,18 +192,17 @@ async function main () {
                     ) // bytes memory initCode
                 ]
             ) // bytes memory initCode
-        ).send ({
-            chainId: network.chain,
-            from: provider.addresses [0],
-            gas: web3.utils.toHex (1000000),
-            gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
-        }).catch (web3Error);
-        let secureStorageProxyAddress = '0x' + removeX (web3.utils.keccak256 (
-            '0xff'
-            + removeX (GENESIS_ADDRESS)
-            + removeX (provider.addresses [0]) + removeX (salt)
-            + removeX (web3.utils.keccak256 ('0x' + SECURE_STORAGE_PROXY_CONTRACT.bin))
-        )).substring (24);
+        ).send (defaultTXOptions).catch(web3Error);
+
+        let secureStorageProxyAddress = generateExpectedAddress({
+            genesisAddress: GENESIS_ADDRESS,
+            web3,
+            senderAddress: provider.addresses[0],
+            salt,
+            contractByteCode: SECURE_STORAGE_PROXY_CONTRACT.bin
+        })
+
+
         if (!secureStorageProxyDeploymentResult.status) {
             throwError (JSON.stringify (secureStorageProxyDeploymentResult, null, 4));
         }
@@ -217,7 +212,7 @@ async function main () {
         saveContractResult(NETWORK, SECURE_STORAGE_PROXY, secureStorageProxyAddress)
 
 // HolographFactoryProxy
-        const holographFactoryProxyDeploymentResult = await FACTORY.methods.deploy (
+        const holographFactoryProxyDeploymentResult = await GENESIS_FACTORY.methods.deploy (
             salt, // bytes12 saltHash
             '0x' + HOLOGRAPH_FACTORY_PROXY_CONTRACT.bin, // bytes memory sourceCode
             web3.eth.abi.encodeParameters (
@@ -230,18 +225,16 @@ async function main () {
                     ) // bytes memory initCode
                 ]
             ) // bytes memory initCode
-        ).send ({
-            chainId: network.chain,
-            from: provider.addresses [0],
-            gas: web3.utils.toHex (1000000),
-            gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
-        }).catch (web3Error);
-        let holographFactoryProxyAddress = '0x' + removeX (web3.utils.keccak256 (
-            '0xff'
-            + removeX (GENESIS_ADDRESS)
-            + removeX (provider.addresses [0]) + removeX (salt)
-            + removeX (web3.utils.keccak256 ('0x' + HOLOGRAPH_FACTORY_PROXY_CONTRACT.bin))
-        )).substring (24);
+        ).send(defaultTXOptions).catch(web3Error);
+
+        let holographFactoryProxyAddress = generateExpectedAddress({
+            genesisAddress: GENESIS_ADDRESS,
+            web3,
+            senderAddress: provider.addresses[0],
+            salt,
+            contractByteCode: HOLOGRAPH_FACTORY_PROXY_CONTRACT.bin
+        })
+
         if (!holographFactoryProxyDeploymentResult.status) {
             throwError (JSON.stringify (holographFactoryProxyDeploymentResult, null, 4));
         }
@@ -251,25 +244,28 @@ async function main () {
         saveContractResult(NETWORK, HOLOGRAPH_FACTORY_PROXY, holographFactoryProxyAddress)
 
 // HolographBridge
-        const holographBridgeDeploymentResult = await FACTORY.methods.deploy (
+        const holographBridgeDeploymentResult = await GENESIS_FACTORY.methods.deploy (
             salt, // bytes12 saltHash
             '0x' + HOLOGRAPH_BRIDGE_CONTRACT.bin, // bytes memory sourceCode
             web3.eth.abi.encodeParameters (
                 ['address', 'address'],
                 ['0x0000000000000000000000000000000000000000', '0x0000000000000000000000000000000000000000']
             ) // bytes memory initCode
-        ).send ({
+        ).send({
             chainId: network.chain,
             from: provider.addresses [0],
             gas: web3.utils.toHex (2000000),
             gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
-        }).catch (web3Error);
-        let holographBridgeAddress = '0x' + removeX (web3.utils.keccak256 (
-            '0xff'
-            + removeX (GENESIS_ADDRESS)
-            + removeX (provider.addresses [0]) + removeX (salt)
-            + removeX (web3.utils.keccak256 ('0x' + HOLOGRAPH_BRIDGE_CONTRACT.bin))
-        )).substring (24);
+        }).catch(web3Error);
+
+        let holographBridgeAddress = generateExpectedAddress({
+            genesisAddress: GENESIS_ADDRESS,
+            web3,
+            senderAddress: provider.addresses[0],
+            salt,
+            contractByteCode: HOLOGRAPH_BRIDGE_CONTRACT.bin
+        })
+
         if (!holographBridgeDeploymentResult.status) {
             throwError (JSON.stringify (holographBridgeDeploymentResult, null, 4));
         }
@@ -279,7 +275,7 @@ async function main () {
         saveContractResult(NETWORK, HOLOGRAPH_BRIDGE, holographBridgeAddress)
 
 // HolographBridgeProxy
-        const holographBridgeProxyDeploymentResult = await FACTORY.methods.deploy (
+        const holographBridgeProxyDeploymentResult = await GENESIS_FACTORY.methods.deploy (
             salt, // bytes12 saltHash
             '0x' + HOLOGRAPH_BRIDGE_PROXY_CONTRACT.bin, // bytes memory sourceCode
             web3.eth.abi.encodeParameters (
@@ -292,18 +288,16 @@ async function main () {
                     ) // bytes memory initCode
                 ]
             ) // bytes memory initCode
-        ).send ({
-            chainId: network.chain,
-            from: provider.addresses [0],
-            gas: web3.utils.toHex (1000000),
-            gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
-        }).catch (web3Error);
-        let holographBridgeProxyAddress = '0x' + removeX (web3.utils.keccak256 (
-            '0xff'
-            + removeX (GENESIS_ADDRESS)
-            + removeX (provider.addresses [0]) + removeX (salt)
-            + removeX (web3.utils.keccak256 ('0x' + HOLOGRAPH_BRIDGE_PROXY_CONTRACT.bin))
-        )).substring (24);
+        ).send(defaultTXOptions).catch(web3Error);
+
+        let holographBridgeProxyAddress = generateExpectedAddress({
+            genesisAddress: GENESIS_ADDRESS,
+            web3,
+            senderAddress: provider.addresses[0],
+            salt,
+            contractByteCode: HOLOGRAPH_BRIDGE_PROXY_CONTRACT.bin
+        })
+
         if (!holographBridgeProxyDeploymentResult.status) {
             throwError (JSON.stringify (holographBridgeProxyDeploymentResult, null, 4));
         }
@@ -313,7 +307,7 @@ async function main () {
         saveContractResult(NETWORK, HOLOGRAPH_BRIDGE_PROXY, holographBridgeProxyAddress)
 
 // Holograph
-        const holographDeploymentResult = await FACTORY.methods.deploy (
+        const holographDeploymentResult = await GENESIS_FACTORY.methods.deploy (
             salt, // bytes12 saltHash
             '0x' + HOLOGRAPH_CONTRACT.bin, // bytes memory sourceCode
             web3.eth.abi.encodeParameters (
@@ -326,18 +320,15 @@ async function main () {
                     secureStorageProxyAddress
                 ]
             ) // bytes memory initCode
-        ).send ({
-            chainId: network.chain,
-            from: provider.addresses [0],
-            gas: web3.utils.toHex (1000000),
-            gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
-        }).catch (web3Error);
-        let holographAddress = '0x' + removeX (web3.utils.keccak256 (
-            '0xff'
-            + removeX (GENESIS_ADDRESS)
-            + removeX (provider.addresses [0]) + removeX (salt)
-            + removeX (web3.utils.keccak256 ('0x' + HOLOGRAPH_CONTRACT.bin))
-        )).substring (24);
+        ).send(defaultTXOptions).catch(web3Error);
+
+        let holographAddress = generateExpectedAddress({
+            genesisAddress: GENESIS_ADDRESS,
+            web3,
+            senderAddress: provider.addresses[0],
+            salt,
+            contractByteCode: HOLOGRAPH_CONTRACT.bin
+        })
         if (!holographDeploymentResult.status) {
             throwError (JSON.stringify (holographDeploymentResult, null, 4));
         }
@@ -347,25 +338,28 @@ async function main () {
         saveContractResult(NETWORK, HOLOGRAPH, holographAddress)
 
 // PA1D
-        const pa1dDeploymentResult = await FACTORY.methods.deploy (
+        const pa1dDeploymentResult = await GENESIS_FACTORY.methods.deploy (
             salt, // bytes12 saltHash
             '0x' + PA1D_CONTRACT.bin, // bytes memory sourceCode
             web3.eth.abi.encodeParameters (
                 ['address', 'uint256'],
                 [provider.addresses [0], '0x0000000000000000000000000000000000000000000000000000000000000000']
             ) // bytes memory initCode
-        ).send ({
+        ).send({
             chainId: network.chain,
             from: provider.addresses [0],
             gas: web3.utils.toHex (5000000),
             gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
-        }).catch (web3Error);
-        let pa1dAddress = '0x' + removeX (web3.utils.keccak256 (
-            '0xff'
-            + removeX (GENESIS_ADDRESS)
-            + removeX (provider.addresses [0]) + removeX (salt)
-            + removeX (web3.utils.keccak256 ('0x' + PA1D_CONTRACT.bin))
-        )).substring (24);
+        }).catch(web3Error);
+
+        let pa1dAddress = generateExpectedAddress({
+            genesisAddress: GENESIS_ADDRESS,
+            web3,
+            senderAddress: provider.addresses[0],
+            salt,
+            contractByteCode: PA1D_CONTRACT.bin
+        })
+
         if (!pa1dDeploymentResult.status) {
             throwError (JSON.stringify (pa1dDeploymentResult, null, 4));
         }

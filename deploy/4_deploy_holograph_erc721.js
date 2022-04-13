@@ -1,14 +1,13 @@
 'use strict';
-
 const fs = require ('fs');
-const HDWalletProvider = require ('truffle-hdwallet-provider');
-const Web3 = require ('web3');
 const {
     NETWORK,
     GAS,
     DEPLOYER
 } = require ('../config/env');
-const {removeX, throwError, web3Error, getContractArtifact, createNetworkPropsForUser, saveContractResult} = require("./helpers/utils");
+const {removeX, throwError, web3Error, getContractArtifact, createNetworkPropsForUser, saveContractResult,
+    getContractAddress, createFactoryAtAddress
+} = require("./helpers/utils");
 
 const GENESIS = 'HolographGenesis';
 const GENESIS_CONTRACT = getContractArtifact(GENESIS)
@@ -19,18 +18,12 @@ const HOLOGRAPH_ERC721_CONTRACT = getContractArtifact(HOLOGRAPH_ERC721)
 const { network, provider, web3 } = createNetworkPropsForUser(DEPLOYER, NETWORK)
 
 async function main () {
-
-    const GENESIS_ADDRESS = fs.readFileSync ('./data/' + NETWORK + '.' + GENESIS + '.address', 'utf8').trim ();
-
-    const FACTORY = new web3.eth.Contract (
-        GENESIS_CONTRACT.abi,
-        GENESIS_ADDRESS
-    );
-
     const salt = '0x000000000000000000000000';
+    const GENESIS_ADDRESS = getContractAddress(NETWORK, GENESIS)
+    const GENESIS_FACTORY = createFactoryAtAddress(web3, GENESIS_CONTRACT.abi, GENESIS_ADDRESS)
 
 // HolographRegistry
-        const holographErc721DeploymentResult = await FACTORY.methods.deploy (
+        const holographErc721DeploymentResult = await GENESIS_FACTORY.methods.deploy (
             salt, // bytes12 saltHash
             '0x' + HOLOGRAPH_ERC721_CONTRACT.bin, // bytes memory sourceCode
             web3.eth.abi.encodeParameters (
@@ -55,6 +48,7 @@ async function main () {
             + removeX (provider.addresses [0]) + removeX (salt)
             + removeX (web3.utils.keccak256 ('0x' + HOLOGRAPH_ERC721_CONTRACT.bin))
         )).substring (24);
+
         if (!holographErc721DeploymentResult.status) {
             throwError (JSON.stringify (holographErc721DeploymentResult, null, 4));
         }

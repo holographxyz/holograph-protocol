@@ -1,15 +1,11 @@
 'use strict';
-
 const fs = require ('fs');
-const HDWalletProvider = require ('truffle-hdwallet-provider');
-const Web3 = require ('web3');
 const {
     NETWORK,
     GAS,
     DEPLOYER
 } = require ('../config/env');
-const {web3Error, getContractArtifact, createNetworkPropsForUser} = require("./helpers/utils");
-
+const {web3Error, getContractArtifact, createNetworkPropsForUser, getContractAddress, createFactoryAtAddress} = require("./helpers/utils");
 
 const SAMPLE_ERC721 = 'SampleERC721';
 const SAMPLE_ERC721_CONTRACT = getContractArtifact(SAMPLE_ERC721)
@@ -24,13 +20,11 @@ const { network, provider, web3 } = createNetworkPropsForUser(DEPLOYER, NETWORK)
 
 async function main () {
 
-    const ERC721_ADDRESS = fs.readFileSync ('./data/' + NETWORK + '.' + SAMPLE_ERC721 + '.address', 'utf8').trim ();
-
+    const ERC721_ADDRESS = getContractAddress(NETWORK, SAMPLE_ERC721)
     const FACTORY = new web3.eth.Contract (
         SAMPLE_ERC721_CONTRACT.abi.concat (HOLOGRAPHER_CONTRACT.abi).concat (HOLOGRAPH_ERC721_CONTRACT.abi),
         ERC721_ADDRESS
     );
-
 
 // Deployed HolographGenesis Contract : 0xF7341fFb78ff58ba396e50e3dCF3ac99AD05F9f0
 // holographRegistryAddress 0x9dff1eb7d89d28aff0b130cc7a2ac72baa684d70

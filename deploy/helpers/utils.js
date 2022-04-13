@@ -1,6 +1,7 @@
 const fs = require('fs')
 const HDWalletProvider = require('truffle-hdwallet-provider')
 const Web3 = require('web3')
+const {NETWORK} = require("../../config/env");
 
 function getContractArtifact(name) {
     const isProxy = name.toLowerCase().includes("proxy");
@@ -9,6 +10,10 @@ function getContractArtifact(name) {
     } else {
         return JSON.parse (fs.readFileSync ('./build/combined.json')).contracts[name + '.sol:' + name];
     }
+}
+
+function getContractAddress(networkName, name) {
+    return fs.readFileSync ('./data/' + networkName + '.' + name + '.address', 'utf8').trim();
 }
 
 function getNetworkInfo(name) {
@@ -44,6 +49,13 @@ function createNetworkPropsForUser(privateKey, networkName) {
 
 function createFactoryFromABI(web3, abi) {
     return new web3.eth.Contract (abi);
+}
+
+function createFactoryAtAddress(web3, abi, address) {
+    return new web3.eth.Contract (
+        abi,
+        address
+    );
 }
 
 function saveContractResult(networkName, contractName, contractAddress) {
@@ -84,18 +96,30 @@ const web3Error = function (err) {
     throwError (err.toString ())
 };
 
+const generateExpectedAddress = function({genesisAddress, web3, senderAddress, salt, contractByteCode}) {
+    return '0x' + removeX (web3.utils.keccak256 (
+        '0xff'
+        + removeX (genesisAddress)
+        + removeX (senderAddress) + removeX (salt)
+        + removeX (web3.utils.keccak256 ('0x' + contractByteCode))
+    )).substring (24);
+}
+
 
 module.exports = {
     getContractArtifact,
+    getContractAddress,
     getNetworkInfo,
     createProvider,
     createWeb3,
     createProviderAndWeb3,
     createNetworkPropsForUser,
     createFactoryFromABI,
+    createFactoryAtAddress,
     saveContractResult,
     removeX,
     hexify,
     throwError,
-    web3Error
+    web3Error,
+    generateExpectedAddress
 }

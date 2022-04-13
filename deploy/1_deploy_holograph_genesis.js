@@ -4,9 +4,7 @@ const {
     GAS,
     DEPLOYER
 } = require ('../config/env');
-const {getContractArtifact, getNetworkInfo, createProviderAndWeb3, createFactoryFromABI, saveContractResult,
-    createNetworkPropsForUser
-} = require("./helpers/utils");
+const {getContractArtifact, createFactoryFromABI, saveContractResult, createNetworkPropsForUser} = require("./helpers/utils");
 
 const ContractName = 'HolographGenesis';
 const HolographGenesisArtifact = getContractArtifact(ContractName)
