@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "dotenv": "^10.0.0",
-    "ganache-cli": "^6.12.2"git
+    "ganache-cli": "^6.12.2"
   },
   "engines": {
     "node": "v16.14.2",
