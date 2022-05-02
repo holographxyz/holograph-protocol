@@ -1,6 +1,6 @@
 HOLOGRAPH_LICENSE_HEADER
 
-pragma solidity 0.8.11;
+SOLIDITY_COMPILER_VERSION
 
 /// @title Holograph ERC-721 Non-Fungible Token Standard
 /// @dev See https://holograph.network/standard/ERC-721

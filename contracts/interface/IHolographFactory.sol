@@ -101,7 +101,7 @@
 
 */
 
-pragma solidity 0.8.11;
+pragma solidity 0.8.13;
 
 import "../struct/DeploymentConfig.sol";
 import "../struct/Verification.sol";

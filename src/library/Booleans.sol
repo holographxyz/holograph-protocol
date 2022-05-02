@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 
-pragma solidity 0.8.11;
+SOLIDITY_COMPILER_VERSION
 
 library Booleans {
     function get(uint256 _packedBools, uint256 _boolNumber) internal pure returns (bool) {

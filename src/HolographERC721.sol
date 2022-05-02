@@ -1,6 +1,6 @@
 HOLOGRAPH_LICENSE_HEADER
 
-pragma solidity 0.8.11;
+SOLIDITY_COMPILER_VERSION
 
 import "./abstract/Admin.sol";
 import "./abstract/Initializable.sol";
@@ -249,18 +249,17 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable  {
      * @dev Allows the bridge to take a token out onto another blockchain.
      *  Note: function selector 0x57aeff0a is bytes4(keccak256("holographBridgeOut(address,address,uint256)"))
      */
-    function holographBridgeOut(uint32 chainType, address from, address to, uint256 tokenId) external returns (bytes4, bytes memory data) {
+    function holographBridgeOut(uint32 chainType, address from, address to, uint256 tokenId) external returns (bytes4 selector, bytes memory data) {
         require(msg.sender == bridge(),  "ERC721: only bridge can call");
         if (from != to) {
             _transferFrom(from, to, tokenId);
         }
         _transferFrom(to, bridge(), tokenId);
         if (Booleans.get(_eventConfig, 2)) {
-            return (ERC721Holograph.holographBridgeOut.selector, SourceERC721().bridgeOut(chainType, from, to, tokenId));
-        } else {
-            return (ERC721Holograph.holographBridgeOut.selector, "");
+            data = SourceERC721().bridgeOut(chainType, from, to, tokenId);
         }
         _burn(bridge(), tokenId);
+        return (ERC721Holograph.holographBridgeOut.selector, data);
     }
 
     /**

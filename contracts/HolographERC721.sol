@@ -101,7 +101,7 @@
 
 */
 
-pragma solidity 0.8.11;
+pragma solidity 0.8.13;
 
 import "./abstract/Admin.sol";
 import "./abstract/Initializable.sol";
@@ -190,6 +190,11 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable  {
      * @dev Mapping from token id to position in the allTokens array.
      */
     mapping(uint256 => uint256) private _allTokensIndex;
+
+    /**
+     * @dev Mapping of all token ids that have been burned. This is to prevent re-minting of same token ids.
+     */
+    mapping(uint256 => bool) private _burnedTokens;
 
     /**
      * @notice Constructor is empty and not utilised.
@@ -321,18 +326,20 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable  {
      */
     function holographBridgeIn(uint32 chainType, address from, address to, uint256 tokenId, bytes calldata data) external returns (bytes4) {
         require(msg.sender == bridge(),  "ERC721: only bridge can call");
-        if (_exists(tokenId)) {
-            // we transfer token out of bridge contract
-            require(_tokenOwner[tokenId] == bridge(), "ERC721: bridge not token owner");
-            _transferFrom(bridge(), to, tokenId);
-        } else {
-            // we mint the token to bridge
+        require(!_exists(tokenId), "ERC721: token already exists");
+//         if (_exists(tokenId)) {
+//             // we transfer token out of bridge contract
+//             require(_tokenOwner[tokenId] == bridge(), "ERC721: bridge not token owner");
+//             _transferFrom(bridge(), to, tokenId);
+//         } else {
+//             // we mint the token to bridge
+            delete _burnedTokens[tokenId];
             _mint(bridge(), tokenId);
             _transferFrom(bridge(), from, tokenId);
             if (from != to) {
                 _transferFrom(from, to, tokenId);
             }
-        }
+//         }
         if (Booleans.get(_eventConfig, 1)) {
             require(SourceERC721().bridgeIn(chainType, from, to, tokenId, data), "HOLOGRAPH: bridge in failed");
         }
@@ -343,17 +350,17 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable  {
      * @dev Allows the bridge to take a token out onto another blockchain.
      *  Note: function selector 0x57aeff0a is bytes4(keccak256("holographBridgeOut(address,address,uint256)"))
      */
-    function holographBridgeOut(uint32 chainType, address from, address to, uint256 tokenId) external returns (bytes4, bytes memory data) {
+    function holographBridgeOut(uint32 chainType, address from, address to, uint256 tokenId) external returns (bytes4 selector, bytes memory data) {
         require(msg.sender == bridge(),  "ERC721: only bridge can call");
         if (from != to) {
             _transferFrom(from, to, tokenId);
         }
         _transferFrom(to, bridge(), tokenId);
         if (Booleans.get(_eventConfig, 2)) {
-            return (ERC721Holograph.holographBridgeOut.selector, SourceERC721().bridgeOut(chainType, from, to, tokenId));
-        } else {
-            return (ERC721Holograph.holographBridgeOut.selector, "");
+            data = SourceERC721().bridgeOut(chainType, from, to, tokenId);
         }
+        _burn(bridge(), tokenId);
+        return (ERC721Holograph.holographBridgeOut.selector, data);
     }
 
     /**
@@ -462,6 +469,7 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable  {
         // we need to get current chain id, and prepend it to tokenId
         // this will prevent possible tokenId overlap if minting simultaneously on multiple chains is possible
         uint256 token = uint256(bytes32(abi.encodePacked(_chain(), tokenId)));
+        require(!_burnedTokens[token], "ERC721: can't mint burned token");
         _mint(to, token);
     }
 
@@ -479,8 +487,12 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable  {
     function sourceMintBatch(address to, uint224[] calldata tokenIds) external {
         require(msg.sender == source(), "ERC721: only source can mint");
         uint32 chain = _chain();
+        uint256 token;
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            _mint(to, uint256(bytes32(abi.encodePacked(chain, tokenIds[i]))));
+        require(!_burnedTokens[token], "ERC721: can't mint burned token");
+            token = uint256(bytes32(abi.encodePacked(chain, tokenIds[i])));
+            require(!_burnedTokens[token], "ERC721: can't mint burned token");
+            _mint(to, token);
         }
     }
 
@@ -490,8 +502,11 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable  {
     function sourceMintBatch(address[] calldata wallets, uint224[] calldata tokenIds) external {
         require(msg.sender == source(), "ERC721: only source can mint");
         uint32 chain = _chain();
+        uint256 token;
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            _mint(wallets[i], uint256(bytes32(abi.encodePacked(chain, tokenIds[i]))));
+            token = uint256(bytes32(abi.encodePacked(chain, tokenIds[i])));
+            require(!_burnedTokens[token], "ERC721: can't mint burned token");
+            _mint(wallets[i], token);
         }
     }
 
@@ -501,8 +516,11 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable  {
     function sourceMintBatchIncremental(address to, uint224 startingTokenId, uint256 length) external {
         require(msg.sender == source(), "ERC721: only source can mint");
         uint32 chain = _chain();
+        uint256 token;
         for (uint256 i = 0; i < length; i++) {
-            _mint(to, uint256(bytes32(abi.encodePacked(chain, startingTokenId))));
+            token = uint256(bytes32(abi.encodePacked(chain, startingTokenId)));
+            require(!_burnedTokens[token], "ERC721: can't mint burned token");
+            _mint(to, token);
             startingTokenId++;
         }
     }
@@ -677,6 +695,7 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable  {
         _tokenOwner[tokenId] = address(0);
         emit Transfer(wallet, address(0), tokenId);
         _removeTokenFromOwnerEnumeration(wallet, tokenId);
+        _burnedTokens[tokenId] = true;
     }
 
     /**
@@ -697,6 +716,7 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable  {
     function _mint(address to, uint256 tokenId) private {
         require(!Address.isZero(to), "ERC721: minting to burn address");
         require(!_exists(tokenId), "ERC721: token already exists");
+        require(!_burnedTokens[tokenId], "ERC721: token has been burned");
         _tokenOwner[tokenId] = to;
         emit Transfer(address(0), to, tokenId);
         _addTokenToOwnerEnumeration(to, tokenId);
