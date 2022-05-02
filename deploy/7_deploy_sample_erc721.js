@@ -63,11 +63,6 @@ async function main () {
     if (parseInt (signature [2], 16) < 27) {
         signature [2] = '0x' + (parseInt (signature [2], 16) + 27).toString (16);
     }
-    console.log (
-        config,
-        signature,
-        provider.addresses [0]
-    );
 
     const deploySampleErc721Result = await HOLOGRAPH_FACTORY_PROXY_FACTORY.methods.deployHolographableContract (config, signature, provider.addresses [0]).send ({
         chainId: network.chain,

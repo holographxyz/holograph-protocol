@@ -216,25 +216,25 @@ async function main () {
 */
 
 // Tests
-    console.log ('tokenURI', await ERC721_1.methods.tokenURI (tokenId).call ({
-        chainId: network1.chain,
-        from: provider1.addresses [0],
-        gas: web3_1.utils.toHex (1000000),
-        gasPrice: web3_1.utils.toHex (web3_1.utils.toWei (GAS, 'gwei'))
+    console.log ('tokenURI', await ERC721_2.methods.tokenURI (tokenId).call ({
+        chainId: network2.chain,
+        from: provider2.addresses [0],
+        gas: web3_2.utils.toHex (1000000),
+        gasPrice: web3_2.utils.toHex (web3_2.utils.toWei (GAS, 'gwei'))
     }).catch (web3Error));
 
-    console.log ('exists', await ERC721_1.methods.exists (tokenId).call ({
-        chainId: network1.chain,
-        from: provider1.addresses [0],
-        gas: web3_1.utils.toHex (1000000),
-        gasPrice: web3_1.utils.toHex (web3_1.utils.toWei (GAS, 'gwei'))
+    console.log ('exists', await ERC721_2.methods.exists (tokenId).call ({
+        chainId: network2.chain,
+        from: provider2.addresses [0],
+        gas: web3_2.utils.toHex (1000000),
+        gasPrice: web3_2.utils.toHex (web3_2.utils.toWei (GAS, 'gwei'))
     }).catch (web3Error));
 
-    console.log ('ownerOf', await ERC721_1.methods.ownerOf (tokenId).call ({
-        chainId: network1.chain,
-        from: provider1.addresses [0],
-        gas: web3_1.utils.toHex (1000000),
-        gasPrice: web3_1.utils.toHex (web3_1.utils.toWei (GAS, 'gwei'))
+    console.log ('ownerOf', await ERC721_2.methods.ownerOf (tokenId).call ({
+        chainId: network2.chain,
+        from: provider2.addresses [0],
+        gas: web3_2.utils.toHex (1000000),
+        gasPrice: web3_2.utils.toHex (web3_2.utils.toWei (GAS, 'gwei'))
     }).catch (web3Error));
 
 //     let bridgeEvent2 = bridgeInResult.events.TransferErc721.returnValues;
