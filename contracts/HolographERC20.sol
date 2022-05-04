@@ -361,10 +361,6 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
         return _nonces[account].current();
     }
 
-    function owner() public view returns (address) {
-        return getOwner();
-    }
-
     function symbol() public view returns (string memory) {
         return _symbol;
     }
@@ -402,19 +398,6 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
     }
 
     /**
-     * @dev Reserved to be only accessible to current contract owner.
-     *
-     * This function can communicate with any other smart contract, and interact with them directly.
-     * This function cannot modify any internal ERC20 logic of this token.
-     * This function cannot be used to manipulate tokens of other accounts.
-     * This function will be primarily used to remove spammy tokens and NFTs from the smart contract's balances.
-     */
-    function externalContractCall(address targetContract, bytes calldata callPayload) public onlyOwner {
-        (bool success,/* bytes memory response*/) = _makeExternalCall(targetContract, callPayload);
-        require(success, "ERC20: Contract call failed");
-    }
-
-    /**
      * @dev Allows the bridge to bring in tokens from another blockchain.
      */
     function holographBridgeIn(uint32 chainType, address from, address to, uint256 amount, bytes calldata data) external returns (bytes4) {
@@ -447,11 +430,22 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
     }
 
     function increaseAllowance(address spender, uint256 addedValue) public returns (bool) {
-        _approve(msg.sender, spender, _allowances[msg.sender][spender] + addedValue);
+        uint256 currentAllowance = _allowances[msg.sender][spender];
+        unchecked {
+            require((currentAllowance + addedValue) >= currentAllowance, "ERC20: increased above max value");
+        }
+        _approve(msg.sender, spender, currentAllowance + addedValue);
         return true;
     }
 
-    function onERC20Received(address/* account*/, address/* recipient*/, uint256/* amount*/, bytes calldata/* data*/) public pure returns(bytes4) {
+    function onERC20Received(address account, address sender, uint256 amount, bytes calldata data) public returns(bytes4) {
+        if (Booleans.get(_eventConfig, 6)) {
+            require(SourceERC20().beforeOnERC20Received(account, sender, address(this), amount, data));
+        }
+        // we do our own logic here
+        if (Booleans.get(_eventConfig, 5)) {
+            require(SourceERC20().afterOnERC20Received(account, sender, address(this), amount, data));
+        }
         return this.onERC20Received.selector;
     }
 
@@ -478,8 +472,14 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
     }
 
     function safeTransfer(address recipient, uint256 amount, bytes memory data) public returns (bool) {
-        transfer(recipient, amount);
+        if (Booleans.get(_eventConfig, 12)) {
+            require(SourceERC20().beforeSafeTransfer(msg.sender, recipient, amount, data));
+        }
+        _transfer(msg.sender, recipient, amount);
         require(_checkOnERC20Received(msg.sender, recipient, amount, data), "ERC20: non ERC20Receiver");
+        if (Booleans.get(_eventConfig, 11)) {
+            require(SourceERC20().afterSafeTransfer(msg.sender, recipient, amount, data));
+        }
         return true;
     }
 
@@ -488,8 +488,19 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
     }
 
     function safeTransferFrom(address account, address recipient, uint256 amount, bytes memory data) public returns (bool){
-        transferFrom(account, recipient, amount);
+        uint256 currentAllowance = _allowances[account][msg.sender];
+        require(currentAllowance >= amount, "ERC20: amount exceeds allowance");
+        unchecked {
+            _allowances[account][msg.sender] = currentAllowance - amount;
+        }
+        if (Booleans.get(_eventConfig, 12)) {
+            require(SourceERC20().beforeSafeTransfer(account, recipient, amount, data));
+        }
+        _transfer(account, recipient, amount);
         require(_checkOnERC20Received(account, recipient, amount, data), "ERC20: non ERC20Receiver");
+        if (Booleans.get(_eventConfig, 11)) {
+            require(SourceERC20().afterSafeTransfer(account, recipient, amount, data));
+        }
         return true;
     }
 
@@ -564,11 +575,28 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
 
     function _checkOnERC20Received(address account, address recipient, uint256 amount, bytes memory data) internal nonReentrant returns (bool) {
         if (Address.isContract(recipient)) {
-            try ERC20Receiver(recipient).onERC20Received(msg.sender, account, amount, data) returns(bytes4 retval) {
-                return retval == ERC20Receiver.onERC20Received.selector;
+            try ERC165(recipient).supportsInterface(0x01ffc9a7) returns (bool erc165support) {
+                require(erc165support, "ERC20: no ERC165 support");
+                // we have erc165 support
+                if (ERC165(recipient).supportsInterface(0x534f5876)) {
+                    // we have eip-4524 support
+                    try ERC20Receiver(recipient).onERC20Received(msg.sender, account, amount, data) returns(bytes4 retval) {
+                        return retval == ERC20Receiver.onERC20Received.selector;
+                    } catch (bytes memory reason) {
+                        if (reason.length == 0) {
+                            revert("ERC20: non ERC20Receiver");
+                        } else {
+                            assembly {
+                                revert(add(32, reason), mload(reason))
+                            }
+                        }
+                    }
+                } else {
+                    revert("ERC20: eip-4524 not supported");
+                }
             } catch (bytes memory reason) {
                 if (reason.length == 0) {
-                    revert("ERC20: non ERC20Receiver");
+                    revert("ERC20: no ERC165 support");
                 } else {
                     assembly {
                         revert(add(32, reason), mload(reason))

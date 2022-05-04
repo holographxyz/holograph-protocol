@@ -122,10 +122,10 @@ interface HolographedERC20 {
     function beforeApprove(address _owner, address _to, uint256 _amount) external returns (bool success);
 
     // event id = 5
-    function afterApprovalAll(address _to, bool _approved) external returns (bool success);
+    function afterOnERC20Received(address _token, address _from, address _to, uint256 _amount, bytes calldata _data) external returns (bool success);
 
     // event id = 6
-    function beforeApprovalAll(address _to, bool _approved) external returns (bool success);
+    function beforeOnERC20Received(address _token, address _from, address _to, uint256 _amount, bytes calldata _data) external returns (bool success);
 
     // event id = 7
     function afterBurn(address _owner, uint256 _amount) external returns (bool success);

@@ -317,11 +317,13 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable  {
         }
         _transferFrom(from, to, tokenId);
         if (Address.isContract(to)) {
-            // NEED TO CHECK FOR ERC165 SUPPORT FIRST!!!
-            // THEN CHECK FOR TOKEN RECEIVER INTERFACE SUPPORT
             require(
-                ERC721TokenReceiver(to).onERC721Received(address(this), from, tokenId, data) == 0x150b7a02,
-                "ERC721: onERC721Received failed"
+                (
+                    ERC165(to).supportsInterface(0x01ffc9a7)
+                    && ERC165(to).supportsInterface(0x150b7a02)
+                    && ERC721TokenReceiver(to).onERC721Received(address(this), from, tokenId, data) == 0x150b7a02
+                ),
+                "ERC721: onERC721Received fail"
             );
         }
         if (Booleans.get(_eventConfig, 11)) {
