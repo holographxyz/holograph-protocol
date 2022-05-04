@@ -4,7 +4,7 @@ SOLIDITY_COMPILER_VERSION
 
 interface ERC20Metadata {
 
-    function decimals() external pure returns (uint8);
+    function decimals() external view returns (uint8);
 
     function name() external view returns (string memory);
 

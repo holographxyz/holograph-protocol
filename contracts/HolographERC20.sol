@@ -172,6 +172,11 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
     string private _symbol;
 
     /**
+     * @dev Token number of decimal places.
+     */
+    uint8 private _decimals;
+
+    /**
      * @dev List of all supported ERC165 interfaces.
      */
     mapping(bytes4 => bool) private _supportedInterfaces;
@@ -189,9 +194,29 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
     /**
      * @dev Constructor does not accept any parameters.
      */
-    constructor() Admin(false) Owner(true) NonReentrant() EIP712("DomainSeperatorHere", "1") {
-        _name = "Sample Token Name";
-        _symbol = "SYMBOL";
+    constructor() Admin(false) Owner(true) NonReentrant() EIP712("DomainSeperatorHere", "1") {}
+
+    /**
+     * @notice Initializes the collection.
+     * @dev Special function to allow a one time initialisation on deployment. Also configures and deploys royalties.
+     */
+    function init(bytes memory data) external override returns (bytes4) {
+        (
+            string memory contractName,
+            string memory contractSymbol,
+            uint8 contractDecimals,
+            uint256 eventConfig,
+            bytes memory initCode
+        ) = abi.decode(data, (string, string, uint8, uint256, bytes));
+        _name = contractName;
+        _symbol = contractSymbol;
+        _decimals = contractDecimals;
+        _eventConfig = eventConfig;
+        try IHolographer(payable(address(this))).getSourceContract() returns (address payable sourceAddress) {
+            require(IInitializable(sourceAddress).init(initCode) == IInitializable.init.selector, "initialization failed");
+        } catch {
+            // we do nothing
+        }
 
         // @dev We pre-set all supported interfaces here to make supportsInterface function calls gas efficient.
 
@@ -257,34 +282,7 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
             ^ ERC20Permit.nonces.selector
             ^ ERC20Permit.DOMAIN_SEPARATOR.selector
         ] = true;
-    }
 
-    /**
-     * @notice Initializes the collection.
-     * @dev Special function to allow a one time initialisation on deployment. Also configures and deploys royalties.
-     */
-    function init(bytes memory data) external override returns (bytes4) {
-//         (
-//             string memory contractName,
-//             string memory contractSymbol,
-//             uint16 contractBps,
-//             uint256 eventConfig,
-//             bytes memory initCode
-//         ) = abi.decode(data, (string, string, uint16, uint256, bytes));
-//         _name = contractName;
-//         _symbol = contractSymbol;
-//         _bps = contractBps;
-//         _eventConfig = eventConfig;
-//         try IHolographer(payable(address(this))).getSourceContract() returns (address payable sourceAddress) {
-//             require(IInitializable(sourceAddress).init(initCode) == IInitializable.init.selector, "initialization failed");
-//         } catch {
-//             // we do nothing
-//         }
-// //         (bool success, bytes memory returnData) = royalties().delegatecall(
-// //             abi.encodeWithSignature("init(bytes)", abi.encode(address(this), uint256(contractBps)))
-// //         );
-// //         (bytes4 selector) = abi.decode(returnData, (bytes4));
-// //         require(success && selector == IInitializable.init.selector, "initialization failed");
         return IInitializable.init.selector;
     }
 
@@ -329,8 +327,8 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
         }
     }
 
-    function decimals() public pure returns (uint8) {
-        return 0;
+    function decimals() public view returns (uint8) {
+        return _decimals;
     }
 
     /**
@@ -364,7 +362,7 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
     }
 
     function owner() public view returns (address) {
-        return super.getOwner();
+        return getOwner();
     }
 
     function symbol() public view returns (string memory) {
@@ -416,6 +414,38 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
         require(success, "ERC20: Contract call failed");
     }
 
+    /**
+     * @dev Allows the bridge to bring in tokens from another blockchain.
+     */
+    function holographBridgeIn(uint32 chainType, address from, address to, uint256 amount, bytes calldata data) external returns (bytes4) {
+        require(msg.sender == bridge(),  "ERC20: only bridge can call");
+        _mint(bridge(), amount);
+        _transfer(bridge(), from, amount);
+        if (from != to) {
+            _transfer(from, to, amount);
+        }
+        if (Booleans.get(_eventConfig, 1)) {
+            require(SourceERC20().bridgeIn(chainType, from, to, amount, data), "HOLOGRAPH: bridge in failed");
+        }
+        return ERC20Holograph.holographBridgeIn.selector;
+    }
+
+    /**
+     * @dev Allows the bridge to take tokens out onto another blockchain.
+     */
+    function holographBridgeOut(uint32 chainType, address from, address to, uint256 amount) external returns (bytes4 selector, bytes memory data) {
+        require(msg.sender == bridge(),  "ERC20: only bridge can call");
+        if (from != to) {
+            _transfer(from, to, amount);
+        }
+        _transfer(to, bridge(), amount);
+        if (Booleans.get(_eventConfig, 2)) {
+            data = SourceERC20().bridgeOut(chainType, from, to, amount);
+        }
+        _burn(bridge(), amount);
+        return (ERC20Holograph.holographBridgeOut.selector, data);
+    }
+
     function increaseAllowance(address spender, uint256 addedValue) public returns (bool) {
         _approve(msg.sender, spender, _allowances[msg.sender][spender] + addedValue);
         return true;
@@ -425,15 +455,7 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
         return this.onERC20Received.selector;
     }
 
-    function permit(
-        address account,
-        address spender,
-        uint256 amount,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) public {
+    function permit(address account, address spender, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) public {
         require(block.timestamp <= deadline, "ERC20: expired deadline");
         // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)")
         //  == 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9
@@ -471,6 +493,42 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
         return true;
     }
 
+    /**
+     * @dev Allows for source smart contract to burn tokens.
+     */
+    function sourceBurn(uint256 amount) external {
+        address from = source();
+        require(msg.sender == from, "ERC20: only source can burn");
+        _burn(from, amount);
+    }
+
+    /**
+     * @dev Allows for source smart contract to mint tokens.
+     */
+    function sourceMint(address to, uint256 amount) external {
+        require(msg.sender == source(), "ERC20: only source can mint");
+        _mint(to, amount);
+    }
+
+    /**
+     * @dev Allows for source smart contract to mint a batch of token amounts.
+     */
+    function sourceMintBatch(address[] calldata wallets, uint256[] calldata amounts) external {
+        require(msg.sender == source(), "ERC20: only source can mint");
+        for (uint256 i = 0; i < wallets.length; i++) {
+            _mint(wallets[i], amounts[i]);
+        }
+    }
+
+    /**
+     * @dev Allows for source smart contract to transfer it's own tokens.
+     */
+    function sourceTransfer(address to, uint256 amount) external {
+        address from = source();
+        require(msg.sender == from, "ERC20: only source can transfer");
+        _transfer(from, to, amount);
+    }
+
     function transfer(address recipient, uint256 amount) public returns (bool) {
         _transfer(msg.sender, recipient, amount);
         return true;
@@ -484,38 +542,6 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
         }
         _transfer(account, recipient, amount);
         return true;
-    }
-
-    /**
-     * @dev Reserved to be only accessible to current contract owner.
-     *
-     * This function withdraws the smart contract's specific ERC20 token to a specified recipient.
-     * This function cannot be used to manipulate tokens of other accounts.
-     * This function cannot withdraw ERC20 tokens from any other wallet/contract, only the smart contract's balance.
-     */
-    function withdrawERC20 (address token, address recipient, uint256 amount) public onlyOwner {
-        require(!Address.isZero(token), "ERC20: token is zero address");
-        require(!Address.isZero(recipient), "ERC20: recipient is zero address");
-        require(amount > 0, "ERC20: amount is zero");
-        require(_transferERC20(token, recipient, amount), "ERC20: transfer function failed");
-    }
-
-    /**
-     * @dev Reserved to be only accessible to current contract owner.
-     *
-     * This function withdraws the smart contract's ETH balance to specified recipient.
-     * This function cannot be used to manipulate tokens of other accounts.
-     * This function cannot withdraw ETH from any other balance, only the smart contract's balance.
-     */
-    function withdrawETH (address payable recipient, uint256 amount) public onlyOwner {
-        require(!Address.isZero(recipient), "ERC20: recipient is zero address");
-        if (amount == 0) {
-            amount = address(this).balance;
-        } else {
-            require(amount <= address(this).balance, "ERC20: amount too high");
-        }
-        require(amount > 0, "ERC20: amount too low");
-        _transferETH(recipient, amount);
     }
 
     function _approve(address account, address spender, uint256 amount) internal {
@@ -558,6 +584,19 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
         return target.call(payload);
     }
 
+    /**
+     * @notice Mints tokens.
+     * @dev Mint a specific amount of tokens to a specific address.
+     * @param to Address to mint to.
+     * @param amount Amount of tokens to mint.
+     */
+    function _mint(address to, uint256 amount) internal {
+        require(!Address.isZero(to), "ERC20: minting to burn address");
+        _totalSupply += amount;
+        _balances[to] += amount;
+        emit Transfer(address(0), to, amount);
+    }
+
     function _transfer(address account, address recipient, uint256 amount) internal {
         require(!Address.isZero(account), "ERC20: account is zero address");
         require(!Address.isZero(recipient), "ERC20: recipient is zero address");
@@ -570,14 +609,6 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
         emit Transfer(account, recipient, amount);
     }
 
-    function _transferERC20(address token, address recipient, uint256 amount) internal nonReentrant returns (bool) {
-        return ERC20(token).transfer(recipient, amount);
-    }
-
-    function _transferETH(address payable recipient, uint256 amount) internal nonReentrant {
-        recipient.transfer(amount);
-    }
-
     /**
      * @dev "Consume a nonce": return the current value and increment.
      *
@@ -587,93 +618,6 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
         Counters.Counter storage nonce = _nonces[account];
         current = nonce.current();
         nonce.increment();
-    }
-
-
-
-
-
-
-
-    /**
-     * @dev Allows for source smart contract to transfer it's own tokens.
-     */
-    function sourceTransfer(address to, uint256 amount) external {
-        address from = source();
-        require(msg.sender == from, "ERC20: only source can transfer");
-        _transfer(from, to, amount);
-    }
-
-    /**
-     * @dev Allows for source smart contract to mint tokens.
-     */
-    function sourceMint(address to, uint256 amount) external {
-        require(msg.sender == source(), "ERC20: only source can mint");
-        _mint(to, amount);
-    }
-
-    /**
-     * @dev Allows for source smart contract to mint a batch of token amounts.
-     */
-    function sourceMintBatch(address[] calldata wallets, uint256[] calldata amounts) external {
-        require(msg.sender == source(), "ERC20: only source can mint");
-        for (uint256 i = 0; i < wallets.length; i++) {
-            _mint(wallets[i], amounts[i]);
-        }
-    }
-
-    /**
-     * @dev Allows for source smart contract to burn tokens.
-     */
-    function sourceBurn(uint256 amount) external {
-        address from = source();
-        require(msg.sender == from, "ERC20: only source can burn");
-        _burn(from, amount);
-    }
-
-    /**
-     * @dev Allows the bridge to bring in tokens from another blockchain.
-     */
-    function holographBridgeIn(uint32 chainType, address from, address to, uint256 amount, bytes calldata data) external returns (bytes4) {
-        require(msg.sender == bridge(),  "ERC20: only bridge can call");
-        _mint(bridge(), amount);
-        _transfer(bridge(), from, amount);
-        if (from != to) {
-            _transfer(from, to, amount);
-        }
-        if (Booleans.get(_eventConfig, 1)) {
-            require(SourceERC20().bridgeIn(chainType, from, to, amount, data), "HOLOGRAPH: bridge in failed");
-        }
-        return ERC20Holograph.holographBridgeIn.selector;
-    }
-
-    /**
-     * @dev Allows the bridge to take tokens out onto another blockchain.
-     */
-    function holographBridgeOut(uint32 chainType, address from, address to, uint256 amount) external returns (bytes4 selector, bytes memory data) {
-        require(msg.sender == bridge(),  "ERC20: only bridge can call");
-        if (from != to) {
-            _transfer(from, to, amount);
-        }
-        _transfer(to, bridge(), amount);
-        if (Booleans.get(_eventConfig, 2)) {
-            data = SourceERC20().bridgeOut(chainType, from, to, amount);
-        }
-        _burn(bridge(), amount);
-        return (ERC20Holograph.holographBridgeOut.selector, data);
-    }
-
-    /**
-     * @notice Mints tokens.
-     * @dev Mint a specific amount of tokens to a specific address.
-     * @param to Address to mint to.
-     * @param amount Amount of tokens to mint.
-     */
-    function _mint(address to, uint256 amount) private {
-        require(!Address.isZero(to), "ERC20: minting to burn address");
-        _totalSupply += amount;
-        _balances[to] += amount;
-        emit Transfer(address(0), to, amount);
     }
 
 }
