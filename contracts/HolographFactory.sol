@@ -101,7 +101,7 @@
 
 */
 
-pragma solidity 0.8.11;
+pragma solidity 0.8.13;
 
 import "./abstract/Admin.sol";
 import "./abstract/Initializable.sol";
@@ -248,7 +248,7 @@ contract HolographFactory is Admin, Initializable {
         bytes memory encodedInit = abi.encode(
             abi.encode(
                 config.chainType,
-                0xD48b092413723b86286CC6e2DF68b441491456FA,
+                0x020be79e2D5a6a0204C07970F3586dc379d142e0,
                 secureStorageAddress,
                 config.contractType,
                 sourceContractAddress

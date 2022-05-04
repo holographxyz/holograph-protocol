@@ -101,7 +101,7 @@
 
 */
 
-pragma solidity 0.8.11;
+pragma solidity 0.8.13;
 
 import "./abstract/Admin.sol";
 import "./abstract/Initializable.sol";
@@ -305,13 +305,13 @@ contract HolographBridge is Admin, Initializable {
         require(tokenOwner == msg.sender || erc721.getApproved(tokenId) == msg.sender || erc721.isApprovedForAll(tokenOwner, msg.sender), "HOLOGRAPH: not approved/owner");
         (bytes4 selector, bytes memory data) = erc721.holographBridgeOut(toChain, from, to, tokenId);
         require(selector == ERC721Holograph.holographBridgeOut.selector, "HOLOGRAPH: bridge out failed");
-        emit TransferErc721(toChain, abi.encode(IHolograph(0xD48b092413723b86286CC6e2DF68b441491456FA).getChainType(), collection, from, to, tokenId, data));
+        emit TransferErc721(toChain, abi.encode(IHolograph(0x020be79e2D5a6a0204C07970F3586dc379d142e0).getChainType(), collection, from, to, tokenId, data));
         HolographBridge(payable(address(this))).send{value:msg.value}(
             chainConvert(toChain),
             abi.encodePacked (address(this)),
             abi.encodeWithSignature(
                 "erc721in(uint32,address,address,address,uint256,bytes)",
-                IHolograph(0xD48b092413723b86286CC6e2DF68b441491456FA).getChainType(),
+                IHolograph(0x020be79e2D5a6a0204C07970F3586dc379d142e0).getChainType(),
                 collection,
                 from,
                 to,

@@ -28,6 +28,31 @@
         "inputs": [
             {
                 "indexed": false,
+                "internalType": "uint16",
+                "name": "_dstChainId",
+                "type": "uint16"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes",
+                "name": "_destination",
+                "type": "bytes"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes",
+                "name": "_payload",
+                "type": "bytes"
+            }
+        ],
+        "name": "LzEvent",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
                 "internalType": "uint32",
                 "name": "toChainId",
                 "type": "uint32"
@@ -41,6 +66,19 @@
         ],
         "name": "TransferErc721",
         "type": "event"
+    },
+    {
+        "inputs": [],
+        "name": "admin",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
     },
     {
         "inputs": [
@@ -195,7 +233,7 @@
         ],
         "name": "erc721out",
         "outputs": [],
-        "stateMutability": "nonpayable",
+        "stateMutability": "payable",
         "type": "function"
     },
     {
@@ -204,7 +242,7 @@
         "outputs": [
             {
                 "internalType": "address",
-                "name": "admin",
+                "name": "adminAddress",
                 "type": "address"
             }
         ],
@@ -233,8 +271,74 @@
     {
         "inputs": [
             {
+                "internalType": "uint16",
+                "name": "",
+                "type": "uint16"
+            },
+            {
+                "internalType": "bytes",
+                "name": "",
+                "type": "bytes"
+            },
+            {
+                "internalType": "uint64",
+                "name": "",
+                "type": "uint64"
+            },
+            {
+                "internalType": "bytes",
+                "name": "_payload",
+                "type": "bytes"
+            }
+        ],
+        "name": "lzReceive",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint16",
+                "name": "_dstChainId",
+                "type": "uint16"
+            },
+            {
+                "internalType": "bytes",
+                "name": "_destination",
+                "type": "bytes"
+            },
+            {
+                "internalType": "bytes",
+                "name": "_payload",
+                "type": "bytes"
+            },
+            {
+                "internalType": "address payable",
+                "name": "",
+                "type": "address"
+            },
+            {
                 "internalType": "address",
-                "name": "admin",
+                "name": "",
+                "type": "address"
+            },
+            {
+                "internalType": "bytes",
+                "name": "",
+                "type": "bytes"
+            }
+        ],
+        "name": "send",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "adminAddress",
                 "type": "address"
             }
         ],

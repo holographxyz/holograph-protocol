@@ -1,0 +1,20 @@
+// SPDX-License-Identifier: UNLICENSED
+
+pragma solidity 0.8.13;
+
+enum HolographERC20Event {
+    bridgeIn,
+    bridgeOut,
+    afterApprove,
+    beforeApprove,
+    afterOnERC20Received,
+    beforeOnERC20Received,
+    afterBurn,
+    beforeBurn,
+    afterMint,
+    beforeMint,
+    afterSafeTransfer,
+    beforeSafeTransfer,
+    afterTransfer,
+    beforeTransfer
+}

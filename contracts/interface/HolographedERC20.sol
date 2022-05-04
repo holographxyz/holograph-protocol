@@ -101,7 +101,7 @@
 
 */
 
-pragma solidity 0.8.11;
+pragma solidity 0.8.13;
 
 /// @title Holograph ERC-20 Fungible Token Standard
 /// @dev See https://holograph.network/standard/ERC-20

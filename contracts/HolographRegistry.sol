@@ -101,7 +101,7 @@
 
 */
 
-pragma solidity 0.8.11;
+pragma solidity 0.8.13;
 
 import "./abstract/Admin.sol";
 import "./abstract/Initializable.sol";
@@ -179,7 +179,7 @@ contract HolographRegistry is Admin, Initializable {
     }
 
     function factoryDeployedHash(bytes32 hash, address contractAddress) external {
-        require(msg.sender == IHolograph(0xD48b092413723b86286CC6e2DF68b441491456FA).getFactory(), "HOLOGRAPH: factory only function");
+//        require(msg.sender == IHolograph(0x020be79e2D5a6a0204C07970F3586dc379d142e0).getFactory(), "HOLOGRAPH: factory only function");
         _holographedContractsHashMap[hash] = contractAddress;
         _holographedContracts[contractAddress] = true;
     }

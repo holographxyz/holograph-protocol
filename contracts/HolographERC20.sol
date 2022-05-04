@@ -101,13 +101,15 @@
 
 */
 
-pragma solidity 0.8.11;
+pragma solidity 0.8.13;
 
 import "./abstract/Admin.sol";
 import "./abstract/EIP712.sol";
 import "./abstract/Initializable.sol";
 import "./abstract/NonReentrant.sol";
 import "./abstract/Owner.sol";
+
+import "./enum/HolographERC20Event.sol";
 
 import "./interface/ERC20.sol";
 import "./interface/ERC20Burnable.sol";
@@ -297,7 +299,7 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
      * @dev Get the bridge contract address.
      */
     function bridge() private view returns (address) {
-        return IHolograph(0xD48b092413723b86286CC6e2DF68b441491456FA).getBridge();
+        return IHolograph(0x020be79e2D5a6a0204C07970F3586dc379d142e0).getBridge();
     }
 
     /**
@@ -439,11 +441,11 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
     }
 
     function onERC20Received(address account, address sender, uint256 amount, bytes calldata data) public returns(bytes4) {
-        if (Booleans.get(_eventConfig, 6)) {
+        if (Booleans.get(_eventConfig, HolographERC20Event.beforeOnERC20Received)) {
             require(SourceERC20().beforeOnERC20Received(account, sender, address(this), amount, data));
         }
         // we do our own logic here
-        if (Booleans.get(_eventConfig, 5)) {
+        if (Booleans.get(_eventConfig, HolographERC20Event.afterOnERC20Received)) {
             require(SourceERC20().afterOnERC20Received(account, sender, address(this), amount, data));
         }
         return this.onERC20Received.selector;
@@ -472,12 +474,12 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
     }
 
     function safeTransfer(address recipient, uint256 amount, bytes memory data) public returns (bool) {
-        if (Booleans.get(_eventConfig, 12)) {
+        if (Booleans.get(_eventConfig, HolographERC20Event.beforeSafeTransfer)) {
             require(SourceERC20().beforeSafeTransfer(msg.sender, recipient, amount, data));
         }
         _transfer(msg.sender, recipient, amount);
         require(_checkOnERC20Received(msg.sender, recipient, amount, data), "ERC20: non ERC20Receiver");
-        if (Booleans.get(_eventConfig, 11)) {
+        if (Booleans.get(_eventConfig, HolographERC20Event.afterSafeTransfer)) {
             require(SourceERC20().afterSafeTransfer(msg.sender, recipient, amount, data));
         }
         return true;
@@ -493,12 +495,12 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
         unchecked {
             _allowances[account][msg.sender] = currentAllowance - amount;
         }
-        if (Booleans.get(_eventConfig, 12)) {
+        if (Booleans.get(_eventConfig, HolographERC20Event.beforeSafeTransfer)) {
             require(SourceERC20().beforeSafeTransfer(account, recipient, amount, data));
         }
         _transfer(account, recipient, amount);
         require(_checkOnERC20Received(account, recipient, amount, data), "ERC20: non ERC20Receiver");
-        if (Booleans.get(_eventConfig, 11)) {
+        if (Booleans.get(_eventConfig, HolographERC20Event.afterSafeTransfer)) {
             require(SourceERC20().afterSafeTransfer(account, recipient, amount, data));
         }
         return true;
