@@ -24,7 +24,7 @@ const HOLOGRAPH_BRIDGE_PROXY = 'HolographBridgeProxy';
 const HOLOGRAPH_BRIDGE_PROXY_CONTRACT = JSON.parse (fs.readFileSync ('./build/combined.json')).contracts ['proxy/' + HOLOGRAPH_BRIDGE_PROXY + '.sol:' + HOLOGRAPH_BRIDGE_PROXY];
 
 const SAMPLE_ERC721 = 'SampleERC721';
-const SAMPLE_ERC721_CONTRACT = JSON.parse (fs.readFileSync ('./build/combined.json')).contracts [SAMPLE_ERC721 + '.sol:' + SAMPLE_ERC721];
+const SAMPLE_ERC721_CONTRACT = JSON.parse (fs.readFileSync ('./build/combined.json')).contracts ['token/' + SAMPLE_ERC721 + '.sol:' + SAMPLE_ERC721];
 
 const MULTICHAIN_ERC721 = 'MultichainERC721';
 

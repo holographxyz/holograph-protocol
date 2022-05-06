@@ -14,7 +14,7 @@ async function main () {
     const { network: network1, provider: provider1, web3: web3_1 } = createNetworkPropsForUser(WALLET1, NETWORK)
     const { network: network2, provider: provider2, web3: web3_2 } = createNetworkPropsForUser(WALLET2, NETWORK2)
 
-    const SAMPLE_ERC721 = 'SampleERC721';
+    const SAMPLE_ERC721 = 'token/SampleERC721';
     const SAMPLE_ERC721_ARTIFACT = getContractArtifact(SAMPLE_ERC721)
 
     const MULTICHAIN_ERC721 = 'MultichainERC721';

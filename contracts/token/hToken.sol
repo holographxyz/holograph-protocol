@@ -103,52 +103,67 @@
 
 pragma solidity 0.8.13;
 
-/// @title Holograph ERC-20 Fungible Token Standard
-/// @dev See https://holograph.network/standard/ERC-20
-///  Note: the ERC-165 identifier for this interface is 0xFFFFFFFF.
-interface HolographedERC20 {
+import "../abstract/ERC20H.sol";
 
-    // event id = 1
-    function bridgeIn(uint32 _chainId, address _from, address _to, uint256 _amount, bytes calldata _data) external returns (bool success);
+import "../interface/ERC20Holograph.sol";
 
-    // event id = 2
-    function bridgeOut(uint32 _chainId, address _from, address _to, uint256 _amount) external returns (bytes memory _data);
+import "../library/Strings.sol";
 
+/**
+ * @title Holograph token (aka hToken), used to wrap and bridge native tokens across blockchains.
+ * @author CXIP-Labs
+ * @notice A smart contract for minting and managing Holograph Bridgeable ERC20 Tokens.
+ * @dev The entire logic and functionality of the smart contract is self-contained.
+ */
+contract hToken is ERC20H {
 
-    // event id = 3
-    function afterApprove(address _owner, address _to, uint256 _amount) external returns (bool success);
+    /*
+     * @dev Address of initial creator/owner of the contract.
+     */
+    address private _owner;
 
-    // event id = 4
-    function beforeApprove(address _owner, address _to, uint256 _amount) external returns (bool success);
+    /*
+     * @dev Just a dummy value for now to test transferring of data.
+     */
+    mapping(address => bytes32) private _walletSalts;
 
-    // event id = 5
-    function afterOnERC20Received(address _token, address _from, address _to, uint256 _amount, bytes calldata _data) external returns (bool success);
+    /**
+     * @notice Constructor is empty and not utilised.
+     * @dev To make exact CREATE2 deployment possible, constructor is left empty. We utilize the "init" function instead.
+     */
+    constructor() {}
 
-    // event id = 6
-    function beforeOnERC20Received(address _token, address _from, address _to, uint256 _amount, bytes calldata _data) external returns (bool success);
+    /**
+     * @notice Initializes the collection.
+     * @dev Special function to allow a one time initialisation on deployment.
+     */
+    function init(bytes memory data) external override returns (bytes4) {
+        // do your own custom logic here
+        (address owner) = abi.decode(data, (address));
+        _owner = owner;
+        // run underlying initializer logic
+        return _init(data);
+    }
 
-    // event id = 7
-    function afterBurn(address _owner, uint256 _amount) external returns (bool success);
+    /*
+     * @dev Sample mint where anyone can mint any amounts of tokens.
+     */
+    function mint(address/* msgSender*/, address to, uint256 amount) external onlyHolographer {
+        ERC20Holograph(holographer()).sourceMint(to, amount);
+    }
 
-    // event id = 8
-    function beforeBurn(address _owner, uint256 _amount) external returns (bool success);
+    function test(address msgSender) external view onlyHolographer returns (string memory) {
+        return string(abi.encodePacked("it works! ", Strings.toHexString(msgSender)));
+    }
 
-    // event id = 9
-    function afterMint(address _owner, uint256 _amount) external returns (bool success);
+    function bridgeIn(uint32/* _chainId*/, address/* _from*/, address _to, uint256/* _amount*/, bytes calldata _data) external override onlyHolographer returns (bool) {
+        (bytes32 salt) = abi.decode(_data, (bytes32));
+        _walletSalts[_to] = salt;
+        return true;
+    }
 
-    // event id = 10
-    function beforeMint(address _owner, uint256 _amount) external returns (bool success);
-
-    // event id = 11
-    function afterSafeTransfer(address _from, address _to, uint256 _amount, bytes calldata _data) external returns (bool success);
-
-    // event id = 12
-    function beforeSafeTransfer(address _from, address _to, uint256 _amount, bytes calldata _data) external returns (bool success);
-
-    // event id = 13
-    function afterTransfer(address _from, address _to, uint256 _amount, bytes calldata _data) external returns (bool success);
-
-    // event id = 14
-    function beforeTransfer(address _from, address _to, uint256 _amount, bytes calldata _data) external returns (bool success);
+    function bridgeOut(uint32/* _chainId*/, address/* _from*/, address _to, uint256/* _amount*/) external override view onlyHolographer returns (bytes memory _data) {
+        _data = abi.encode(_walletSalts[_to]);
+    }
 
 }

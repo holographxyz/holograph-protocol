@@ -14,7 +14,7 @@ async function main () {
     const provider = new HDWalletProvider ([WALLET1, WALLET2], network.rpc, 0, 2);
     const web3 = new Web3 (provider);
 
-    const SAMPLE_ERC721 = 'SampleERC721';
+    const SAMPLE_ERC721 = 'token/SampleERC721';
     const SAMPLE_ERC721_ARTIFACT = getContractArtifact(SAMPLE_ERC721)
     const SAMPLE_ERC721_ADDRESS = getContractAddress(NETWORK, SAMPLE_ERC721)
 

@@ -2,16 +2,22 @@ const fs = require('fs')
 const HDWalletProvider = require('truffle-hdwallet-provider')
 const Web3 = require('web3')
 
-function getContractArtifact(name) {
-    const isProxy = name.toLowerCase().includes("proxy");
-    if(isProxy) {
-        return JSON.parse (fs.readFileSync ('./build/combined.json')).contracts ['proxy/' + name + '.sol:' + name];
-    } else {
-        return JSON.parse (fs.readFileSync ('./build/combined.json')).contracts[name + '.sol:' + name];
+function cleanupContractName(name) {
+    const split = name.split('/');
+    if (split.length > 1) {
+        name = split[split.length - 1];
     }
+    return name;
+}
+
+function getContractArtifact(name) {
+    const originalName = name;
+    name = cleanupContractName(name);
+    return JSON.parse (fs.readFileSync ('./build/combined.json')).contracts[originalName + '.sol:' + name];
 }
 
 function getContractAddress(networkName, name) {
+    name = cleanupContractName(name);
     return fs.readFileSync ('./data/' + networkName + '.' + name + '.address', 'utf8').trim();
 }
 
@@ -69,6 +75,10 @@ function createCombinedFactoryAtAddress(web3, artifacts, address) {
 }
 
 function saveContractResult(networkName, contractName, contractAddress) {
+    const split = contractName.split('/');
+    if (split.length > 1) {
+        contractName = split[split.length - 1];
+    }
     fs.writeFileSync (
         './data/' + networkName + '.' + contractName + '.address',
         contractAddress
@@ -142,6 +152,7 @@ const setEvents = function (events) {
 
 
 module.exports = {
+    cleanupContractName,
     getContractArtifact,
     getContractAddress,
     getNetworkInfo,

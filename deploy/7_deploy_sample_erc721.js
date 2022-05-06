@@ -12,13 +12,13 @@ const {removeX, hexify, throwError, web3Error, getContractArtifact, createNetwor
 async function main () {
     const { network, provider, web3 } = createNetworkPropsForUser(DEPLOYER, NETWORK)
 
-    const SAMPLE_ERC721 = 'SampleERC721';
+    const SAMPLE_ERC721 = 'token/SampleERC721';
     const SAMPLE_ERC721_CONTRACT = getContractArtifact(SAMPLE_ERC721)
 
     const HOLOGRAPH_FACTORY = 'HolographFactory';
     const HOLOGRAPH_FACTORY_CONTRACT = getContractArtifact(HOLOGRAPH_FACTORY)
 
-    const HOLOGRAPH_FACTORY_PROXY = 'HolographFactoryProxy';
+    const HOLOGRAPH_FACTORY_PROXY = 'proxy/HolographFactoryProxy';
     const HOLOGRAPH_FACTORY_PROXY_ADDRESS = getContractAddress(NETWORK, HOLOGRAPH_FACTORY_PROXY)
     const HOLOGRAPH_FACTORY_PROXY_FACTORY = createFactoryAtAddress(web3, HOLOGRAPH_FACTORY_CONTRACT.abi, HOLOGRAPH_FACTORY_PROXY_ADDRESS)
 

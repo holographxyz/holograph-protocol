@@ -23,7 +23,7 @@ function getHolographRegistryContract(web3, networkName) {
 }
 
 function getHolographRegistryProxyContract(web3, networkName) {
-    const name = 'HolographRegistryProxy';
+    const name = 'proxy/HolographRegistryProxy';
     return getContractByName(web3, networkName, name)
 }
 
@@ -38,12 +38,12 @@ function getSecureStorageContract(web3, networkName) {
 }
 
 function getSecureStorageProxyContract(web3, networkName) {
-    const name = 'SecureStorageProxy';
+    const name = 'proxy/SecureStorageProxy';
     return getContractByName(web3, networkName, name)
 }
 
 function getHolographFactoryProxyContract(web3, networkName) {
-    const name = 'HolographFactoryProxy';
+    const name = 'proxy/HolographFactoryProxy';
     return getContractByName(web3, networkName, name)
 }
 
@@ -53,7 +53,7 @@ function getHolographBridgeContract(web3, networkName) {
 }
 
 function getHolographBridgeProxyContract(web3, networkName) {
-    const name = 'HolographBridgeProxy';
+    const name = 'proxy/HolographBridgeProxy';
     return getContractByName(web3, networkName, name)
 }
 

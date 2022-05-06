@@ -103,45 +103,122 @@
 
 pragma solidity 0.8.13;
 
-import "./abstract/Admin.sol";
-import "./abstract/Initializable.sol";
+import "../abstract/Initializable.sol";
 
-import "./interface/IHolograph.sol";
-import "./interface/IHolographRegistry.sol";
-import "./interface/IInitializable.sol";
+import "../interface/HolographedERC721.sol";
 
-/*
- * @dev This contract is the source code for all hTokens.
- */
-contract hTokenSource is Admin, Initializable {
-
-    address[] private _approvedWrappers;
+abstract contract ERC721H is Initializable, HolographedERC721 {
 
     /*
-     * @dev Constructor is left empty and only the admin address is set.
+     * @dev Dummy variable to prevent empty functions from making "switch to pure" warnings.
      */
-    constructor() Admin(true) {}
+    bool private _success;
 
-    /*
-     * @dev Initialize contract with chain id and holograph reference
+    modifier onlyHolographer() {
+        require(msg.sender == holographer(), "holographer only function");
+        _;
+    }
+
+    /**
+     * @notice Constructor is empty and not utilised.
+     * @dev To make exact CREATE2 deployment possible, constructor is left empty. We utilize the "init" function instead.
      */
-    function init(bytes memory data) external override returns (bytes4) {
-        require(!_isInitialized(), "HOLOGRAPHER: already initialized");
-        (address[] memory approvedWrappers) = abi.decode(data, (address[]));
-        _approvedWrappers = approvedWrappers;
+    constructor() {}
+
+    /**
+     * @notice Initializes the collection.
+     * @dev Special function to allow a one time initialisation on deployment. Also configures and deploys royalties.
+     */
+    function init(bytes memory data) external virtual override returns (bytes4) {
+        return _init(data);
+    }
+
+    function _init(bytes memory/* data*/) internal returns (bytes4) {
+        require(!_isInitialized(), "ERC721: already initialized");
+        address _holographer = msg.sender;
+        assembly {
+            sstore(/* slot */0x6e5f8ca8411e7bcc0b4514ebbbdd1e5a67471d01255657bdeed111c1c4204aec, _holographer)
+        }
         _setInitialized();
         return IInitializable.init.selector;
     }
 
-    function isOnOriginChain() public view returns (bool) {
-        address holograph;
-        uint32 originChain;
+    /*
+     * @dev Address of Holograph ERC20 standards enforcer smart contract.
+     */
+    function holographer() internal view returns (address _holographer) {
         assembly {
-            holograph := sload(/* slot */0x1eee493315beeac80829afd0aaa340f3821cabe68571a2743478e81638a3d94d)
-            originChain := sload(/* slot */0x2378c1f8aa4ffd1a2b352b1ec4b9fe37cee7d2bb3fa1a7e6aeaeb422f15defdb)
+            _holographer := sload(/* slot */0x6e5f8ca8411e7bcc0b4514ebbbdd1e5a67471d01255657bdeed111c1c4204aec)
         }
-        uint32 currentChain = IHolograph(holograph).getChainType();
-        return originChain == currentChain;
+    }
+
+    function bridgeIn(uint32/* _chainId*/, address/* _from*/, address/* _to*/, uint256/* _tokenId*/, bytes calldata/* _data*/) external virtual onlyHolographer returns (bool) {
+        _success = true;
+        return true;
+    }
+
+    function bridgeOut(uint32/* _chainId*/, address/* _from*/, address/* _to*/, uint256/* _tokenId*/) external virtual view onlyHolographer returns (bytes memory _data) {
+        _data = abi.encode(holographer());
+    }
+
+    function afterApprove(address/* _owner*/, address/* _to*/, uint256/* _tokenId*/) external virtual onlyHolographer returns (bool success) {
+        _success = true;
+        return _success;
+    }
+
+    function beforeApprove(address/* _owner*/, address/* _to*/, uint256/* _tokenId*/) external virtual onlyHolographer returns (bool success) {
+        _success = true;
+        return _success;
+    }
+
+    function afterApprovalAll(address/* _to*/, bool/* _approved*/) external virtual onlyHolographer returns (bool success) {
+        _success = true;
+        return _success;
+    }
+
+    function beforeApprovalAll(address/* _to*/, bool/* _approved*/) external virtual onlyHolographer returns (bool success) {
+        _success = true;
+        return _success;
+    }
+
+    function afterBurn(address/* _owner*/, uint256/* _tokenId*/) external virtual onlyHolographer returns (bool success) {
+        _success = true;
+        return _success;
+    }
+
+    function beforeBurn(address/* _owner*/, uint256/* _tokenId*/) external virtual onlyHolographer returns (bool success) {
+        _success = true;
+        return _success;
+    }
+
+    function afterMint(address/* _owner*/, uint256/* _tokenId*/) external virtual onlyHolographer returns (bool success) {
+        _success = true;
+        return _success;
+    }
+
+    function beforeMint(address/* _owner*/, uint256/* _tokenId*/) external virtual onlyHolographer returns (bool success) {
+        _success = true;
+        return _success;
+    }
+
+    function afterSafeTransfer(address/* _from*/, address/* _to*/, uint256/* _tokenId*/, bytes calldata/* _data*/) external virtual onlyHolographer returns (bool success) {
+        _success = true;
+        return _success;
+    }
+
+    function beforeSafeTransfer(address/* _from*/, address/* _to*/, uint256/* _tokenId*/, bytes calldata/* _data*/) external virtual onlyHolographer returns (bool success) {
+        _success = true;
+        return _success;
+    }
+
+    function afterTransfer(address/* _from*/, address/* _to*/, uint256/* _tokenId*/, bytes calldata/* _data*/) external virtual onlyHolographer returns (bool success) {
+        _success = true;
+        return _success;
+    }
+
+    function beforeTransfer(address/* _from*/, address/* _to*/, uint256/* _tokenId*/, bytes calldata/* _data*/) external virtual onlyHolographer returns (bool success) {
+        _success = true;
+        return _success;
     }
 
 }

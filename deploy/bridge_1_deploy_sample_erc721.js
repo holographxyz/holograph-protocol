@@ -37,7 +37,7 @@ async function main () {
     const FACTORY2 = createCombinedFactoryAtAddress(web3_2, [HOLOGRAPH_BRIDGE_ARTIFACT, HOLOGRAPH_FACTORY_ARTIFACT], HOLOGRAPH_BRIDGE_PROXY_ADDRESS)
 
     const MULTICHAIN_ERC721 = 'MultichainERC721';
-    const SAMPLE_ERC721 = 'SampleERC721';
+    const SAMPLE_ERC721 = 'token/SampleERC721';
     const SAMPLE_ERC721_ARTIFACT = getContractArtifact(SAMPLE_ERC721)
 
     let config = [

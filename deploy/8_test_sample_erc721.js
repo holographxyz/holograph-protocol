@@ -9,7 +9,7 @@ const {web3Error, getContractArtifact, createNetworkPropsForUser, getContractAdd
 async function main () {
     const { network, provider, web3 } = createNetworkPropsForUser(DEPLOYER, NETWORK)
 
-    const SAMPLE_ERC721 = 'SampleERC721';
+    const SAMPLE_ERC721 = 'token/SampleERC721';
     const SAMPLE_ERC721_ARTIFACT = getContractArtifact(SAMPLE_ERC721)
     const SAMPLE_ERC721_ADDRESS = getContractAddress(NETWORK, SAMPLE_ERC721)
 
