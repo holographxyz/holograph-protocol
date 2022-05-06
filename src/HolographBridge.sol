@@ -34,11 +34,13 @@ contract HolographBridge is Admin, Initializable {
     }
 
     function init(bytes memory data) external override returns (bytes4) {
+        require(!_isInitialized(), "HOLOGRAPH: already initialized");
         (address registry, address factory) = abi.decode(data, (address, address));
         assembly {
             sstore(precomputeslot('eip1967.Holograph.Bridge.registry'), registry)
             sstore(precomputeslot('eip1967.Holograph.Bridge.factory'), factory)
         }
+        _setInitialized();
         return IInitializable.init.selector;
     }
 

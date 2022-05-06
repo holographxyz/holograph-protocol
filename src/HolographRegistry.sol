@@ -45,10 +45,12 @@ contract HolographRegistry is Admin, Initializable {
      * @dev An array of initially reserved contract types for admin only to set.
      */
     function init(bytes memory data) external override returns (bytes4) {
+        require(!_isInitialized(), "HOLOGRAPH: already initialized");
         (bytes32[] memory reservedTypes) = abi.decode(data, (bytes32[]));
         for (uint256 i = 0; i < reservedTypes.length; i++) {
             _reservedTypes[reservedTypes[i]] = true;
         }
+        _setInitialized();
         return IInitializable.init.selector;
     }
 

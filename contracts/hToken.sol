@@ -103,98 +103,145 @@
 
 pragma solidity 0.8.13;
 
-import "./abstract/Admin.sol";
 import "./abstract/Initializable.sol";
 
-import "./interface/IHolograph.sol";
-import "./interface/IHolographRegistry.sol";
+import "./interface/ERC20Holograph.sol";
+import "./interface/HolographedERC20.sol";
 import "./interface/IInitializable.sol";
 
-/*
- * @dev This contract is a binder. It puts together all the variables to make the underlying contracts functional and be bridgeable.
+import "./library/Strings.sol";
+
+/**
+ * @title Holograph token (aka hToken), used to wrap and bridge native tokens across blockchains.
+ * @author CXIP-Labs
+ * @notice A smart contract for minting and managing Holograph Bridgeable ERC20 Tokens.
+ * @dev The entire logic and functionality of the smart contract is self-contained.
  */
-contract hToken is Admin, Initializable {
+contract hToken is Initializable, HolographedERC20  {
 
     /*
-     * @dev Constructor is left empty and only the admin address is set.
+     * @dev Address of initial creator/owner of the contract.
      */
-    constructor() Admin(true) {}
+    address private _owner;
 
     /*
-     * @dev Initialize contract with chain id and holograph reference
+     * @dev Address of Holograph ERC20 standards enforcer smart contract.
+     */
+    address private _holographer;
+
+    /*
+     * @dev Dummy variable to prevent empty functions from making "switch to pure" warnings.
+     */
+    bool private _success;
+
+    /*
+     * @dev Just a dummy value for now to test transferring of data.
+     */
+    mapping(address => bytes32) private _walletSalts;
+
+    modifier onlyHolographer() {
+        require(msg.sender == _holographer, "holographer only function");
+        _;
+    }
+
+    /**
+     * @notice Constructor is empty and not utilised.
+     * @dev To make exact CREATE2 deployment possible, constructor is left empty. We utilize the "init" function instead.
+     */
+    constructor() {}
+
+    /**
+     * @notice Initializes the collection.
+     * @dev Special function to allow a one time initialisation on deployment. Also configures and deploys royalties.
      */
     function init(bytes memory data) external override returns (bytes4) {
-        require(!_isInitialized(), "HOLOGRAPHER: already initialized");
-        (bytes memory encoded, bytes memory initCode) = abi.decode(data, (bytes, bytes));
-        (uint32 originChain, address holograph) = abi.decode(encoded, (uint32, address));
-        bytes32 hTokenSource = bytes32(abi.encodePacked("hToken", originChain));
-        assembly {
-            sstore(0x2378c1f8aa4ffd1a2b352b1ec4b9fe37cee7d2bb3fa1a7e6aeaeb422f15defdb, originChain)
-            sstore(0x1eee493315beeac80829afd0aaa340f3821cabe68571a2743478e81638a3d94d, holograph)
-            sstore(0xba58067848a947e98004b5f6bc2b1355a4b081bfdedb5173f0cf2803fbe74b1f, hTokenSource)
-        }
-        (bool success, bytes memory returnData) = getHTokenSource().delegatecall(
-            abi.encodeWithSignature("init(bytes)", initCode)
-        );
-        (bytes4 selector) = abi.decode(returnData, (bytes4));
-        require(success && selector == IInitializable.init.selector, "initialization failed");
+        require(!_isInitialized(), "ERC20: already initialized");
+        _holographer = msg.sender;
+        (address owner) = abi.decode(data, (address));
+        _owner = owner;
         _setInitialized();
         return IInitializable.init.selector;
     }
 
     /*
-     * @dev Returns the original chain that contract was deployed on.
+     * @dev Sample mint where anyone can mint any token, with a custom URI
      */
-    function getOriginChain() public view returns (uint32 originChain) {
-        assembly {
-            originChain := sload(/* slot */0x2378c1f8aa4ffd1a2b352b1ec4b9fe37cee7d2bb3fa1a7e6aeaeb422f15defdb)
-        }
+    function mint(address/* msgSender*/, address to, uint256 amount) external onlyHolographer {
+        ERC20Holograph(_holographer).sourceMint(to, amount);
     }
 
-    /*
-     * @dev Returns address of hToken smart contract source code.
-     */
-    function getHTokenSource() public view returns (address payable) {
-        address holograph;
-        bytes32 hTokenSource;
-        assembly {
-            holograph := sload(/* slot */0x1eee493315beeac80829afd0aaa340f3821cabe68571a2743478e81638a3d94d)
-            hTokenSource := sload(/* slot */0xba58067848a947e98004b5f6bc2b1355a4b081bfdedb5173f0cf2803fbe74b1f)
-        }
-        return payable(
-            IHolographRegistry(
-                IHolograph(
-                    holograph
-                ).getRegistry()
-            ).getContractTypeAddress(hTokenSource)
-        );
+    function test(address msgSender) external view onlyHolographer returns (string memory) {
+        return string(abi.encodePacked("it works! ", Strings.toHexString(msgSender)));
     }
 
-    /*
-     * @dev Purposefully reverts, to prevent accidental native token direct transfers.
-     */
-    receive() external payable {
-        revert("HOLOGRAPH: don't send directly");
+    function bridgeIn(uint32/* _chainId*/, address/* _from*/, address _to, uint256/* _amount*/, bytes calldata _data) external onlyHolographer returns (bool) {
+        (bytes32 salt) = abi.decode(_data, (bytes32));
+        _walletSalts[_to] = salt;
+        return true;
     }
 
-    /*
-     * @dev Hard-coded registry address and contract type are put inside the fallback to make sure that the contract cannot be modified.
-     * @dev This takes the underlying address source code, runs it, and uses current address for storage.
-     */
-    fallback() external payable {
-        address hTokenSource = getHTokenSource();
-        assembly {
-            calldatacopy(0, 0, calldatasize())
-            let result := delegatecall(gas(), hTokenSource, 0, calldatasize(), 0, 0)
-            returndatacopy(0, 0, returndatasize())
-            switch result
-            case 0 {
-                revert(0, returndatasize())
-            }
-            default {
-                return(0, returndatasize())
-            }
-        }
+    function bridgeOut(uint32/* _chainId*/, address/* _from*/, address _to, uint256/* _amount*/) external view onlyHolographer returns (bytes memory _data) {
+        _data = abi.encode(_walletSalts[_to]);
+    }
+
+    function afterApprove(address/* _owner*/, address/* _to*/, uint256/* _amount*/) external onlyHolographer returns (bool success) {
+        _success = true;
+        return _success;
+    }
+
+    function beforeApprove(address/* _owner*/, address/* _to*/, uint256/* _amount*/) external onlyHolographer returns (bool success) {
+        _success = true;
+        return _success;
+    }
+
+    function afterOnERC20Received(address/* _token*/, address/* _from*/, address/* _to*/, uint256/* _amount*/, bytes calldata/* _data*/) external onlyHolographer returns (bool success) {
+        _success = true;
+        return _success;
+    }
+
+    function beforeOnERC20Received(address/* _token*/, address/* _from*/, address/* _to*/, uint256/* _amount*/, bytes calldata/* _data*/) external onlyHolographer returns (bool success) {
+        _success = true;
+        return _success;
+    }
+
+    function afterBurn(address/* _owner*/, uint256/* _amount*/) external onlyHolographer returns (bool success) {
+        _success = true;
+        return _success;
+    }
+
+    function beforeBurn(address/* _owner*/, uint256/* _amount*/) external onlyHolographer returns (bool success) {
+        _success = true;
+        return _success;
+    }
+
+    function afterMint() external onlyHolographer returns (bool success) {
+        _success = true;
+        return _success;
+    }
+
+    function beforeMint() external onlyHolographer returns (bool success) {
+        _success = true;
+        return _success;
+    }
+
+    function afterSafeTransfer(address/* _from*/, address/* _to*/, uint256/* _amount*/, bytes calldata/* _data*/) external onlyHolographer returns (bool success) {
+        _success = true;
+        return _success;
+    }
+
+    function beforeSafeTransfer(address/* _from*/, address/* _to*/, uint256/* _amount*/, bytes calldata/* _data*/) external onlyHolographer returns (bool success) {
+        _success = true;
+        return _success;
+    }
+
+    function afterTransfer(address/* _from*/, address/* _to*/, uint256/* _amount*/, bytes calldata/* _data*/) external onlyHolographer returns (bool success) {
+        _success = true;
+        return _success;
+    }
+
+    function beforeTransfer(address/* _from*/, address/* _to*/, uint256/* _amount*/, bytes calldata/* _data*/) external onlyHolographer returns (bool success) {
+        _success = true;
+        return _success;
     }
 
 }

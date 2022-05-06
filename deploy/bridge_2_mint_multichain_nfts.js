@@ -27,7 +27,7 @@ async function main () {
     const ERC721_2 = createCombinedFactoryAtAddress(web3_2, [HOLOGRAPH_ERC721_CONTRACT, SAMPLE_ERC721_ARTIFACT], MULTICHAIN_ERC721_ADDRESS)
 
 //     let tokenId = NETWORK == 'local' ? 1 : '0xFFFFFFFE00000000000000000000000000000000000000000000000000000001';
-    const mintResult = await ERC721_1.methods.mint (provider1.addresses [0], 'https://' + NETWORK + '.network/sampleNFT.jpg').send ({
+    const mintResult = await ERC721_1.methods.mint ('0x0000000000000000000000000000000000000000', provider1.addresses [0], 'https://' + NETWORK + '.network/sampleNFT.jpg').send ({
         chainId: network1.chain,
         from: provider1.addresses [0],
         gas: web3_1.utils.toHex (1000000),
@@ -39,7 +39,7 @@ async function main () {
     const tokenId = hexify (hexify (web3_1.utils.numberToHex (web3_1.utils.toBN (mintResult.events.Transfer.returnValues._tokenId))).padStart (64, '0'), true);
     console.log ('Token id', tokenId, 'minted on', NETWORK);
 
-    const mintResult2 = await ERC721_2.methods.mint (provider2.addresses [0], 'https://' + NETWORK2 + '.network/sampleNFT.jpg').send ({
+    const mintResult2 = await ERC721_2.methods.mint ('0x0000000000000000000000000000000000000000', provider2.addresses [0], 'https://' + NETWORK2 + '.network/sampleNFT.jpg').send ({
         chainId: network2.chain,
         from: provider2.addresses [0],
         gas: web3_2.utils.toHex (1000000),

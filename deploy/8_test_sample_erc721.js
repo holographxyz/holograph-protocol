@@ -67,7 +67,7 @@ async function main () {
         gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
     }).catch (web3Error));
 
-    console.log ('test', await HOLOGRAPH_ERC721_CONTRACT_FACTORY.methods.test ().call ({
+    console.log ('test', await HOLOGRAPH_ERC721_CONTRACT_FACTORY.methods.test ('0x0000000000000000000000000000000000000000').call ({
         chainId: network.chain,
         from: provider.addresses [0],
         gas: web3.utils.toHex (1000000),

@@ -102,6 +102,7 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
      * @dev Special function to allow a one time initialisation on deployment. Also configures and deploys royalties.
      */
     function init(bytes memory data) external override returns (bytes4) {
+        require(!_isInitialized(), "ERC20: already initialized");
         (
             string memory contractName,
             string memory contractSymbol,
@@ -184,6 +185,7 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
             ^ ERC20Permit.DOMAIN_SEPARATOR.selector
         ] = true;
 
+        _setInitialized();
         return IInitializable.init.selector;
     }
 
@@ -213,9 +215,18 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
      * @dev Any function call that is not covered here, will automatically be sent over to the source contract.
      */
     fallback() external {
+        /*
+         * @dev We forward the calldata to source contract via a call request.
+         *  Since this replaces msg.sender with address(this), we inject original msg.sender into calldata.
+         *  This allows us to protect this contract's storage layer from source contract's malicious actions.
+         *  This way a source contract can simultaneously access holographer address and the real msg.sender.
+         */
         address _target = source();
+        address _sender = msg.sender;
         assembly {
             calldatacopy(0, 0, calldatasize())
+            // we inject msg.sender into the calldata 32 byte slot right after 4 byte function selector
+            mstore(4, _sender)
             let result := call(gas(), _target, 0, 0, calldatasize(), 0, 0)
             returndatacopy(0, 0, returndatasize())
             switch result
@@ -344,6 +355,7 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
             require(SourceERC20().beforeOnERC20Received(account, sender, address(this), amount, data));
         }
         // we do our own logic here
+        require(ERC20(account).balanceOf(address(this)) >= amount, "ERC20: balance check failed");
         if (Booleans.get(_eventConfig, HolographERC20Event.afterOnERC20Received)) {
             require(SourceERC20().afterOnERC20Received(account, sender, address(this), amount, data));
         }

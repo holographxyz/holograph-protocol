@@ -269,6 +269,7 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable  {
      * @dev Special function to allow a one time initialisation on deployment. Also configures and deploys royalties.
      */
     function init(bytes memory data) external override returns (bytes4) {
+        require(!_isInitialized(), "ERC721: already initialized");
         (
             string memory contractName,
             string memory contractSymbol,
@@ -290,6 +291,7 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable  {
 //         );
 //         (bytes4 selector) = abi.decode(returnData, (bytes4));
 //         require(success && selector == IInitializable.init.selector, "initialization failed");
+        _setInitialized();
         return IInitializable.init.selector;
     }
 
@@ -766,9 +768,33 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable  {
                 }
             }
         } else {
+/*
             _target = source();
             assembly {
                 calldatacopy(0, 0, calldatasize())
+                let result := call(gas(), _target, 0, 0, calldatasize(), 0, 0)
+                returndatacopy(0, 0, returndatasize())
+                switch result
+                case 0 {
+                    revert(0, returndatasize())
+                }
+                default {
+                    return(0, returndatasize())
+                }
+            }
+*/
+            /*
+             * @dev We forward the calldata to source contract via a call request.
+             *  Since this replaces msg.sender with address(this), we inject original msg.sender into calldata.
+             *  This allows us to protect this contract's storage layer from source contract's malicious actions.
+             *  This way a source contract can simultaneously access holographer address and the real msg.sender.
+             */
+            _target = source();
+            address _sender = msg.sender;
+            assembly {
+                calldatacopy(0, 0, calldatasize())
+                // we inject msg.sender into the calldata 32 byte slot right after 4 byte function selector
+                mstore(4, _sender)
                 let result := call(gas(), _target, 0, 0, calldatasize(), 0, 0)
                 returndatacopy(0, 0, returndatasize())
                 switch result

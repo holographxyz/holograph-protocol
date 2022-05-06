@@ -35,7 +35,7 @@ async function main () {
 
     console.log ("\n");
 
-    const mintResult = await HOLOGRAPH_ERC721_CONTRACT_FACTORY.methods.mint (provider.addresses [0], "https://sample.url/my.jpg").send ({
+    const mintResult = await HOLOGRAPH_ERC721_CONTRACT_FACTORY.methods.mint ('0x0000000000000000000000000000000000000000', provider.addresses [0], "https://sample.url/my.jpg").send ({
         chainId: network.chain,
         from: provider.addresses [0],
         gas: web3.utils.toHex (1000000),

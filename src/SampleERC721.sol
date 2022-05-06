@@ -2,9 +2,13 @@ HOLOGRAPH_LICENSE_HEADER
 
 SOLIDITY_COMPILER_VERSION
 
+import "./abstract/Initializable.sol";
+
 import "./interface/ERC721Holograph.sol";
 import "./interface/HolographedERC721.sol";
 import "./interface/IInitializable.sol";
+
+import "./library/Strings.sol";
 
 /**
  * @title Sample ERC-721 Collection that is bridgeable via Holograph
@@ -12,7 +16,7 @@ import "./interface/IInitializable.sol";
  * @notice A smart contract for minting and managing Holograph Bridgeable ERC721 NFTs.
  * @dev The entire logic and functionality of the smart contract is self-contained.
  */
-contract SampleERC721 is IInitializable, HolographedERC721  {
+contract SampleERC721 is Initializable, HolographedERC721  {
 
     /*
      * @dev Address of initial creator/owner of the collection.
@@ -51,10 +55,12 @@ contract SampleERC721 is IInitializable, HolographedERC721  {
      * @notice Initializes the collection.
      * @dev Special function to allow a one time initialisation on deployment. Also configures and deploys royalties.
      */
-    function init(bytes memory data) external returns (bytes4) {
+    function init(bytes memory data) external override returns (bytes4) {
+        require(!_isInitialized(), "ERC721: already initialized");
         _holographer = msg.sender;
         (address owner) = abi.decode(data, (address));
         _owner = owner;
+        _setInitialized();
         return IInitializable.init.selector;
     }
 
@@ -70,15 +76,15 @@ contract SampleERC721 is IInitializable, HolographedERC721  {
     /*
      * @dev Sample mint where anyone can mint any token, with a custom URI
      */
-    function mint(address to, string calldata URI) external {
+    function mint(address/* msgSender*/, address to, string calldata URI) external onlyHolographer {
         _currentTokendId++;
         ERC721Holograph(_holographer).sourceMint(to, _currentTokendId);
         uint256 _tokenId = ERC721Holograph(_holographer).sourceGetChainPrepend() + uint256(_currentTokendId);
         _tokenURIs[_tokenId] = URI;
     }
 
-    function test() external pure returns (string memory) {
-        return "it works!";
+    function test(address msgSender) external view onlyHolographer returns (string memory) {
+        return string(abi.encodePacked("it works! ", Strings.toHexString(msgSender)));
     }
 
 
