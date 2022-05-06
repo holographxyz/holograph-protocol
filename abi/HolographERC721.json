@@ -80,7 +80,7 @@
         "type": "event"
     },
     {
-        "stateMutability": "nonpayable",
+        "stateMutability": "payable",
         "type": "fallback"
     },
     {
@@ -846,5 +846,9 @@
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
+    },
+    {
+        "stateMutability": "payable",
+        "type": "receive"
     }
 ]

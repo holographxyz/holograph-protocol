@@ -165,11 +165,6 @@
                 "internalType": "uint256",
                 "name": "_amount",
                 "type": "uint256"
-            },
-            {
-                "internalType": "bytes",
-                "name": "_data",
-                "type": "bytes"
             }
         ],
         "name": "afterTransfer",
@@ -349,11 +344,6 @@
                 "internalType": "uint256",
                 "name": "_amount",
                 "type": "uint256"
-            },
-            {
-                "internalType": "bytes",
-                "name": "_data",
-                "type": "bytes"
             }
         ],
         "name": "beforeTransfer",

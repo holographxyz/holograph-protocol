@@ -41,8 +41,8 @@ In a separate terminal run ganache by `npm run-script ganache`, to run two separ
 
 Build the latest version of the project with `npm run-script build-compile`.
 
-End to end testing can be done with `sh _deploy.sh`.
+End to end testing can be done with `npm run-script test`.
 
 The deployment script will accomplish the following: deploy the entire protocol on both chains, create the same collection on each chain, set `.env $NETWORK` chain as original chain, mint sample NFTs on origin chain, and on foreign chain, test basic info validation, and simple functionality like `transferFrom`.
 
-Once the deployment has been done, multi-chain transfers can be tested with `sh _bridge.sh`. This script tests `bridgeOut` and `bridgeIn` requests between `NETWORK` and `NETWORK2`.
+Once the deployment has been done, multi-chain transfers can be tested with `npm run-script test-bridge`. This script tests `bridgeOut` and `bridgeIn` requests between `NETWORK` and `NETWORK2`.

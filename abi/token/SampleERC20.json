@@ -170,11 +170,6 @@
                 "internalType": "uint256",
                 "name": "",
                 "type": "uint256"
-            },
-            {
-                "internalType": "bytes",
-                "name": "",
-                "type": "bytes"
             }
         ],
         "name": "afterTransfer",
@@ -354,11 +349,6 @@
                 "internalType": "uint256",
                 "name": "",
                 "type": "uint256"
-            },
-            {
-                "internalType": "bytes",
-                "name": "",
-                "type": "bytes"
             }
         ],
         "name": "beforeTransfer",
@@ -468,7 +458,7 @@
         "inputs": [
             {
                 "internalType": "address",
-                "name": "",
+                "name": "msgSender",
                 "type": "address"
             },
             {
