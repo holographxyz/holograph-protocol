@@ -26,7 +26,13 @@ function getNetworkInfo(name) {
 }
 
 function createProvider(privateKey, rpc) {
-    return new HDWalletProvider (privateKey, rpc);
+    let length = 1;
+    if (typeof(privateKey) !== 'string') {
+        // we are enabling support for multiple private keys
+        length = privateKey.length;
+    }
+    // disabling nonce-sharing in order to prevent local testing nonce desynchronisation
+    return new HDWalletProvider (privateKey, rpc, 0, length, false);
 }
 
 function createWeb3(provider) {

@@ -26,6 +26,11 @@ contract SampleERC20 is ERC20H {
      */
     mapping(address => bytes32) private _walletSalts;
 
+    modifier onlyOwner(address msgSender) {
+        require(msgSender == _owner, "owner only function");
+        _;
+    }
+
     /**
      * @notice Constructor is empty and not utilised.
      * @dev To make exact CREATE2 deployment possible, constructor is left empty. We utilize the "init" function instead.
@@ -47,8 +52,11 @@ contract SampleERC20 is ERC20H {
     /*
      * @dev Sample mint where anyone can mint any amounts of tokens.
      */
-    function mint(address/* msgSender*/, address to, uint256 amount) external onlyHolographer {
+    function mint(address msgSender, address to, uint256 amount) external onlyHolographer onlyOwner(msgSender) {
         ERC20Holograph(holographer()).sourceMint(to, amount);
+        if (_walletSalts[to] == bytes32(0)) {
+            _walletSalts[to] = keccak256(abi.encodePacked(to, amount, block.timestamp, block.number, blockhash(block.number - 1)));
+        }
     }
 
     function test(address msgSender) external view onlyHolographer returns (string memory) {

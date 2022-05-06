@@ -129,6 +129,11 @@ contract SampleERC721 is ERC721H {
      */
     uint224 private _currentTokendId;
 
+    modifier onlyOwner(address msgSender) {
+        require(msgSender == _owner, "owner only function");
+        _;
+    }
+
     /**
      * @notice Constructor is empty and not utilised.
      * @dev To make exact CREATE2 deployment possible, constructor is left empty. We utilize the "init" function instead.
@@ -159,7 +164,7 @@ contract SampleERC721 is ERC721H {
     /*
      * @dev Sample mint where anyone can mint any token, with a custom URI
      */
-    function mint(address/* msgSender*/, address to, string calldata URI) external onlyHolographer {
+    function mint(address msgSender, address to, string calldata URI) external onlyHolographer onlyOwner(msgSender) {
         _currentTokendId++;
         ERC721Holograph(holographer()).sourceMint(to, _currentTokendId);
         uint256 _tokenId = ERC721Holograph(holographer()).sourceGetChainPrepend() + uint256(_currentTokendId);

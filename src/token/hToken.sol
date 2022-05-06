@@ -26,6 +26,11 @@ contract hToken is ERC20H {
      */
     mapping(address => bytes32) private _walletSalts;
 
+    modifier onlyOwner(address msgSender) {
+        require(msgSender == _owner, "owner only function");
+        _;
+    }
+
     /**
      * @notice Constructor is empty and not utilised.
      * @dev To make exact CREATE2 deployment possible, constructor is left empty. We utilize the "init" function instead.
@@ -47,7 +52,7 @@ contract hToken is ERC20H {
     /*
      * @dev Sample mint where anyone can mint any amounts of tokens.
      */
-    function mint(address/* msgSender*/, address to, uint256 amount) external onlyHolographer {
+    function mint(address msgSender, address to, uint256 amount) external onlyHolographer onlyOwner(msgSender) {
         ERC20Holograph(holographer()).sourceMint(to, amount);
     }
 

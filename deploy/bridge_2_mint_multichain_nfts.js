@@ -4,15 +4,16 @@ const {
     NETWORK2,
     GAS,
     WALLET1,
-    WALLET2
+    WALLET2,
+    DEPLOYER
 } = require ('../config/env');
 const {web3Error, hexify, throwError, getContractAddress, getContractArtifact,
     createCombinedFactoryAtAddress, createNetworkPropsForUser
 } = require("./helpers/utils");
 
 async function main () {
-    const { network: network1, provider: provider1, web3: web3_1 } = createNetworkPropsForUser(WALLET1, NETWORK)
-    const { network: network2, provider: provider2, web3: web3_2 } = createNetworkPropsForUser(WALLET2, NETWORK2)
+    const { network: network1, provider: provider1, web3: web3_1 } = createNetworkPropsForUser([WALLET1, DEPLOYER], NETWORK)
+    const { network: network2, provider: provider2, web3: web3_2 } = createNetworkPropsForUser([WALLET2, DEPLOYER], NETWORK2)
 
     const SAMPLE_ERC721 = 'token/SampleERC721';
     const SAMPLE_ERC721_ARTIFACT = getContractArtifact(SAMPLE_ERC721)
@@ -29,7 +30,7 @@ async function main () {
 //     let tokenId = NETWORK == 'local' ? 1 : '0xFFFFFFFE00000000000000000000000000000000000000000000000000000001';
     const mintResult = await ERC721_1.methods.mint ('0x0000000000000000000000000000000000000000', provider1.addresses [0], 'https://' + NETWORK + '.network/sampleNFT.jpg').send ({
         chainId: network1.chain,
-        from: provider1.addresses [0],
+        from: provider1.addresses [1],
         gas: web3_1.utils.toHex (1000000),
         gasPrice: web3_1.utils.toHex (web3_1.utils.toWei (GAS, 'gwei'))
     }).catch (web3Error);
@@ -41,7 +42,7 @@ async function main () {
 
     const mintResult2 = await ERC721_2.methods.mint ('0x0000000000000000000000000000000000000000', provider2.addresses [0], 'https://' + NETWORK2 + '.network/sampleNFT.jpg').send ({
         chainId: network2.chain,
-        from: provider2.addresses [0],
+        from: provider2.addresses [1],
         gas: web3_2.utils.toHex (1000000),
         gasPrice: web3_2.utils.toHex (web3_2.utils.toWei (GAS, 'gwei'))
     }).catch (web3Error);

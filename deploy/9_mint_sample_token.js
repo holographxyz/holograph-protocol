@@ -8,12 +8,13 @@ const {
     GAS,
     WALLET1,
     WALLET2,
+    DEPLOYER
 } = require ('../config/env');
 const {throwError, web3Error, getContractArtifact, getNetworkInfo, getContractAddress} = require("./helpers/utils");
 
 async function main () {
     const network = getNetworkInfo(NETWORK)
-    const provider = new HDWalletProvider ([WALLET1, WALLET2], network.rpc, 0, 2);
+    const provider = new HDWalletProvider ([WALLET1, WALLET2, DEPLOYER], network.rpc, 0, 3);
     const web3 = new Web3 (provider);
 
     const SAMPLE_ERC721 = 'token/SampleERC721';
@@ -37,7 +38,7 @@ async function main () {
 
     const mintResult = await HOLOGRAPH_ERC721_CONTRACT_FACTORY.methods.mint ('0x0000000000000000000000000000000000000000', provider.addresses [0], "https://sample.url/my.jpg").send ({
         chainId: network.chain,
-        from: provider.addresses [0],
+        from: provider.addresses [2],
         gas: web3.utils.toHex (1000000),
         gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
     }).catch (web3Error);

@@ -4,15 +4,16 @@ const {
     NETWORK2,
     GAS,
     WALLET1,
-    WALLET2
+    WALLET2,
+    DEPLOYER
 } = require ('../config/env');
 const {hexify, removeX, throwError, web3Error, setEvents, getContractArtifact, getContractAddress,
     createFactoryAtAddress, createCombinedFactoryAtAddress, createNetworkPropsForUser, saveContractResult
 } = require("./helpers/utils");
 
 async function main () {
-    const { network: network1, provider: provider1, web3: web3_1 } = createNetworkPropsForUser(WALLET1, NETWORK)
-    const { network: network2, provider: provider2, web3: web3_2 } = createNetworkPropsForUser(WALLET2, NETWORK2)
+    const { network: network1, provider: provider1, web3: web3_1 } = createNetworkPropsForUser([WALLET1, DEPLOYER], NETWORK)
+    const { network: network2, provider: provider2, web3: web3_2 } = createNetworkPropsForUser([WALLET2, DEPLOYER], NETWORK2)
 
     const HOLOGRAPH = 'Holograph';
     const HOLOGRAPH_ARTIFACT = getContractArtifact(HOLOGRAPH)
@@ -73,7 +74,7 @@ async function main () {
                 ]), // uint256 eventConfig
                 web3_1.eth.abi.encodeParameters (
                     ['address'],
-                    [provider1.addresses [0]]
+                    [provider1.addresses [1]]
                 )
             ]
         ) // bytes initCode
