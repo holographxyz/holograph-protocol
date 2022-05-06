@@ -311,11 +311,16 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
         return HolographedERC20(source());
     }
 
+    /*
+     * @dev Purposefully left empty, to prevent running out of gas errors when receiving native token payments.
+     */
+    receive() external payable {}
+
     /**
      * @notice Fallback to the source contract.
      * @dev Any function call that is not covered here, will automatically be sent over to the source contract.
      */
-    fallback() external {
+    fallback() external payable {
         /*
          * @dev We forward the calldata to source contract via a call request.
          *  Since this replaces msg.sender with address(this), we inject original msg.sender into calldata.
@@ -324,11 +329,12 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
          */
         address _target = source();
         address _sender = msg.sender;
+        uint256 _value = msg.value;
         assembly {
             calldatacopy(0, 0, calldatasize())
             // we inject msg.sender into the calldata 32 byte slot right after 4 byte function selector
             mstore(4, _sender)
-            let result := call(gas(), _target, 0, 0, calldatasize(), 0, 0)
+            let result := call(gas(), _target, _value, 0, calldatasize(), 0, 0)
             returndatacopy(0, 0, returndatasize())
             switch result
             case 0 {
@@ -383,12 +389,24 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
     }
 
     function approve(address spender, uint256 amount) public returns (bool) {
+        if (Booleans.get(_eventConfig, HolographERC20Event.beforeApprove)) {
+            require(SourceERC20().beforeApprove(msg.sender, spender, amount));
+        }
         _approve(msg.sender, spender, amount);
+        if (Booleans.get(_eventConfig, HolographERC20Event.afterApprove)) {
+            require(SourceERC20().afterApprove(msg.sender, spender, amount));
+        }
         return true;
     }
 
     function burn(uint256 amount) public {
+        if (Booleans.get(_eventConfig, HolographERC20Event.beforeBurn)) {
+            require(SourceERC20().beforeBurn(msg.sender, amount));
+        }
         _burn(msg.sender, amount);
+        if (Booleans.get(_eventConfig, HolographERC20Event.afterBurn)) {
+            require(SourceERC20().afterBurn(msg.sender, amount));
+        }
     }
 
     function burnFrom(address account, uint256 amount) public returns (bool) {
@@ -397,15 +415,29 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
         unchecked {
             _allowances[account][msg.sender] = currentAllowance - amount;
         }
+        if (Booleans.get(_eventConfig, HolographERC20Event.beforeBurn)) {
+            require(SourceERC20().beforeBurn(account, amount));
+        }
         _burn(account, amount);
+        if (Booleans.get(_eventConfig, HolographERC20Event.afterBurn)) {
+            require(SourceERC20().afterBurn(account, amount));
+        }
         return true;
     }
 
     function decreaseAllowance(address spender, uint256 subtractedValue) public returns (bool) {
         uint256 currentAllowance = _allowances[msg.sender][spender];
         require(currentAllowance >= subtractedValue, "ERC20: decreased below zero");
+        uint256 newAllowance;
         unchecked {
-            _approve(msg.sender, spender, currentAllowance - subtractedValue);
+            newAllowance = currentAllowance - subtractedValue;
+        }
+        if (Booleans.get(_eventConfig, HolographERC20Event.beforeApprove)) {
+            require(SourceERC20().beforeApprove(msg.sender, spender, newAllowance));
+        }
+        _approve(msg.sender, spender, newAllowance);
+        if (Booleans.get(_eventConfig, HolographERC20Event.afterApprove)) {
+            require(SourceERC20().afterApprove(msg.sender, spender, newAllowance));
         }
         return true;
     }
@@ -444,10 +476,20 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
 
     function increaseAllowance(address spender, uint256 addedValue) public returns (bool) {
         uint256 currentAllowance = _allowances[msg.sender][spender];
+        uint256 newAllowance;
         unchecked {
-            require((currentAllowance + addedValue) >= currentAllowance, "ERC20: increased above max value");
+            newAllowance = currentAllowance + addedValue;
         }
-        _approve(msg.sender, spender, currentAllowance + addedValue);
+        unchecked {
+            require(newAllowance >= currentAllowance, "ERC20: increased above max value");
+        }
+        if (Booleans.get(_eventConfig, HolographERC20Event.beforeApprove)) {
+            require(SourceERC20().beforeApprove(msg.sender, spender, newAllowance));
+        }
+        _approve(msg.sender, spender, newAllowance);
+        if (Booleans.get(_eventConfig, HolographERC20Event.afterApprove)) {
+            require(SourceERC20().afterApprove(msg.sender, spender, newAllowance));
+        }
         return true;
     }
 
@@ -478,7 +520,13 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
         bytes32 hash = _hashTypedDataV4(structHash);
         address signer = ECDSA.recover(hash, v, r, s);
         require(signer == account, "ERC20: invalid signature");
+        if (Booleans.get(_eventConfig, HolographERC20Event.beforeApprove)) {
+            require(SourceERC20().beforeApprove(account, spender, amount));
+        }
         _approve(account, spender, amount);
+        if (Booleans.get(_eventConfig, HolographERC20Event.afterApprove)) {
+            require(SourceERC20().afterApprove(account, spender, amount));
+        }
     }
 
     function safeTransfer(address recipient, uint256 amount) public returns (bool){
@@ -502,10 +550,12 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
     }
 
     function safeTransferFrom(address account, address recipient, uint256 amount, bytes memory data) public returns (bool){
-        uint256 currentAllowance = _allowances[account][msg.sender];
-        require(currentAllowance >= amount, "ERC20: amount exceeds allowance");
-        unchecked {
-            _allowances[account][msg.sender] = currentAllowance - amount;
+        if (account != msg.sender) {
+            uint256 currentAllowance = _allowances[account][msg.sender];
+            require(currentAllowance >= amount, "ERC20: amount exceeds allowance");
+            unchecked {
+                _allowances[account][msg.sender] = currentAllowance - amount;
+            }
         }
         if (Booleans.get(_eventConfig, HolographERC20Event.beforeSafeTransfer)) {
             require(SourceERC20().beforeSafeTransfer(account, recipient, amount, data));
@@ -521,9 +571,8 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
     /**
      * @dev Allows for source smart contract to burn tokens.
      */
-    function sourceBurn(uint256 amount) external {
-        address from = source();
-        require(msg.sender == from, "ERC20: only source can burn");
+    function sourceBurn(address from, uint256 amount) external {
+        require(msg.sender == source(), "ERC20: only source can burn");
         _burn(from, amount);
     }
 
@@ -546,26 +595,39 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
     }
 
     /**
-     * @dev Allows for source smart contract to transfer it's own tokens.
+     * @dev Allows for source smart contract to transfer tokens.
      */
-    function sourceTransfer(address to, uint256 amount) external {
-        address from = source();
-        require(msg.sender == from, "ERC20: only source can transfer");
+    function sourceTransfer(address from, address to, uint256 amount) external {
+        require(msg.sender == source(), "ERC20: only source can transfer");
         _transfer(from, to, amount);
     }
 
     function transfer(address recipient, uint256 amount) public returns (bool) {
+        if (Booleans.get(_eventConfig, HolographERC20Event.beforeTransfer)) {
+            require(SourceERC20().beforeTransfer(msg.sender, recipient, amount));
+        }
         _transfer(msg.sender, recipient, amount);
+        if (Booleans.get(_eventConfig, HolographERC20Event.afterTransfer)) {
+            require(SourceERC20().afterTransfer(msg.sender, recipient, amount));
+        }
         return true;
     }
 
     function transferFrom(address account, address recipient, uint256 amount) public returns (bool) {
-        uint256 currentAllowance = _allowances[account][msg.sender];
-        require(currentAllowance >= amount, "ERC20: amount exceeds allowance");
-        unchecked {
-            _allowances[account][msg.sender] = currentAllowance - amount;
+        if (account != msg.sender) {
+            uint256 currentAllowance = _allowances[account][msg.sender];
+            require(currentAllowance >= amount, "ERC20: amount exceeds allowance");
+            unchecked {
+                _allowances[account][msg.sender] = currentAllowance - amount;
+            }
+        }
+        if (Booleans.get(_eventConfig, HolographERC20Event.beforeTransfer)) {
+            require(SourceERC20().beforeTransfer(account, recipient, amount));
         }
         _transfer(account, recipient, amount);
+        if (Booleans.get(_eventConfig, HolographERC20Event.afterTransfer)) {
+            require(SourceERC20().afterTransfer(account, recipient, amount));
+        }
         return true;
     }
 

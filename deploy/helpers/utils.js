@@ -18,7 +18,11 @@ function getContractArtifact(name) {
 
 function getContractAddress(networkName, name) {
     name = cleanupContractName(name);
-    return fs.readFileSync ('./data/' + networkName + '.' + name + '.address', 'utf8').trim();
+    try {
+        return fs.readFileSync ('./data/' + networkName + '.' + name + '.address', 'utf8').trim();
+    } catch (ex) {
+        return '0x0000000000000000000000000000000000000000';
+    }
 }
 
 function getNetworkInfo(name) {

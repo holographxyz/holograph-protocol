@@ -28,13 +28,15 @@ abstract contract EIP712 {
     /* solhint-disable var-name-mixedcase */
     // Cache the domain separator as an immutable value, but also store the chain id that it corresponds to, in order to
     // invalidate the cached domain separator if the chain id changes.
-    bytes32 private immutable _CACHED_DOMAIN_SEPARATOR;
-    uint256 private immutable _CACHED_CHAIN_ID;
-    address private immutable _CACHED_THIS;
+    // WE CANNOT USE immutable VALUES SINCE IT BREAKS OUT CREATE2 COMPUTATIONS ON DEPLOYER SCRIPTS
+    // AFTER MAKING NECESARRY CHANGES, WE CAN ADD IT BACK IN
+    bytes32 private /*immutable*/ _CACHED_DOMAIN_SEPARATOR;
+    uint256 private /*immutable*/ _CACHED_CHAIN_ID;
+    address private /*immutable*/ _CACHED_THIS;
 
-    bytes32 private immutable _HASHED_NAME;
-    bytes32 private immutable _HASHED_VERSION;
-    bytes32 private immutable _TYPE_HASH;
+    bytes32 private /*immutable*/ _HASHED_NAME;
+    bytes32 private /*immutable*/ _HASHED_VERSION;
+    bytes32 private /*immutable*/ _TYPE_HASH;
 
     /* solhint-enable var-name-mixedcase */
 

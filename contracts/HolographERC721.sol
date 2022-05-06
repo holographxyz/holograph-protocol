@@ -846,11 +846,16 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable  {
         return IHolographer(payable(address(this))).getSourceContract();
     }
 
+    /*
+     * @dev Purposefully left empty, to prevent running out of gas errors when receiving native token payments.
+     */
+    receive() external payable {}
+
     /**
      * @notice Fallback to the source contract.
      * @dev Any function call that is not covered here, will automatically be sent over to the source contract.
      */
-    fallback() external {
+    fallback() external payable {
         // we check if royalties support the function, send there, otherwise revert to source
         address pa1d = royalties();
         address _target;
@@ -892,11 +897,12 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable  {
              */
             _target = source();
             address _sender = msg.sender;
+            uint256 _value = msg.value;
             assembly {
                 calldatacopy(0, 0, calldatasize())
                 // we inject msg.sender into the calldata 32 byte slot right after 4 byte function selector
                 mstore(4, _sender)
-                let result := call(gas(), _target, 0, 0, calldatasize(), 0, 0)
+                let result := call(gas(), _target, _value, 0, calldatasize(), 0, 0)
                 returndatacopy(0, 0, returndatasize())
                 switch result
                 case 0 {

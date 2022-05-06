@@ -111,12 +111,12 @@ abstract contract ERC20H is Initializable, HolographedERC20 {
         return _success;
     }
 
-    function afterTransfer(address/* _from*/, address/* _to*/, uint256/* _amount*/, bytes calldata/* _data*/) external virtual onlyHolographer returns (bool success) {
+    function afterTransfer(address/* _from*/, address/* _to*/, uint256/* _amount*/) external virtual onlyHolographer returns (bool success) {
         _success = true;
         return _success;
     }
 
-    function beforeTransfer(address/* _from*/, address/* _to*/, uint256/* _amount*/, bytes calldata/* _data*/) external virtual onlyHolographer returns (bool success) {
+    function beforeTransfer(address/* _from*/, address/* _to*/, uint256/* _amount*/) external virtual onlyHolographer returns (bool success) {
         _success = true;
         return _success;
     }

@@ -181,7 +181,7 @@ contract HolographRegistry is Admin, Initializable {
     }
 
     function factoryDeployedHash(bytes32 hash, address contractAddress) external {
-//        require(msg.sender == IHolograph(0x020be79e2D5a6a0204C07970F3586dc379d142e0).getFactory(), "HOLOGRAPH: factory only function");
+       require(msg.sender == IHolograph(0x020be79e2D5a6a0204C07970F3586dc379d142e0).getFactory(), "HOLOGRAPH: factory only function");
         _holographedContractsHashMap[hash] = contractAddress;
         _holographedContracts[contractAddress] = true;
     }

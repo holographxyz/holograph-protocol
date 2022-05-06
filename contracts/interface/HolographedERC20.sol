@@ -146,9 +146,9 @@ interface HolographedERC20 {
     function beforeSafeTransfer(address _from, address _to, uint256 _amount, bytes calldata _data) external returns (bool success);
 
     // event id = 13
-    function afterTransfer(address _from, address _to, uint256 _amount, bytes calldata _data) external returns (bool success);
+    function afterTransfer(address _from, address _to, uint256 _amount) external returns (bool success);
 
     // event id = 14
-    function beforeTransfer(address _from, address _to, uint256 _amount, bytes calldata _data) external returns (bool success);
+    function beforeTransfer(address _from, address _to, uint256 _amount) external returns (bool success);
 
 }

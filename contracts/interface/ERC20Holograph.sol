@@ -117,12 +117,12 @@ interface ERC20Holograph is ERC165, ERC20, ERC20Burnable, ERC20Metadata, ERC20Re
 
     function holographBridgeOut(uint32 chainType, address from, address to, uint256 amount) external returns (bytes4, bytes memory data);
 
-    function sourceBurn(uint256 amount) external;
+    function sourceBurn(address from, uint256 amount) external;
 
     function sourceMint(address to, uint256 amount) external;
 
     function sourceMintBatch(address[] calldata wallets, uint256[] calldata amounts) external;
 
-    function sourceTransfer(address to, uint256 amount) external;
+    function sourceTransfer(address from, address to, uint256 amount) external;
 
 }
