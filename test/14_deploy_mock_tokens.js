@@ -95,8 +95,6 @@ async function main () {
         gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
     }).catch (web3Error), 'ether'), symbol);
 
-    console.log ("\n");
-
     process.exit ();
 
 }

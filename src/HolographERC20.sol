@@ -583,10 +583,6 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
         }
     }
 
-    function _makeExternalCall(address target, bytes calldata payload) internal nonReentrant returns (bool, bytes memory) {
-        return target.call(payload);
-    }
-
     /**
      * @notice Mints tokens.
      * @dev Mint a specific amount of tokens to a specific address.

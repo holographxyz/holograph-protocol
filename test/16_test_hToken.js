@@ -24,7 +24,19 @@ async function main () {
         H_TOKEN_ADDRESS
     );
 
-    console.log ("\n");
+    const ERC20_MOCK = 'mock/ERC20Mock';
+    const ERC20_MOCK_ADDRESS = getContractAddress(NETWORK, ERC20_MOCK)
+
+    const supportMockTokenResult = await HOLOGRAPH_ERC20_CONTRACT_FACTORY.methods.updateSupportedWrapper ('0x0000000000000000000000000000000000000000', ERC20_MOCK_ADDRESS, true).send ({
+        chainId: network.chain,
+        from: provider.addresses [0],
+        gas: web3.utils.toHex (1000000),
+        gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
+    }).catch (web3Error);
+    if (!supportMockTokenResult.status) {
+        throwError (JSON.stringify (supportMockTokenResult, null, 4));
+    }
+    console.log ('Enabled support for Mock ERC20 token use with hToken');
 
     console.log ('getHolographEnforcer', await HOLOGRAPH_ERC20_CONTRACT_FACTORY.methods.getHolographEnforcer ().call ({
         chainId: network.chain,
@@ -81,8 +93,6 @@ async function main () {
         gas: web3.utils.toHex (1000000),
         gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
     }).catch (web3Error));
-
-    console.log ("\n");
 
     process.exit ();
 

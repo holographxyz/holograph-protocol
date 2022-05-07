@@ -26,7 +26,7 @@ async function main () {
         '0x000000000000000000000000000000000000486f6c6f67726170684552433230', // bytes32 contractType
         // WE MANUALLY SET THIS TO LOCAL NETWORK HOLOGRAPH ID
         // this is to see the differences in how tokens are managed between chains
-        hexify ((network.holographId).toString (16).padStart (8, '0'), true), // uint32 chainType
+        hexify ((4294967295).toString (16).padStart (8, '0'), true), // uint32 chainType
         '0x0000000000000000000000000000000000000000000000000000000000000000', // bytes32 salt
         hexify (H_TOKEN_CONTRACT.bin, true), // bytes byteCode
         web3.eth.abi.encodeParameters (

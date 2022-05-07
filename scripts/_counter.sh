@@ -4,10 +4,8 @@ WORDS=0
 CHARACTERS=0
 LINES=0
 
-PWD=pwd
-echo $PWD
 echo
-git ls-files | xargs wc -c |sort -n
+git ls-files | xargs wc -c
 echo
 
 FILES=$(git ls-files)

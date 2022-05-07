@@ -12,8 +12,6 @@ async function main () {
 
     const HOLOGRAPH_ERC721 = getHolographERC721Contract(web3, NETWORK)
 
-    console.log ("\n");
-
     console.log ('contractURI', await HOLOGRAPH_ERC721.contract.methods.contractURI ().call ({
         chainId: network.chain,
         from: provider.addresses [0],
@@ -34,8 +32,6 @@ async function main () {
         gas: web3.utils.toHex (1000000),
         gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
     }).catch (web3Error));
-
-    console.log ("\n");
 
     process.exit ();
 

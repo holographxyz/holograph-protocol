@@ -12,8 +12,6 @@ async function main () {
 
     const HOLOGRAPH_ERC20 = getHolographERC20Contract(web3, NETWORK)
 
-    console.log ("\n");
-
     console.log ('name', await HOLOGRAPH_ERC20.contract.methods.name ().call ({
         chainId: network.chain,
         from: provider.addresses [0],
@@ -34,8 +32,6 @@ async function main () {
         gas: web3.utils.toHex (1000000),
         gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
     }).catch (web3Error));
-
-    console.log ("\n");
 
     process.exit ();
 

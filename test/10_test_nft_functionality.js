@@ -31,8 +31,6 @@ async function main () {
 
     let tokenId = NETWORK == 'local' ? 1 : '0xFFFFFFFE00000000000000000000000000000000000000000000000000000001';
 
-    console.log ("\n");
-
     console.log ('ownerOf', await HOLOGRAPH_ERC721_CONTRACT_FACTORY.methods.ownerOf (tokenId).call ({
         chainId: network.chain,
         from: provider.addresses [0],
@@ -84,8 +82,6 @@ async function main () {
         transferBackResult.events.Transfer.returnValues._to,
         "\n"
     );
-
-    console.log ("\n");
 
     process.exit ();
 

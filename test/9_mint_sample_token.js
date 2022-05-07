@@ -34,8 +34,6 @@ async function main () {
 
     let tokenId = NETWORK == 'local' ? 1 : '0xFFFFFFFE00000000000000000000000000000000000000000000000000000001';
 
-    console.log ("\n");
-
     const mintResult = await HOLOGRAPH_ERC721_CONTRACT_FACTORY.methods.mint ('0x0000000000000000000000000000000000000000', provider.addresses [0], "https://sample.url/my.jpg").send ({
         chainId: network.chain,
         from: provider.addresses [2],
@@ -67,8 +65,6 @@ async function main () {
         gas: web3.utils.toHex (1000000),
         gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
     }).catch (web3Error));
-
-    console.log ("\n");
 
     process.exit ();
 

@@ -82,7 +82,6 @@ contract hToken is ERC20H {
      * @param recipient Address of where to send the hToken(s) to.
      */
     function holographNativeToken(address msgSender, address recipient) external payable onlyHolographer {
-        require(msg.value > 0, "hToken: no value received");
         require(
             (
                 IHolographer(holographer()).getOriginChain()
@@ -90,6 +89,7 @@ contract hToken is ERC20H {
             ),
             "hToken: not native token"
         );
+        require(msg.value > 0, "hToken: no value received");
         if (recipient == address(0)) {
             recipient = msgSender;
         }
@@ -103,7 +103,6 @@ contract hToken is ERC20H {
      */
     function extractNativeToken(address msgSender, address payable recipient, uint256 amount) external onlyHolographer {
         require(ERC20(address(this)).balanceOf(msgSender) >= amount, "hToken: not enough hToken(s)");
-        require(address(this).balance >= amount, "hToken: not enough native tokens");
         require(
             (
                 IHolographer(holographer()).getOriginChain()
@@ -111,6 +110,7 @@ contract hToken is ERC20H {
             ),
             "hToken: not on native chain"
         );
+        require(address(this).balance >= amount, "hToken: not enough native tokens");
         ERC20Holograph(holographer()).sourceBurn(msgSender, amount);
         // HERE WE NEED TO ADD FEE MECHANISM TO EXTRACT xx.xxxx% FROM NATIVE TOKEN AMOUNT
         // THIS SHOULD GO SOMEWHERE TO REWARD CAPITAL PROVIDERS
@@ -158,7 +158,6 @@ contract hToken is ERC20H {
         ERC20 erc20 = ERC20(token);
         uint256 previousBalance = erc20.balanceOf(address(this));
         require(previousBalance >= amount, "hToken: not enough ERC20 tokens");
-        require(address(this).balance >= amount, "hToken: not enough native tokens");
         if (recipient == address(0)) {
             recipient = payable(msgSender);
         }
@@ -173,6 +172,19 @@ contract hToken is ERC20H {
         require(difference == adjustedAmount, "hToken: incorrect new balance");
         ERC20Holograph(holographer()).sourceBurn(msgSender, amount);
         emit Withdrawal(token, recipient, adjustedAmount);
+    }
+
+    function availableNativeTokens(address/* msgSender*/) external view onlyHolographer returns (uint256) {
+        if (IHolographer(holographer()).getOriginChain() == IHolograph(0x20202020486f6c6f677261706841646472657373).getChainType()) {
+            return address(this).balance;
+        } else {
+            return 0;
+        }
+    }
+
+    function availableWrappedTokens(address/* msgSender*/, address token) external view onlyHolographer returns (uint256) {
+        require(_supportedWrappers[token], "hToken: unsupported token type");
+        return ERC20(token).balanceOf(address(this));
     }
 
     function test(address msgSender) external view onlyHolographer returns (string memory) {

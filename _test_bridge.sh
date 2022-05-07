@@ -1,23 +1,21 @@
 #!/bin/sh
 
+echo "\n\n###### TESTING BRIDGING ######\n\n"
+
+FILES=("bridge_1_deploy_sample_erc721" "bridge_2_mint_multichain_nfts" "bridge_3_transfer_multichain_nfts")
 
 export NETWORK_TYPE=1;
 
-    node test/bridge_1_deploy_sample_erc721.js
+for FILE in ${FILES[@]}; do
+
+    echo "\n### "$FILE"_start ###"
+    node test/$FILE.js
     if [ $? != 0 ]; then
         exit
     fi
+    echo "### "$FILE"_finish ###"
 
-    node test/bridge_2_mint_multichain_nfts.js
-    if [ $? != 0 ]; then
-        exit
-    fi
-
-    node test/bridge_3_transfer_multichain_nfts.js
-    if [ $? != 0 ]; then
-        exit
-    fi
-
+done
 
 export NETWORK_TYPE=1;
 
