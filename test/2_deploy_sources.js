@@ -236,7 +236,7 @@ async function main () {
         ).send({
             chainId: network.chain,
             from: provider.addresses [0],
-            gas: web3.utils.toHex (2000000),
+            gas: web3.utils.toHex (3000000),
             gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
         }).catch(web3Error);
 

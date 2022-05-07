@@ -360,8 +360,15 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
     /**
      * @dev Allows the bridge to take tokens out onto another blockchain.
      */
-    function holographBridgeOut(uint32 chainType, address from, address to, uint256 amount) external returns (bytes4 selector, bytes memory data) {
+    function holographBridgeOut(uint32 chainType, address operator, address from, address to, uint256 amount) external returns (bytes4 selector, bytes memory data) {
         require(msg.sender == bridge(),  "ERC20: only bridge can call");
+        if (operator != from) {
+            uint256 currentAllowance = _allowances[from][operator];
+            require(currentAllowance >= amount, "ERC20: amount exceeds allowance");
+            unchecked {
+                _allowances[from][operator] = currentAllowance - amount;
+            }
+        }
         if (from != to) {
             _transfer(from, to, amount);
         }

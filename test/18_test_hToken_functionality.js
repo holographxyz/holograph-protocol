@@ -166,6 +166,11 @@ async function main () {
         gasPrice: web3.utils.toHex (web3.utils.toWei (GAS, 'gwei'))
     }).catch (web3Error));
 
+    /*
+     * TO DO: we need to include unwrapping functionality, test against native token, and against supported wrapped token
+     * available balances can be retrieved via availableNativeTokens(msgSender) and availableWrappedTokens(msgSender,token)
+     */
+
     process.exit ();
 
 }

@@ -5,6 +5,7 @@ SOLIDITY_COMPILER_VERSION
 import "./abstract/Admin.sol";
 import "./abstract/Initializable.sol";
 
+import "./interface/ERC20Holograph.sol";
 import "./interface/ERC721Holograph.sol";
 import "./interface/IHolograph.sol";
 import "./interface/IHolographFactory.sol";
@@ -21,6 +22,7 @@ contract HolographBridge is Admin, Initializable {
 
     event DeployRequest(uint32 chainId, bytes data);
     event TransferErc721(uint32 toChainId, bytes data);
+    event TransferErc20(uint32 toChainId, bytes data);
     event LzEvent(uint16 _dstChainId, bytes _destination, bytes _payload);
 
     /*
@@ -217,6 +219,37 @@ contract HolographBridge is Admin, Initializable {
                 from,
                 to,
                 tokenId,
+                data
+            ),
+            payable(msg.sender),
+            address(this),
+            bytes("")
+        );
+    }
+
+    function erc20in(uint32 fromChain, address token, address from, address to, uint256 amount, bytes calldata data) external onlyOperator {
+        // all approval and validation should be done before this point
+        require(IHolographRegistry(_registry()).isHolographedContract(token), "HOLOGRAPH: not holographed");
+        require(ERC20Holograph(token).holographBridgeIn(fromChain, from, to, amount, data) == ERC20Holograph.holographBridgeIn.selector, "HOLOGRAPH: bridge in failed");
+    }
+
+    function erc20out(uint32 toChain, address token, address from, address to, uint256 amount) external payable {
+        require(IHolographRegistry(_registry()).isHolographedContract(token), "HOLOGRAPH: not holographed");
+        ERC20Holograph erc20 = ERC20Holograph(token);
+        require(erc20.balanceOf (from) >= amount, "HOLOGRAPH: not enough tokens");
+        (bytes4 selector, bytes memory data) = erc20.holographBridgeOut(toChain, msg.sender, from, to, amount);
+        require(selector == ERC20Holograph.holographBridgeOut.selector, "HOLOGRAPH: bridge out failed");
+        emit TransferErc20(toChain, abi.encode(IHolograph(0x20202020486F6c6f677261706841646472657373).getChainType(), token, from, to, amount, data));
+        HolographBridge(payable(address(this))).send{value:msg.value}(
+            chainConvert(toChain),
+            abi.encodePacked (address(this)),
+            abi.encodeWithSignature(
+                "erc20in(uint32,address,address,address,uint256,bytes)",
+                IHolograph(0x20202020486F6c6f677261706841646472657373).getChainType(),
+                token,
+                from,
+                to,
+                amount,
                 data
             ),
             payable(msg.sender),
