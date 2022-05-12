@@ -418,6 +418,83 @@
     {
         "inputs": [
             {
+                "internalType": "address",
+                "name": "msgSender",
+                "type": "address"
+            },
+            {
+                "internalType": "uint224",
+                "name": "tokenId",
+                "type": "uint224"
+            },
+            {
+                "components": [
+                    {
+                        "internalType": "bytes32",
+                        "name": "payloadHash",
+                        "type": "bytes32"
+                    },
+                    {
+                        "components": [
+                            {
+                                "internalType": "bytes32",
+                                "name": "r",
+                                "type": "bytes32"
+                            },
+                            {
+                                "internalType": "bytes32",
+                                "name": "s",
+                                "type": "bytes32"
+                            },
+                            {
+                                "internalType": "uint8",
+                                "name": "v",
+                                "type": "uint8"
+                            }
+                        ],
+                        "internalType": "struct Verification",
+                        "name": "payloadSignature",
+                        "type": "tuple"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "creator",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "bytes32",
+                        "name": "arweave",
+                        "type": "bytes32"
+                    },
+                    {
+                        "internalType": "bytes11",
+                        "name": "arweave2",
+                        "type": "bytes11"
+                    },
+                    {
+                        "internalType": "bytes32",
+                        "name": "ipfs",
+                        "type": "bytes32"
+                    },
+                    {
+                        "internalType": "bytes14",
+                        "name": "ipfs2",
+                        "type": "bytes14"
+                    }
+                ],
+                "internalType": "struct TokenData",
+                "name": "tokenData",
+                "type": "tuple"
+            }
+        ],
+        "name": "cxipMint",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
                 "internalType": "bytes",
                 "name": "data",
                 "type": "bytes"
@@ -435,29 +512,6 @@
         "type": "function"
     },
     {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "msgSender",
-                "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "to",
-                "type": "address"
-            },
-            {
-                "internalType": "string",
-                "name": "URI",
-                "type": "string"
-            }
-        ],
-        "name": "mint",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
         "inputs": [],
         "name": "msgSender",
         "outputs": [
@@ -465,25 +519,6 @@
                 "internalType": "address",
                 "name": "sender",
                 "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "msgSender",
-                "type": "address"
-            }
-        ],
-        "name": "test",
-        "outputs": [
-            {
-                "internalType": "string",
-                "name": "",
-                "type": "string"
             }
         ],
         "stateMutability": "view",

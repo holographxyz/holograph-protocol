@@ -8,20 +8,25 @@ import "../interface/ERC721Holograph.sol";
 
 import "../library/Strings.sol";
 
+import "../struct/TokenData.sol";
+
 /**
- * @title Sample ERC-721 Collection that is bridgeable via Holograph
+ * @title CXIP ERC-721 Collection that is bridgeable via Holograph
  * @author CXIP-Labs
  * @notice A smart contract for minting and managing Holograph Bridgeable ERC721 NFTs.
  * @dev The entire logic and functionality of the smart contract is self-contained.
  */
-contract SampleERC721 is ERC721H {
+contract CxipERC721 is ERC721H {
 
     /*
      * @dev Address of initial creator/owner of the collection.
      */
     address private _owner;
 
-    mapping(uint256 => string) private _tokenURIs;
+    /**
+     * @dev Token data mapped by token id.
+     */
+    mapping(uint256 => TokenData) private _tokenData;
 
     /*
      * @dev Internal reference used for minting incremental token ids.
@@ -57,35 +62,34 @@ contract SampleERC721 is ERC721H {
      * @return string The URI.
      */
     function tokenURI(uint256 _tokenId) external view onlyHolographer returns (string memory) {
-        return _tokenURIs[_tokenId];
+        return string(abi.encodePacked("https://arweave.net/", _tokenData[_tokenId].arweave, _tokenData[_tokenId].arweave2));
     }
 
-    /*
-     * @dev Sample mint where anyone can mint any token, with a custom URI
-     */
-    function mint(address msgSender, address to, string calldata URI) external onlyHolographer onlyOwner(msgSender) {
-        _currentTokenId++;
-        ERC721Holograph(holographer()).sourceMint(to, _currentTokenId);
-        uint256 _tokenId = ERC721Holograph(holographer()).sourceGetChainPrepend() + uint256(_currentTokenId);
-        _tokenURIs[_tokenId] = URI;
-    }
-
-    function test(address msgSender) external view onlyHolographer returns (string memory) {
-        return string(abi.encodePacked("it works! ", Strings.toHexString(msgSender)));
+    function cxipMint(address msgSender, uint224 tokenId, TokenData calldata tokenData) external onlyHolographer onlyOwner(msgSender) {
+        ERC721Holograph H721 = ERC721Holograph(holographer());
+        if (tokenId == 0) {
+            while (H721.exists(uint256(_currentTokenId))) {
+                _currentTokenId += 1;
+            }
+            tokenId = _currentTokenId;
+        }
+        H721.sourceMint(tokenData.creator, tokenId);
+        uint256 id = H721.sourceGetChainPrepend() + uint256(tokenId);
+        _tokenData[id] = tokenData;
     }
 
     function bridgeIn(uint32/* _chainId*/, address/* _from*/, address/* _to*/, uint256 _tokenId, bytes calldata _data) external override onlyHolographer returns (bool) {
-        (string memory URI) = abi.decode(_data, (string));
-        _tokenURIs[_tokenId] = URI;
+        (TokenData memory tokenData) = abi.decode(_data, (TokenData));
+        _tokenData[_tokenId] = tokenData;
         return true;
     }
 
     function bridgeOut(uint32/* _chainId*/, address/* _from*/, address/* _to*/, uint256 _tokenId) external override view onlyHolographer returns (bytes memory _data) {
-        _data = abi.encode(_tokenURIs[_tokenId]);
+        _data = abi.encode(_tokenData[_tokenId]);
     }
 
     function afterBurn(address/* _owner*/, uint256 _tokenId) external override onlyHolographer returns (bool) {
-        delete _tokenURIs[_tokenId];
+        delete _tokenData[_tokenId];
         return true;
     }
 

@@ -10,7 +10,7 @@
             {
                 "indexed": false,
                 "internalType": "uint32",
-                "name": "chainId",
+                "name": "toChainId",
                 "type": "uint32"
             },
             {

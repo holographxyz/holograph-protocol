@@ -795,13 +795,11 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable  {
              *  This way a source contract can simultaneously access holographer address and the real msg.sender.
              */
             _target = source();
-            address _sender = msg.sender;
-            uint256 _value = msg.value;
             assembly {
                 calldatacopy(0, 0, calldatasize())
                 // we inject msg.sender into the calldata 32 byte slot right after 4 byte function selector
-                mstore(4, _sender)
-                let result := call(gas(), _target, _value, 0, calldatasize(), 0, 0)
+                mstore(4, caller())
+                let result := call(gas(), _target, callvalue(), 0, calldatasize(), 0, 0)
                 returndatacopy(0, 0, returndatasize())
                 switch result
                 case 0 {

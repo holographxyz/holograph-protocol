@@ -127,7 +127,7 @@ contract SampleERC721 is ERC721H {
     /*
      * @dev Internal reference used for minting incremental token ids.
      */
-    uint224 private _currentTokendId;
+    uint224 private _currentTokenId;
 
     modifier onlyOwner(address msgSender) {
         require(msgSender == _owner, "owner only function");
@@ -165,9 +165,9 @@ contract SampleERC721 is ERC721H {
      * @dev Sample mint where anyone can mint any token, with a custom URI
      */
     function mint(address msgSender, address to, string calldata URI) external onlyHolographer onlyOwner(msgSender) {
-        _currentTokendId++;
-        ERC721Holograph(holographer()).sourceMint(to, _currentTokendId);
-        uint256 _tokenId = ERC721Holograph(holographer()).sourceGetChainPrepend() + uint256(_currentTokendId);
+        _currentTokenId++;
+        ERC721Holograph(holographer()).sourceMint(to, _currentTokenId);
+        uint256 _tokenId = ERC721Holograph(holographer()).sourceGetChainPrepend() + uint256(_currentTokenId);
         _tokenURIs[_tokenId] = URI;
     }
 

@@ -103,19 +103,39 @@
 
 pragma solidity 0.8.13;
 
-import "../abstract/Initializable.sol";
+import "../abstract/ERC721H.sol";
 
-import "../interface/HolographedERC721.sol";
+import "../interface/ERC721Holograph.sol";
 
-abstract contract ERC721H is Initializable, HolographedERC721 {
+import "../library/Strings.sol";
+
+import "../struct/TokenData.sol";
+
+/**
+ * @title CXIP ERC-721 Collection that is bridgeable via Holograph
+ * @author CXIP-Labs
+ * @notice A smart contract for minting and managing Holograph Bridgeable ERC721 NFTs.
+ * @dev The entire logic and functionality of the smart contract is self-contained.
+ */
+contract CxipERC721 is ERC721H {
 
     /*
-     * @dev Dummy variable to prevent empty functions from making "switch to pure" warnings.
+     * @dev Address of initial creator/owner of the collection.
      */
-    bool private _success;
+    address private _owner;
 
-    modifier onlyHolographer() {
-        require(msg.sender == holographer(), "holographer only function");
+    /**
+     * @dev Token data mapped by token id.
+     */
+    mapping(uint256 => TokenData) private _tokenData;
+
+    /*
+     * @dev Internal reference used for minting incremental token ids.
+     */
+    uint224 private _currentTokenId;
+
+    modifier onlyOwner(address msgSender) {
+        require(msgSender == _owner, "owner only function");
         _;
     }
 
@@ -129,102 +149,49 @@ abstract contract ERC721H is Initializable, HolographedERC721 {
      * @notice Initializes the collection.
      * @dev Special function to allow a one time initialisation on deployment. Also configures and deploys royalties.
      */
-    function init(bytes memory data) external virtual override returns (bytes4) {
+    function init(bytes memory data) external override returns (bytes4) {
+        // do your own custom logic here
+        (address owner) = abi.decode(data, (address));
+        _owner = owner;
+        // run underlying initializer logic
         return _init(data);
     }
 
-    function _init(bytes memory/* data*/) internal returns (bytes4) {
-        require(!_isInitialized(), "ERC721: already initialized");
-        address _holographer = msg.sender;
-        assembly {
-            sstore(/* slot */0x6e5f8ca8411e7bcc0b4514ebbbdd1e5a67471d01255657bdeed111c1c4204aec, _holographer)
-        }
-        _setInitialized();
-        return IInitializable.init.selector;
-    }
-
-    /*
-     * @dev Address of Holograph ERC20 standards enforcer smart contract.
+    /**
+     * @notice Get's the URI of the token.
+     * @dev Defaults the the Arweave URI
+     * @return string The URI.
      */
-    function holographer() internal view returns (address _holographer) {
-        assembly {
-            _holographer := sload(/* slot */0x6e5f8ca8411e7bcc0b4514ebbbdd1e5a67471d01255657bdeed111c1c4204aec)
-        }
+    function tokenURI(uint256 _tokenId) external view onlyHolographer returns (string memory) {
+        return string(abi.encodePacked("https://arweave.net/", _tokenData[_tokenId].arweave, _tokenData[_tokenId].arweave2));
     }
 
-    function bridgeIn(uint32/* _chainId*/, address/* _from*/, address/* _to*/, uint256/* _tokenId*/, bytes calldata/* _data*/) external virtual onlyHolographer returns (bool) {
-        _success = true;
+    function cxipMint(address msgSender, uint224 tokenId, TokenData calldata tokenData) external onlyHolographer onlyOwner(msgSender) {
+        ERC721Holograph H721 = ERC721Holograph(holographer());
+        if (tokenId == 0) {
+            while (H721.exists(uint256(_currentTokenId))) {
+                _currentTokenId += 1;
+            }
+            tokenId = _currentTokenId;
+        }
+        H721.sourceMint(tokenData.creator, tokenId);
+        uint256 id = H721.sourceGetChainPrepend() + uint256(tokenId);
+        _tokenData[id] = tokenData;
+    }
+
+    function bridgeIn(uint32/* _chainId*/, address/* _from*/, address/* _to*/, uint256 _tokenId, bytes calldata _data) external override onlyHolographer returns (bool) {
+        (TokenData memory tokenData) = abi.decode(_data, (TokenData));
+        _tokenData[_tokenId] = tokenData;
         return true;
     }
 
-    function bridgeOut(uint32/* _chainId*/, address/* _from*/, address/* _to*/, uint256/* _tokenId*/) external virtual view onlyHolographer returns (bytes memory _data) {
-        _data = abi.encode(holographer());
+    function bridgeOut(uint32/* _chainId*/, address/* _from*/, address/* _to*/, uint256 _tokenId) external override view onlyHolographer returns (bytes memory _data) {
+        _data = abi.encode(_tokenData[_tokenId]);
     }
 
-    function afterApprove(address/* _owner*/, address/* _to*/, uint256/* _tokenId*/) external virtual onlyHolographer returns (bool success) {
-        _success = true;
-        return _success;
-    }
-
-    function beforeApprove(address/* _owner*/, address/* _to*/, uint256/* _tokenId*/) external virtual onlyHolographer returns (bool success) {
-        _success = true;
-        return _success;
-    }
-
-    function afterApprovalAll(address/* _to*/, bool/* _approved*/) external virtual onlyHolographer returns (bool success) {
-        _success = true;
-        return _success;
-    }
-
-    function beforeApprovalAll(address/* _to*/, bool/* _approved*/) external virtual onlyHolographer returns (bool success) {
-        _success = true;
-        return _success;
-    }
-
-    function afterBurn(address/* _owner*/, uint256/* _tokenId*/) external virtual onlyHolographer returns (bool success) {
-        _success = true;
-        return _success;
-    }
-
-    function beforeBurn(address/* _owner*/, uint256/* _tokenId*/) external virtual onlyHolographer returns (bool success) {
-        _success = true;
-        return _success;
-    }
-
-    function afterMint(address/* _owner*/, uint256/* _tokenId*/) external virtual onlyHolographer returns (bool success) {
-        _success = true;
-        return _success;
-    }
-
-    function beforeMint(address/* _owner*/, uint256/* _tokenId*/) external virtual onlyHolographer returns (bool success) {
-        _success = true;
-        return _success;
-    }
-
-    function afterSafeTransfer(address/* _from*/, address/* _to*/, uint256/* _tokenId*/, bytes calldata/* _data*/) external virtual onlyHolographer returns (bool success) {
-        _success = true;
-        return _success;
-    }
-
-    function beforeSafeTransfer(address/* _from*/, address/* _to*/, uint256/* _tokenId*/, bytes calldata/* _data*/) external virtual onlyHolographer returns (bool success) {
-        _success = true;
-        return _success;
-    }
-
-    function afterTransfer(address/* _from*/, address/* _to*/, uint256/* _tokenId*/, bytes calldata/* _data*/) external virtual onlyHolographer returns (bool success) {
-        _success = true;
-        return _success;
-    }
-
-    function beforeTransfer(address/* _from*/, address/* _to*/, uint256/* _tokenId*/, bytes calldata/* _data*/) external virtual onlyHolographer returns (bool success) {
-        _success = true;
-        return _success;
-    }
-
-    function msgSender() external view returns (address sender) {
-        assembly {
-            sender := sload(0x8441fa6ff843f273d23d65e882c7fe479d103e38c6404b1e55f13302c0f3fc78)
-        }
+    function afterBurn(address/* _owner*/, uint256 _tokenId) external override onlyHolographer returns (bool) {
+        delete _tokenData[_tokenId];
+        return true;
     }
 
 }

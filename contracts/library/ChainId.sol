@@ -103,128 +103,160 @@
 
 pragma solidity 0.8.13;
 
-import "../abstract/Initializable.sol";
+library ChainId {
 
-import "../interface/HolographedERC721.sol";
-
-abstract contract ERC721H is Initializable, HolographedERC721 {
-
-    /*
-     * @dev Dummy variable to prevent empty functions from making "switch to pure" warnings.
-     */
-    bool private _success;
-
-    modifier onlyHolographer() {
-        require(msg.sender == holographer(), "holographer only function");
-        _;
-    }
-
-    /**
-     * @notice Constructor is empty and not utilised.
-     * @dev To make exact CREATE2 deployment possible, constructor is left empty. We utilize the "init" function instead.
-     */
-    constructor() {}
-
-    /**
-     * @notice Initializes the collection.
-     * @dev Special function to allow a one time initialisation on deployment. Also configures and deploys royalties.
-     */
-    function init(bytes memory data) external virtual override returns (bytes4) {
-        return _init(data);
-    }
-
-    function _init(bytes memory/* data*/) internal returns (bytes4) {
-        require(!_isInitialized(), "ERC721: already initialized");
-        address _holographer = msg.sender;
+    function lz2hlg(uint16 lzChainId) internal pure returns (uint32 hlgChainId) {
         assembly {
-            sstore(/* slot */0x6e5f8ca8411e7bcc0b4514ebbbdd1e5a67471d01255657bdeed111c1c4204aec, _holographer)
+            switch lzChainId
+            // eth
+            case 1 {
+                hlgChainId := 1
+            }
+            // bsc
+            case 2 {
+                hlgChainId := 2
+            }
+            // avalanche
+            case 6 {
+                hlgChainId := 3
+            }
+            // polygon
+            case 9 {
+                hlgChainId := 4
+            }
+            // arbitrum
+            case 10 {
+                hlgChainId := 6
+            }
+            // optimism
+            case 11 {
+                hlgChainId := 7
+            }
+            // fantom
+            case 12 {
+                hlgChainId := 5
+            }
+            // rinkeby
+            case 10001 {
+                hlgChainId := 4000000001
+            }
+            // bsc testnet
+            case 10002 {
+                hlgChainId := 4000000002
+            }
+            // fuji
+            case 10006 {
+                hlgChainId := 4000000003
+            }
+            // mumbai
+            case 10009 {
+                hlgChainId := 4000000004
+            }
+            // arbitrum rinkeby
+            case 10010 {
+                hlgChainId := 4000000006
+            }
+            // optimism kovan
+            case 10011 {
+                hlgChainId := 4000000007
+            }
+            // fantom testnet
+            case 10012 {
+                hlgChainId := 4000000005
+            }
+            // local2
+            case 65534 {
+                hlgChainId := 4294967294
+            }
+            // local
+            case 65535 {
+                hlgChainId := 4294967295
+            }
+            default {
+                hlgChainId := 0
+            }
         }
-        _setInitialized();
-        return IInitializable.init.selector;
     }
 
-    /*
-     * @dev Address of Holograph ERC20 standards enforcer smart contract.
-     */
-    function holographer() internal view returns (address _holographer) {
+    function hlg2lz(uint32 hlgChainId) internal pure returns (uint16 lzChainId) {
         assembly {
-            _holographer := sload(/* slot */0x6e5f8ca8411e7bcc0b4514ebbbdd1e5a67471d01255657bdeed111c1c4204aec)
+            switch hlgChainId
+            // eth
+            case 1 {
+                lzChainId := 1
+            }
+            // bsc
+            case 2 {
+                lzChainId := 2
+            }
+            // avalanche
+            case 3 {
+                lzChainId := 6
+            }
+            // polygon
+            case 4 {
+                lzChainId := 9
+            }
+            // fantom
+            case 5 {
+                lzChainId := 12
+            }
+            // arbitrum
+            case 6 {
+                lzChainId := 10
+            }
+            // optimism
+            case 7 {
+                lzChainId := 11
+            }
+            // rinkeby
+            case 4000000001 {
+                lzChainId := 10001
+            }
+            // bsc testnet
+            case 4000000002 {
+                lzChainId := 10002
+            }
+            // fuji
+            case 4000000003 {
+                lzChainId := 10006
+            }
+            // mumbai
+            case 4000000004 {
+                lzChainId := 10009
+            }
+            // fantom testnet
+            case 4000000005 {
+                lzChainId := 10012
+            }
+            // arbitrum rinkeby
+            case 4000000006 {
+                lzChainId := 10010
+            }
+            // optimism kovan
+            case 4000000007 {
+                lzChainId := 10011
+            }
+            // local2
+            case 4294967294 {
+                lzChainId := 65534
+            }
+            // local
+            case 4294967295 {
+                lzChainId := 65535
+            }
+            default {
+                lzChainId := 0
+            }
         }
     }
 
-    function bridgeIn(uint32/* _chainId*/, address/* _from*/, address/* _to*/, uint256/* _tokenId*/, bytes calldata/* _data*/) external virtual onlyHolographer returns (bool) {
-        _success = true;
-        return true;
+    function syn2hlg(uint32 synChainId) internal pure returns (uint32 hlgChainId) {
+        return synChainId;
     }
 
-    function bridgeOut(uint32/* _chainId*/, address/* _from*/, address/* _to*/, uint256/* _tokenId*/) external virtual view onlyHolographer returns (bytes memory _data) {
-        _data = abi.encode(holographer());
-    }
-
-    function afterApprove(address/* _owner*/, address/* _to*/, uint256/* _tokenId*/) external virtual onlyHolographer returns (bool success) {
-        _success = true;
-        return _success;
-    }
-
-    function beforeApprove(address/* _owner*/, address/* _to*/, uint256/* _tokenId*/) external virtual onlyHolographer returns (bool success) {
-        _success = true;
-        return _success;
-    }
-
-    function afterApprovalAll(address/* _to*/, bool/* _approved*/) external virtual onlyHolographer returns (bool success) {
-        _success = true;
-        return _success;
-    }
-
-    function beforeApprovalAll(address/* _to*/, bool/* _approved*/) external virtual onlyHolographer returns (bool success) {
-        _success = true;
-        return _success;
-    }
-
-    function afterBurn(address/* _owner*/, uint256/* _tokenId*/) external virtual onlyHolographer returns (bool success) {
-        _success = true;
-        return _success;
-    }
-
-    function beforeBurn(address/* _owner*/, uint256/* _tokenId*/) external virtual onlyHolographer returns (bool success) {
-        _success = true;
-        return _success;
-    }
-
-    function afterMint(address/* _owner*/, uint256/* _tokenId*/) external virtual onlyHolographer returns (bool success) {
-        _success = true;
-        return _success;
-    }
-
-    function beforeMint(address/* _owner*/, uint256/* _tokenId*/) external virtual onlyHolographer returns (bool success) {
-        _success = true;
-        return _success;
-    }
-
-    function afterSafeTransfer(address/* _from*/, address/* _to*/, uint256/* _tokenId*/, bytes calldata/* _data*/) external virtual onlyHolographer returns (bool success) {
-        _success = true;
-        return _success;
-    }
-
-    function beforeSafeTransfer(address/* _from*/, address/* _to*/, uint256/* _tokenId*/, bytes calldata/* _data*/) external virtual onlyHolographer returns (bool success) {
-        _success = true;
-        return _success;
-    }
-
-    function afterTransfer(address/* _from*/, address/* _to*/, uint256/* _tokenId*/, bytes calldata/* _data*/) external virtual onlyHolographer returns (bool success) {
-        _success = true;
-        return _success;
-    }
-
-    function beforeTransfer(address/* _from*/, address/* _to*/, uint256/* _tokenId*/, bytes calldata/* _data*/) external virtual onlyHolographer returns (bool success) {
-        _success = true;
-        return _success;
-    }
-
-    function msgSender() external view returns (address sender) {
-        assembly {
-            sender := sload(0x8441fa6ff843f273d23d65e882c7fe479d103e38c6404b1e55f13302c0f3fc78)
-        }
+    function hlg2syn(uint32 hlgChainId) internal pure returns (uint32 synChainId) {
+        return hlgChainId;
     }
 
 }

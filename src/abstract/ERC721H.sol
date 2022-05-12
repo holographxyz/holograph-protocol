@@ -120,4 +120,10 @@ abstract contract ERC721H is Initializable, HolographedERC721 {
         return _success;
     }
 
+    function msgSender() external view returns (address sender) {
+        assembly {
+            sender := sload(precomputeslot('eip1967.Holograph.Bridge.temp.msgSender'))
+        }
+    }
+
 }
