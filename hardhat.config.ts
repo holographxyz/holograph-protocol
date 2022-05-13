@@ -1,3 +1,4 @@
+import fs from 'fs';
 import '@nomiclabs/hardhat-waffle';
 import '@typechain/hardhat';
 import 'hardhat-gas-reporter';
@@ -8,24 +9,24 @@ import { HardhatUserConfig } from 'hardhat/config';
 import dotenv from 'dotenv';
 dotenv.config();
 
-// avoid hardhat error if no key in .env file
-const MOCK_PRIVATE_KEY = '0x' + '11'.repeat(32);
+const networks = JSON.parse(fs.readFileSync('./networks.json', 'utf8'));
 
-const ROPSTEN_URL = process.env.ROPSTEN_URL || '';
-const ROPSTEN_PRIVATE_KEY =
-  process.env.ROPSTEN_PRIVATE_KEY! || MOCK_PRIVATE_KEY;
+const SOLIDITY_VERSION = process.env.SOLIDITY_VERSION || '';
 
-const RINKEBY_URL = process.env.RINKEBY_URL || '';
-const RINKEBY_PRIVATE_KEY =
-  process.env.RINKEBY_PRIVATE_KEY! || MOCK_PRIVATE_KEY;
+const WALLET1 = process.env.WALLET1 || '0x' + '00'.repeat(32);
+const WALLET2 = process.env.WALLET2 || '0x' + '11'.repeat(32);
+const WALLET3 = process.env.WALLET3 || '0x' + '22'.repeat(32);
+const WALLET4 = process.env.WALLET4 || '0x' + '33'.repeat(32);
+const WALLET5 = process.env.WALLET5 || '0x' + '44'.repeat(32);
+const WALLET6 = process.env.WALLET6 || '0x' + '55'.repeat(32);
+const WALLET7 = process.env.WALLET7 || '0x' + '66'.repeat(32);
+const WALLET8 = process.env.WALLET8 || '0x' + '77'.repeat(32);
+const WALLET9 = process.env.WALLET9 || '0x' + '88'.repeat(32);
+const WALLET10 = process.env.WALLET10 || '0x' + '99'.repeat(32);
 
-const MAINNET_URL = process.env.MAINNET_URL || '';
-const MAINNET_PRIVATE_KEY =
-  process.env.MAINNET_PRIVATE_KEY || '0x' + '11'.repeat(32);
-
-const CXIP_URL = process.env.MAINNET_URL || '';
-const CXIP_PRIVATE_KEY =
-  process.env.MAINNET_PRIVATE_KEY || '0x' + '11'.repeat(32);
+const RINKEBY_PRIVATE_KEY = process.env.RINKEBY_PRIVATE_KEY! || WALLET1;
+const MAINNET_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY || WALLET1;
+const CXIP_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY || WALLET1;
 
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
 
@@ -34,22 +35,31 @@ const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
  * @type import('hardhat/config').HardhatUserConfig
  */
 const config: HardhatUserConfig = {
-  defaultNetwork: 'hardhat',
+  defaultNetwork: 'localhost',
   networks: {
-    localhost: {},
-    hardhat: {
-      blockGasLimit: 30_000_000,
+    localhost: {
+      url: networks.local.rpc,
+      chainId: networks.local.chain,
+      accounts: [WALLET1, WALLET2, WALLET3, WALLET4, WALLET5, WALLET6, WALLET7, WALLET8, WALLET9, WALLET10],
+    },
+    localhost2: {
+      url: networks.local2.rpc,
+      chainId: networks.local2.chain,
+      accounts: [WALLET1, WALLET2, WALLET3, WALLET4, WALLET5, WALLET6, WALLET7, WALLET8, WALLET9, WALLET10],
     },
     mainnet: {
-      url: MAINNET_URL,
+      url: networks.eth.rpc,
+      chainId: networks.eth.chain,
       accounts: [MAINNET_PRIVATE_KEY],
     },
     rinkeby: {
-      url: RINKEBY_URL,
+      url: networks.eth_rinkeby.rpc,
+      chainId: networks.eth_rinkeby.chain,
       accounts: [RINKEBY_PRIVATE_KEY],
     },
     cxip: {
-      url: CXIP_URL,
+      url: networks.cxip.rpc,
+      chainId: networks.cxip.chain,
       accounts: [CXIP_PRIVATE_KEY],
     },
     coverage: {
@@ -61,7 +71,7 @@ const config: HardhatUserConfig = {
     purchaser: 0,
   },
   solidity: {
-    version: process.env.SOLIDITY_VERSION,
+    version: SOLIDITY_VERSION,
     settings: {
       optimizer: {
         enabled: true,

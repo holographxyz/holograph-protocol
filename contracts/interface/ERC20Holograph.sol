@@ -101,7 +101,7 @@
 
 */
 
-pragma solidity 0.8.12;
+pragma solidity 0.8.13;
 
 import "./ERC20.sol";
 import "./ERC20Burnable.sol";
