@@ -1,5 +1,5 @@
 {
-    "binary": "./solc-0.8.13-macos",
+    "binary": "./solc-SOLIDITY_VERSION-macos",
     "configurations": [
         {
             "value": "base-path",

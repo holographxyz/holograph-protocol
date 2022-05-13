@@ -101,7 +101,7 @@
 
 */
 
-pragma solidity 0.8.13;
+pragma solidity 0.8.12;
 
 import "../abstract/ERC20H.sol";
 

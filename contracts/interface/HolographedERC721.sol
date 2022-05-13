@@ -101,7 +101,7 @@
 
 */
 
-pragma solidity 0.8.13;
+pragma solidity 0.8.12;
 
 /// @title Holograph ERC-721 Non-Fungible Token Standard
 /// @dev See https://holograph.network/standard/ERC-721
