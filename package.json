@@ -6,7 +6,7 @@
   "author": "cxip-labs",
   "main": "index.js",
   "scripts": {
-    "init": "cp sample.env .env ; cp sample.mnemonic .mnemonic ; mkdir data",
+    "init": "cp sample.env .env ; mkdir data",
     "abi": "rm -fr ./abi ; mkdir ./abi ; node ./scripts/abi.js",
     "build": "rm -fr ./contracts ; mkdir ./contracts ; node ./scripts/build.js",
     "build-compile": "rm -fr ./build ; mkdir ./build ; npm run-script build ; npm run-script compile",
