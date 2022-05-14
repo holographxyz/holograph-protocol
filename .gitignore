@@ -21,6 +21,7 @@ ignore.*
 
 dist
 cache
+ganache
 artifacts
 typechain
 typechain-types

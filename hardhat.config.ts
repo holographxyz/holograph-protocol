@@ -9,7 +9,9 @@ import { HardhatUserConfig } from 'hardhat/config';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const networks = JSON.parse(fs.readFileSync('./networks.json', 'utf8'));
+import './plugins/hardhat-holograph-address-injector';
+
+const networks = JSON.parse(fs.readFileSync('./config/networks.json', 'utf8'));
 
 const SOLIDITY_VERSION = process.env.SOLIDITY_VERSION || '';
 
@@ -38,21 +40,31 @@ const config: HardhatUserConfig = {
   defaultNetwork: 'localhost',
   networks: {
     localhost: {
-      url: networks.local.rpc,
-      chainId: networks.local.chain,
+      url: networks.localhost.rpc,
+      chainId: networks.localhost.chain,
       accounts: [WALLET1, WALLET2, WALLET3, WALLET4, WALLET5, WALLET6, WALLET7, WALLET8, WALLET9, WALLET10],
+      // https://github.com/wighawag/hardhat-deploy#companionnetworks
+      companionNetworks: {
+        l2: 'localhost2',
+      },
+      saveDeployments: false,
     },
     localhost2: {
-      url: networks.local2.rpc,
-      chainId: networks.local2.chain,
+      url: networks.localhost2.rpc,
+      chainId: networks.localhost2.chain,
       accounts: [WALLET1, WALLET2, WALLET3, WALLET4, WALLET5, WALLET6, WALLET7, WALLET8, WALLET9, WALLET10],
+      // https://github.com/wighawag/hardhat-deploy#companionnetworks
+      companionNetworks: {
+        l2: 'localhost',
+      },
+      saveDeployments: false,
     },
-    mainnet: {
+    eth: {
       url: networks.eth.rpc,
       chainId: networks.eth.chain,
       accounts: [MAINNET_PRIVATE_KEY],
     },
-    rinkeby: {
+    eth_rinkeby: {
       url: networks.eth_rinkeby.rpc,
       chainId: networks.eth_rinkeby.chain,
       accounts: [RINKEBY_PRIVATE_KEY],
@@ -77,6 +89,9 @@ const config: HardhatUserConfig = {
         enabled: true,
         runs: 99999,
       },
+      metadata: {
+        bytecodeHash: 'none',
+      },
     },
   },
   mocha: {
@@ -90,6 +105,10 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     apiKey: ETHERSCAN_API_KEY,
+  },
+  holographAddressInjector: {
+    runOnCompile: true,
+    verbose: false
   },
 };
 
