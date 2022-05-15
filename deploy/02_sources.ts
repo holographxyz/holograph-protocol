@@ -3,40 +3,7 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy-holographed/types';
 import { BigNumberish, BytesLike, ContractFactory, Contract } from 'ethers';
 import Web3 from 'web3';
-
-const generateInitCode = function (vars: string[], vals: any[]): string {
-  const web3 = new Web3();
-  return web3.eth.abi.encodeParameters(vars, vals);
-}
-
-const generateDeployCode = function (salt: string, byteCode: string, initCode: string): string {
-  const web3 = new Web3();
-  return web3.eth.abi.encodeFunctionCall(
-    {
-      name: 'deploy',
-      type: 'function',
-      inputs: [
-        {
-          type: 'bytes12',
-          name: 'saltHash'
-        },
-        {
-          type: 'bytes',
-          name: 'sourceCode'
-        },
-        {
-          type: 'bytes',
-          name: 'initCode'
-        },
-      ]
-    },
-    [
-      salt, // bytes12 sourceCode
-      byteCode, // bytes memory sourceCode
-      initCode, // bytes memory initCode
-    ]
-  );
-}
+import helpers from '../scripts/utils/helpers';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts } = hre;
@@ -66,9 +33,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       log: true,
       deployerAddress: genesis.address,
       saltHash: deployer + salt.substring(2),
-      deployCode: generateDeployCode(salt, registryBytecode, generateInitCode(['bytes32[]'], [[]])),
+      deployCode: helpers.generateDeployCode(salt, registryBytecode, helpers.generateInitCode(['bytes32[]'], [[]])),
     });
-    console.log('deploying "HolographRegistry" to', registryDeterministic.address);
+    console.log('future "HolographRegistry" address is', registryDeterministic.address);
     await registryDeterministic.deploy();
   } else {
     console.log ('reusing "HolographRegistry" at', registry.address);
