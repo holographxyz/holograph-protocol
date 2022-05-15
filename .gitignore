@@ -29,3 +29,6 @@ typechain-types
 
 coverage
 coverage.json
+
+# temp addition, while migrating to hardhat testing
+old_test
