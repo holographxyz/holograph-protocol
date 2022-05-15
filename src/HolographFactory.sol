@@ -10,7 +10,6 @@ import "./Holographer.sol";
 import "./interface/IHolograph.sol";
 import "./interface/IHolographRegistry.sol";
 import "./interface/IInitializable.sol";
-import "./interface/SecureStorage.sol";
 
 import "./proxy/SecureStorageProxy.sol";
 

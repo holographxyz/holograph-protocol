@@ -103,7 +103,7 @@
 
 pragma solidity 0.8.13;
 
-interface SecureStorage {
+interface ISecureStorage {
 
     function getOwner() external view returns (address);
 

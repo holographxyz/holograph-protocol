@@ -1,9 +1,10 @@
-import { run, ethers } from 'hardhat';
+import fs from 'fs';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy-holographed/types';
-import { BigNumberish, BytesLike, ContractFactory, Contract } from 'ethers';
 import Web3 from 'web3';
 import helpers from '../scripts/utils/helpers';
+
+const networks = JSON.parse(fs.readFileSync('./config/networks.json', 'utf8'));
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts } = hre;
@@ -17,30 +18,165 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     process.exit(1);
   };
 
-  // Get the genesis contract to use as a deployer
-  const genesis = await ethers.getContract('HolographGenesis');
+  const salt: string = '0x' + '00'.repeat(12);
 
-  const registryFactory: ContractFactory = await ethers.getContractFactory('HolographRegistry');
-  const registryBytecode: BytesLike = registryFactory.bytecode;
+// HolographRegistry
+  let holographRegistry = await helpers.genesisDeployHelper(hre, salt, 'HolographRegistry', helpers.generateInitCode(
+    [
+      'bytes32[]'
+    ],
+    [
+      []
+    ]
+  ));
 
-  const salt: string = '0x000000000000000000000000';
+// HolographRegistryProxy
+  let holographRegistryProxy = await helpers.genesisDeployHelper(hre, salt, 'HolographRegistryProxy', helpers.generateInitCode(
+    [
+      'address',
+      'bytes'
+    ],
+    [
+      holographRegistry?.address,
+      helpers.generateInitCode(
+        [
+          'bytes32[]'
+        ],
+        [
+          [
+            '0x' + web3.utils.asciiToHex('HolographERC721').substring(2).padStart(64, '0'),
+            '0x' + web3.utils.asciiToHex('HolographERC20').substring(2).padStart(64, '0'),
+            '0x' + web3.utils.asciiToHex('PA1D').substring(2).padStart(64, '0')
+          ]
+        ]
+      )
+    ]
+  ));
 
-  const registry: Contract | null  = await ethers.getContractOrNull('HolographRegistry');
-  if (registry == null || !registry.address || registry.address == null || registry.address == '0x' + '00'.repeat(20)) {
-    const registryDeterministic = await deterministicCustom('HolographRegistry', {
-      from: deployer,
-      args: [],
-      log: true,
-      deployerAddress: genesis.address,
-      saltHash: deployer + salt.substring(2),
-      deployCode: helpers.generateDeployCode(salt, registryBytecode, helpers.generateInitCode(['bytes32[]'], [[]])),
-    });
-    console.log('future "HolographRegistry" address is', registryDeterministic.address);
-    await registryDeterministic.deploy();
-  } else {
-    console.log ('reusing "HolographRegistry" at', registry.address);
-  }
+// SecureStorage
+  let secureStorage = await helpers.genesisDeployHelper(hre, salt, 'SecureStorage', helpers.generateInitCode(
+    [
+      'address'
+    ],
+    [
+      helpers.zeroAddress()
+    ]
+  ));
 
+// SecureStorageProxy
+  let secureStorageProxy = await helpers.genesisDeployHelper(hre, salt, 'SecureStorageProxy', helpers.generateInitCode(
+    [
+      'address',
+      'bytes'
+    ],
+    [
+      secureStorage?.address,
+      helpers.generateInitCode(
+        [
+          'address'
+        ],
+        [
+          helpers.zeroAddress()
+        ]
+      )
+    ]
+  ));
+
+// HolographFactory
+  let holographFactory = await helpers.genesisDeployHelper(hre, salt, 'HolographFactory', helpers.generateInitCode(
+    [
+      'address',
+      'address'
+    ],
+    [
+      helpers.zeroAddress(),
+      helpers.zeroAddress()
+    ]
+  ));
+
+// HolographFactoryProxy
+  let holographFactoryProxy = await helpers.genesisDeployHelper(hre, salt, 'HolographFactoryProxy', helpers.generateInitCode(
+    [
+      'address',
+      'bytes'
+    ],
+    [
+      holographFactory?.address,
+      helpers.generateInitCode(
+        [
+          'address',
+          'address'
+        ],
+        [
+          holographRegistryProxy?.address, // HolographRegistry
+          secureStorage?.address // SecureStorage
+        ]
+      )
+    ]
+  ));
+
+// HolographBridge
+  let holographBridge = await helpers.genesisDeployHelper(hre, salt, 'HolographBridge', helpers.generateInitCode(
+    [
+      'address',
+      'address'
+    ],
+    [
+      helpers.zeroAddress(),
+      helpers.zeroAddress()
+    ]
+  ));
+
+// HolographBridgeProxy
+  let holographBridgeProxy = await helpers.genesisDeployHelper(hre, salt, 'HolographBridgeProxy', helpers.generateInitCode(
+    [
+      'address',
+      'bytes'
+    ],
+    [
+      holographBridge?.address,
+      helpers.generateInitCode(
+        [
+          'address',
+          'address'
+        ],
+        [
+          holographRegistryProxy?.address,
+          holographFactoryProxy?.address
+        ]
+      )
+    ]
+  ));
+
+// Holograph
+  let holograph = await helpers.genesisDeployHelper(hre, salt, 'Holograph', helpers.generateInitCode(
+    [
+      'uint32',
+      'address',
+      'address',
+      'address',
+      'address'
+    ],
+    [
+      '0x' + networks[hre.network.name].holographId.toString(16).padStart(8, '0'),
+      holographRegistryProxy?.address,
+      holographFactoryProxy?.address,
+      holographBridgeProxy?.address,
+      secureStorageProxy?.address
+    ]
+  ));
+
+// PA1D
+  let royalties = await helpers.genesisDeployHelper(hre, salt, 'PA1D', helpers.generateInitCode(
+    [
+      'address',
+      'uint256'
+    ],
+    [
+      deployer,
+      '0x' + '00'.repeat(32)
+    ]
+  ));
 };
 
 export default func;
