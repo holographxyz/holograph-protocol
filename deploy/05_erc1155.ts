@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy-holographed/types';
-import helpers from '../scripts/utils/helpers';
+import { genesisDeployHelper, generateInitCode } from '../scripts/utils/helpers';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
@@ -9,5 +9,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 export default func;
-func.tags = ['DeployERC1155'];
+func.tags = [
+  'DeployERC1155',
+];
 func.dependencies = ['HolographGenesis', 'DeploySources'];

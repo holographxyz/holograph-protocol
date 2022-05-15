@@ -1,12 +1,12 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy-holographed/types';
-import helpers from '../scripts/utils/helpers';
+import { genesisDeployHelper, generateInitCode } from '../scripts/utils/helpers';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const salt: string = '0x' + '00'.repeat(12);
 
 // HolographERC20
-  let holographErc721 = await helpers.genesisDeployHelper(hre, salt, 'HolographERC721', helpers.generateInitCode(
+  let holographErc721 = await genesisDeployHelper(hre, salt, 'HolographERC721', generateInitCode(
     [
       'string',
       'string',
@@ -26,5 +26,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 export default func;
-func.tags = ['DeployERC721'];
+func.tags = [
+  'HolographERC721',
+  'DeployERC721',
+];
 func.dependencies = ['HolographGenesis', 'DeploySources'];

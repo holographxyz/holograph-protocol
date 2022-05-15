@@ -1,7 +1,9 @@
 import Web3 from 'web3';
-import { BytesLike, ContractFactory, Contract } from 'ethers';
+import crypto from 'crypto';
 import { ethers } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { DeployFunction, Deployment } from 'hardhat-deploy-holographed/types';
+import { BytesLike, ContractFactory, Contract } from 'ethers';
 
 const generateInitCode = function (vars: string[], vals: any[]): string {
   const web3 = new Web3();
@@ -42,22 +44,36 @@ const zeroAddress = function (): string {
 };
 
 const isContractDeployed = function (contract: Contract | null): boolean {
-  return !(contract == null || !contract.address || contract.address == null || contract.address == '' || contract.address == zeroAddress());
+  return !(contract == null || !contract?.address || contract?.address == null || contract?.address == '' || contract?.address == zeroAddress());
 };
 
 const genesisDeployHelper = async function (hre: HardhatRuntimeEnvironment, salt: string, name: string, initCode: string) {
   const { deployments, getNamedAccounts } = hre;
   const { deploy, deterministicCustom } = deployments;
   const { deployer } = await getNamedAccounts();
-  const holographGenesis = await ethers.getContract('HolographGenesis');
-  let contract: Contract | null = await ethers.getContractOrNull(name);
+  let holographGenesis: any = await ethers.getContractOrNull('HolographGenesis');
+  if (holographGenesis == null) {
+    try {
+      holographGenesis = await deployments.get('HolographGenesis');
+    } catch (ex: any) {
+      // we do nothing
+    }
+  }
+  let contract: any = await ethers.getContractOrNull(name);
+  if (contract == null) {
+    try {
+      contract = await deployments.get(name);
+    } catch (ex: any) {
+      // we do nothing
+    }
+  }
   if (!isContractDeployed(contract)) {
     const contractBytecode: BytesLike = (await ethers.getContractFactory(name) as ContractFactory).bytecode;
     const contractDeterministic = await deterministicCustom(name, {
       from: deployer,
       args: [],
       log: true,
-      deployerAddress: holographGenesis.address,
+      deployerAddress: holographGenesis?.address,
       saltHash: deployer + salt.substring(2),
       deployCode: generateDeployCode(salt, contractBytecode, initCode),
     });
@@ -67,8 +83,55 @@ const genesisDeployHelper = async function (hre: HardhatRuntimeEnvironment, salt
   } else {
     console.log('reusing "' + name + '" at', contract?.address);
   };
-  return contract;
+  if (contract == null) {
+    return {} as Contract;
+  } else {
+    return contract as Contract;
+  }
 };
 
+const utf8ToBytes32 = function (str: string): string {
+  return (
+    '0x' +
+    Array.from(str)
+      .map((c) =>
+        c.charCodeAt(0) < 128
+          ? c.charCodeAt(0).toString(16)
+          : encodeURIComponent(c).replace(/\%/g, '').toLowerCase()
+      )
+      .join('')
+      .padStart(64, '0')
+  );
+};
 
-export default { generateInitCode, generateDeployCode, zeroAddress, isContractDeployed, genesisDeployHelper };
+const ZERO_ADDRESS: string = '0x0000000000000000000000000000000000000000';
+
+const remove0x = function (input: string): string {
+  if (input.startsWith('0x')) {
+    return input.substring(2);
+  } else {
+    return input;
+  }
+};
+
+const sha256 = function (x: string): string {
+  return (
+    '0x' +
+    crypto
+      .createHash('sha256')
+      .update(x, 'utf8')
+      .digest('hex')
+  );
+};
+
+export {
+  generateInitCode,
+  generateDeployCode,
+  zeroAddress,
+  isContractDeployed,
+  genesisDeployHelper,
+  utf8ToBytes32,
+  ZERO_ADDRESS,
+  remove0x,
+  sha256
+};

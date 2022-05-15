@@ -15,20 +15,13 @@ const networks = JSON.parse(fs.readFileSync('./config/networks.json', 'utf8'));
 
 const SOLIDITY_VERSION = process.env.SOLIDITY_VERSION || '';
 
-const WALLET1 = process.env.WALLET1 || '0x' + '00'.repeat(32);
-const WALLET2 = process.env.WALLET2 || '0x' + '11'.repeat(32);
-const WALLET3 = process.env.WALLET3 || '0x' + '22'.repeat(32);
-const WALLET4 = process.env.WALLET4 || '0x' + '33'.repeat(32);
-const WALLET5 = process.env.WALLET5 || '0x' + '44'.repeat(32);
-const WALLET6 = process.env.WALLET6 || '0x' + '55'.repeat(32);
-const WALLET7 = process.env.WALLET7 || '0x' + '66'.repeat(32);
-const WALLET8 = process.env.WALLET8 || '0x' + '77'.repeat(32);
-const WALLET9 = process.env.WALLET9 || '0x' + '88'.repeat(32);
-const WALLET10 = process.env.WALLET10 || '0x' + '99'.repeat(32);
+const MNEMONIC = process.env.MNEMONIC || 'test '.repeat(11) + 'junk';
 
-const RINKEBY_PRIVATE_KEY = process.env.RINKEBY_PRIVATE_KEY! || WALLET1;
-const MAINNET_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY || WALLET1;
-const CXIP_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY || WALLET1;
+const DEPLOYER = process.env.DEPLOYER || '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+
+const RINKEBY_PRIVATE_KEY = process.env.RINKEBY_PRIVATE_KEY! || DEPLOYER;
+const MAINNET_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY || DEPLOYER;
+const CXIP_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY || DEPLOYER;
 
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
 
@@ -42,9 +35,14 @@ const config: HardhatUserConfig = {
     localhost: {
       url: networks.localhost.rpc,
       chainId: networks.localhost.chain,
-      accounts: [WALLET1, WALLET2, WALLET3, WALLET4, WALLET5, WALLET6, WALLET7, WALLET8, WALLET9, WALLET10],
-      // https://github.com/wighawag/hardhat-deploy#companionnetworks
-      companionNetworks: {
+      accounts: {
+        mnemonic: MNEMONIC,
+        path: "m/44'/60'/0'/0",
+        initialIndex: 0,
+        count: 11,
+        passphrase: '',
+      },
+      companionNetworks: { // https://github.com/wighawag/hardhat-deploy#companionnetworks
         l2: 'localhost2',
       },
       saveDeployments: false,
@@ -52,9 +50,14 @@ const config: HardhatUserConfig = {
     localhost2: {
       url: networks.localhost2.rpc,
       chainId: networks.localhost2.chain,
-      accounts: [WALLET1, WALLET2, WALLET3, WALLET4, WALLET5, WALLET6, WALLET7, WALLET8, WALLET9, WALLET10],
-      // https://github.com/wighawag/hardhat-deploy#companionnetworks
-      companionNetworks: {
+      accounts: {
+        mnemonic: MNEMONIC,
+        path: "m/44'/60'/0'/0",
+        initialIndex: 0,
+        count: 11,
+        passphrase: '',
+      },
+      companionNetworks: { // https://github.com/wighawag/hardhat-deploy#companionnetworks
         l2: 'localhost',
       },
       saveDeployments: false,
@@ -80,14 +83,13 @@ const config: HardhatUserConfig = {
   },
   namedAccounts: {
     deployer: 0,
-    purchaser: 0,
   },
   solidity: {
     version: SOLIDITY_VERSION,
     settings: {
       optimizer: {
         enabled: true,
-        runs: 99999,
+        runs: 999999,
       },
       metadata: {
         bytecodeHash: 'none',

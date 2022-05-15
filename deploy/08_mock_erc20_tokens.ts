@@ -1,5 +1,5 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { DeployFunction } from 'hardhat-deploy/types';
+import { DeployFunction } from 'hardhat-deploy-holographed/types';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts } = hre;
@@ -20,5 +20,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 export default func;
-func.tags = ['MockERC720Tokens'];
+func.tags = [
+  'ERC20Mock',
+  'MockERC720Tokens',
+];
 func.dependencies = ['HolographGenesis'];

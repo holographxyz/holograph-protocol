@@ -2,7 +2,7 @@ import fs from 'fs';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy-holographed/types';
 import Web3 from 'web3';
-import helpers from '../scripts/utils/helpers';
+import { genesisDeployHelper, generateInitCode, zeroAddress } from '../scripts/utils/helpers';
 
 const networks = JSON.parse(fs.readFileSync('./config/networks.json', 'utf8'));
 
@@ -13,15 +13,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const web3 = new Web3();
 
-  const error = function (err: string) {
-    console.log(err);
-    process.exit(1);
-  };
-
   const salt: string = '0x' + '00'.repeat(12);
 
 // HolographRegistry
-  let holographRegistry = await helpers.genesisDeployHelper(hre, salt, 'HolographRegistry', helpers.generateInitCode(
+  let holographRegistry = await genesisDeployHelper(hre, salt, 'HolographRegistry', generateInitCode(
     [
       'bytes32[]'
     ],
@@ -31,14 +26,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   ));
 
 // HolographRegistryProxy
-  let holographRegistryProxy = await helpers.genesisDeployHelper(hre, salt, 'HolographRegistryProxy', helpers.generateInitCode(
+  let holographRegistryProxy = await genesisDeployHelper(hre, salt, 'HolographRegistryProxy', generateInitCode(
     [
       'address',
       'bytes'
     ],
     [
-      holographRegistry?.address,
-      helpers.generateInitCode(
+      holographRegistry.address,
+      generateInitCode(
         [
           'bytes32[]'
         ],
@@ -54,102 +49,102 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   ));
 
 // SecureStorage
-  let secureStorage = await helpers.genesisDeployHelper(hre, salt, 'SecureStorage', helpers.generateInitCode(
+  let secureStorage = await genesisDeployHelper(hre, salt, 'SecureStorage', generateInitCode(
     [
       'address'
     ],
     [
-      helpers.zeroAddress()
+      zeroAddress()
     ]
   ));
 
 // SecureStorageProxy
-  let secureStorageProxy = await helpers.genesisDeployHelper(hre, salt, 'SecureStorageProxy', helpers.generateInitCode(
+  let secureStorageProxy = await genesisDeployHelper(hre, salt, 'SecureStorageProxy', generateInitCode(
     [
       'address',
       'bytes'
     ],
     [
-      secureStorage?.address,
-      helpers.generateInitCode(
+      secureStorage.address,
+      generateInitCode(
         [
           'address'
         ],
         [
-          helpers.zeroAddress()
+          zeroAddress()
         ]
       )
     ]
   ));
 
 // HolographFactory
-  let holographFactory = await helpers.genesisDeployHelper(hre, salt, 'HolographFactory', helpers.generateInitCode(
+  let holographFactory = await genesisDeployHelper(hre, salt, 'HolographFactory', generateInitCode(
     [
       'address',
       'address'
     ],
     [
-      helpers.zeroAddress(),
-      helpers.zeroAddress()
+      zeroAddress(),
+      zeroAddress()
     ]
   ));
 
 // HolographFactoryProxy
-  let holographFactoryProxy = await helpers.genesisDeployHelper(hre, salt, 'HolographFactoryProxy', helpers.generateInitCode(
+  let holographFactoryProxy = await genesisDeployHelper(hre, salt, 'HolographFactoryProxy', generateInitCode(
     [
       'address',
       'bytes'
     ],
     [
-      holographFactory?.address,
-      helpers.generateInitCode(
+      holographFactory.address,
+      generateInitCode(
         [
           'address',
           'address'
         ],
         [
-          holographRegistryProxy?.address, // HolographRegistry
-          secureStorage?.address // SecureStorage
+          holographRegistryProxy.address, // HolographRegistry
+          secureStorage.address // SecureStorage
         ]
       )
     ]
   ));
 
 // HolographBridge
-  let holographBridge = await helpers.genesisDeployHelper(hre, salt, 'HolographBridge', helpers.generateInitCode(
+  let holographBridge = await genesisDeployHelper(hre, salt, 'HolographBridge', generateInitCode(
     [
       'address',
       'address'
     ],
     [
-      helpers.zeroAddress(),
-      helpers.zeroAddress()
+      zeroAddress(),
+      zeroAddress()
     ]
   ));
 
 // HolographBridgeProxy
-  let holographBridgeProxy = await helpers.genesisDeployHelper(hre, salt, 'HolographBridgeProxy', helpers.generateInitCode(
+  let holographBridgeProxy = await genesisDeployHelper(hre, salt, 'HolographBridgeProxy', generateInitCode(
     [
       'address',
       'bytes'
     ],
     [
-      holographBridge?.address,
-      helpers.generateInitCode(
+      holographBridge.address,
+      generateInitCode(
         [
           'address',
           'address'
         ],
         [
-          holographRegistryProxy?.address,
-          holographFactoryProxy?.address
+          holographRegistryProxy.address,
+          holographFactoryProxy.address
         ]
       )
     ]
   ));
 
 // Holograph
-  let holograph = await helpers.genesisDeployHelper(hre, salt, 'Holograph', helpers.generateInitCode(
+  let holograph = await genesisDeployHelper(hre, salt, 'Holograph', generateInitCode(
     [
       'uint32',
       'address',
@@ -159,15 +154,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     ],
     [
       '0x' + networks[hre.network.name].holographId.toString(16).padStart(8, '0'),
-      holographRegistryProxy?.address,
-      holographFactoryProxy?.address,
-      holographBridgeProxy?.address,
-      secureStorageProxy?.address
+      holographRegistryProxy.address,
+      holographFactoryProxy.address,
+      holographBridgeProxy.address,
+      secureStorageProxy.address
     ]
   ));
 
 // PA1D
-  let royalties = await helpers.genesisDeployHelper(hre, salt, 'PA1D', helpers.generateInitCode(
+  let royalties = await genesisDeployHelper(hre, salt, 'PA1D', generateInitCode(
     [
       'address',
       'uint256'
@@ -180,5 +175,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 export default func;
-func.tags = ['DeploySources'];
+func.tags = [
+  'HolographRegistry',
+  'HolographRegistryProxy',
+  'SecureStorage',
+  'SecureStorageProxy',
+  'HolographFactory',
+  'HolographFactoryProxy',
+  'HolographBridge',
+  'HolographBridgeProxy',
+  'Holograph',
+  'PA1D',
+  'DeploySources',
+];
 func.dependencies = ['HolographGenesis'];
