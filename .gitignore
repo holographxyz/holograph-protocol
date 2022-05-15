@@ -3,6 +3,7 @@ data
 db
 db2
 node_modules
+custom_modules
 old_code
 .env
 .env.*

@@ -2,7 +2,7 @@ import fs from 'fs';
 import '@nomiclabs/hardhat-waffle';
 import '@typechain/hardhat';
 import 'hardhat-gas-reporter';
-import 'hardhat-deploy';
+import 'hardhat-deploy-holographed';
 import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-etherscan';
 import { HardhatUserConfig } from 'hardhat/config';
@@ -109,7 +109,7 @@ const config: HardhatUserConfig = {
   holographAddressInjector: {
     runOnCompile: true,
     verbose: false
-  },
+  }
 };
 
 export default config;
