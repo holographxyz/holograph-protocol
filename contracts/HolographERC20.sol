@@ -140,7 +140,6 @@ import "./library/Strings.sol";
  * @dev The entire logic and functionality of the smart contract is self-contained.
  */
 contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ERC20Holograph {
-
     using Counters for Counters.Counter;
 
     /**
@@ -216,7 +215,10 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
         _decimals = contractDecimals;
         _eventConfig = eventConfig;
         try IHolographer(payable(address(this))).getSourceContract() returns (address payable sourceAddress) {
-            require(IInitializable(sourceAddress).init(initCode) == IInitializable.init.selector, "initialization failed");
+            require(
+                IInitializable(sourceAddress).init(initCode) == IInitializable.init.selector,
+                "initialization failed"
+            );
         } catch {
             // we do nothing
         }
@@ -224,66 +226,54 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
         // @dev We pre-set all supported interfaces here to make supportsInterface function calls gas efficient.
 
         // ERC165
-        _supportedInterfaces [ERC165.supportsInterface.selector] = true;
+        _supportedInterfaces[ERC165.supportsInterface.selector] = true;
 
         // ERC20
-        _supportedInterfaces [ERC20.allowance.selector] = true;
-        _supportedInterfaces [ERC20.approve.selector] = true;
-        _supportedInterfaces [ERC20.balanceOf.selector] = true;
-        _supportedInterfaces [ERC20.totalSupply.selector] = true;
-        _supportedInterfaces [ERC20.transfer.selector] = true;
-        _supportedInterfaces [ERC20.transferFrom.selector] = true;
-        _supportedInterfaces [
-            ERC20.allowance.selector
-            ^ ERC20.approve.selector
-            ^ ERC20.balanceOf.selector
-            ^ ERC20.totalSupply.selector
-            ^ ERC20.transfer.selector
-            ^ ERC20.transferFrom.selector
+        _supportedInterfaces[ERC20.allowance.selector] = true;
+        _supportedInterfaces[ERC20.approve.selector] = true;
+        _supportedInterfaces[ERC20.balanceOf.selector] = true;
+        _supportedInterfaces[ERC20.totalSupply.selector] = true;
+        _supportedInterfaces[ERC20.transfer.selector] = true;
+        _supportedInterfaces[ERC20.transferFrom.selector] = true;
+        _supportedInterfaces[
+            ERC20.allowance.selector ^
+                ERC20.approve.selector ^
+                ERC20.balanceOf.selector ^
+                ERC20.totalSupply.selector ^
+                ERC20.transfer.selector ^
+                ERC20.transferFrom.selector
         ] = true;
 
         // ERC20Metadata
-        _supportedInterfaces [ERC20Metadata.name.selector] = true;
-        _supportedInterfaces [ERC20Metadata.symbol.selector] = true;
-        _supportedInterfaces [ERC20Metadata.decimals.selector] = true;
-        _supportedInterfaces [
-            ERC20Metadata.name.selector
-            ^ ERC20Metadata.symbol.selector
-            ^ ERC20Metadata.decimals.selector
+        _supportedInterfaces[ERC20Metadata.name.selector] = true;
+        _supportedInterfaces[ERC20Metadata.symbol.selector] = true;
+        _supportedInterfaces[ERC20Metadata.decimals.selector] = true;
+        _supportedInterfaces[
+            ERC20Metadata.name.selector ^ ERC20Metadata.symbol.selector ^ ERC20Metadata.decimals.selector
         ] = true;
 
         // ERC20Burnable
-        _supportedInterfaces [ERC20Burnable.burn.selector] = true;
-        _supportedInterfaces [ERC20Burnable.burnFrom.selector] = true;
-        _supportedInterfaces [
-            ERC20Burnable.burn.selector
-            ^ ERC20Burnable.burnFrom.selector
-        ] = true;
+        _supportedInterfaces[ERC20Burnable.burn.selector] = true;
+        _supportedInterfaces[ERC20Burnable.burnFrom.selector] = true;
+        _supportedInterfaces[ERC20Burnable.burn.selector ^ ERC20Burnable.burnFrom.selector] = true;
 
         // ERC20Safer
         // bytes4(keccak256(abi.encodePacked('safeTransfer(address,uint256)'))) == 0x423f6cef
-        _supportedInterfaces [0x423f6cef] = true;
+        _supportedInterfaces[0x423f6cef] = true;
         // bytes4(keccak256(abi.encodePacked('safeTransfer(address,uint256,bytes)'))) == 0xeb795549
-        _supportedInterfaces [0xeb795549] = true;
+        _supportedInterfaces[0xeb795549] = true;
         // bytes4(keccak256(abi.encodePacked('safeTransferFrom(address,address,uint256)'))) == 0x42842e0e
-        _supportedInterfaces [0x42842e0e] = true;
+        _supportedInterfaces[0x42842e0e] = true;
         // bytes4(keccak256(abi.encodePacked('safeTransferFrom(address,address,uint256,bytes)'))) == 0xb88d4fde
-        _supportedInterfaces [0xb88d4fde] = true;
-        _supportedInterfaces [
-            bytes4(0x423f6cef)
-            ^ bytes4(0xeb795549)
-            ^ bytes4(0x42842e0e)
-            ^ bytes4(0xb88d4fde)
-        ] = true;
+        _supportedInterfaces[0xb88d4fde] = true;
+        _supportedInterfaces[bytes4(0x423f6cef) ^ bytes4(0xeb795549) ^ bytes4(0x42842e0e) ^ bytes4(0xb88d4fde)] = true;
 
         // ERC20Permit
-        _supportedInterfaces [ERC20Permit.permit.selector] = true;
-        _supportedInterfaces [ERC20Permit.nonces.selector] = true;
-        _supportedInterfaces [ERC20Permit.DOMAIN_SEPARATOR.selector] = true;
-        _supportedInterfaces [
-            ERC20Permit.permit.selector
-            ^ ERC20Permit.nonces.selector
-            ^ ERC20Permit.DOMAIN_SEPARATOR.selector
+        _supportedInterfaces[ERC20Permit.permit.selector] = true;
+        _supportedInterfaces[ERC20Permit.nonces.selector] = true;
+        _supportedInterfaces[ERC20Permit.DOMAIN_SEPARATOR.selector] = true;
+        _supportedInterfaces[
+            ERC20Permit.permit.selector ^ ERC20Permit.nonces.selector ^ ERC20Permit.DOMAIN_SEPARATOR.selector
         ] = true;
 
         _setInitialized();
@@ -354,7 +344,7 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
      * This makes it easier for external smart contracts to easily identify a valid ERC20 token contract.
      */
     function supportsInterface(bytes4 interfaceId) public view returns (bool) {
-        return _supportedInterfaces [interfaceId];
+        return _supportedInterfaces[interfaceId];
     }
 
     function allowance(address account, address spender) public view returns (uint256) {
@@ -443,8 +433,14 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
     /**
      * @dev Allows the bridge to bring in tokens from another blockchain.
      */
-    function holographBridgeIn(uint32 chainType, address from, address to, uint256 amount, bytes calldata data) external returns (bytes4) {
-        require(msg.sender == bridge(),  "ERC20: only bridge can call");
+    function holographBridgeIn(
+        uint32 chainType,
+        address from,
+        address to,
+        uint256 amount,
+        bytes calldata data
+    ) external returns (bytes4) {
+        require(msg.sender == bridge(), "ERC20: only bridge can call");
         _mint(bridge(), amount);
         _transfer(bridge(), from, amount);
         if (from != to) {
@@ -459,8 +455,14 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
     /**
      * @dev Allows the bridge to take tokens out onto another blockchain.
      */
-    function holographBridgeOut(uint32 chainType, address operator, address from, address to, uint256 amount) external returns (bytes4 selector, bytes memory data) {
-        require(msg.sender == bridge(),  "ERC20: only bridge can call");
+    function holographBridgeOut(
+        uint32 chainType,
+        address operator,
+        address from,
+        address to,
+        uint256 amount
+    ) external returns (bytes4 selector, bytes memory data) {
+        require(msg.sender == bridge(), "ERC20: only bridge can call");
         if (operator != from) {
             uint256 currentAllowance = _allowances[from][operator];
             require(currentAllowance >= amount, "ERC20: amount exceeds allowance");
@@ -498,7 +500,12 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
         return true;
     }
 
-    function onERC20Received(address account, address sender, uint256 amount, bytes calldata data) public returns(bytes4) {
+    function onERC20Received(
+        address account,
+        address sender,
+        uint256 amount,
+        bytes calldata data
+    ) public returns (bytes4) {
         if (Booleans.get(_eventConfig, HolographERC20Event.beforeOnERC20Received)) {
             require(SourceERC20().beforeOnERC20Received(account, sender, address(this), amount, data));
         }
@@ -510,18 +517,28 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
         return this.onERC20Received.selector;
     }
 
-    function permit(address account, address spender, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) public {
+    function permit(
+        address account,
+        address spender,
+        uint256 amount,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public {
         require(block.timestamp <= deadline, "ERC20: expired deadline");
         // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)")
         //  == 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9
-        bytes32 structHash = keccak256(abi.encode(
-            0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9,
-            account,
-            spender,
-            amount,
-            _useNonce(account),
-            deadline
-        ));
+        bytes32 structHash = keccak256(
+            abi.encode(
+                0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9,
+                account,
+                spender,
+                amount,
+                _useNonce(account),
+                deadline
+            )
+        );
         bytes32 hash = _hashTypedDataV4(structHash);
         address signer = ECDSA.recover(hash, v, r, s);
         require(signer == account, "ERC20: invalid signature");
@@ -534,11 +551,15 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
         }
     }
 
-    function safeTransfer(address recipient, uint256 amount) public returns (bool){
+    function safeTransfer(address recipient, uint256 amount) public returns (bool) {
         return safeTransfer(recipient, amount, "");
     }
 
-    function safeTransfer(address recipient, uint256 amount, bytes memory data) public returns (bool) {
+    function safeTransfer(
+        address recipient,
+        uint256 amount,
+        bytes memory data
+    ) public returns (bool) {
         if (Booleans.get(_eventConfig, HolographERC20Event.beforeSafeTransfer)) {
             require(SourceERC20().beforeSafeTransfer(msg.sender, recipient, amount, data));
         }
@@ -550,11 +571,20 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
         return true;
     }
 
-    function safeTransferFrom(address account, address recipient, uint256 amount) public returns (bool){
+    function safeTransferFrom(
+        address account,
+        address recipient,
+        uint256 amount
+    ) public returns (bool) {
         return safeTransferFrom(account, recipient, amount, "");
     }
 
-    function safeTransferFrom(address account, address recipient, uint256 amount, bytes memory data) public returns (bool){
+    function safeTransferFrom(
+        address account,
+        address recipient,
+        uint256 amount,
+        bytes memory data
+    ) public returns (bool) {
         if (account != msg.sender) {
             uint256 currentAllowance = _allowances[account][msg.sender];
             require(currentAllowance >= amount, "ERC20: amount exceeds allowance");
@@ -602,7 +632,11 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
     /**
      * @dev Allows for source smart contract to transfer tokens.
      */
-    function sourceTransfer(address from, address to, uint256 amount) external {
+    function sourceTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) external {
         require(msg.sender == source(), "ERC20: only source can transfer");
         _transfer(from, to, amount);
     }
@@ -618,7 +652,11 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
         return true;
     }
 
-    function transferFrom(address account, address recipient, uint256 amount) public returns (bool) {
+    function transferFrom(
+        address account,
+        address recipient,
+        uint256 amount
+    ) public returns (bool) {
         if (account != msg.sender) {
             uint256 currentAllowance = _allowances[account][msg.sender];
             require(currentAllowance >= amount, "ERC20: amount exceeds allowance");
@@ -636,7 +674,11 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
         return true;
     }
 
-    function _approve(address account, address spender, uint256 amount) internal {
+    function _approve(
+        address account,
+        address spender,
+        uint256 amount
+    ) internal {
         require(!Address.isZero(account), "ERC20: account is zero address");
         require(!Address.isZero(spender), "ERC20: spender is zero address");
         _allowances[account][spender] = amount;
@@ -654,14 +696,21 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
         emit Transfer(account, address(0), amount);
     }
 
-    function _checkOnERC20Received(address account, address recipient, uint256 amount, bytes memory data) internal nonReentrant returns (bool) {
+    function _checkOnERC20Received(
+        address account,
+        address recipient,
+        uint256 amount,
+        bytes memory data
+    ) internal nonReentrant returns (bool) {
         if (Address.isContract(recipient)) {
             try ERC165(recipient).supportsInterface(0x01ffc9a7) returns (bool erc165support) {
                 require(erc165support, "ERC20: no ERC165 support");
                 // we have erc165 support
                 if (ERC165(recipient).supportsInterface(0x534f5876)) {
                     // we have eip-4524 support
-                    try ERC20Receiver(recipient).onERC20Received(msg.sender, account, amount, data) returns(bytes4 retval) {
+                    try ERC20Receiver(recipient).onERC20Received(msg.sender, account, amount, data) returns (
+                        bytes4 retval
+                    ) {
                         return retval == ERC20Receiver.onERC20Received.selector;
                     } catch (bytes memory reason) {
                         if (reason.length == 0) {
@@ -702,7 +751,11 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
         emit Transfer(address(0), to, amount);
     }
 
-    function _transfer(address account, address recipient, uint256 amount) internal {
+    function _transfer(
+        address account,
+        address recipient,
+        uint256 amount
+    ) internal {
         require(!Address.isZero(account), "ERC20: account is zero address");
         require(!Address.isZero(recipient), "ERC20: recipient is zero address");
         uint256 accountBalance = _balances[account];
@@ -724,5 +777,4 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
         current = nonce.current();
         nonce.increment();
     }
-
 }

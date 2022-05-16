@@ -104,8 +104,7 @@
 pragma solidity 0.8.13;
 
 abstract contract NonReentrant {
-
-    constructor () {
+    constructor() {
         setStatus(1);
     }
 
@@ -120,7 +119,10 @@ abstract contract NonReentrant {
         // The slot hash has been precomputed for gas optimizaion
         // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.reentrant')) - 1);
         assembly {
-            status := sload(/* slot */0x5bf044ad06f1ee9ee2fcd7caf4e944279b877408c76c4515cca6b4e937b01334)
+            status := sload(
+                /* slot */
+                0x5bf044ad06f1ee9ee2fcd7caf4e944279b877408c76c4515cca6b4e937b01334
+            )
         }
     }
 
@@ -128,8 +130,11 @@ abstract contract NonReentrant {
         // The slot hash has been precomputed for gas optimizaion
         // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.reentrant')) - 1);
         assembly {
-            sstore(/* slot */0x5bf044ad06f1ee9ee2fcd7caf4e944279b877408c76c4515cca6b4e937b01334, status)
+            sstore(
+                /* slot */
+                0x5bf044ad06f1ee9ee2fcd7caf4e944279b877408c76c4515cca6b4e937b01334,
+                status
+            )
         }
     }
-
 }

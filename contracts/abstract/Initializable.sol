@@ -106,7 +106,6 @@ pragma solidity 0.8.13;
 import "../interface/IInitializable.sol";
 
 abstract contract Initializable is IInitializable {
-
     function init(bytes memory _data) external virtual returns (bytes4);
 
     function _isInitialized() internal view returns (bool) {
@@ -124,8 +123,11 @@ abstract contract Initializable is IInitializable {
         // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.initialized')) - 1);
         uint256 initialized = 1;
         assembly {
-            sstore(/* slot */0x4e5f991bca30eca2d4643aaefa807e88f96a4a97398933d572a3c0d973004a01, initialized)
+            sstore(
+                /* slot */
+                0x4e5f991bca30eca2d4643aaefa807e88f96a4a97398933d572a3c0d973004a01,
+                initialized
+            )
         }
     }
-
 }

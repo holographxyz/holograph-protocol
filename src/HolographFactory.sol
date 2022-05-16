@@ -22,7 +22,6 @@ import "./struct/Verification.sol";
  * @dev This is just the first step. But it is fundamental for achieving cross-chain non-fungible tokens.
  */
 contract HolographFactory is Admin, Initializable {
-
     /*
      * @dev This event is fired every time that a bridgeable contract is deployed.
      */
@@ -37,8 +36,8 @@ contract HolographFactory is Admin, Initializable {
         require(!_isInitialized(), "HOLOGRAPH: already initialized");
         (address registry, address secureStorage) = abi.decode(data, (address, address));
         assembly {
-            sstore(precomputeslot('eip1967.Holograph.Bridge.registry'), registry)
-            sstore(precomputeslot('eip1967.Holograph.Bridge.secureStorage'), secureStorage)
+            sstore(precomputeslot("eip1967.Holograph.Bridge.registry"), registry)
+            sstore(precomputeslot("eip1967.Holograph.Bridge.secureStorage"), secureStorage)
         }
         _setInitialized();
         return IInitializable.init.selector;
@@ -52,7 +51,7 @@ contract HolographFactory is Admin, Initializable {
         // The slot hash has been precomputed for gas optimizaion
         // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.registry')) - 1);
         assembly {
-            bridgeRegistry := sload(precomputeslot('eip1967.Holograph.Bridge.registry'))
+            bridgeRegistry := sload(precomputeslot("eip1967.Holograph.Bridge.registry"))
         }
     }
 
@@ -63,7 +62,7 @@ contract HolographFactory is Admin, Initializable {
         // The slot hash has been precomputed for gas optimizaion
         // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.registry')) - 1);
         assembly {
-            sstore(precomputeslot('eip1967.Holograph.Bridge.registry'), bridgeRegistry)
+            sstore(precomputeslot("eip1967.Holograph.Bridge.registry"), bridgeRegistry)
         }
     }
 
@@ -75,7 +74,7 @@ contract HolographFactory is Admin, Initializable {
         // The slot hash has been precomputed for gas optimizaion
         // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.secureStorage')) - 1);
         assembly {
-            secureStorage := sload(precomputeslot('eip1967.Holograph.Bridge.secureStorage'))
+            secureStorage := sload(precomputeslot("eip1967.Holograph.Bridge.secureStorage"))
         }
     }
 
@@ -86,7 +85,7 @@ contract HolographFactory is Admin, Initializable {
         // The slot hash has been precomputed for gas optimizaion
         // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.secureStorage')) - 1);
         assembly {
-            sstore(precomputeslot('eip1967.Holograph.Bridge.secureStorage'), secureStorage)
+            sstore(precomputeslot("eip1967.Holograph.Bridge.secureStorage"), secureStorage)
         }
     }
 
@@ -95,19 +94,28 @@ contract HolographFactory is Admin, Initializable {
      * @dev The used variables and formatting is not the final or decisive version, but the general idea is directly portrayed.
      * @notice In this function we have incorporated a secure storage function/extension. Keep in mind that this is not required or needed for bridgeable deployments to work. It is just a personal development choice.
      */
-    function deployHolographableContract(DeploymentConfig calldata config, Verification calldata signature, address signer) external {
+    function deployHolographableContract(
+        DeploymentConfig calldata config,
+        Verification calldata signature,
+        address signer
+    ) external {
         // all of the necessary data is packed and hashed
-        bytes32 hash = keccak256(abi.encodePacked(
-            config.contractType,
-            config.chainType,
-            config.salt,
-            keccak256(config.byteCode),
-            keccak256(config.initCode),
-            signer
-        ));
+        bytes32 hash = keccak256(
+            abi.encodePacked(
+                config.contractType,
+                config.chainType,
+                config.salt,
+                keccak256(config.byteCode),
+                keccak256(config.initCode),
+                signer
+            )
+        );
         require(_verifySigner(signature.r, signature.s, signature.v, hash, signer), "HOLOGRAPH: invalid signature");
         // we check that a smart contract for this hash has not been deployed yet
-        require(!IHolographRegistry(getBridgeRegistry()).isHolographedHashDeployed(hash), "HOLOGRAPH: already deployed");
+        require(
+            !IHolographRegistry(getBridgeRegistry()).isHolographedHashDeployed(hash),
+            "HOLOGRAPH: already deployed"
+        );
         // hash is converted to an integer, in preparation for the create2 function
         uint256 saltInt = uint256(hash);
         address secureStorageAddress;
@@ -118,7 +126,11 @@ contract HolographFactory is Admin, Initializable {
             secureStorageAddress := create2(0, add(secureStorageBytecode, 0x20), mload(secureStorageBytecode), saltInt)
         }
         //
-        address sourceContractAddress = address(uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), address(this), saltInt, keccak256(config.byteCode))))));
+        address sourceContractAddress = address(
+            uint160(
+                uint256(keccak256(abi.encodePacked(bytes1(0xff), address(this), saltInt, keccak256(config.byteCode))))
+            )
+        );
         bytes memory sourceByteCode = config.byteCode;
         if (!_isContract(sourceContractAddress)) {
             assembly {
@@ -127,7 +139,13 @@ contract HolographFactory is Admin, Initializable {
             require(_isContract(sourceContractAddress), "source contract create failed");
         }
         bytes memory holographerBytecode = type(Holographer).creationCode;
-        address holographerAddress = address(uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), address(this), saltInt, keccak256(holographerBytecode))))));
+        address holographerAddress = address(
+            uint160(
+                uint256(
+                    keccak256(abi.encodePacked(bytes1(0xff), address(this), saltInt, keccak256(holographerBytecode)))
+                )
+            )
+        );
         require(!_isContract(holographerAddress), "HOLOGRAPH: already deployed");
         // the combined bytecode is then deployed
         assembly {
@@ -135,14 +153,8 @@ contract HolographFactory is Admin, Initializable {
         }
         require(_isContract(holographerAddress), "Holographer deployment failed");
         require(
-            IInitializable(secureStorageAddress).init(
-                abi.encode(
-                    getSecureStorage(),
-                    abi.encode(
-                        holographerAddress
-                    )
-                )
-            ) == IInitializable.init.selector,
+            IInitializable(secureStorageAddress).init(abi.encode(getSecureStorage(), abi.encode(holographerAddress))) ==
+                IInitializable.init.selector,
             "initialization failed"
         );
         bytes memory encodedInit = abi.encode(
@@ -155,7 +167,10 @@ contract HolographFactory is Admin, Initializable {
             ),
             config.initCode
         );
-        require(IInitializable(holographerAddress).init(encodedInit) == IInitializable.init.selector, "initialization failed");
+        require(
+            IInitializable(holographerAddress).init(encodedInit) == IInitializable.init.selector,
+            "initialization failed"
+        );
         //
         IHolographRegistry(getBridgeRegistry()).factoryDeployedHash(hash, holographerAddress);
         // we emit the event to indicate to anyone listening to the blockchain that a bridgeable smart contract has been deployed
@@ -170,11 +185,17 @@ contract HolographFactory is Admin, Initializable {
         return (codehash != 0x0 && codehash != 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470);
     }
 
-    function _verifySigner(bytes32 r, bytes32 s, uint8 v, bytes32 hash, address signer) internal pure returns (bool) {
+    function _verifySigner(
+        bytes32 r,
+        bytes32 s,
+        uint8 v,
+        bytes32 hash,
+        address signer
+    ) internal pure returns (bool) {
         if (v < 27) {
             v += 27;
         }
-        return (ecrecover(hash, v, r, s) == signer || ecrecover(keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)), v, r, s) == signer);
+        return (ecrecover(hash, v, r, s) == signer ||
+            ecrecover(keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)), v, r, s) == signer);
     }
-
 }

@@ -104,7 +104,6 @@
 pragma solidity 0.8.13;
 
 interface IHolograph {
-
     function getChainType() external view returns (uint32 chainType);
 
     function getBridge() external view returns (address bridgeAddress);
@@ -112,5 +111,4 @@ interface IHolograph {
     function getFactory() external view returns (address factoryAddress);
 
     function getRegistry() external view returns (address registryAddress);
-
 }

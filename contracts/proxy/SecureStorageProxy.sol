@@ -109,7 +109,6 @@ import "../abstract/Initializable.sol";
 import "../interface/IInitializable.sol";
 
 contract SecureStorageProxy is Admin, Initializable {
-
     constructor() Admin(true) {}
 
     function init(bytes memory data) external override returns (bytes4) {
@@ -121,7 +120,7 @@ contract SecureStorageProxy is Admin, Initializable {
         (bool success, bytes memory returnData) = secureStorage.delegatecall(
             abi.encodeWithSignature("init(bytes)", initCode)
         );
-        (bytes4 selector) = abi.decode(returnData, (bytes4));
+        bytes4 selector = abi.decode(returnData, (bytes4));
         require(success && selector == IInitializable.init.selector, "initialization failed");
 
         _setInitialized();
@@ -132,7 +131,10 @@ contract SecureStorageProxy is Admin, Initializable {
         // The slot hash has been precomputed for gas optimizaion
         // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.secureStorage')) - 1);
         assembly {
-            secureStorage := sload(/* slot */0xd26498b26a05274577b8ac2e3250418da53433f3ff82027428ee3c530702cdec)
+            secureStorage := sload(
+                /* slot */
+                0xd26498b26a05274577b8ac2e3250418da53433f3ff82027428ee3c530702cdec
+            )
         }
     }
 
@@ -140,7 +142,11 @@ contract SecureStorageProxy is Admin, Initializable {
         // The slot hash has been precomputed for gas optimizaion
         // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.secureStorage')) - 1);
         assembly {
-            sstore(/* slot */0xd26498b26a05274577b8ac2e3250418da53433f3ff82027428ee3c530702cdec, secureStorage)
+            sstore(
+                /* slot */
+                0xd26498b26a05274577b8ac2e3250418da53433f3ff82027428ee3c530702cdec,
+                secureStorage
+            )
         }
     }
 
@@ -161,5 +167,4 @@ contract SecureStorageProxy is Admin, Initializable {
             }
         }
     }
-
 }

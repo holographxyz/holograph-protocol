@@ -13,7 +13,6 @@ import "./interface/IInitializable.sol";
  * @dev This contract is a binder. It puts together all the variables to make the underlying contracts functional and be bridgeable.
  */
 contract Holographer is Admin, Initializable {
-
     /*
      * @dev Constructor is left empty and only the admin address is set.
      */
@@ -22,18 +21,24 @@ contract Holographer is Admin, Initializable {
     function init(bytes memory data) external override returns (bytes4) {
         require(!_isInitialized(), "HOLOGRAPHER: already initialized");
         (bytes memory encoded, bytes memory initCode) = abi.decode(data, (bytes, bytes));
-        (uint32 originChain, address holograph, address secureStorage, bytes32 contractType, address sourceContract) = abi.decode(encoded, (uint32, address, address, bytes32, address));
+        (
+            uint32 originChain,
+            address holograph,
+            address secureStorage,
+            bytes32 contractType,
+            address sourceContract
+        ) = abi.decode(encoded, (uint32, address, address, bytes32, address));
         assembly {
-            sstore(precomputeslot('eip1967.Holograph.Bridge.originChain'), originChain)
-            sstore(precomputeslot('eip1967.Holograph.Bridge.holograph'), holograph)
-            sstore(precomputeslot('eip1967.Holograph.Bridge.secureStorage'), secureStorage)
-            sstore(precomputeslot('eip1967.Holograph.Bridge.contractType'), contractType)
-            sstore(precomputeslot('eip1967.Holograph.Bridge.sourceContract'), sourceContract)
+            sstore(precomputeslot("eip1967.Holograph.Bridge.originChain"), originChain)
+            sstore(precomputeslot("eip1967.Holograph.Bridge.holograph"), holograph)
+            sstore(precomputeslot("eip1967.Holograph.Bridge.secureStorage"), secureStorage)
+            sstore(precomputeslot("eip1967.Holograph.Bridge.contractType"), contractType)
+            sstore(precomputeslot("eip1967.Holograph.Bridge.sourceContract"), sourceContract)
         }
         (bool success, bytes memory returnData) = getHolographEnforcer().delegatecall(
             abi.encodeWithSignature("init(bytes)", initCode)
         );
-        (bytes4 selector) = abi.decode(returnData, (bytes4));
+        bytes4 selector = abi.decode(returnData, (bytes4));
         require(success && selector == IInitializable.init.selector, "initialization failed");
         _setInitialized();
         return IInitializable.init.selector;
@@ -47,16 +52,16 @@ contract Holographer is Admin, Initializable {
         address holograph;
         bytes32 contractType;
         assembly {
-            holograph := sload(/* slot */precomputeslot('eip1967.Holograph.Bridge.holograph'))
-            contractType := sload(/* slot */precomputeslot('eip1967.Holograph.Bridge.contractType'))
+            holograph := sload(
+                /* slot */
+                precomputeslot("eip1967.Holograph.Bridge.holograph")
+            )
+            contractType := sload(
+                /* slot */
+                precomputeslot("eip1967.Holograph.Bridge.contractType")
+            )
         }
-        return payable(
-            IHolographRegistry(
-                IHolograph(
-                    holograph
-                ).getRegistry()
-            ).getContractTypeAddress(contractType)
-        );
+        return payable(IHolographRegistry(IHolograph(holograph).getRegistry()).getContractTypeAddress(contractType));
     }
 
     /*
@@ -64,7 +69,10 @@ contract Holographer is Admin, Initializable {
      */
     function getOriginChain() public view returns (uint32 originChain) {
         assembly {
-            originChain := sload(/* slot */precomputeslot('eip1967.Holograph.Bridge.originChain'))
+            originChain := sload(
+                /* slot */
+                precomputeslot("eip1967.Holograph.Bridge.originChain")
+            )
         }
     }
 
@@ -73,7 +81,10 @@ contract Holographer is Admin, Initializable {
      */
     function getSecureStorage() public view returns (address secureStorage) {
         assembly {
-            secureStorage := sload(/* slot */precomputeslot('eip1967.Holograph.Bridge.secureStorage'))
+            secureStorage := sload(
+                /* slot */
+                precomputeslot("eip1967.Holograph.Bridge.secureStorage")
+            )
         }
     }
 
@@ -82,7 +93,10 @@ contract Holographer is Admin, Initializable {
      */
     function getSourceContract() public view returns (address payable sourceContract) {
         assembly {
-            sourceContract := sload(/* slot */precomputeslot('eip1967.Holograph.Bridge.sourceContract'))
+            sourceContract := sload(
+                /* slot */
+                precomputeslot("eip1967.Holograph.Bridge.sourceContract")
+            )
         }
     }
 
@@ -110,5 +124,4 @@ contract Holographer is Admin, Initializable {
             }
         }
     }
-
 }

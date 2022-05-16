@@ -122,7 +122,6 @@ import "./struct/Verification.sol";
  * @dev This smart contract contains the actual core bridging logic.
  */
 contract HolographBridge is Admin, Initializable {
-
     event DeployRequest(uint32 toChainId, bytes data);
     event TransferErc721(uint32 toChainId, bytes data);
     event TransferErc20(uint32 toChainId, bytes data);
@@ -133,7 +132,7 @@ contract HolographBridge is Admin, Initializable {
      */
     constructor() Admin(false) {}
 
-    modifier onlyOperator {
+    modifier onlyOperator() {
         // ultimately the goal is to do a sanity check that msg.sender is currently holding an operator license
         _;
     }
@@ -150,35 +149,82 @@ contract HolographBridge is Admin, Initializable {
     }
 
     // we create a custom version of this function and skip all the backend logic
-    function lzReceive(uint16/* _srcChainId*/, bytes calldata/* _srcAddress*/, uint64/* _nonce*/, bytes calldata _payload) public payable onlyOperator {
+    function lzReceive(
+        uint16, /* _srcChainId*/
+        bytes calldata, /* _srcAddress*/
+        uint64, /* _nonce*/
+        bytes calldata _payload
+    ) public payable onlyOperator {
         // we really don't care about anything at the moment and just send directly through
-        (bool success,/* bytes memory response*/) = address(this).call(_payload);
+        (
+            bool success, /* bytes memory response*/
+
+        ) = address(this).call(_payload);
         require(success, "failed executing payload");
     }
 
-    function send(uint16 _dstChainId, bytes calldata _destination, bytes calldata _payload, address payable/* _refundAddress*/, address/* _zroPaymentAddress*/, bytes calldata/* _adapterParams*/) external payable onlyOperator {
+    function send(
+        uint16 _dstChainId,
+        bytes calldata _destination,
+        bytes calldata _payload,
+        address payable, /* _refundAddress*/
+        address, /* _zroPaymentAddress*/
+        bytes calldata /* _adapterParams*/
+    ) external payable onlyOperator {
         // we really don't care about anything and just emit an event that we can leverage for multichain replication
         emit LzEvent(_dstChainId, _destination, _payload);
     }
 
-    function erc721in(uint32 fromChain, address collection, address from, address to, uint256 tokenId, bytes calldata data) external onlyOperator {
+    function erc721in(
+        uint32 fromChain,
+        address collection,
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes calldata data
+    ) external onlyOperator {
         // all approval and validation should be done before this point
         require(IHolographRegistry(_registry()).isHolographedContract(collection), "HOLOGRAPH: not holographed");
-        require(ERC721Holograph(collection).holographBridgeIn(fromChain, from, to, tokenId, data) == ERC721Holograph.holographBridgeIn.selector, "HOLOGRAPH: bridge in failed");
+        require(
+            ERC721Holograph(collection).holographBridgeIn(fromChain, from, to, tokenId, data) ==
+                ERC721Holograph.holographBridgeIn.selector,
+            "HOLOGRAPH: bridge in failed"
+        );
     }
 
-    function erc721out(uint32 toChain, address collection, address from, address to, uint256 tokenId) external payable {
+    function erc721out(
+        uint32 toChain,
+        address collection,
+        address from,
+        address to,
+        uint256 tokenId
+    ) external payable {
         require(IHolographRegistry(_registry()).isHolographedContract(collection), "HOLOGRAPH: not holographed");
         ERC721Holograph erc721 = ERC721Holograph(collection);
         require(erc721.exists(tokenId), "HOLOGRAPH: token doesn't exist");
         address tokenOwner = erc721.ownerOf(tokenId);
-        require(tokenOwner == msg.sender || erc721.getApproved(tokenId) == msg.sender || erc721.isApprovedForAll(tokenOwner, msg.sender), "HOLOGRAPH: not approved/owner");
+        require(
+            tokenOwner == msg.sender ||
+                erc721.getApproved(tokenId) == msg.sender ||
+                erc721.isApprovedForAll(tokenOwner, msg.sender),
+            "HOLOGRAPH: not approved/owner"
+        );
         (bytes4 selector, bytes memory data) = erc721.holographBridgeOut(toChain, from, to, tokenId);
         require(selector == ERC721Holograph.holographBridgeOut.selector, "HOLOGRAPH: bridge out failed");
-        emit TransferErc721(toChain, abi.encode(IHolograph(0x020be79e2D5a6a0204C07970F3586dc379d142e0).getChainType(), collection, from, to, tokenId, data));
-        HolographBridge(payable(address(this))).send{value:msg.value}(
+        emit TransferErc721(
+            toChain,
+            abi.encode(
+                IHolograph(0x020be79e2D5a6a0204C07970F3586dc379d142e0).getChainType(),
+                collection,
+                from,
+                to,
+                tokenId,
+                data
+            )
+        );
+        HolographBridge(payable(address(this))).send{value: msg.value}(
             ChainId.hlg2lz(toChain),
-            abi.encodePacked (address(this)),
+            abi.encodePacked(address(this)),
             abi.encodeWithSignature(
                 "erc721in(uint32,address,address,address,uint256,bytes)",
                 IHolograph(0x020be79e2D5a6a0204C07970F3586dc379d142e0).getChainType(),
@@ -194,22 +240,49 @@ contract HolographBridge is Admin, Initializable {
         );
     }
 
-    function erc20in(uint32 fromChain, address token, address from, address to, uint256 amount, bytes calldata data) external onlyOperator {
+    function erc20in(
+        uint32 fromChain,
+        address token,
+        address from,
+        address to,
+        uint256 amount,
+        bytes calldata data
+    ) external onlyOperator {
         // all approval and validation should be done before this point
         require(IHolographRegistry(_registry()).isHolographedContract(token), "HOLOGRAPH: not holographed");
-        require(ERC20Holograph(token).holographBridgeIn(fromChain, from, to, amount, data) == ERC20Holograph.holographBridgeIn.selector, "HOLOGRAPH: bridge in failed");
+        require(
+            ERC20Holograph(token).holographBridgeIn(fromChain, from, to, amount, data) ==
+                ERC20Holograph.holographBridgeIn.selector,
+            "HOLOGRAPH: bridge in failed"
+        );
     }
 
-    function erc20out(uint32 toChain, address token, address from, address to, uint256 amount) external payable {
+    function erc20out(
+        uint32 toChain,
+        address token,
+        address from,
+        address to,
+        uint256 amount
+    ) external payable {
         require(IHolographRegistry(_registry()).isHolographedContract(token), "HOLOGRAPH: not holographed");
         ERC20Holograph erc20 = ERC20Holograph(token);
-        require(erc20.balanceOf (from) >= amount, "HOLOGRAPH: not enough tokens");
+        require(erc20.balanceOf(from) >= amount, "HOLOGRAPH: not enough tokens");
         (bytes4 selector, bytes memory data) = erc20.holographBridgeOut(toChain, msg.sender, from, to, amount);
         require(selector == ERC20Holograph.holographBridgeOut.selector, "HOLOGRAPH: bridge out failed");
-        emit TransferErc20(toChain, abi.encode(IHolograph(0x020be79e2D5a6a0204C07970F3586dc379d142e0).getChainType(), token, from, to, amount, data));
-        HolographBridge(payable(address(this))).send{value:msg.value}(
+        emit TransferErc20(
+            toChain,
+            abi.encode(
+                IHolograph(0x020be79e2D5a6a0204C07970F3586dc379d142e0).getChainType(),
+                token,
+                from,
+                to,
+                amount,
+                data
+            )
+        );
+        HolographBridge(payable(address(this))).send{value: msg.value}(
             ChainId.hlg2lz(toChain),
-            abi.encodePacked (address(this)),
+            abi.encodePacked(address(this)),
             abi.encodeWithSignature(
                 "erc20in(uint32,address,address,address,uint256,bytes)",
                 IHolograph(0x020be79e2D5a6a0204C07970F3586dc379d142e0).getChainType(),
@@ -226,11 +299,19 @@ contract HolographBridge is Admin, Initializable {
     }
 
     function deployIn(bytes calldata data) external {
-        (DeploymentConfig memory config, Verification memory signature, address signer) = abi.decode(data, (DeploymentConfig, Verification, address));
+        (DeploymentConfig memory config, Verification memory signature, address signer) = abi.decode(
+            data,
+            (DeploymentConfig, Verification, address)
+        );
         IHolographFactory(_factory()).deployHolographableContract(config, signature, signer);
     }
 
-    function deployOut(uint32 toChain, DeploymentConfig calldata config, Verification calldata signature, address signer) external {
+    function deployOut(
+        uint32 toChain,
+        DeploymentConfig calldata config,
+        Verification calldata signature,
+        address signer
+    ) external {
         emit DeployRequest(toChain, abi.encode(config, signature, signer));
     }
 
@@ -245,5 +326,4 @@ contract HolographBridge is Admin, Initializable {
             registry := sload(0x460c4059d72b144253e5fc4e2aacbae2bcd6362c67862cd58ecbab0e7b10c349)
         }
     }
-
 }

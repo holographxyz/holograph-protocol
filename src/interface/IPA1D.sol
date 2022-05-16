@@ -5,7 +5,6 @@
 import "../library/Zora.sol";
 
 interface IPA1D {
-
     function configurePayouts(address payable[] memory addresses, uint256[] memory bps) external;
 
     function getPayoutInfo() external view returns (address payable[] memory addresses, uint256[] memory bps);
@@ -18,7 +17,11 @@ interface IPA1D {
 
     function supportsInterface(bytes4 interfaceId) external pure returns (bool);
 
-    function setRoyalties(uint256 tokenId, address payable receiver, uint256 bp) external;
+    function setRoyalties(
+        uint256 tokenId,
+        address payable receiver,
+        uint256 bp
+    ) external;
 
     function royaltyInfo(uint256 tokenId, uint256 value) external view returns (address, uint256);
 
@@ -30,9 +33,16 @@ interface IPA1D {
 
     function getFees(uint256 tokenId) external view returns (address payable[] memory, uint256[] memory);
 
-    function tokenCreator(address/* contractAddress*/, uint256 tokenId) external view returns (address);
+    function tokenCreator(
+        address, /* contractAddress*/
+        uint256 tokenId
+    ) external view returns (address);
 
-    function calculateRoyaltyFee(address /* contractAddress */, uint256 tokenId, uint256 amount) external view returns (uint256);
+    function calculateRoyaltyFee(
+        address, /* contractAddress */
+        uint256 tokenId,
+        uint256 amount
+    ) external view returns (uint256);
 
     function marketContract() external view returns (address);
 
@@ -45,5 +55,4 @@ interface IPA1D {
     function getTokenAddress(string memory tokenName) external view returns (address);
 
     function supportsFunction(bytes4 selector) external pure returns (bool);
-
 }

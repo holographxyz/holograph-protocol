@@ -3,8 +3,7 @@
 /*SOLIDITY_COMPILER_VERSION*/
 
 abstract contract NonReentrant {
-
-    constructor () {
+    constructor() {
         setStatus(1);
     }
 
@@ -19,7 +18,10 @@ abstract contract NonReentrant {
         // The slot hash has been precomputed for gas optimizaion
         // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.reentrant')) - 1);
         assembly {
-            status := sload(/* slot */precomputeslot('eip1967.Holograph.Bridge.reentrant'))
+            status := sload(
+                /* slot */
+                precomputeslot("eip1967.Holograph.Bridge.reentrant")
+            )
         }
     }
 
@@ -27,8 +29,11 @@ abstract contract NonReentrant {
         // The slot hash has been precomputed for gas optimizaion
         // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.reentrant')) - 1);
         assembly {
-            sstore(/* slot */precomputeslot('eip1967.Holograph.Bridge.reentrant'), status)
+            sstore(
+                /* slot */
+                precomputeslot("eip1967.Holograph.Bridge.reentrant"),
+                status
+            )
         }
     }
-
 }

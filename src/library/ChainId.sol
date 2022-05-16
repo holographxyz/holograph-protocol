@@ -3,7 +3,6 @@
 /*SOLIDITY_COMPILER_VERSION*/
 
 library ChainId {
-
     function lz2hlg(uint16 lzChainId) internal pure returns (uint32 hlgChainId) {
         assembly {
             switch lzChainId
@@ -157,5 +156,4 @@ library ChainId {
     function hlg2syn(uint32 hlgChainId) internal pure returns (uint32 synChainId) {
         return hlgChainId;
     }
-
 }

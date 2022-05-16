@@ -116,7 +116,6 @@ import "../library/Strings.sol";
  * @dev The entire logic and functionality of the smart contract is self-contained.
  */
 contract SampleERC721 is ERC721H {
-
     /*
      * @dev Address of initial creator/owner of the collection.
      */
@@ -146,7 +145,7 @@ contract SampleERC721 is ERC721H {
      */
     function init(bytes memory data) external override returns (bytes4) {
         // do your own custom logic here
-        (address owner) = abi.decode(data, (address));
+        address owner = abi.decode(data, (address));
         _owner = owner;
         // run underlying initializer logic
         return _init(data);
@@ -164,7 +163,11 @@ contract SampleERC721 is ERC721H {
     /*
      * @dev Sample mint where anyone can mint any token, with a custom URI
      */
-    function mint(address msgSender, address to, string calldata URI) external onlyHolographer onlyOwner(msgSender) {
+    function mint(
+        address msgSender,
+        address to,
+        string calldata URI
+    ) external onlyHolographer onlyOwner(msgSender) {
         _currentTokenId++;
         ERC721Holograph(holographer()).sourceMint(to, _currentTokenId);
         uint256 _tokenId = ERC721Holograph(holographer()).sourceGetChainPrepend() + uint256(_currentTokenId);
@@ -175,19 +178,32 @@ contract SampleERC721 is ERC721H {
         return string(abi.encodePacked("it works! ", Strings.toHexString(msgSender)));
     }
 
-    function bridgeIn(uint32/* _chainId*/, address/* _from*/, address/* _to*/, uint256 _tokenId, bytes calldata _data) external override onlyHolographer returns (bool) {
-        (string memory URI) = abi.decode(_data, (string));
+    function bridgeIn(
+        uint32, /* _chainId*/
+        address, /* _from*/
+        address, /* _to*/
+        uint256 _tokenId,
+        bytes calldata _data
+    ) external override onlyHolographer returns (bool) {
+        string memory URI = abi.decode(_data, (string));
         _tokenURIs[_tokenId] = URI;
         return true;
     }
 
-    function bridgeOut(uint32/* _chainId*/, address/* _from*/, address/* _to*/, uint256 _tokenId) external override view onlyHolographer returns (bytes memory _data) {
+    function bridgeOut(
+        uint32, /* _chainId*/
+        address, /* _from*/
+        address, /* _to*/
+        uint256 _tokenId
+    ) external view override onlyHolographer returns (bytes memory _data) {
         _data = abi.encode(_tokenURIs[_tokenId]);
     }
 
-    function afterBurn(address/* _owner*/, uint256 _tokenId) external override onlyHolographer returns (bool) {
+    function afterBurn(
+        address, /* _owner*/
+        uint256 _tokenId
+    ) external override onlyHolographer returns (bool) {
         delete _tokenURIs[_tokenId];
         return true;
     }
-
 }

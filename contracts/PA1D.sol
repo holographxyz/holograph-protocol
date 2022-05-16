@@ -144,7 +144,6 @@ contract PA1D is Admin, Owner, Initializable {
      */
     constructor() Admin(true) Owner(true) {}
 
-
     function init(bytes memory data) external override returns (bytes4) {
         require(!_isInitialized(), "PA1D: already initialized");
         (address receiver, uint256 bp) = abi.decode(data, (address, uint256));
@@ -159,7 +158,10 @@ contract PA1D is Admin, Owner, Initializable {
      * @return Returns true is message sender is an owner.
      */
     function isOwner() internal view returns (bool) {
-        return (msg.sender == getOwner() || msg.sender == getAdmin() || msg.sender == Owner(address(this)).getOwner() || msg.sender == Admin(address(this)).getAdmin());
+        return (msg.sender == getOwner() ||
+            msg.sender == getAdmin() ||
+            msg.sender == Owner(address(this)).getOwner() ||
+            msg.sender == Admin(address(this)).getAdmin());
     }
 
     /**
@@ -170,7 +172,10 @@ contract PA1D is Admin, Owner, Initializable {
         // The slot hash has been precomputed for gas optimizaion
         // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.PA1D.defaultReceiver')) - 1);
         assembly {
-            receiver := sload(/* slot */0xfd430e1c7265cc31dbd9a10ce657e68878a41cfe179c80cd68c5edf961516848)
+            receiver := sload(
+                /* slot */
+                0xfd430e1c7265cc31dbd9a10ce657e68878a41cfe179c80cd68c5edf961516848
+            )
         }
     }
 
@@ -182,7 +187,11 @@ contract PA1D is Admin, Owner, Initializable {
         // The slot hash has been precomputed for gas optimizaion
         // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.PA1D.defaultReceiver')) - 1);
         assembly {
-            sstore(/* slot */0xfd430e1c7265cc31dbd9a10ce657e68878a41cfe179c80cd68c5edf961516848, receiver)
+            sstore(
+                /* slot */
+                0xfd430e1c7265cc31dbd9a10ce657e68878a41cfe179c80cd68c5edf961516848,
+                receiver
+            )
         }
     }
 
@@ -194,7 +203,10 @@ contract PA1D is Admin, Owner, Initializable {
         // The slot hash has been precomputed for gas optimizaion
         // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.PA1D.defaultBp')) - 1);
         assembly {
-            bp := sload(/* slot */0x3ab91e3c2ba71a57537d782545f8feb1d402b604f5e070fa6c3b911fc2f18f75)
+            bp := sload(
+                /* slot */
+                0x3ab91e3c2ba71a57537d782545f8feb1d402b604f5e070fa6c3b911fc2f18f75
+            )
         }
     }
 
@@ -206,7 +218,11 @@ contract PA1D is Admin, Owner, Initializable {
         // The slot hash has been precomputed for gas optimizaion
         // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.PA1D.defaultBp')) - 1);
         assembly {
-            sstore(/* slot */0x3ab91e3c2ba71a57537d782545f8feb1d402b604f5e070fa6c3b911fc2f18f75, bp)
+            sstore(
+                /* slot */
+                0x3ab91e3c2ba71a57537d782545f8feb1d402b604f5e070fa6c3b911fc2f18f75,
+                bp
+            )
         }
     }
 
@@ -215,9 +231,7 @@ contract PA1D is Admin, Owner, Initializable {
      * @return receiver Wallet or smart contract that will receive the royalty payouts for a particular token id.
      */
     function _getReceiver(uint256 tokenId) internal view returns (address payable receiver) {
-        bytes32 slot = bytes32(
-            uint256(keccak256(abi.encodePacked("eip1967.Holograph.PA1D.receiver", tokenId))) - 1
-        );
+        bytes32 slot = bytes32(uint256(keccak256(abi.encodePacked("eip1967.Holograph.PA1D.receiver", tokenId))) - 1);
         assembly {
             receiver := sload(slot)
         }
@@ -229,9 +243,7 @@ contract PA1D is Admin, Owner, Initializable {
      * @param receiver Wallet or smart contract that will receive the royalty payouts for a particular token id.
      */
     function _setReceiver(uint256 tokenId, address receiver) internal {
-        bytes32 slot = bytes32(
-            uint256(keccak256(abi.encodePacked("eip1967.Holograph.PA1D.receiver", tokenId))) - 1
-        );
+        bytes32 slot = bytes32(uint256(keccak256(abi.encodePacked("eip1967.Holograph.PA1D.receiver", tokenId))) - 1);
         assembly {
             sstore(slot, receiver)
         }
@@ -242,9 +254,7 @@ contract PA1D is Admin, Owner, Initializable {
      * @return bp Royalty base points(percentage) for the royalty payouts of a specific token id.
      */
     function _getBp(uint256 tokenId) internal view returns (uint256 bp) {
-        bytes32 slot = bytes32(
-            uint256(keccak256(abi.encodePacked("eip1967.Holograph.PA1D.bp", tokenId))) - 1
-        );
+        bytes32 slot = bytes32(uint256(keccak256(abi.encodePacked("eip1967.Holograph.PA1D.bp", tokenId))) - 1);
         assembly {
             bp := sload(slot)
         }
@@ -256,9 +266,7 @@ contract PA1D is Admin, Owner, Initializable {
      * @param bp Uint256 of royalty percentage, provided in base points format, for a particular token id.
      */
     function _setBp(uint256 tokenId, uint256 bp) internal {
-        bytes32 slot = bytes32(
-            uint256(keccak256(abi.encodePacked("eip1967.Holograph.PA1D.bp", tokenId))) - 1
-        );
+        bytes32 slot = bytes32(uint256(keccak256(abi.encodePacked("eip1967.Holograph.PA1D.bp", tokenId))) - 1);
         assembly {
             sstore(slot, bp)
         }
@@ -553,7 +561,11 @@ contract PA1D is Admin, Owner, Initializable {
      * @param receiver Wallet or smart contract that will receive the royalty payouts.
      * @param bp Uint256 of royalty percentage, provided in base points format.
      */
-    function setRoyalties(uint256 tokenId, address payable receiver, uint256 bp) public onlyOwner {
+    function setRoyalties(
+        uint256 tokenId,
+        address payable receiver,
+        uint256 bp
+    ) public onlyOwner {
         if (tokenId == 0) {
             _setDefaultReceiver(receiver);
             _setDefaultBp(bp);
@@ -641,7 +653,11 @@ contract PA1D is Admin, Owner, Initializable {
     // Hint taken from Manifold's RoyaltyEngine(https://github.com/manifoldxyz/royalty-registry-solidity/blob/main/contracts/RoyaltyEngineV1.sol)
     // To be quite honest, SuperRare is a closed marketplace. They're working on opening it up but looks like they want to use private smart contracts.
     // We'll just leave this here for just in case they open the flood gates.
-    function tokenCreator(address, /* contractAddress*/ uint256 tokenId) public view returns (address) {
+    function tokenCreator(
+        address,
+        /* contractAddress*/
+        uint256 tokenId
+    ) public view returns (address) {
         address receiver = _getReceiver(tokenId);
         if (receiver == address(0)) {
             return _getDefaultReceiver();
@@ -650,7 +666,12 @@ contract PA1D is Admin, Owner, Initializable {
     }
 
     // SuperRare
-    function calculateRoyaltyFee(address, /* contractAddress */ uint256 tokenId, uint256 amount) public view returns (uint256) {
+    function calculateRoyaltyFee(
+        address,
+        /* contractAddress */
+        uint256 tokenId,
+        uint256 amount
+    ) public view returns (uint256) {
         if (_getReceiver(tokenId) == address(0)) {
             return (_getDefaultBp() * amount) / 10000;
         } else {
@@ -699,27 +720,24 @@ contract PA1D is Admin, Owner, Initializable {
     }
 
     function supportsFunction(bytes4 selector) public pure returns (bool) {
-        return (
-            selector == IPA1D.configurePayouts.selector
-            || selector == IPA1D.getPayoutInfo.selector
-            || selector == IPA1D.getEthPayout.selector
-            || selector == IPA1D.getTokenPayout.selector
-            || selector == IPA1D.getTokensPayout.selector
-            || selector == IPA1D.supportsInterface.selector
-            || selector == IPA1D.setRoyalties.selector
-            || selector == IPA1D.royaltyInfo.selector
-            || selector == IPA1D.getFeeBps.selector
-            || selector == IPA1D.getFeeRecipients.selector
-            || selector == IPA1D.getRoyalties.selector
-            || selector == IPA1D.getFees.selector
-            || selector == IPA1D.tokenCreator.selector
-            || selector == IPA1D.calculateRoyaltyFee.selector
-            || selector == IPA1D.marketContract.selector
-            || selector == IPA1D.tokenCreators.selector
-            || selector == IPA1D.bidSharesForToken.selector
-            || selector == IPA1D.getStorageSlot.selector
-            || selector == IPA1D.getTokenAddress.selector
-        );
+        return (selector == IPA1D.configurePayouts.selector ||
+            selector == IPA1D.getPayoutInfo.selector ||
+            selector == IPA1D.getEthPayout.selector ||
+            selector == IPA1D.getTokenPayout.selector ||
+            selector == IPA1D.getTokensPayout.selector ||
+            selector == IPA1D.supportsInterface.selector ||
+            selector == IPA1D.setRoyalties.selector ||
+            selector == IPA1D.royaltyInfo.selector ||
+            selector == IPA1D.getFeeBps.selector ||
+            selector == IPA1D.getFeeRecipients.selector ||
+            selector == IPA1D.getRoyalties.selector ||
+            selector == IPA1D.getFees.selector ||
+            selector == IPA1D.tokenCreator.selector ||
+            selector == IPA1D.calculateRoyaltyFee.selector ||
+            selector == IPA1D.marketContract.selector ||
+            selector == IPA1D.tokenCreators.selector ||
+            selector == IPA1D.bidSharesForToken.selector ||
+            selector == IPA1D.getStorageSlot.selector ||
+            selector == IPA1D.getTokenAddress.selector);
     }
-
 }

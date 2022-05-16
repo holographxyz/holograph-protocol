@@ -119,7 +119,6 @@ import "../library/Strings.sol";
  * @dev The entire logic and functionality of the smart contract is self-contained.
  */
 contract hToken is ERC20H {
-
     /*
      * @dev Address of initial creator/owner of the contract.
      */
@@ -184,10 +183,8 @@ contract hToken is ERC20H {
      */
     function holographNativeToken(address msgSender, address recipient) external payable onlyHolographer {
         require(
-            (
-                IHolographer(holographer()).getOriginChain()
-                == IHolograph(0x020be79e2D5a6a0204C07970F3586dc379d142e0).getChainType()
-            ),
+            (IHolographer(holographer()).getOriginChain() ==
+                IHolograph(0x020be79e2D5a6a0204C07970F3586dc379d142e0).getChainType()),
             "hToken: not native token"
         );
         require(msg.value > 0, "hToken: no value received");
@@ -202,13 +199,15 @@ contract hToken is ERC20H {
      * @dev Send hToken, get back native token value equivalent.
      * @param recipient Address of where to send the native token(s) to.
      */
-    function extractNativeToken(address msgSender, address payable recipient, uint256 amount) external onlyHolographer {
+    function extractNativeToken(
+        address msgSender,
+        address payable recipient,
+        uint256 amount
+    ) external onlyHolographer {
         require(ERC20(address(this)).balanceOf(msgSender) >= amount, "hToken: not enough hToken(s)");
         require(
-            (
-                IHolographer(holographer()).getOriginChain()
-                == IHolograph(0x020be79e2D5a6a0204C07970F3586dc379d142e0).getChainType()
-            ),
+            (IHolographer(holographer()).getOriginChain() ==
+                IHolograph(0x020be79e2D5a6a0204C07970F3586dc379d142e0).getChainType()),
             "hToken: not on native chain"
         );
         require(address(this).balance >= amount, "hToken: not enough native tokens");
@@ -228,7 +227,12 @@ contract hToken is ERC20H {
      * @dev Send supported wrapped token, get back hToken equivalent.
      * @param recipient Address of where to send the hToken(s) to.
      */
-    function holographWrappedToken(address msgSender, address token, address recipient, uint256 amount) external onlyHolographer {
+    function holographWrappedToken(
+        address msgSender,
+        address token,
+        address recipient,
+        uint256 amount
+    ) external onlyHolographer {
         require(_supportedWrappers[token], "hToken: unsupported token type");
         ERC20 erc20 = ERC20(token);
         require(erc20.allowance(msgSender, address(this)) >= amount, "hToken: allowance too low");
@@ -253,7 +257,12 @@ contract hToken is ERC20H {
      * @dev Send hToken, get back native token value equivalent.
      * @param recipient Address of where to send the native token(s) to.
      */
-    function extractWrappedToken(address msgSender, address token, address payable recipient, uint256 amount) external onlyHolographer {
+    function extractWrappedToken(
+        address msgSender,
+        address token,
+        address payable recipient,
+        uint256 amount
+    ) external onlyHolographer {
         require(_supportedWrappers[token], "hToken: unsupported token type");
         require(ERC20(address(this)).balanceOf(msgSender) >= amount, "hToken: not enough hToken(s)");
         ERC20 erc20 = ERC20(token);
@@ -275,15 +284,23 @@ contract hToken is ERC20H {
         emit Withdrawal(token, recipient, adjustedAmount);
     }
 
-    function availableNativeTokens(address/* msgSender*/) external view onlyHolographer returns (uint256) {
-        if (IHolographer(holographer()).getOriginChain() == IHolograph(0x020be79e2D5a6a0204C07970F3586dc379d142e0).getChainType()) {
+    function availableNativeTokens(
+        address /* msgSender*/
+    ) external view onlyHolographer returns (uint256) {
+        if (
+            IHolographer(holographer()).getOriginChain() ==
+            IHolograph(0x020be79e2D5a6a0204C07970F3586dc379d142e0).getChainType()
+        ) {
             return address(this).balance;
         } else {
             return 0;
         }
     }
 
-    function availableWrappedTokens(address/* msgSender*/, address token) external view onlyHolographer returns (uint256) {
+    function availableWrappedTokens(
+        address, /* msgSender*/
+        address token
+    ) external view onlyHolographer returns (uint256) {
         require(_supportedWrappers[token], "hToken: unsupported token type");
         return ERC20(token).balanceOf(address(this));
     }
@@ -292,8 +309,11 @@ contract hToken is ERC20H {
         return string(abi.encodePacked("hToken works!\nmgs.sender == ", Strings.toHexString(msgSender)));
     }
 
-    function updateSupportedWrapper(address msgSender, address token, bool supported) external onlyHolographer onlyOwner(msgSender) {
+    function updateSupportedWrapper(
+        address msgSender,
+        address token,
+        bool supported
+    ) external onlyHolographer onlyOwner(msgSender) {
         _supportedWrappers[token] = supported;
     }
-
 }

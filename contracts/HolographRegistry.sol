@@ -117,7 +117,6 @@ import "./library/ChainId.sol";
  * @dev This way it can be super easy to upgrade/update the source code once, and have all smart contracts automatically updated.
  */
 contract HolographRegistry is Admin, Initializable {
-
     /*
      * @dev A list of smart contracts that are guaranteed secure and holographable.
      */
@@ -154,7 +153,7 @@ contract HolographRegistry is Admin, Initializable {
      */
     function init(bytes memory data) external override returns (bytes4) {
         require(!_isInitialized(), "HOLOGRAPH: already initialized");
-        (bytes32[] memory reservedTypes) = abi.decode(data, (bytes32[]));
+        bytes32[] memory reservedTypes = abi.decode(data, (bytes32[]));
         for (uint256 i = 0; i < reservedTypes.length; i++) {
             _reservedTypes[reservedTypes[i]] = true;
         }
@@ -170,7 +169,10 @@ contract HolographRegistry is Admin, Initializable {
         assembly {
             contractType := extcodehash(contractAddress)
         }
-        require((contractType != 0x0 && contractType != 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470), "HOLOGRAPH: empty contract");
+        require(
+            (contractType != 0x0 && contractType != 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470),
+            "HOLOGRAPH: empty contract"
+        );
         require(_contractTypeAddresses[contractType] == address(0), "HOLOGRAPH: contract already set");
         require(!_reservedTypes[contractType], "HOLOGRAPH: reserved address type");
         _contractTypeAddresses[contractType] = contractAddress;
@@ -181,7 +183,10 @@ contract HolographRegistry is Admin, Initializable {
      * @dev Allows Holograph Factory to register a deployed contract, referenced with deployment hash.
      */
     function factoryDeployedHash(bytes32 hash, address contractAddress) external {
-       require(msg.sender == IHolograph(0x020be79e2D5a6a0204C07970F3586dc379d142e0).getFactory(), "HOLOGRAPH: factory only function");
+        require(
+            msg.sender == IHolograph(0x020be79e2D5a6a0204C07970F3586dc379d142e0).getFactory(),
+            "HOLOGRAPH: factory only function"
+        );
         _holographedContractsHashMap[hash] = contractAddress;
         _holographedContracts[contractAddress] = true;
     }
@@ -233,5 +238,4 @@ contract HolographRegistry is Admin, Initializable {
     function isHolographedHashDeployed(bytes32 hash) external view returns (bool) {
         return _holographedContractsHashMap[hash] != address(0);
     }
-
 }

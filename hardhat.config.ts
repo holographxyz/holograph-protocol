@@ -30,88 +30,90 @@ const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
  * @type import('hardhat/config').HardhatUserConfig
  */
 const config: HardhatUserConfig = {
-  defaultNetwork: 'localhost',
-  networks: {
-    localhost: {
-      url: networks.localhost.rpc,
-      chainId: networks.localhost.chain,
-      accounts: {
-        mnemonic: MNEMONIC,
-        path: "m/44'/60'/0'/0",
-        initialIndex: 0,
-        count: 11,
-        passphrase: '',
-      },
-      companionNetworks: { // https://github.com/wighawag/hardhat-deploy#companionnetworks
-        l2: 'localhost2',
-      },
-      saveDeployments: false,
+    defaultNetwork: 'localhost',
+    networks: {
+        localhost: {
+            url: networks.localhost.rpc,
+            chainId: networks.localhost.chain,
+            accounts: {
+                mnemonic: MNEMONIC,
+                path: "m/44'/60'/0'/0",
+                initialIndex: 0,
+                count: 11,
+                passphrase: '',
+            },
+            companionNetworks: {
+                // https://github.com/wighawag/hardhat-deploy#companionnetworks
+                l2: 'localhost2',
+            },
+            saveDeployments: false,
+        },
+        localhost2: {
+            url: networks.localhost2.rpc,
+            chainId: networks.localhost2.chain,
+            accounts: {
+                mnemonic: MNEMONIC,
+                path: "m/44'/60'/0'/0",
+                initialIndex: 0,
+                count: 11,
+                passphrase: '',
+            },
+            companionNetworks: {
+                // https://github.com/wighawag/hardhat-deploy#companionnetworks
+                l2: 'localhost',
+            },
+            saveDeployments: false,
+        },
+        eth: {
+            url: networks.eth.rpc,
+            chainId: networks.eth.chain,
+            accounts: [MAINNET_PRIVATE_KEY],
+        },
+        eth_rinkeby: {
+            url: networks.eth_rinkeby.rpc,
+            chainId: networks.eth_rinkeby.chain,
+            accounts: [RINKEBY_PRIVATE_KEY],
+        },
+        cxip: {
+            url: networks.cxip.rpc,
+            chainId: networks.cxip.chain,
+            accounts: [CXIP_PRIVATE_KEY],
+        },
+        coverage: {
+            url: 'http://127.0.0.1:8555',
+        },
     },
-    localhost2: {
-      url: networks.localhost2.rpc,
-      chainId: networks.localhost2.chain,
-      accounts: {
-        mnemonic: MNEMONIC,
-        path: "m/44'/60'/0'/0",
-        initialIndex: 0,
-        count: 11,
-        passphrase: '',
-      },
-      companionNetworks: { // https://github.com/wighawag/hardhat-deploy#companionnetworks
-        l2: 'localhost',
-      },
-      saveDeployments: false,
+    namedAccounts: {
+        deployer: 0,
     },
-    eth: {
-      url: networks.eth.rpc,
-      chainId: networks.eth.chain,
-      accounts: [MAINNET_PRIVATE_KEY],
+    solidity: {
+        version: SOLIDITY_VERSION,
+        settings: {
+            optimizer: {
+                enabled: true,
+                runs: 999999,
+            },
+            metadata: {
+                bytecodeHash: 'none',
+            },
+        },
     },
-    eth_rinkeby: {
-      url: networks.eth_rinkeby.rpc,
-      chainId: networks.eth_rinkeby.chain,
-      accounts: [RINKEBY_PRIVATE_KEY],
+    mocha: {
+        timeout: 60000,
     },
-    cxip: {
-      url: networks.cxip.rpc,
-      chainId: networks.cxip.chain,
-      accounts: [CXIP_PRIVATE_KEY],
+    gasReporter: {
+        enabled: process.env.REPORT_GAS ? true : false,
+        currency: 'USD',
+        gasPrice: 100,
+        coinmarketcap: process.env.COINMARKETCAP_API_KEY,
     },
-    coverage: {
-      url: 'http://127.0.0.1:8555',
+    etherscan: {
+        apiKey: ETHERSCAN_API_KEY,
     },
-  },
-  namedAccounts: {
-    deployer: 0,
-  },
-  solidity: {
-    version: SOLIDITY_VERSION,
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 999999,
-      },
-      metadata: {
-        bytecodeHash: 'none',
-      },
+    holographAddressInjector: {
+        runOnCompile: true,
+        verbose: false,
     },
-  },
-  mocha: {
-    timeout: 60000,
-  },
-  gasReporter: {
-    enabled: process.env.REPORT_GAS ? true : false,
-    currency: 'USD',
-    gasPrice: 100,
-    coinmarketcap: process.env.COINMARKETCAP_API_KEY,
-  },
-  etherscan: {
-    apiKey: ETHERSCAN_API_KEY,
-  },
-  holographAddressInjector: {
-    runOnCompile: true,
-    verbose: false
-  }
 };
 
 export default config;

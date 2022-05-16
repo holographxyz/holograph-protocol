@@ -3,7 +3,6 @@
 /*SOLIDITY_COMPILER_VERSION*/
 
 interface ISecureStorage {
-
     function getOwner() external view returns (address);
 
     function setOwner(address owner) external;
@@ -13,5 +12,4 @@ interface ISecureStorage {
     function setSlot(bytes32 slot, bytes32 data) external;
 
     function lock(bool position) external;
-
 }

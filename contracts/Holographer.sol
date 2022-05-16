@@ -114,7 +114,6 @@ import "./interface/IInitializable.sol";
  * @dev This contract is a binder. It puts together all the variables to make the underlying contracts functional and be bridgeable.
  */
 contract Holographer is Admin, Initializable {
-
     /*
      * @dev Constructor is left empty and only the admin address is set.
      */
@@ -123,7 +122,13 @@ contract Holographer is Admin, Initializable {
     function init(bytes memory data) external override returns (bytes4) {
         require(!_isInitialized(), "HOLOGRAPHER: already initialized");
         (bytes memory encoded, bytes memory initCode) = abi.decode(data, (bytes, bytes));
-        (uint32 originChain, address holograph, address secureStorage, bytes32 contractType, address sourceContract) = abi.decode(encoded, (uint32, address, address, bytes32, address));
+        (
+            uint32 originChain,
+            address holograph,
+            address secureStorage,
+            bytes32 contractType,
+            address sourceContract
+        ) = abi.decode(encoded, (uint32, address, address, bytes32, address));
         assembly {
             sstore(0x2378c1f8aa4ffd1a2b352b1ec4b9fe37cee7d2bb3fa1a7e6aeaeb422f15defdb, originChain)
             sstore(0x1eee493315beeac80829afd0aaa340f3821cabe68571a2743478e81638a3d94d, holograph)
@@ -134,7 +139,7 @@ contract Holographer is Admin, Initializable {
         (bool success, bytes memory returnData) = getHolographEnforcer().delegatecall(
             abi.encodeWithSignature("init(bytes)", initCode)
         );
-        (bytes4 selector) = abi.decode(returnData, (bytes4));
+        bytes4 selector = abi.decode(returnData, (bytes4));
         require(success && selector == IInitializable.init.selector, "initialization failed");
         _setInitialized();
         return IInitializable.init.selector;
@@ -148,16 +153,16 @@ contract Holographer is Admin, Initializable {
         address holograph;
         bytes32 contractType;
         assembly {
-            holograph := sload(/* slot */0x1eee493315beeac80829afd0aaa340f3821cabe68571a2743478e81638a3d94d)
-            contractType := sload(/* slot */0x927d33f74b40d20ebbbc7fbed0f01deacf3e0b589b248a5cc2fc82aa94928913)
+            holograph := sload(
+                /* slot */
+                0x1eee493315beeac80829afd0aaa340f3821cabe68571a2743478e81638a3d94d
+            )
+            contractType := sload(
+                /* slot */
+                0x927d33f74b40d20ebbbc7fbed0f01deacf3e0b589b248a5cc2fc82aa94928913
+            )
         }
-        return payable(
-            IHolographRegistry(
-                IHolograph(
-                    holograph
-                ).getRegistry()
-            ).getContractTypeAddress(contractType)
-        );
+        return payable(IHolographRegistry(IHolograph(holograph).getRegistry()).getContractTypeAddress(contractType));
     }
 
     /*
@@ -165,7 +170,10 @@ contract Holographer is Admin, Initializable {
      */
     function getOriginChain() public view returns (uint32 originChain) {
         assembly {
-            originChain := sload(/* slot */0x2378c1f8aa4ffd1a2b352b1ec4b9fe37cee7d2bb3fa1a7e6aeaeb422f15defdb)
+            originChain := sload(
+                /* slot */
+                0x2378c1f8aa4ffd1a2b352b1ec4b9fe37cee7d2bb3fa1a7e6aeaeb422f15defdb
+            )
         }
     }
 
@@ -174,7 +182,10 @@ contract Holographer is Admin, Initializable {
      */
     function getSecureStorage() public view returns (address secureStorage) {
         assembly {
-            secureStorage := sload(/* slot */0xd26498b26a05274577b8ac2e3250418da53433f3ff82027428ee3c530702cdec)
+            secureStorage := sload(
+                /* slot */
+                0xd26498b26a05274577b8ac2e3250418da53433f3ff82027428ee3c530702cdec
+            )
         }
     }
 
@@ -183,7 +194,10 @@ contract Holographer is Admin, Initializable {
      */
     function getSourceContract() public view returns (address payable sourceContract) {
         assembly {
-            sourceContract := sload(/* slot */0xee63e41dd03b4d304382a6596ec5f4a6eb601d3640835d27fca1d0be62955bb5)
+            sourceContract := sload(
+                /* slot */
+                0xee63e41dd03b4d304382a6596ec5f4a6eb601d3640835d27fca1d0be62955bb5
+            )
         }
     }
 
@@ -211,5 +225,4 @@ contract Holographer is Admin, Initializable {
             }
         }
     }
-
 }

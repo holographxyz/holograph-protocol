@@ -9,7 +9,6 @@ import "./abstract/Owner.sol";
 import "./interface/IInitializable.sol";
 
 contract SecureStorage is Admin, Owner, Initializable {
-
     /**
      * @dev Boolean indicating if storage writing is locked. Used to prevent delegated contracts access.
      */
@@ -36,9 +35,13 @@ contract SecureStorage is Admin, Owner, Initializable {
 
     function init(bytes memory data) external override returns (bytes4) {
         require(!_isInitialized(), "HOLOGRAPH: already initialized");
-        (address owner) = abi.decode(data, (address));
+        address owner = abi.decode(data, (address));
         assembly {
-            sstore(/* slot */precomputeslot('eip1967.Holograph.Bridge.owner'), owner)
+            sstore(
+                /* slot */
+                precomputeslot("eip1967.Holograph.Bridge.owner"),
+                owner
+            )
         }
         _setInitialized();
         return IInitializable.init.selector;
@@ -59,5 +62,4 @@ contract SecureStorage is Admin, Owner, Initializable {
     function lock(bool position) public onlyOwner nonReentrant {
         _locked = position;
     }
-
 }

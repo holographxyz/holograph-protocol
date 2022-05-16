@@ -8,18 +8,20 @@ import "./abstract/Initializable.sol";
 import "./interface/IInitializable.sol";
 
 contract Holograph is Admin, Initializable {
-
     constructor() Admin(false) {}
 
     function init(bytes memory data) external override returns (bytes4) {
         require(!_isInitialized(), "HOLOGRAPH: already initialized");
-        (uint32 chainType, address registry, address factory, address bridge, address secureStorage) = abi.decode(data, (uint32, address, address, address, address));
+        (uint32 chainType, address registry, address factory, address bridge, address secureStorage) = abi.decode(
+            data,
+            (uint32, address, address, address, address)
+        );
         assembly {
-            sstore(precomputeslot('eip1967.Holograph.Bridge.chainType'), chainType)
-            sstore(precomputeslot('eip1967.Holograph.Bridge.registry'), registry)
-            sstore(precomputeslot('eip1967.Holograph.Bridge.factory'), factory)
-            sstore(precomputeslot('eip1967.Holograph.Bridge.bridge'), bridge)
-            sstore(precomputeslot('eip1967.Holograph.Bridge.secureStorage'), secureStorage)
+            sstore(precomputeslot("eip1967.Holograph.Bridge.chainType"), chainType)
+            sstore(precomputeslot("eip1967.Holograph.Bridge.registry"), registry)
+            sstore(precomputeslot("eip1967.Holograph.Bridge.factory"), factory)
+            sstore(precomputeslot("eip1967.Holograph.Bridge.bridge"), bridge)
+            sstore(precomputeslot("eip1967.Holograph.Bridge.secureStorage"), secureStorage)
         }
         _setInitialized();
         return IInitializable.init.selector;
@@ -38,7 +40,7 @@ contract Holograph is Admin, Initializable {
         // The slot hash has been precomputed for gas optimizaion
         // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.chainType')) - 1);
         assembly {
-            chainType := sload(precomputeslot('eip1967.Holograph.Bridge.chainType'))
+            chainType := sload(precomputeslot("eip1967.Holograph.Bridge.chainType"))
         }
     }
 
@@ -49,7 +51,7 @@ contract Holograph is Admin, Initializable {
         // The slot hash has been precomputed for gas optimizaion
         // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.chainType')) - 1);
         assembly {
-            sstore(precomputeslot('eip1967.Holograph.Bridge.chainType'), chainType)
+            sstore(precomputeslot("eip1967.Holograph.Bridge.chainType"), chainType)
         }
     }
 
@@ -57,7 +59,7 @@ contract Holograph is Admin, Initializable {
         // The slot hash has been precomputed for gas optimizaion
         // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.bridge')) - 1);
         assembly {
-            bridge := sload(precomputeslot('eip1967.Holograph.Bridge.bridge'))
+            bridge := sload(precomputeslot("eip1967.Holograph.Bridge.bridge"))
         }
     }
 
@@ -65,7 +67,11 @@ contract Holograph is Admin, Initializable {
         // The slot hash has been precomputed for gas optimizaion
         // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.bridge')) - 1);
         assembly {
-            sstore(/* slot */precomputeslot('eip1967.Holograph.Bridge.bridge'), bridge)
+            sstore(
+                /* slot */
+                precomputeslot("eip1967.Holograph.Bridge.bridge"),
+                bridge
+            )
         }
     }
 
@@ -73,7 +79,10 @@ contract Holograph is Admin, Initializable {
         // The slot hash has been precomputed for gas optimizaion
         // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.factory')) - 1);
         assembly {
-            factory := sload(/* slot */precomputeslot('eip1967.Holograph.Bridge.factory'))
+            factory := sload(
+                /* slot */
+                precomputeslot("eip1967.Holograph.Bridge.factory")
+            )
         }
     }
 
@@ -81,7 +90,11 @@ contract Holograph is Admin, Initializable {
         // The slot hash has been precomputed for gas optimizaion
         // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.factory')) - 1);
         assembly {
-            sstore(/* slot */precomputeslot('eip1967.Holograph.Bridge.factory'), factory)
+            sstore(
+                /* slot */
+                precomputeslot("eip1967.Holograph.Bridge.factory"),
+                factory
+            )
         }
     }
 
@@ -89,7 +102,10 @@ contract Holograph is Admin, Initializable {
         // The slot hash has been precomputed for gas optimizaion
         // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.registry')) - 1);
         assembly {
-            registry := sload(/* slot */precomputeslot('eip1967.Holograph.Bridge.registry'))
+            registry := sload(
+                /* slot */
+                precomputeslot("eip1967.Holograph.Bridge.registry")
+            )
         }
     }
 
@@ -97,7 +113,11 @@ contract Holograph is Admin, Initializable {
         // The slot hash has been precomputed for gas optimizaion
         // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.registry')) - 1);
         assembly {
-            sstore(/* slot */precomputeslot('eip1967.Holograph.Bridge.registry'), registry)
+            sstore(
+                /* slot */
+                precomputeslot("eip1967.Holograph.Bridge.registry"),
+                registry
+            )
         }
     }
 
@@ -105,7 +125,10 @@ contract Holograph is Admin, Initializable {
         // The slot hash has been precomputed for gas optimizaion
         // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.secureStorage')) - 1);
         assembly {
-            secureStorage := sload(/* slot */precomputeslot('eip1967.Holograph.Bridge.secureStorage'))
+            secureStorage := sload(
+                /* slot */
+                precomputeslot("eip1967.Holograph.Bridge.secureStorage")
+            )
         }
     }
 
@@ -113,7 +136,11 @@ contract Holograph is Admin, Initializable {
         // The slot hash has been precomputed for gas optimizaion
         // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.secureStorage')) - 1);
         assembly {
-            sstore(/* slot */precomputeslot('eip1967.Holograph.Bridge.secureStorage'), secureStorage)
+            sstore(
+                /* slot */
+                precomputeslot("eip1967.Holograph.Bridge.secureStorage"),
+                secureStorage
+            )
         }
     }
 
@@ -124,5 +151,4 @@ contract Holograph is Admin, Initializable {
     fallback() external payable {
         revert();
     }
-
 }

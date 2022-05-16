@@ -15,7 +15,6 @@ import "../library/Strings.sol";
  * @dev The entire logic and functionality of the smart contract is self-contained.
  */
 contract SampleERC20 is ERC20H {
-
     /*
      * @dev Address of initial creator/owner of the contract.
      */
@@ -43,7 +42,7 @@ contract SampleERC20 is ERC20H {
      */
     function init(bytes memory data) external override returns (bytes4) {
         // do your own custom logic here
-        (address owner) = abi.decode(data, (address));
+        address owner = abi.decode(data, (address));
         _owner = owner;
         // run underlying initializer logic
         return _init(data);
@@ -52,10 +51,16 @@ contract SampleERC20 is ERC20H {
     /*
      * @dev Sample mint where anyone can mint any amounts of tokens.
      */
-    function mint(address msgSender, address to, uint256 amount) external onlyHolographer onlyOwner(msgSender) {
+    function mint(
+        address msgSender,
+        address to,
+        uint256 amount
+    ) external onlyHolographer onlyOwner(msgSender) {
         ERC20Holograph(holographer()).sourceMint(to, amount);
         if (_walletSalts[to] == bytes32(0)) {
-            _walletSalts[to] = keccak256(abi.encodePacked(to, amount, block.timestamp, block.number, blockhash(block.number - 1)));
+            _walletSalts[to] = keccak256(
+                abi.encodePacked(to, amount, block.timestamp, block.number, blockhash(block.number - 1))
+            );
         }
     }
 
@@ -63,14 +68,24 @@ contract SampleERC20 is ERC20H {
         return string(abi.encodePacked("it works! ", Strings.toHexString(msgSender)));
     }
 
-    function bridgeIn(uint32/* _chainId*/, address/* _from*/, address _to, uint256/* _amount*/, bytes calldata _data) external override onlyHolographer returns (bool) {
-        (bytes32 salt) = abi.decode(_data, (bytes32));
+    function bridgeIn(
+        uint32, /* _chainId*/
+        address, /* _from*/
+        address _to,
+        uint256, /* _amount*/
+        bytes calldata _data
+    ) external override onlyHolographer returns (bool) {
+        bytes32 salt = abi.decode(_data, (bytes32));
         _walletSalts[_to] = salt;
         return true;
     }
 
-    function bridgeOut(uint32/* _chainId*/, address/* _from*/, address _to, uint256/* _amount*/) external override view onlyHolographer returns (bytes memory _data) {
+    function bridgeOut(
+        uint32, /* _chainId*/
+        address, /* _from*/
+        address _to,
+        uint256 /* _amount*/
+    ) external view override onlyHolographer returns (bytes memory _data) {
         _data = abi.encode(_walletSalts[_to]);
     }
-
 }

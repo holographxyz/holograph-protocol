@@ -8,7 +8,6 @@ import "./interface/IInitializable.sol";
  * @dev In the beginning there was a smart contract...
  */
 contract HolographGenesis {
-
     mapping(address => bool) private _approvedDeployers;
 
     event Announcement(string message);
@@ -18,16 +17,25 @@ contract HolographGenesis {
         emit Announcement("Let there be light!");
     }
 
-    function deploy(bytes12 saltHash, bytes memory sourceCode, bytes memory initCode) external {
+    function deploy(
+        bytes12 saltHash,
+        bytes memory sourceCode,
+        bytes memory initCode
+    ) external {
         require(_approvedDeployers[msg.sender], "thou shalt not deploy");
         bytes32 salt = bytes32(abi.encodePacked(msg.sender, saltHash));
-        address contractAddress = address(uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, keccak256(sourceCode))))));
+        address contractAddress = address(
+            uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, keccak256(sourceCode)))))
+        );
         require(!_isContract(contractAddress), "contract already deployed");
         assembly {
             contractAddress := create2(0, add(sourceCode, 0x20), mload(sourceCode), salt)
         }
         require(_isContract(contractAddress), "deployment failed");
-        require(IInitializable(contractAddress).init(initCode) == IInitializable.init.selector, "initialization failed");
+        require(
+            IInitializable(contractAddress).init(initCode) == IInitializable.init.selector,
+            "initialization failed"
+        );
     }
 
     function approveDeployer(address newDeployer) external {
@@ -46,5 +54,4 @@ contract HolographGenesis {
         }
         return (codehash != 0x0 && codehash != 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470);
     }
-
 }

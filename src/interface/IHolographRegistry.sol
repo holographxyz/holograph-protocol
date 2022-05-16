@@ -3,7 +3,6 @@
 /*SOLIDITY_COMPILER_VERSION*/
 
 interface IHolographRegistry {
-
     function referenceContractTypeAddress(address contractAddress) external returns (bytes32);
 
     function setContractTypeAddress(bytes32 contractType, address contractAddress) external;
@@ -21,5 +20,4 @@ interface IHolographRegistry {
     function isHolographedContract(address smartContract) external view returns (bool);
 
     function isHolographedHashDeployed(bytes32 hash) external view returns (bool);
-
 }

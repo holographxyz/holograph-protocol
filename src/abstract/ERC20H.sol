@@ -7,7 +7,6 @@ import "../abstract/Initializable.sol";
 import "../interface/HolographedERC20.sol";
 
 abstract contract ERC20H is Initializable, HolographedERC20 {
-
     /*
      * @dev Dummy variable to prevent empty functions from making "switch to pure" warnings.
      */
@@ -32,11 +31,17 @@ abstract contract ERC20H is Initializable, HolographedERC20 {
         return _init(data);
     }
 
-    function _init(bytes memory/* data*/) internal returns (bytes4) {
+    function _init(
+        bytes memory /* data*/
+    ) internal returns (bytes4) {
         require(!_isInitialized(), "ERC20: already initialized");
         address _holographer = msg.sender;
         assembly {
-            sstore(/* slot */precomputeslot('eip1967.Holograph.Bridge.Holographer'), _holographer)
+            sstore(
+                /* slot */
+                precomputeslot("eip1967.Holograph.Bridge.Holographer"),
+                _holographer
+            )
         }
         _setInitialized();
         return IInitializable.init.selector;
@@ -47,78 +52,141 @@ abstract contract ERC20H is Initializable, HolographedERC20 {
      */
     function holographer() internal view returns (address _holographer) {
         assembly {
-            _holographer := sload(/* slot */precomputeslot('eip1967.Holograph.Bridge.Holographer'))
+            _holographer := sload(
+                /* slot */
+                precomputeslot("eip1967.Holograph.Bridge.Holographer")
+            )
         }
     }
 
-    function bridgeIn(uint32/* _chainId*/, address/* _from*/, address/* _to*/, uint256/* _amount*/, bytes calldata/* _data*/) external virtual onlyHolographer returns (bool) {
+    function bridgeIn(
+        uint32, /* _chainId*/
+        address, /* _from*/
+        address, /* _to*/
+        uint256, /* _amount*/
+        bytes calldata /* _data*/
+    ) external virtual onlyHolographer returns (bool) {
         _success = true;
         return true;
     }
 
-    function bridgeOut(uint32/* _chainId*/, address/* _from*/, address/* _to*/, uint256/* _amount*/) external virtual view onlyHolographer returns (bytes memory _data) {
+    function bridgeOut(
+        uint32, /* _chainId*/
+        address, /* _from*/
+        address, /* _to*/
+        uint256 /* _amount*/
+    ) external view virtual onlyHolographer returns (bytes memory _data) {
         // just here to prevent "make pure" warning
         _data = abi.encode(holographer());
     }
 
-    function afterApprove(address/* _owner*/, address/* _to*/, uint256/* _amount*/) external virtual onlyHolographer returns (bool success) {
+    function afterApprove(
+        address, /* _owner*/
+        address, /* _to*/
+        uint256 /* _amount*/
+    ) external virtual onlyHolographer returns (bool success) {
         _success = true;
         return _success;
     }
 
-    function beforeApprove(address/* _owner*/, address/* _to*/, uint256/* _amount*/) external virtual onlyHolographer returns (bool success) {
+    function beforeApprove(
+        address, /* _owner*/
+        address, /* _to*/
+        uint256 /* _amount*/
+    ) external virtual onlyHolographer returns (bool success) {
         _success = true;
         return _success;
     }
 
-    function afterOnERC20Received(address/* _token*/, address/* _from*/, address/* _to*/, uint256/* _amount*/, bytes calldata/* _data*/) external virtual onlyHolographer returns (bool success) {
+    function afterOnERC20Received(
+        address, /* _token*/
+        address, /* _from*/
+        address, /* _to*/
+        uint256, /* _amount*/
+        bytes calldata /* _data*/
+    ) external virtual onlyHolographer returns (bool success) {
         _success = true;
         return _success;
     }
 
-    function beforeOnERC20Received(address/* _token*/, address/* _from*/, address/* _to*/, uint256/* _amount*/, bytes calldata/* _data*/) external virtual onlyHolographer returns (bool success) {
+    function beforeOnERC20Received(
+        address, /* _token*/
+        address, /* _from*/
+        address, /* _to*/
+        uint256, /* _amount*/
+        bytes calldata /* _data*/
+    ) external virtual onlyHolographer returns (bool success) {
         _success = true;
         return _success;
     }
 
-    function afterBurn(address/* _owner*/, uint256/* _amount*/) external virtual onlyHolographer returns (bool success) {
+    function afterBurn(
+        address, /* _owner*/
+        uint256 /* _amount*/
+    ) external virtual onlyHolographer returns (bool success) {
         _success = true;
         return _success;
     }
 
-    function beforeBurn(address/* _owner*/, uint256/* _amount*/) external virtual onlyHolographer returns (bool success) {
+    function beforeBurn(
+        address, /* _owner*/
+        uint256 /* _amount*/
+    ) external virtual onlyHolographer returns (bool success) {
         _success = true;
         return _success;
     }
 
-    function afterMint(address/* _owner*/, uint256/* _amount*/) external virtual onlyHolographer returns (bool success) {
+    function afterMint(
+        address, /* _owner*/
+        uint256 /* _amount*/
+    ) external virtual onlyHolographer returns (bool success) {
         _success = true;
         return _success;
     }
 
-    function beforeMint(address/* _owner*/, uint256/* _amount*/) external virtual onlyHolographer returns (bool success) {
+    function beforeMint(
+        address, /* _owner*/
+        uint256 /* _amount*/
+    ) external virtual onlyHolographer returns (bool success) {
         _success = true;
         return _success;
     }
 
-    function afterSafeTransfer(address/* _from*/, address/* _to*/, uint256/* _amount*/, bytes calldata/* _data*/) external virtual onlyHolographer returns (bool success) {
+    function afterSafeTransfer(
+        address, /* _from*/
+        address, /* _to*/
+        uint256, /* _amount*/
+        bytes calldata /* _data*/
+    ) external virtual onlyHolographer returns (bool success) {
         _success = true;
         return _success;
     }
 
-    function beforeSafeTransfer(address/* _from*/, address/* _to*/, uint256/* _amount*/, bytes calldata/* _data*/) external virtual onlyHolographer returns (bool success) {
+    function beforeSafeTransfer(
+        address, /* _from*/
+        address, /* _to*/
+        uint256, /* _amount*/
+        bytes calldata /* _data*/
+    ) external virtual onlyHolographer returns (bool success) {
         _success = true;
         return _success;
     }
 
-    function afterTransfer(address/* _from*/, address/* _to*/, uint256/* _amount*/) external virtual onlyHolographer returns (bool success) {
+    function afterTransfer(
+        address, /* _from*/
+        address, /* _to*/
+        uint256 /* _amount*/
+    ) external virtual onlyHolographer returns (bool success) {
         _success = true;
         return _success;
     }
 
-    function beforeTransfer(address/* _from*/, address/* _to*/, uint256/* _amount*/) external virtual onlyHolographer returns (bool success) {
+    function beforeTransfer(
+        address, /* _from*/
+        address, /* _to*/
+        uint256 /* _amount*/
+    ) external virtual onlyHolographer returns (bool success) {
         _success = true;
         return _success;
     }
-
 }

@@ -1,5 +1,7 @@
 # Holograph Bridge
+
 The first draft of the Holograph Bridge smart contracts.
+
 ```
   ,,,,,,,,,,,
  [ HOLOGRAPH ]
