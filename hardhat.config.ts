@@ -13,7 +13,7 @@ import './plugins/hardhat-holograph-address-injector';
 
 const networks = JSON.parse(fs.readFileSync('./config/networks.json', 'utf8'));
 
-const SOLIDITY_VERSION = process.env.SOLIDITY_VERSION || '';
+const SOLIDITY_VERSION = process.env.SOLIDITY_VERSION || '0.8.13';
 
 const MNEMONIC = process.env.MNEMONIC || 'test '.repeat(11) + 'junk';
 
