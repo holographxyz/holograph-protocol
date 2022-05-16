@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: MIT
+/*HOLOGRAPH_LICENSE_HEADER*/
 
-SOLIDITY_COMPILER_VERSION
+/*SOLIDITY_COMPILER_VERSION*/
 
 library Zora {
     struct Decimal {

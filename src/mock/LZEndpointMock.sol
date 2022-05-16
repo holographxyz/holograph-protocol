@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-SOLIDITY_COMPILER_VERSION
+/*SOLIDITY_COMPILER_VERSION*/
 
 import "../interface/ILayerZeroReceiver.sol";
 import "../interface/ILayerZeroEndpoint.sol";

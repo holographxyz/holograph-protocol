@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: UNLICENSED
+/*HOLOGRAPH_LICENSE_HEADER*/
 
-SOLIDITY_COMPILER_VERSION
+/*SOLIDITY_COMPILER_VERSION*/
 
 /// @dev Note: the ERC-165 identifier for this interface is 0x150b7a02.
 interface ERC721TokenReceiver {

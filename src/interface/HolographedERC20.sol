@@ -1,6 +1,6 @@
-HOLOGRAPH_LICENSE_HEADER
+/*HOLOGRAPH_LICENSE_HEADER*/
 
-SOLIDITY_COMPILER_VERSION
+/*SOLIDITY_COMPILER_VERSION*/
 
 /// @title Holograph ERC-20 Fungible Token Standard
 /// @dev See https://holograph.network/standard/ERC-20

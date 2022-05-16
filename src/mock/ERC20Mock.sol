@@ -1,6 +1,6 @@
-HOLOGRAPH_LICENSE_HEADER
+/*HOLOGRAPH_LICENSE_HEADER*/
 
-SOLIDITY_COMPILER_VERSION
+/*SOLIDITY_COMPILER_VERSION*/
 
 import "../abstract/EIP712.sol";
 import "../abstract/NonReentrant.sol";

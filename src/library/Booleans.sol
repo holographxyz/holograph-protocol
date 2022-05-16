@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: UNLICENSED
+/*HOLOGRAPH_LICENSE_HEADER*/
 
-SOLIDITY_COMPILER_VERSION
+/*SOLIDITY_COMPILER_VERSION*/
 
 import "../enum/HolographERC20Event.sol";
 import "../enum/HolographERC721Event.sol";

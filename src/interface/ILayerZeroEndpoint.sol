@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-SOLIDITY_COMPILER_VERSION
+/*SOLIDITY_COMPILER_VERSION*/
 
 import "./ILayerZeroUserApplicationConfig.sol";
 

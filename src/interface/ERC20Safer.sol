@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 
-SOLIDITY_COMPILER_VERSION
+/*SOLIDITY_COMPILER_VERSION*/
 
 interface ERC20Safer {
 

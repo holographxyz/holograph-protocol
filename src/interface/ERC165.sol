@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 
-SOLIDITY_COMPILER_VERSION
+/*SOLIDITY_COMPILER_VERSION*/
 
 interface ERC165 {
     /// @notice Query if a contract implements an interface

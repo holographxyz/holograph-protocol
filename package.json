@@ -22,7 +22,9 @@
     "ganache-x2": "source .env ; rm -fr ./ganache/db ; rm -fr ./ganache/db2 ; mkdir -p ./ganache/db ; mkdir -p ./ganache/db2 ; rm ./ganache/keys.json ; rm ./ganache/keys2.json ; ganache-cli --accounts=11 --defaultBalanceEther=100 --deterministic --mnemonic=\"$MNEMONIC\" --port=8545 --hostname=0.0.0.0 --gasPrice=0 --gasLimit=10000000 --networkId=5777 --db=./ganache/db --acctKeys=./ganache/keys.json & ganache-cli --accounts=11 --defaultBalanceEther=100 --deterministic --mnemonic=\"$MNEMONIC\" --port=9545 --hostname=0.0.0.0 --gasPrice=0 --gasLimit=10000000 --networkId=5777 --db=./ganache/db2 --acctKeys=./ganache/keys2.json",
     "test": "hardhat test",
     "typechain": "hardhat typechain",
-    "verify": "hardhat verify"
+    "verify": "hardhat verify",
+    "prettier:check": "prettier --list-different .",
+    "prettier:fix": "prettier --write ."
   },
   "dependencies": {
     "hardhat-deploy-holographed": "https://github.com/cxip-labs/hardhat-deploy-holographed.git",

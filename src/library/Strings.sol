@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: UNLICENSED
+/*HOLOGRAPH_LICENSE_HEADER*/
 
-SOLIDITY_COMPILER_VERSION
+/*SOLIDITY_COMPILER_VERSION*/
 
 library Strings {
     function toHexString(address account) internal pure returns (string memory) {
