@@ -61,7 +61,7 @@ const config: HardhatUserConfig = {
     purchaser: 0,
   },
   solidity: {
-    version: process.env.SOLIDITY_VERSION,
+    version: process.env.SOLIDITY_VERSION ? process.env.SOLIDITY_VERSION : '0.8.12',
     settings: {
       optimizer: {
         enabled: true,
