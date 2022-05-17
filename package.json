@@ -13,6 +13,7 @@
   "scripts": {
     "init": "cp sample.env .env",
     "abi": "hardhat abi",
+    "build": "hardhat inject-holograph-address",
     "clean-compile": "yarn run clean ; yarn run compile",
     "clean": "hardhat clean",
     "compile": "hardhat compile",
