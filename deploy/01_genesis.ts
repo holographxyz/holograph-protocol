@@ -4,26 +4,26 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction, Deployment } from 'hardhat-deploy-holographed/types';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-    const { deployments, getNamedAccounts } = hre;
-    const { deploy } = deployments;
-    const { deployer } = await getNamedAccounts();
+  const { deployments, getNamedAccounts } = hre;
+  const { deploy } = deployments;
+  const { deployer } = await getNamedAccounts();
 
-    let holographGenesisContract: Contract | null = await ethers.getContractOrNull('HolographGenesis');
-    let holographGenesisDeployment: Deployment | null = null;
-    if (holographGenesisContract == null) {
-        try {
-            holographGenesisDeployment = await deployments.get('HolographGenesis');
-        } catch (ex: any) {
-            // we do nothing
-        }
+  let holographGenesisContract: Contract | null = await ethers.getContractOrNull('HolographGenesis');
+  let holographGenesisDeployment: Deployment | null = null;
+  if (holographGenesisContract == null) {
+    try {
+      holographGenesisDeployment = await deployments.get('HolographGenesis');
+    } catch (ex: any) {
+      // we do nothing
     }
-    if (holographGenesisContract == null && holographGenesisDeployment == null) {
-        let holographGenesis = await deploy('HolographGenesis', {
-            from: deployer,
-            args: [],
-            log: true,
-        });
-    }
+  }
+  if (holographGenesisContract == null && holographGenesisDeployment == null) {
+    let holographGenesis = await deploy('HolographGenesis', {
+      from: deployer,
+      args: [],
+      log: true,
+    });
+  }
 };
 
 export default func;

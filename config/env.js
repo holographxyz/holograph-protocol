@@ -3,7 +3,7 @@ const path = require('path');
 
 // grab root .env file
 env.config({
-    path: path.join(__dirname, '../.env'),
+  path: path.join(__dirname, '../.env'),
 });
 
 // grab local .env file if it exists

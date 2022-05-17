@@ -7,152 +7,149 @@ import { genesisDeployHelper, generateInitCode, zeroAddress } from '../scripts/u
 const networks = JSON.parse(fs.readFileSync('./config/networks.json', 'utf8'));
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-    const { deployments, getNamedAccounts } = hre;
-    const { deploy, deterministicCustom } = deployments;
-    const { deployer } = await getNamedAccounts();
+  const { deployments, getNamedAccounts } = hre;
+  const { deploy, deterministicCustom } = deployments;
+  const { deployer } = await getNamedAccounts();
 
-    const web3 = new Web3();
+  const web3 = new Web3();
 
-    const salt: string = '0x' + '00'.repeat(12);
+  const salt: string = '0x' + '00'.repeat(12);
 
-    // HolographRegistry
-    let holographRegistry = await genesisDeployHelper(
-        hre,
-        salt,
-        'HolographRegistry',
-        generateInitCode(['bytes32[]'], [[]])
-    );
+  // HolographRegistry
+  let holographRegistry = await genesisDeployHelper(
+    hre,
+    salt,
+    'HolographRegistry',
+    generateInitCode(['bytes32[]'], [[]])
+  );
 
-    // HolographRegistryProxy
-    let holographRegistryProxy = await genesisDeployHelper(
-        hre,
-        salt,
-        'HolographRegistryProxy',
+  // HolographRegistryProxy
+  let holographRegistryProxy = await genesisDeployHelper(
+    hre,
+    salt,
+    'HolographRegistryProxy',
+    generateInitCode(
+      ['address', 'bytes'],
+      [
+        holographRegistry.address,
         generateInitCode(
-            ['address', 'bytes'],
+          ['bytes32[]'],
+          [
             [
-                holographRegistry.address,
-                generateInitCode(
-                    ['bytes32[]'],
-                    [
-                        [
-                            '0x' + web3.utils.asciiToHex('HolographERC721').substring(2).padStart(64, '0'),
-                            '0x' + web3.utils.asciiToHex('HolographERC20').substring(2).padStart(64, '0'),
-                            '0x' + web3.utils.asciiToHex('PA1D').substring(2).padStart(64, '0'),
-                        ],
-                    ]
-                ),
-            ]
-        )
-    );
+              '0x' + web3.utils.asciiToHex('HolographERC721').substring(2).padStart(64, '0'),
+              '0x' + web3.utils.asciiToHex('HolographERC20').substring(2).padStart(64, '0'),
+              '0x' + web3.utils.asciiToHex('PA1D').substring(2).padStart(64, '0'),
+            ],
+          ]
+        ),
+      ]
+    )
+  );
 
-    // SecureStorage
-    let secureStorage = await genesisDeployHelper(
-        hre,
-        salt,
-        'SecureStorage',
-        generateInitCode(['address'], [zeroAddress()])
-    );
+  // SecureStorage
+  let secureStorage = await genesisDeployHelper(
+    hre,
+    salt,
+    'SecureStorage',
+    generateInitCode(['address'], [zeroAddress()])
+  );
 
-    // SecureStorageProxy
-    let secureStorageProxy = await genesisDeployHelper(
-        hre,
-        salt,
-        'SecureStorageProxy',
-        generateInitCode(['address', 'bytes'], [secureStorage.address, generateInitCode(['address'], [zeroAddress()])])
-    );
+  // SecureStorageProxy
+  let secureStorageProxy = await genesisDeployHelper(
+    hre,
+    salt,
+    'SecureStorageProxy',
+    generateInitCode(['address', 'bytes'], [secureStorage.address, generateInitCode(['address'], [zeroAddress()])])
+  );
 
-    // HolographFactory
-    let holographFactory = await genesisDeployHelper(
-        hre,
-        salt,
-        'HolographFactory',
-        generateInitCode(['address', 'address'], [zeroAddress(), zeroAddress()])
-    );
+  // HolographFactory
+  let holographFactory = await genesisDeployHelper(
+    hre,
+    salt,
+    'HolographFactory',
+    generateInitCode(['address', 'address'], [zeroAddress(), zeroAddress()])
+  );
 
-    // HolographFactoryProxy
-    let holographFactoryProxy = await genesisDeployHelper(
-        hre,
-        salt,
-        'HolographFactoryProxy',
+  // HolographFactoryProxy
+  let holographFactoryProxy = await genesisDeployHelper(
+    hre,
+    salt,
+    'HolographFactoryProxy',
+    generateInitCode(
+      ['address', 'bytes'],
+      [
+        holographFactory.address,
         generateInitCode(
-            ['address', 'bytes'],
-            [
-                holographFactory.address,
-                generateInitCode(
-                    ['address', 'address'],
-                    [
-                        holographRegistryProxy.address, // HolographRegistry
-                        secureStorage.address, // SecureStorage
-                    ]
-                ),
-            ]
-        )
-    );
+          ['address', 'address'],
+          [
+            holographRegistryProxy.address, // HolographRegistry
+            secureStorage.address, // SecureStorage
+          ]
+        ),
+      ]
+    )
+  );
 
-    // HolographBridge
-    let holographBridge = await genesisDeployHelper(
-        hre,
-        salt,
-        'HolographBridge',
-        generateInitCode(['address', 'address'], [zeroAddress(), zeroAddress()])
-    );
+  // HolographBridge
+  let holographBridge = await genesisDeployHelper(
+    hre,
+    salt,
+    'HolographBridge',
+    generateInitCode(['address', 'address'], [zeroAddress(), zeroAddress()])
+  );
 
-    // HolographBridgeProxy
-    let holographBridgeProxy = await genesisDeployHelper(
-        hre,
-        salt,
-        'HolographBridgeProxy',
-        generateInitCode(
-            ['address', 'bytes'],
-            [
-                holographBridge.address,
-                generateInitCode(
-                    ['address', 'address'],
-                    [holographRegistryProxy.address, holographFactoryProxy.address]
-                ),
-            ]
-        )
-    );
+  // HolographBridgeProxy
+  let holographBridgeProxy = await genesisDeployHelper(
+    hre,
+    salt,
+    'HolographBridgeProxy',
+    generateInitCode(
+      ['address', 'bytes'],
+      [
+        holographBridge.address,
+        generateInitCode(['address', 'address'], [holographRegistryProxy.address, holographFactoryProxy.address]),
+      ]
+    )
+  );
 
-    // Holograph
-    let holograph = await genesisDeployHelper(
-        hre,
-        salt,
-        'Holograph',
-        generateInitCode(
-            ['uint32', 'address', 'address', 'address', 'address'],
-            [
-                '0x' + networks[hre.network.name].holographId.toString(16).padStart(8, '0'),
-                holographRegistryProxy.address,
-                holographFactoryProxy.address,
-                holographBridgeProxy.address,
-                secureStorageProxy.address,
-            ]
-        )
-    );
+  // Holograph
+  let holograph = await genesisDeployHelper(
+    hre,
+    salt,
+    'Holograph',
+    generateInitCode(
+      ['uint32', 'address', 'address', 'address', 'address'],
+      [
+        '0x' + networks[hre.network.name].holographId.toString(16).padStart(8, '0'),
+        holographRegistryProxy.address,
+        holographFactoryProxy.address,
+        holographBridgeProxy.address,
+        secureStorageProxy.address,
+      ]
+    )
+  );
 
-    // PA1D
-    let royalties = await genesisDeployHelper(
-        hre,
-        salt,
-        'PA1D',
-        generateInitCode(['address', 'uint256'], [deployer, '0x' + '00'.repeat(32)])
-    );
+  // PA1D
+  let royalties = await genesisDeployHelper(
+    hre,
+    salt,
+    'PA1D',
+    generateInitCode(['address', 'uint256'], [deployer, '0x' + '00'.repeat(32)])
+  );
 };
 
 export default func;
 func.tags = [
-    'HolographRegistry',
-    'HolographRegistryProxy',
-    'SecureStorage',
-    'SecureStorageProxy',
-    'HolographFactory',
-    'HolographFactoryProxy',
-    'HolographBridge',
-    'HolographBridgeProxy',
-    'Holograph',
-    'PA1D',
-    'DeploySources',
+  'HolographRegistry',
+  'HolographRegistryProxy',
+  'SecureStorage',
+  'SecureStorageProxy',
+  'HolographFactory',
+  'HolographFactoryProxy',
+  'HolographBridge',
+  'HolographBridgeProxy',
+  'Holograph',
+  'PA1D',
+  'DeploySources',
 ];
 func.dependencies = ['HolographGenesis'];

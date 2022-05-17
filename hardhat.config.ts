@@ -26,137 +26,136 @@ const CXIP_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY || DEPLOYER;
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
 
 task('abi', 'Create standalone ABI files for all smart contracts')
-    .addOptionalParam('silent', 'Provide less details in the output', false, types.boolean)
-    .setAction(async (args, hre) => {
-        console.log('args', typeof(args), args, JSON.stringify(args, undefined, 4));
-        if (!fs.existsSync('./artifacts')) {
-            throw new Error('The directory "artifacts" was not found. Make sure you run "yarn compile" first.');
-        }
-        const recursiveDelete = function (dir: string) {
-            const files = fs.readdirSync(dir, { withFileTypes: true });
-            for (let i = 0, l = files.length; i < l; i++) {
-                if (files[i].isDirectory()) {
-                    recursiveDelete(dir + '/' + files[i].name);
-                    fs.rmdirSync(dir + '/' + files[i].name);
-                } else {
-                    fs.unlinkSync(dir + '/' + files[i].name);
-                }
-            }
-        };
-        const extractABIs = function (sourceDir: string, deployDir: string) {
-            const files = fs.readdirSync(sourceDir, { withFileTypes: true });
-            for (let i = 0, l = files.length; i < l; i++) {
-                const file = files[i].name;
-                if (files[i].isDirectory()) {
-                    extractABIs(sourceDir + '/' + file, deployDir);
-                } else {
-                    if (file.endsWith('.json') && !file.endsWith('.dbg.json')) {
-                        if (!args.silent) {
-                            console.log(' -- exporting', file.split('.')[0], 'ABI');
-                        }
-                        const data = JSON.parse(fs.readFileSync(sourceDir + '/' + file, 'utf8')).abi;
-                        fs.writeFileSync(deployDir + '/' + file, JSON.stringify(data, undefined, 4));
-                    }
-                }
-            }
-        };
-        if (!fs.existsSync('./abi')) {
-            fs.mkdirSync('./abi');
+  .addOptionalParam('silent', 'Provide less details in the output', false, types.boolean)
+  .setAction(async (args, hre) => {
+    if (!fs.existsSync('./artifacts')) {
+      throw new Error('The directory "artifacts" was not found. Make sure you run "yarn compile" first.');
+    }
+    const recursiveDelete = function (dir: string) {
+      const files = fs.readdirSync(dir, { withFileTypes: true });
+      for (let i = 0, l = files.length; i < l; i++) {
+        if (files[i].isDirectory()) {
+          recursiveDelete(dir + '/' + files[i].name);
+          fs.rmdirSync(dir + '/' + files[i].name);
         } else {
-            recursiveDelete('./abi');
+          fs.unlinkSync(dir + '/' + files[i].name);
         }
-        extractABIs('./artifacts/contracts', './abi');
-    });
+      }
+    };
+    const extractABIs = function (sourceDir: string, deployDir: string) {
+      const files = fs.readdirSync(sourceDir, { withFileTypes: true });
+      for (let i = 0, l = files.length; i < l; i++) {
+        const file = files[i].name;
+        if (files[i].isDirectory()) {
+          extractABIs(sourceDir + '/' + file, deployDir);
+        } else {
+          if (file.endsWith('.json') && !file.endsWith('.dbg.json')) {
+            if (!args.silent) {
+              console.log(' -- exporting', file.split('.')[0], 'ABI');
+            }
+            const data = JSON.parse(fs.readFileSync(sourceDir + '/' + file, 'utf8')).abi;
+            fs.writeFileSync(deployDir + '/' + file, JSON.stringify(data, undefined, 2));
+          }
+        }
+      }
+    };
+    if (!fs.existsSync('./abi')) {
+      fs.mkdirSync('./abi');
+    } else {
+      recursiveDelete('./abi');
+    }
+    extractABIs('./artifacts/contracts', './abi');
+  });
 
 /**
  * Go to https://hardhat.org/config/ to learn more
  * @type import('hardhat/config').HardhatUserConfig
  */
 const config: HardhatUserConfig = {
-    defaultNetwork: 'localhost',
-    networks: {
-        localhost: {
-            url: networks.localhost.rpc,
-            chainId: networks.localhost.chain,
-            accounts: {
-                mnemonic: MNEMONIC,
-                path: "m/44'/60'/0'/0",
-                initialIndex: 0,
-                count: 11,
-                passphrase: '',
-            },
-            companionNetworks: {
-                // https://github.com/wighawag/hardhat-deploy#companionnetworks
-                l2: 'localhost2',
-            },
-            saveDeployments: false,
-        },
-        localhost2: {
-            url: networks.localhost2.rpc,
-            chainId: networks.localhost2.chain,
-            accounts: {
-                mnemonic: MNEMONIC,
-                path: "m/44'/60'/0'/0",
-                initialIndex: 0,
-                count: 11,
-                passphrase: '',
-            },
-            companionNetworks: {
-                // https://github.com/wighawag/hardhat-deploy#companionnetworks
-                l2: 'localhost',
-            },
-            saveDeployments: false,
-        },
-        eth: {
-            url: networks.eth.rpc,
-            chainId: networks.eth.chain,
-            accounts: [MAINNET_PRIVATE_KEY],
-        },
-        eth_rinkeby: {
-            url: networks.eth_rinkeby.rpc,
-            chainId: networks.eth_rinkeby.chain,
-            accounts: [RINKEBY_PRIVATE_KEY],
-        },
-        cxip: {
-            url: networks.cxip.rpc,
-            chainId: networks.cxip.chain,
-            accounts: [CXIP_PRIVATE_KEY],
-        },
-        coverage: {
-            url: 'http://127.0.0.1:8555',
-        },
+  defaultNetwork: 'localhost',
+  networks: {
+    localhost: {
+      url: networks.localhost.rpc,
+      chainId: networks.localhost.chain,
+      accounts: {
+        mnemonic: MNEMONIC,
+        path: "m/44'/60'/0'/0",
+        initialIndex: 0,
+        count: 11,
+        passphrase: '',
+      },
+      companionNetworks: {
+        // https://github.com/wighawag/hardhat-deploy#companionnetworks
+        l2: 'localhost2',
+      },
+      saveDeployments: false,
     },
-    namedAccounts: {
-        deployer: 0,
+    localhost2: {
+      url: networks.localhost2.rpc,
+      chainId: networks.localhost2.chain,
+      accounts: {
+        mnemonic: MNEMONIC,
+        path: "m/44'/60'/0'/0",
+        initialIndex: 0,
+        count: 11,
+        passphrase: '',
+      },
+      companionNetworks: {
+        // https://github.com/wighawag/hardhat-deploy#companionnetworks
+        l2: 'localhost',
+      },
+      saveDeployments: false,
     },
-    solidity: {
-        version: SOLIDITY_VERSION,
-        settings: {
-            optimizer: {
-                enabled: true,
-                runs: 999999,
-            },
-            metadata: {
-                bytecodeHash: 'none',
-            },
-        },
+    eth: {
+      url: networks.eth.rpc,
+      chainId: networks.eth.chain,
+      accounts: [MAINNET_PRIVATE_KEY],
     },
-    mocha: {
-        timeout: 60000,
+    eth_rinkeby: {
+      url: networks.eth_rinkeby.rpc,
+      chainId: networks.eth_rinkeby.chain,
+      accounts: [RINKEBY_PRIVATE_KEY],
     },
-    gasReporter: {
-        enabled: process.env.REPORT_GAS ? true : false,
-        currency: 'USD',
-        gasPrice: 100,
-        coinmarketcap: process.env.COINMARKETCAP_API_KEY,
+    cxip: {
+      url: networks.cxip.rpc,
+      chainId: networks.cxip.chain,
+      accounts: [CXIP_PRIVATE_KEY],
     },
-    etherscan: {
-        apiKey: ETHERSCAN_API_KEY,
+    coverage: {
+      url: 'http://127.0.0.1:8555',
     },
-    holographAddressInjector: {
-        runOnCompile: true,
-        verbose: false,
+  },
+  namedAccounts: {
+    deployer: 0,
+  },
+  solidity: {
+    version: SOLIDITY_VERSION,
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 999999,
+      },
+      metadata: {
+        bytecodeHash: 'none',
+      },
     },
+  },
+  mocha: {
+    timeout: 60000,
+  },
+  gasReporter: {
+    enabled: process.env.REPORT_GAS ? true : false,
+    currency: 'USD',
+    gasPrice: 100,
+    coinmarketcap: process.env.COINMARKETCAP_API_KEY,
+  },
+  etherscan: {
+    apiKey: ETHERSCAN_API_KEY,
+  },
+  holographAddressInjector: {
+    runOnCompile: true,
+    verbose: false,
+  },
 };
 
 export default config;

@@ -104,9 +104,9 @@
 pragma solidity 0.8.13;
 
 struct DeploymentConfig {
-    bytes32 contractType;
-    uint32 chainType;
-    bytes32 salt;
-    bytes byteCode;
-    bytes initCode;
+  bytes32 contractType;
+  uint32 chainType;
+  bytes32 salt;
+  bytes byteCode;
+  bytes initCode;
 }
