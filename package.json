@@ -2,7 +2,7 @@
   "name": "Holograph-Bridge-Protocol",
   "version": "1.0.1",
   "description": "The Holograph Bridge Protocol - solidity smart contracts",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "author": "cxip-labs",
   "main": "index.js",
   "files": [
