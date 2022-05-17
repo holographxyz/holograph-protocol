@@ -36,50 +36,11 @@
     },
     {
         "inputs": [],
-        "name": "getHolographEnforcer",
-        "outputs": [
-            {
-                "internalType": "address payable",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "getOriginChain",
-        "outputs": [
-            {
-                "internalType": "uint32",
-                "name": "originChain",
-                "type": "uint32"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "getSecureStorage",
+        "name": "getRegistry",
         "outputs": [
             {
                 "internalType": "address",
-                "name": "secureStorage",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "getSourceContract",
-        "outputs": [
-            {
-                "internalType": "address payable",
-                "name": "sourceContract",
+                "name": "registry",
                 "type": "address"
             }
         ],
@@ -114,6 +75,19 @@
             }
         ],
         "name": "setAdmin",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "registry",
+                "type": "address"
+            }
+        ],
+        "name": "setRegistry",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"

@@ -5,7 +5,7 @@ import 'hardhat-gas-reporter';
 import 'hardhat-deploy-holographed';
 import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-etherscan';
-import { HardhatUserConfig } from 'hardhat/config';
+import { types, task, HardhatUserConfig } from 'hardhat/config';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -24,6 +24,49 @@ const MAINNET_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY || DEPLOYER;
 const CXIP_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY || DEPLOYER;
 
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
+
+task('abi', 'Create standalone ABI files for all smart contracts')
+    .addOptionalParam('silent', 'Provide less details in the output', false, types.boolean)
+    .setAction(async (args, hre) => {
+        console.log('args', typeof(args), args, JSON.stringify(args, undefined, 4));
+        if (!fs.existsSync('./artifacts')) {
+            throw new Error('The directory "artifacts" was not found. Make sure you run "yarn compile" first.');
+        }
+        const recursiveDelete = function (dir: string) {
+            const files = fs.readdirSync(dir, { withFileTypes: true });
+            for (let i = 0, l = files.length; i < l; i++) {
+                if (files[i].isDirectory()) {
+                    recursiveDelete(dir + '/' + files[i].name);
+                    fs.rmdirSync(dir + '/' + files[i].name);
+                } else {
+                    fs.unlinkSync(dir + '/' + files[i].name);
+                }
+            }
+        };
+        const extractABIs = function (sourceDir: string, deployDir: string) {
+            const files = fs.readdirSync(sourceDir, { withFileTypes: true });
+            for (let i = 0, l = files.length; i < l; i++) {
+                const file = files[i].name;
+                if (files[i].isDirectory()) {
+                    extractABIs(sourceDir + '/' + file, deployDir);
+                } else {
+                    if (file.endsWith('.json') && !file.endsWith('.dbg.json')) {
+                        if (!args.silent) {
+                            console.log(' -- exporting', file.split('.')[0], 'ABI');
+                        }
+                        const data = JSON.parse(fs.readFileSync(sourceDir + '/' + file, 'utf8')).abi;
+                        fs.writeFileSync(deployDir + '/' + file, JSON.stringify(data, undefined, 4));
+                    }
+                }
+            }
+        };
+        if (!fs.existsSync('./abi')) {
+            fs.mkdirSync('./abi');
+        } else {
+            recursiveDelete('./abi');
+        }
+        extractABIs('./artifacts/contracts', './abi');
+    });
 
 /**
  * Go to https://hardhat.org/config/ to learn more

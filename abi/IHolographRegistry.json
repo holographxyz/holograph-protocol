@@ -1,23 +1,5 @@
 [
     {
-        "inputs": [],
-        "stateMutability": "nonpayable",
-        "type": "constructor"
-    },
-    {
-        "inputs": [],
-        "name": "admin",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
         "inputs": [
             {
                 "internalType": "bytes32",
@@ -33,19 +15,6 @@
         "name": "factoryDeployedHash",
         "outputs": [],
         "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "getAdmin",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "adminAddress",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
         "type": "function"
     },
     {
@@ -79,30 +48,11 @@
         "outputs": [
             {
                 "internalType": "address",
-                "name": "",
+                "name": "hToken",
                 "type": "address"
             }
         ],
         "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "bytes",
-                "name": "data",
-                "type": "bytes"
-            }
-        ],
-        "name": "init",
-        "outputs": [
-            {
-                "internalType": "bytes4",
-                "name": "",
-                "type": "bytes4"
-            }
-        ],
-        "stateMutability": "nonpayable",
         "type": "function"
     },
     {
@@ -159,19 +109,6 @@
                 "type": "bytes32"
             }
         ],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "adminAddress",
-                "type": "address"
-            }
-        ],
-        "name": "setAdmin",
-        "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
     },
