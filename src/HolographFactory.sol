@@ -22,7 +22,6 @@ import "./struct/Verification.sol";
  * @dev This is just the first step. But it is fundamental for achieving cross-chain non-fungible tokens.
  */
 contract HolographFactory is Admin, Initializable {
-<<<<<<< HEAD
   /*
    * @dev This event is fired every time that a bridgeable contract is deployed.
    */
@@ -39,28 +38,6 @@ contract HolographFactory is Admin, Initializable {
     assembly {
       sstore(precomputeslot("eip1967.Holograph.Bridge.registry"), registry)
       sstore(precomputeslot("eip1967.Holograph.Bridge.secureStorage"), secureStorage)
-=======
-
-    /*
-     * @dev This event is fired every time that a bridgeable contract is deployed.
-     */
-    event BridgeableContractDeployed(address indexed contractAddress, bytes32 indexed hash);
-
-    /*
-     * @dev Constructor is left empty and only the admin address is set.
-     */
-    constructor() Admin(false) {}
-
-    function init(bytes memory data) external override returns (bytes4) {
-        require(!_isInitialized(), "HOLOGRAPH: already initialized");
-        (address registry, address secureStorage) = abi.decode(data, (address, address));
-        assembly {
-            sstore(precomputeslot('eip1967.Holograph.Bridge.registry'), registry)
-            sstore(precomputeslot('eip1967.Holograph.Bridge.secureStorage'), secureStorage)
-        }
-        _setInitialized();
-        return IInitializable.init.selector;
->>>>>>> main
     }
     _setInitialized();
     return IInitializable.init.selector;

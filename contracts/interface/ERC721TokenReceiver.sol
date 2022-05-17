@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 /*
 
-<<<<<<< HEAD
   ,,,,,,,,,,,
  [ HOLOGRAPH ]
   '''''''''''
@@ -103,9 +102,6 @@
 */
 
 pragma solidity 0.8.13;
-=======
-pragma solidity 0.8.12;
->>>>>>> main
 
 /// @dev Note: the ERC-165 identifier for this interface is 0x150b7a02.
 interface ERC721TokenReceiver {

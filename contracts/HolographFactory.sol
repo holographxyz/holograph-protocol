@@ -123,7 +123,6 @@ import "./struct/Verification.sol";
  * @dev This is just the first step. But it is fundamental for achieving cross-chain non-fungible tokens.
  */
 contract HolographFactory is Admin, Initializable {
-<<<<<<< HEAD
   /*
    * @dev This event is fired every time that a bridgeable contract is deployed.
    */
@@ -140,28 +139,6 @@ contract HolographFactory is Admin, Initializable {
     assembly {
       sstore(0x460c4059d72b144253e5fc4e2aacbae2bcd6362c67862cd58ecbab0e7b10c349, registry)
       sstore(0xd26498b26a05274577b8ac2e3250418da53433f3ff82027428ee3c530702cdec, secureStorage)
-=======
-
-    /*
-     * @dev This event is fired every time that a bridgeable contract is deployed.
-     */
-    event BridgeableContractDeployed(address indexed contractAddress, bytes32 indexed hash);
-
-    /*
-     * @dev Constructor is left empty and only the admin address is set.
-     */
-    constructor() Admin(false) {}
-
-    function init(bytes memory data) external override returns (bytes4) {
-        require(!_isInitialized(), "HOLOGRAPH: already initialized");
-        (address registry, address secureStorage) = abi.decode(data, (address, address));
-        assembly {
-            sstore(0x460c4059d72b144253e5fc4e2aacbae2bcd6362c67862cd58ecbab0e7b10c349, registry)
-            sstore(0xd26498b26a05274577b8ac2e3250418da53433f3ff82027428ee3c530702cdec, secureStorage)
-        }
-        _setInitialized();
-        return IInitializable.init.selector;
->>>>>>> main
     }
     _setInitialized();
     return IInitializable.init.selector;
@@ -211,7 +188,6 @@ contract HolographFactory is Admin, Initializable {
     assembly {
       sstore(0xd26498b26a05274577b8ac2e3250418da53433f3ff82027428ee3c530702cdec, secureStorage)
     }
-<<<<<<< HEAD
   }
 
   /*
@@ -246,79 +222,6 @@ contract HolographFactory is Admin, Initializable {
     // the combined bytecode is then deployed
     assembly {
       secureStorageAddress := create2(0, add(secureStorageBytecode, 0x20), mload(secureStorageBytecode), saltInt)
-=======
-
-    /*
-     * @dev A sample function of the deployment of bridgeable smart contracts.
-     * @dev The used variables and formatting is not the final or decisive version, but the general idea is directly portrayed.
-     * @notice In this function we have incorporated a secure storage function/extension. Keep in mind that this is not required or needed for bridgeable deployments to work. It is just a personal development choice.
-     */
-    function deployHolographableContract(DeploymentConfig calldata config, Verification calldata signature, address signer) external {
-        // all of the necessary data is packed and hashed
-        bytes32 hash = keccak256(abi.encodePacked(
-            config.contractType,
-            config.chainType,
-            config.salt,
-            keccak256(config.byteCode),
-            keccak256(config.initCode),
-            signer
-        ));
-        require(_verifySigner(signature.r, signature.s, signature.v, hash, signer), "HOLOGRAPH: invalid signature");
-        // we check that a smart contract for this hash has not been deployed yet
-        require(!IHolographRegistry(getBridgeRegistry()).isHolographedHashDeployed(hash), "HOLOGRAPH: already deployed");
-        // hash is converted to an integer, in preparation for the create2 function
-        uint256 saltInt = uint256(hash);
-        address secureStorageAddress;
-        // we combine the secure storage proxy bytecode parts, with the bridge registry address included
-        bytes memory secureStorageBytecode = type(SecureStorageProxy).creationCode;
-        // the combined bytecode is then deployed
-        assembly {
-            secureStorageAddress := create2(0, add(secureStorageBytecode, 0x20), mload(secureStorageBytecode), saltInt)
-        }
-        //
-        address sourceContractAddress = address(uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), address(this), saltInt, keccak256(config.byteCode))))));
-        bytes memory sourceByteCode = config.byteCode;
-        if (!_isContract(sourceContractAddress)) {
-            assembly {
-                sourceContractAddress := create2(0, add(sourceByteCode, 0x20), mload(sourceByteCode), saltInt)
-            }
-            require(_isContract(sourceContractAddress), "source contract create failed");
-        }
-        bytes memory holographerBytecode = type(Holographer).creationCode;
-        address holographerAddress = address(uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), address(this), saltInt, keccak256(holographerBytecode))))));
-        require(!_isContract(holographerAddress), "HOLOGRAPH: already deployed");
-        // the combined bytecode is then deployed
-        assembly {
-            holographerAddress := create2(0, add(holographerBytecode, 0x20), mload(holographerBytecode), saltInt)
-        }
-        require(_isContract(holographerAddress), "Holographer deployment failed");
-        require(
-            IInitializable(secureStorageAddress).init(
-                abi.encode(
-                    getSecureStorage(),
-                    abi.encode(
-                        holographerAddress
-                    )
-                )
-            ) == IInitializable.init.selector,
-            "initialization failed"
-        );
-        bytes memory encodedInit = abi.encode(
-            abi.encode(
-                config.chainType,
-                0x020be79e2D5a6a0204C07970F3586dc379d142e0,
-                secureStorageAddress,
-                config.contractType,
-                sourceContractAddress
-            ),
-            config.initCode
-        );
-        require(IInitializable(holographerAddress).init(encodedInit) == IInitializable.init.selector, "initialization failed");
-        //
-        IHolographRegistry(getBridgeRegistry()).factoryDeployedHash(hash, holographerAddress);
-        // we emit the event to indicate to anyone listening to the blockchain that a bridgeable smart contract has been deployed
-        emit BridgeableContractDeployed(holographerAddress, hash);
->>>>>>> main
     }
     //
     address sourceContractAddress = address(

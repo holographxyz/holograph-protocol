@@ -29,9 +29,8 @@ typechain-types
 
 coverage
 coverage.json
-<<<<<<< HEAD
 
 # temp addition, while migrating to hardhat testing
 old_test
-=======
->>>>>>> main
+
+editor.bbprojectd

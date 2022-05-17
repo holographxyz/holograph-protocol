@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 /*
 
-<<<<<<< HEAD
   ,,,,,,,,,,,
  [ HOLOGRAPH ]
   '''''''''''
@@ -103,9 +102,6 @@
 */
 
 pragma solidity 0.8.13;
-=======
-pragma solidity 0.8.12;
->>>>>>> main
 
 library Address {
   function isContract(address account) internal view returns (bool) {

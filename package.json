@@ -3,9 +3,6 @@
   "version": "1.0.1",
   "description": "The Holograph Bridge Protocol - solidity smart contracts",
   "license": "UNLICENSED",
-=======
-  "license": "MIT",
->>>>>>> main
   "author": "cxip-labs",
   "main": "index.js",
   "files": [
@@ -14,7 +11,6 @@
     "deployments"
   ],
   "scripts": {
-<<<<<<< HEAD
     "init": "cp sample.env .env",
     "abi": "hardhat abi",
     "clean-compile": "yarn run clean ; yarn run compile",
@@ -29,19 +25,6 @@
     "verify": "hardhat verify",
     "prettier:check": "prettier --ignore-path .gitignore --list-different .",
     "prettier:fix": "prettier --ignore-path .gitignore --write ."
-=======
-    "init": "cp sample.env .env ; cp sample.mnemonic .mnemonic ; mkdir data",
-    "abi": "rm -fr ./abi ; mkdir ./abi ; node ./scripts/abi.js",
-    "build": "rm -fr ./contracts ; mkdir ./contracts ; node ./scripts/build.js",
-    "build-compile": "rm -fr ./build ; mkdir ./build ; npm run-script build ; npm run-script compile",
-    "cleanup": "rm -fr ./build ; mkdir ./build ; rm -fr ./data ; mkdir ./data",
-    "compile": "node ./scripts/compile.js",
-    "ganache": "source .env ; rm -fr ./db ; mkdir ./db ; rm ./keys.json ; ganache-cli --accounts=10 --defaultBalanceEther=100 --deterministic --mnemonic=\"$MNEMONIC\" --port=8545 --hostname=0.0.0.0 --gasPrice=0 --gasLimit=10000000 --networkId=5777 --db=./db --acctKeys=./keys.json",
-    "ganache2": "source .env ; rm -fr ./db2 ; mkdir ./db2 ; rm ./keys2.json ; ganache-cli --accounts=10 --defaultBalanceEther=100 --deterministic --mnemonic=\"$MNEMONIC\" --port=9545 --hostname=0.0.0.0 --gasPrice=0 --gasLimit=10000000 --networkId=5777 --db=./db2 --acctKeys=./keys2.json",
-    "ganache-x2": "source .env ; rm -fr ./db ; rm -fr ./db2 ; mkdir ./db ; mkdir ./db2 ; rm ./keys.json ; rm ./keys2.json ; ganache-cli --accounts=10 --defaultBalanceEther=100 --deterministic --mnemonic=\"$MNEMONIC\" --port=8545 --hostname=0.0.0.0 --gasPrice=0 --gasLimit=10000000 --networkId=5777 --db=./db --acctKeys=./keys.json & ganache-cli --accounts=10 --defaultBalanceEther=100 --deterministic --mnemonic=\"$MNEMONIC\" --port=9545 --hostname=0.0.0.0 --gasPrice=0 --gasLimit=10000000 --networkId=5777 --db=./db2 --acctKeys=./keys2.json",
-    "test": "sh _test.sh",
-    "test-bridge": "sh _test_bridge.sh"
->>>>>>> main
   },
   "dependencies": {
     "hardhat-deploy-holographed": "https://github.com/cxip-labs/hardhat-deploy-holographed.git",
@@ -51,10 +34,6 @@
     "zksync-web3": "^0.4.0"
   },
   "devDependencies": {
-<<<<<<< HEAD
-=======
-    "ganache-cli": "^6.12.2",
->>>>>>> main
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@^0.3.0-beta.13",
     "@nomiclabs/hardhat-etherscan": "^2.1.4",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
@@ -69,7 +48,6 @@
     "dotenv": "^10.0.0",
     "ethereum-waffle": "^3.4.0",
     "ethers": "^5.5.4",
-<<<<<<< HEAD
     "ganache-cli": "^6.12.2",
     "hardhat": "^2.6.3",
     "hardhat-gas-reporter": "^1.0.4",

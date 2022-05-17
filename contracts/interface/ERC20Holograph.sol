@@ -101,28 +101,8 @@
 
 */
 
-<<<<<<< HEAD
 pragma solidity 0.8.13;
 
-=======
-<<<<<<< HEAD:contracts/struct/TokenData.sol
-pragma solidity 0.8.13;
-
-import "./Verification.sol";
-
-struct TokenData {
-  bytes32 payloadHash;
-  Verification payloadSignature;
-  address creator;
-  bytes32 arweave;
-  bytes11 arweave2;
-  bytes32 ipfs;
-  bytes14 ipfs2;
-}
-=======
-pragma solidity 0.8.12;
-
->>>>>>> main
 import "./ERC20.sol";
 import "./ERC20Burnable.sol";
 import "./ERC20Metadata.sol";
@@ -132,7 +112,6 @@ import "./ERC20Safer.sol";
 import "./ERC165.sol";
 
 interface ERC20Holograph is ERC165, ERC20, ERC20Burnable, ERC20Metadata, ERC20Receiver, ERC20Safer, ERC20Permit {
-<<<<<<< HEAD
   function holographBridgeIn(
     uint32 chainType,
     address from,
@@ -161,20 +140,3 @@ interface ERC20Holograph is ERC165, ERC20, ERC20Burnable, ERC20Metadata, ERC20Re
     uint256 amount
   ) external;
 }
-=======
-
-    function holographBridgeIn(uint32 chainType, address from, address to, uint256 amount, bytes calldata data) external returns (bytes4);
-
-    function holographBridgeOut(uint32 chainType, address operator, address from, address to, uint256 amount) external returns (bytes4, bytes memory data);
-
-    function sourceBurn(address from, uint256 amount) external;
-
-    function sourceMint(address to, uint256 amount) external;
-
-    function sourceMintBatch(address[] calldata wallets, uint256[] calldata amounts) external;
-
-    function sourceTransfer(address from, address to, uint256 amount) external;
-
-}
->>>>>>> main:contracts/interface/ERC20Holograph.sol
->>>>>>> main

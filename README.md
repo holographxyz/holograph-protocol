@@ -35,19 +35,11 @@ The project is using [asdf](https://asdf-vm.com/) for tool versions management.
 
 Run `asdf install` to have the correct version running for the project.
 
-<<<<<<< HEAD
 Install dependencies with `yarn install`.
 
 Initialize the project with `yarn run init`, which will create the missing data dir and copy sample environment configs and shared mnemonic phrase for you.
 
 In a separate terminal run two instances of ganache with `yarn run ganache-x2`. This will simultaneously run two instances for bridge testing.
-=======
-Install dependencies with `npm install` or `yarn install`.
-
-Initialize the project with `npm run-script init`, which will create the missing data dir and copy sample environment configs and shared mnemonic phrase for you.
-
-In a separate terminal run two instances of ganache with `npm run-script ganache-x2`. This will simultaneously run two instances for bridge testing.
->>>>>>> main
 
 Build and compile the latest version of the project with `yarn run build-compile`.
 

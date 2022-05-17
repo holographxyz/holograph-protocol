@@ -110,25 +110,13 @@ interface IHolographRegistry {
 
   function setHToken(uint32 chainId, address hToken) external;
 
-<<<<<<< HEAD
   function updateReservedContractTypes(bytes32[] calldata hashes, bool[] calldata reserved) external;
-=======
-    function setHToken(uint32 chainId, address hToken) external;
-
-    function updateReservedContractTypes(bytes32[] calldata hashes, bool[] calldata reserved) external;
->>>>>>> main
 
   function getContractTypeAddress(bytes32 contractType) external view returns (address);
 
   function factoryDeployedHash(bytes32 hash, address contractAddress) external;
 
-<<<<<<< HEAD
   function getHToken(uint32 chainId) external view returns (address hToken);
-=======
-    function getHToken(uint32 chainId) external view returns (address hToken);
-
-    function isHolographedContract(address smartContract) external view returns (bool);
->>>>>>> main
 
   function isHolographedContract(address smartContract) external view returns (bool);
 

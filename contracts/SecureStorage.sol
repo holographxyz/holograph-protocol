@@ -110,7 +110,6 @@ import "./abstract/Owner.sol";
 import "./interface/IInitializable.sol";
 
 contract SecureStorage is Admin, Owner, Initializable {
-<<<<<<< HEAD
   /**
    * @dev Boolean indicating if storage writing is locked. Used to prevent delegated contracts access.
    */
@@ -144,47 +143,6 @@ contract SecureStorage is Admin, Owner, Initializable {
         0x89b583059fdb0b2e807359b64eba1a8a1e6d099210701fafe6dad5dd2cd64fb8,
         owner
       )
-=======
-
-    /**
-     * @dev Boolean indicating if storage writing is locked. Used to prevent delegated contracts access.
-     */
-    bool private _locked;
-
-    modifier unlocked() {
-        require(!_locked, "HOLOGRAPH: storage locked");
-        _;
-    }
-
-    modifier onlyOwner() override {
-        require(msg.sender == getOwner() || msg.sender == getAdmin(), "HOLOGRAPH: unauthorised sender");
-        _;
-    }
-
-    modifier nonReentrant() {
-        require(!_locked, "HOLOGRAPH: storage IS locked");
-        _locked = true;
-        _;
-        _locked = false;
-    }
-
-    constructor() Admin(false) Owner(false) {}
-
-    function init(bytes memory data) external override returns (bytes4) {
-        require(!_isInitialized(), "HOLOGRAPH: already initialized");
-        (address owner) = abi.decode(data, (address));
-        assembly {
-            sstore(/* slot */0x89b583059fdb0b2e807359b64eba1a8a1e6d099210701fafe6dad5dd2cd64fb8, owner)
-        }
-        _setInitialized();
-        return IInitializable.init.selector;
-    }
-
-    function getSlot(bytes32 slot) public view returns (bytes32 data) {
-        assembly {
-            data := sload(slot)
-        }
->>>>>>> main
     }
     _setInitialized();
     return IInitializable.init.selector;
