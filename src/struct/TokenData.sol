@@ -1,6 +1,12 @@
+<<<<<<< HEAD
 /*HOLOGRAPH_LICENSE_HEADER*/
 
 /*SOLIDITY_COMPILER_VERSION*/
+=======
+// SPDX-License-Identifier: UNLICENSED
+
+SOLIDITY_COMPILER_VERSION
+>>>>>>> main
 
 import "./Verification.sol";
 

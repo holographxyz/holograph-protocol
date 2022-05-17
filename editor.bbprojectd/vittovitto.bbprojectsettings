@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>EmbeddedEditorHidden:vittovitto</key>
+	<false/>
+	<key>ExpandedEditorWidth:vittovitto:displays([(0, 0), (1792, 1120)])</key>
+	<integer>1580</integer>
+	<key>ExpandedItems:vittovitto</key>
+	<array/>
+	<key>FileFilterMode:vittovitto</key>
+	<integer>0</integer>
+	<key>OpenDocuments:vittovitto</key>
+	<array/>
+	<key>OpenDocumentsExpanded</key>
+	<true/>
+	<key>OpenDocumentsSplitterProportion</key>
+	<real>0.73581395348837209</real>
+	<key>ProjectItemsExpanded</key>
+	<true/>
+	<key>ProjectViewVisible</key>
+	<true/>
+	<key>RecentItems:vittovitto</key>
+	<array/>
+	<key>ScratchpadItemsExpanded</key>
+	<true/>
+	<key>ScratchpadItemsVisible</key>
+	<true/>
+	<key>ShowSCMData:vittovitto</key>
+	<false/>
+	<key>ToolbarVisible:vittovitto</key>
+	<false/>
+	<key>ViewSplitterPosition:vittovitto</key>
+	<real>0.1183035746216774</real>
+	<key>WindowFrame:vittovitto:displays([(0, 0), (1792, 1120)])</key>
+	<string>rect(45,0,1120,1792)</string>
+</dict>
+</plist>

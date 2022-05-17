@@ -6,6 +6,7 @@ import "../enum/HolographERC20Event.sol";
 import "../enum/HolographERC721Event.sol";
 
 library Booleans {
+<<<<<<< HEAD
   function get(uint256 _packedBools, HolographERC20Event _eventName) internal pure returns (bool) {
     return get(_packedBools, uint256(_eventName));
   }
@@ -18,6 +19,21 @@ library Booleans {
     uint256 flag = (_packedBools >> _boolNumber) & uint256(1);
     return (flag == 1 ? true : false);
   }
+=======
+
+    function get(uint256 _packedBools, HolographERC20Event _eventName) internal pure returns (bool) {
+        return get(_packedBools, uint256(_eventName));
+    }
+
+    function get(uint256 _packedBools, HolographERC721Event _eventName) internal pure returns (bool) {
+        return get(_packedBools, uint256(_eventName));
+    }
+
+    function get(uint256 _packedBools, uint256 _boolNumber) internal pure returns (bool) {
+        uint256 flag = (_packedBools >> _boolNumber) & uint256(1);
+        return (flag == 1 ? true : false);
+    }
+>>>>>>> main
 
   function set(
     uint256 _packedBools,

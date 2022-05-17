@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 /*
 
+<<<<<<< HEAD
   ,,,,,,,,,,,
  [ HOLOGRAPH ]
   '''''''''''
@@ -102,6 +103,9 @@
 */
 
 pragma solidity 0.8.13;
+=======
+pragma solidity 0.8.12;
+>>>>>>> main
 
 library Strings {
   function toHexString(address account) internal pure returns (string memory) {
@@ -191,6 +195,28 @@ library Strings {
       buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
       value /= 10;
     }
+<<<<<<< HEAD
     return string(buffer);
   }
+=======
+
+    function toString(uint256 value) internal pure returns (string memory) {
+        if (value == 0) {
+            return "0";
+        }
+        uint256 temp = value;
+        uint256 digits;
+        while (temp != 0) {
+            digits++;
+            temp /= 10;
+        }
+        bytes memory buffer = new bytes(digits);
+        while (value != 0) {
+            digits -= 1;
+            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
+            value /= 10;
+        }
+        return string(buffer);
+    }
+>>>>>>> main
 }

@@ -101,6 +101,7 @@
 
 */
 
+<<<<<<< HEAD
 pragma solidity 0.8.13;
 
 abstract contract Owner {
@@ -146,6 +147,44 @@ abstract contract Owner {
         0x89b583059fdb0b2e807359b64eba1a8a1e6d099210701fafe6dad5dd2cd64fb8,
         ownerAddress
       )
+=======
+pragma solidity 0.8.12;
+
+abstract contract Owner {
+
+    constructor (bool useSender) {
+        address ownerAddress = (useSender ? msg.sender : tx.origin);
+        // The slot hash has been precomputed for gas optimizaion
+        // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.owner')) - 1);
+        assembly {
+            sstore(/* slot */0x89b583059fdb0b2e807359b64eba1a8a1e6d099210701fafe6dad5dd2cd64fb8, ownerAddress)
+        }
+    }
+
+    modifier onlyOwner() virtual {
+        require(msg.sender == getOwner(), "HOLOGRAPH: owner only function");
+        _;
+    }
+
+    function owner() public view returns (address) {
+        return getOwner();
+    }
+
+    function getOwner() public view returns (address ownerAddress) {
+        // The slot hash has been precomputed for gas optimizaion
+        // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.owner')) - 1);
+        assembly {
+            ownerAddress := sload(/* slot */0x89b583059fdb0b2e807359b64eba1a8a1e6d099210701fafe6dad5dd2cd64fb8)
+        }
+    }
+
+    function setOwner(address ownerAddress) public onlyOwner {
+        // The slot hash has been precomputed for gas optimizaion
+        // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.owner')) - 1);
+        assembly {
+            sstore(/* slot */0x89b583059fdb0b2e807359b64eba1a8a1e6d099210701fafe6dad5dd2cd64fb8, ownerAddress)
+        }
+>>>>>>> main
     }
   }
 

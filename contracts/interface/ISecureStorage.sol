@@ -101,7 +101,11 @@
 
 */
 
+<<<<<<< HEAD:contracts/interface/ISecureStorage.sol
 pragma solidity 0.8.13;
+=======
+pragma solidity 0.8.12;
+>>>>>>> main:contracts/interface/SecureStorage.sol
 
 interface ISecureStorage {
   function getOwner() external view returns (address);

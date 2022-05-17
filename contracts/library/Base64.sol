@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
+<<<<<<< HEAD
 /*
 
   ,,,,,,,,,,,
@@ -102,6 +103,10 @@
 */
 
 pragma solidity 0.8.13;
+=======
+
+pragma solidity 0.8.12;
+>>>>>>> main
 
 library Base64 {
   bytes private constant base64stdchars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
