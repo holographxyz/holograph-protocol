@@ -131,6 +131,19 @@
   },
   {
     "inputs": [],
+    "name": "getHolograph",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "holograph",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "getSecureStorage",
     "outputs": [
       {
@@ -183,6 +196,19 @@
       }
     ],
     "name": "setBridgeRegistry",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "holograph",
+        "type": "address"
+      }
+    ],
+    "name": "setHolograph",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

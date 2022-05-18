@@ -40,6 +40,15 @@ contract Holographer is Admin, Initializable {
   }
 
   /*
+   * @dev Returns a hardcoded address for the custom secure storage contract deployed in parallel with this contract deployment.
+   */
+  function getHolograph() public view returns (address holograph) {
+    assembly {
+      holograph := sload(precomputeslot("eip1967.Holograph.Bridge.holograph"))
+    }
+  }
+
+  /*
    * @dev Returns a hardcoded address for the Holograph smart contract that controls and enforces the ERC standards.
    * @dev The choice to use this approach was taken to prevent storage slot overrides.
    */

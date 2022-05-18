@@ -153,7 +153,10 @@ contract HolographRegistry is Admin, Initializable {
    */
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
-    bytes32[] memory reservedTypes = abi.decode(data, (bytes32[]));
+    (address holograph, bytes32[] memory reservedTypes) = abi.decode(data, (address, bytes32[]));
+    assembly {
+      sstore(0x1eee493315beeac80829afd0aaa340f3821cabe68571a2743478e81638a3d94d, holograph)
+    }
     for (uint256 i = 0; i < reservedTypes.length; i++) {
       _reservedTypes[reservedTypes[i]] = true;
     }
@@ -183,10 +186,11 @@ contract HolographRegistry is Admin, Initializable {
    * @dev Allows Holograph Factory to register a deployed contract, referenced with deployment hash.
    */
   function factoryDeployedHash(bytes32 hash, address contractAddress) external {
-    require(
-      msg.sender == IHolograph(0x020be79e2D5a6a0204C07970F3586dc379d142e0).getFactory(),
-      "HOLOGRAPH: factory only function"
-    );
+    address holograph;
+    assembly {
+      holograph := sload(0x1eee493315beeac80829afd0aaa340f3821cabe68571a2743478e81638a3d94d)
+    }
+    require(msg.sender == IHolograph(holograph).getFactory(), "HOLOGRAPH: factory only function");
     _holographedContractsHashMap[hash] = contractAddress;
     _holographedContracts[contractAddress] = true;
   }

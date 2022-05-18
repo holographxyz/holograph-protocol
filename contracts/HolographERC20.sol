@@ -288,7 +288,7 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
    * @dev Get the bridge contract address.
    */
   function bridge() private view returns (address) {
-    return IHolograph(0x020be79e2D5a6a0204C07970F3586dc379d142e0).getBridge();
+    return IHolograph(IHolographer(payable(address(this))).getHolograph()).getBridge();
   }
 
   /**

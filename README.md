@@ -43,7 +43,7 @@ If this is your first time running the project. Some initial steps will need to 
 
 1. Run `asdf install` to have the correct tool versions.
 2. Install dependencies with `yarn install`.
-3. Initialize the project with `yarn run init` *(this will copy sample environment configs)*.
+3. Initialize the project with `yarn run init` _(this will copy sample environment configs)_.
 
 ---
 
@@ -57,12 +57,12 @@ To manually run just the build task use `yarn run build`.
 
 **How to run project locally**
 
-1. Build the latest version of the contracts via `yarn run clean-compile` *(alternatively you can just run `yarn run compile`)*.
-2. Start the localhost ganache instances via `yarn run ganache-x2` *(this will run two instances simultaneously inside of one command)*. ***Make sure to run this command in a separate terminal window.***
+1. Build the latest version of the contracts via `yarn run clean-compile` _(alternatively you can just run `yarn run compile`)_.
+2. Start the localhost ganache instances via `yarn run ganache-x2` _(this will run two instances simultaneously inside of one command)_. **_Make sure to run this command in a separate terminal window._**
 3. Deploy the smart contracts via `yarn run deploy`.
 4. Run all tests via `yarn run test`.
 
-*If you need the smart contracts ABI files for dApp integrations, use `yarn run abi` to get a complete list of all ABI's inside of the `abi` directory.*
+_If you need the smart contracts ABI files for dApp integrations, use `yarn run abi` to get a complete list of all ABI's inside of the `abi` directory._
 
 ---
 

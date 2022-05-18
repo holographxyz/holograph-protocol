@@ -34,8 +34,9 @@ contract HolographFactory is Admin, Initializable {
 
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
-    (address registry, address secureStorage) = abi.decode(data, (address, address));
+    (address holograph, address registry, address secureStorage) = abi.decode(data, (address, address, address));
     assembly {
+      sstore(precomputeslot("eip1967.Holograph.Bridge.holograph"), holograph)
       sstore(precomputeslot("eip1967.Holograph.Bridge.registry"), registry)
       sstore(precomputeslot("eip1967.Holograph.Bridge.secureStorage"), secureStorage)
     }
@@ -63,6 +64,29 @@ contract HolographFactory is Admin, Initializable {
     // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.registry')) - 1);
     assembly {
       sstore(precomputeslot("eip1967.Holograph.Bridge.registry"), bridgeRegistry)
+    }
+  }
+
+  /*
+   * @dev Returns the address of holograph.
+   * @dev More details on bridge holograph and it's purpose can be found in the Holograph smart contract.
+   */
+  function getHolograph() public view returns (address holograph) {
+    // The slot hash has been precomputed for gas optimizaion
+    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.holograph')) - 1);
+    assembly {
+      holograph := sload(precomputeslot("eip1967.Holograph.Bridge.holograph"))
+    }
+  }
+
+  /*
+   * @dev Sets the address of holograph.
+   */
+  function setHolograph(address holograph) public onlyAdmin {
+    // The slot hash has been precomputed for gas optimizaion
+    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.holograph')) - 1);
+    assembly {
+      sstore(precomputeslot("eip1967.Holograph.Bridge.holograph"), holograph)
     }
   }
 
@@ -150,14 +174,12 @@ contract HolographFactory is Admin, Initializable {
         IInitializable.init.selector,
       "initialization failed"
     );
+    address holograph;
+    assembly {
+      holograph := sload(precomputeslot("eip1967.Holograph.Bridge.holograph"))
+    }
     bytes memory encodedInit = abi.encode(
-      abi.encode(
-        config.chainType,
-        0x20202020486F6c6f677261706841646472657373,
-        secureStorageAddress,
-        config.contractType,
-        sourceContractAddress
-      ),
+      abi.encode(config.chainType, holograph, secureStorageAddress, config.contractType, sourceContractAddress),
       config.initCode
     );
     require(

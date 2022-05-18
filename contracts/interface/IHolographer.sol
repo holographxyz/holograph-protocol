@@ -106,6 +106,8 @@ pragma solidity 0.8.13;
 interface IHolographer {
   function getOriginChain() external view returns (uint32);
 
+  function getHolograph() external view returns (address);
+
   function getHolographEnforcer() external view returns (address payable);
 
   function getSecureStorage() external pure returns (address);

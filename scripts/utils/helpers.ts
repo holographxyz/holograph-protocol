@@ -53,12 +53,41 @@ const isContractDeployed = function (contract: Contract | null): boolean {
   );
 };
 
+const genesisDeriveFutureAddress = async function (
+  hre: HardhatRuntimeEnvironment,
+  salt: string,
+  name: string,
+  initCode: string
+): Promise<string> {
+  const { deployments, getNamedAccounts } = hre;
+  const { deploy, deterministicCustom } = deployments;
+  const { deployer } = await getNamedAccounts();
+  let holographGenesis: any = await ethers.getContractOrNull('HolographGenesis');
+  if (holographGenesis == null) {
+    try {
+      holographGenesis = await deployments.get('HolographGenesis');
+    } catch (ex: any) {
+      throw new Error('We need to have HolographGenesis deployed.');
+    }
+  }
+  const contractBytecode: BytesLike = ((await ethers.getContractFactory(name)) as ContractFactory).bytecode;
+  const contractDeterministic = await deterministicCustom(name, {
+    from: deployer,
+    args: [],
+    log: true,
+    deployerAddress: holographGenesis?.address,
+    saltHash: deployer + salt.substring(2),
+    deployCode: generateDeployCode(salt, contractBytecode, initCode),
+  });
+  return contractDeterministic.address;
+};
+
 const genesisDeployHelper = async function (
   hre: HardhatRuntimeEnvironment,
   salt: string,
   name: string,
   initCode: string
-) {
+): Promise<Contract> {
   const { deployments, getNamedAccounts } = hre;
   const { deploy, deterministicCustom } = deployments;
   const { deployer } = await getNamedAccounts();
@@ -132,6 +161,7 @@ export {
   generateDeployCode,
   zeroAddress,
   isContractDeployed,
+  genesisDeriveFutureAddress,
   genesisDeployHelper,
   utf8ToBytes32,
   ZERO_ADDRESS,

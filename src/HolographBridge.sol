@@ -38,8 +38,9 @@ contract HolographBridge is Admin, Initializable {
 
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
-    (address registry, address factory) = abi.decode(data, (address, address));
+    (address holograph, address registry, address factory) = abi.decode(data, (address, address, address));
     assembly {
+      sstore(precomputeslot("eip1967.Holograph.Bridge.holograph"), holograph)
       sstore(precomputeslot("eip1967.Holograph.Bridge.registry"), registry)
       sstore(precomputeslot("eip1967.Holograph.Bridge.factory"), factory)
     }
@@ -112,21 +113,14 @@ contract HolographBridge is Admin, Initializable {
     require(selector == ERC721Holograph.holographBridgeOut.selector, "HOLOGRAPH: bridge out failed");
     emit TransferErc721(
       toChain,
-      abi.encode(
-        IHolograph(0x20202020486F6c6f677261706841646472657373).getChainType(),
-        collection,
-        from,
-        to,
-        tokenId,
-        data
-      )
+      abi.encode(IHolograph(_holograph()).getChainType(), collection, from, to, tokenId, data)
     );
     HolographBridge(payable(address(this))).send{value: msg.value}(
       ChainId.hlg2lz(toChain),
       abi.encodePacked(address(this)),
       abi.encodeWithSignature(
         "erc721in(uint32,address,address,address,uint256,bytes)",
-        IHolograph(0x20202020486F6c6f677261706841646472657373).getChainType(),
+        IHolograph(_holograph()).getChainType(),
         collection,
         from,
         to,
@@ -168,16 +162,13 @@ contract HolographBridge is Admin, Initializable {
     require(erc20.balanceOf(from) >= amount, "HOLOGRAPH: not enough tokens");
     (bytes4 selector, bytes memory data) = erc20.holographBridgeOut(toChain, msg.sender, from, to, amount);
     require(selector == ERC20Holograph.holographBridgeOut.selector, "HOLOGRAPH: bridge out failed");
-    emit TransferErc20(
-      toChain,
-      abi.encode(IHolograph(0x20202020486F6c6f677261706841646472657373).getChainType(), token, from, to, amount, data)
-    );
+    emit TransferErc20(toChain, abi.encode(IHolograph(_holograph()).getChainType(), token, from, to, amount, data));
     HolographBridge(payable(address(this))).send{value: msg.value}(
       ChainId.hlg2lz(toChain),
       abi.encodePacked(address(this)),
       abi.encodeWithSignature(
         "erc20in(uint32,address,address,address,uint256,bytes)",
-        IHolograph(0x20202020486F6c6f677261706841646472657373).getChainType(),
+        IHolograph(_holograph()).getChainType(),
         token,
         from,
         to,
@@ -205,6 +196,12 @@ contract HolographBridge is Admin, Initializable {
     address signer
   ) external {
     emit DeployRequest(toChain, abi.encode(config, signature, signer));
+  }
+
+  function _holograph() internal view returns (address holograph) {
+    assembly {
+      holograph := sload(precomputeslot("eip1967.Holograph.Bridge.holograph"))
+    }
   }
 
   function _factory() internal view returns (address factory) {

@@ -1,7 +1,9 @@
+import fs from 'fs';
 import { expect, assert } from 'chai';
-import { ethers, deployments } from 'hardhat';
+import { ethers, artifacts, deployments, network } from 'hardhat';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import Web3 from 'web3';
-import { BigNumberish, BytesLike, ContractFactory } from 'ethers';
+import { BigNumberish, BytesLike, ContractFactory, Contract } from 'ethers';
 
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
@@ -28,7 +30,10 @@ import {
 } from '../typechain-types';
 import { utf8ToBytes32, ZERO_ADDRESS, sha256 } from '../scripts/utils/helpers';
 
+const networks = JSON.parse(fs.readFileSync('./config/networks.json', 'utf8'));
+const hre: HardhatRuntimeEnvironment = require('hardhat');
 const web3 = new Web3();
+const chainId = '0x' + networks[hre.network.name].holographId.toString(16).padStart(8, '0');
 
 describe('Testing the Holograph protocol', () => {
   let deployer: SignerWithAddress;
@@ -97,14 +102,15 @@ describe('Testing the Holograph protocol', () => {
       'ERC20Mock',
       'MockERC721Receiver',
       'RegisterTemplates',
+      'hToken',
     ]);
 
-    //    cxipERC721 = (await ethers.getContract('CxipERC721')) as CxipERC721;
+    // cxipERC721 = (await ethers.getContract('CxipERC721')) as CxipERC721;
     erc20Mock = (await ethers.getContract('ERC20Mock')) as ERC20Mock;
     holograph = (await ethers.getContract('Holograph')) as Holograph;
     holographBridge = (await ethers.getContract('HolographBridge')) as HolographBridge;
     holographBridgeProxy = (await ethers.getContract('HolographBridgeProxy')) as HolographBridgeProxy;
-    //    holographer = (await ethers.getContract('Holographer')) as Holographer;
+    // holographer = (await ethers.getContract('Holographer')) as Holographer;
     holographErc20 = (await ethers.getContract('HolographERC20')) as HolographERC20;
     holographErc721 = (await ethers.getContract('HolographERC721')) as HolographERC721;
     holographFactory = (await ethers.getContract('HolographFactory')) as HolographFactory;
@@ -112,11 +118,11 @@ describe('Testing the Holograph protocol', () => {
     holographGenesis = (await ethers.getContract('HolographGenesis')) as HolographGenesis;
     holographRegistry = (await ethers.getContract('HolographRegistry')) as HolographRegistry;
     holographRegistryProxy = (await ethers.getContract('HolographRegistryProxy')) as HolographRegistryProxy;
-    //    hToken = (await ethers.getContract('hToken')) as HToken;
+    hToken = (await ethers.getContractOrNull('hToken')) as HToken;
     mockErc721Receiver = (await ethers.getContract('MockERC721Receiver')) as MockERC721Receiver;
     pa1d = (await ethers.getContract('PA1D')) as PA1D;
-    //    sampleErc20 = (await ethers.getContract('SampleERC20')) as SampleERC20;
-    //    sampleErc721 = (await ethers.getContract('SampleERC721')) as SampleERC721;
+    // sampleErc20 = (await ethers.getContract('SampleERC20')) as SampleERC20;
+    // sampleErc721 = (await ethers.getContract('SampleERC721')) as SampleERC721;
     secureStorage = (await ethers.getContract('SecureStorage')) as SecureStorage;
     secureStorageProxy = (await ethers.getContract('SecureStorageProxy')) as SecureStorageProxy;
   });
@@ -125,26 +131,189 @@ describe('Testing the Holograph protocol', () => {
 
   afterEach(async () => {});
 
-  describe('Check contract addresses', async () => {
-    it('should not be empty', async () => {
-      expect(erc20Mock.address != '', 'erc20Mock.address = ' + erc20Mock.address).to.be.true;
-      expect(holograph.address != '', 'holograph.address = ' + holograph.address).to.be.true;
-      expect(holographBridge.address != '', 'holographBridge.address = ' + holographBridge.address).to.be.true;
-      expect(holographBridgeProxy.address != '', 'holographBridgeProxy.address = ' + holographBridgeProxy.address).to.be
-        .true;
-      expect(holographErc20.address != '', 'holographErc20.address = ' + holographErc20.address).to.be.true;
-      expect(holographErc721.address != '', 'holographErc721.address = ' + holographErc721.address).to.be.true;
-      expect(holographFactory.address != '', 'holographFactory.address = ' + holographFactory.address).to.be.true;
-      expect(holographFactoryProxy.address != '', 'holographFactoryProxy.address = ' + holographFactoryProxy.address).to
-        .be.true;
-      expect(holographGenesis.address != '', 'holographGenesis.address = ' + holographGenesis.address).to.be.true;
-      expect(holographRegistry.address != '', 'holographRegistry.address = ' + holographRegistry.address).to.be.true;
-      expect(holographRegistryProxy.address != '', 'holographRegistryProxy.address = ' + holographRegistryProxy.address)
-        .to.be.true;
-      expect(mockErc721Receiver.address != '', 'mockErc721Receiver.address = ' + mockErc721Receiver.address).to.be.true;
-      expect(pa1d.address != '', 'pa1d.address = ' + pa1d.address).to.be.true;
-      expect(secureStorage.address != '', 'secureStorage.address = ' + secureStorage.address).to.be.true;
-      expect(secureStorageProxy.address != '', 'secureStorageProxy.address = ' + secureStorageProxy.address).to.be.true;
+  describe('Check that contract addresses are properly deployed', async () => {
+    /*describe('CxipERC721', async function () {
+      context('check deployed bytecode', async function () {
+        it('returns correct bytecode', async function () {
+          expect(await network.provider.send('eth_getCode', [cxipERC721.address])).to.equal(
+            (await artifacts.readArtifact('CxipERC721')).deployedBytecode
+          );
+        });
+      });
+    });*/
+    describe('ERC20Mock', async function () {
+      context('check deployed bytecode', async function () {
+        it('returns correct bytecode', async function () {
+          expect(await network.provider.send('eth_getCode', [erc20Mock.address])).to.equal(
+            (await artifacts.readArtifact('ERC20Mock')).deployedBytecode
+          );
+        });
+      });
+    });
+    describe('Holograph', async function () {
+      context('check deployed bytecode', async function () {
+        it('returns correct bytecode', async function () {
+          expect(await network.provider.send('eth_getCode', [holograph.address])).to.equal(
+            (await artifacts.readArtifact('Holograph')).deployedBytecode
+          );
+        });
+      });
+    });
+    describe('HolographBridge', async function () {
+      context('check deployed bytecode', async function () {
+        it('returns correct bytecode', async function () {
+          expect(await network.provider.send('eth_getCode', [holographBridge.address])).to.equal(
+            (await artifacts.readArtifact('HolographBridge')).deployedBytecode
+          );
+        });
+      });
+    });
+    describe('HolographBridgeProxy', async function () {
+      context('check deployed bytecode', async function () {
+        it('returns correct bytecode', async function () {
+          expect(await network.provider.send('eth_getCode', [holographBridgeProxy.address])).to.equal(
+            (await artifacts.readArtifact('HolographBridgeProxy')).deployedBytecode
+          );
+        });
+      });
+    });
+    /*describe('Holographer', async function () {
+      context('check deployed bytecode', async function () {
+        it('returns correct bytecode', async function () {
+          expect(await network.provider.send('eth_getCode', [holographer.address])).to.equal(
+            (await artifacts.readArtifact('Holographer')).deployedBytecode
+          );
+        });
+      });
+    });*/
+    describe('HolographERC20', async function () {
+      context('check deployed bytecode', async function () {
+        it('returns correct bytecode', async function () {
+          expect(await network.provider.send('eth_getCode', [holographErc20.address])).to.equal(
+            (await artifacts.readArtifact('HolographERC20')).deployedBytecode
+          );
+        });
+      });
+    });
+    describe('HolographERC721', async function () {
+      context('check deployed bytecode', async function () {
+        it('returns correct bytecode', async function () {
+          expect(await network.provider.send('eth_getCode', [holographErc721.address])).to.equal(
+            (await artifacts.readArtifact('HolographERC721')).deployedBytecode
+          );
+        });
+      });
+    });
+    describe('HolographFactory', async function () {
+      context('check deployed bytecode', async function () {
+        it('returns correct bytecode', async function () {
+          expect(await network.provider.send('eth_getCode', [holographFactory.address])).to.equal(
+            (await artifacts.readArtifact('HolographFactory')).deployedBytecode
+          );
+        });
+      });
+    });
+    describe('HolographFactoryProxy', async function () {
+      context('check deployed bytecode', async function () {
+        it('returns correct bytecode', async function () {
+          expect(await network.provider.send('eth_getCode', [holographFactoryProxy.address])).to.equal(
+            (await artifacts.readArtifact('HolographFactoryProxy')).deployedBytecode
+          );
+        });
+      });
+    });
+    describe('HolographGenesis', async function () {
+      context('check deployed bytecode', async function () {
+        it('returns correct bytecode', async function () {
+          expect(await network.provider.send('eth_getCode', [holographGenesis.address])).to.equal(
+            (await artifacts.readArtifact('HolographGenesis')).deployedBytecode
+          );
+        });
+      });
+    });
+    describe('HolographRegistry', async function () {
+      context('check deployed bytecode', async function () {
+        it('returns correct bytecode', async function () {
+          expect(await network.provider.send('eth_getCode', [holographRegistry.address])).to.equal(
+            (await artifacts.readArtifact('HolographRegistry')).deployedBytecode
+          );
+        });
+      });
+    });
+    describe('HolographRegistryProxy', async function () {
+      context('check deployed bytecode', async function () {
+        it('returns correct bytecode', async function () {
+          expect(await network.provider.send('eth_getCode', [holographRegistryProxy.address])).to.equal(
+            (await artifacts.readArtifact('HolographRegistryProxy')).deployedBytecode
+          );
+        });
+      });
+    });
+    describe('hToken', async function () {
+      context('check deployed bytecode', async function () {
+        it('returns correct bytecode', async function () {
+          const registry = holographRegistry.attach(holographRegistryProxy.address);
+          const holographerAddress = await registry.getHToken(chainId);
+          const holographer = (await ethers.getContractAt('Holographer', holographerAddress)) as Holographer;
+          expect(await network.provider.send('eth_getCode', [await holographer.getSourceContract()])).to.equal(
+            (await artifacts.readArtifact('hToken')).deployedBytecode
+          );
+        });
+      });
+    });
+    describe('MockERC721Receiver', async function () {
+      context('check deployed bytecode', async function () {
+        it('returns correct bytecode', async function () {
+          expect(await network.provider.send('eth_getCode', [mockErc721Receiver.address])).to.equal(
+            (await artifacts.readArtifact('MockERC721Receiver')).deployedBytecode
+          );
+        });
+      });
+    });
+    describe('PA1D', async function () {
+      context('check deployed bytecode', async function () {
+        it('returns correct bytecode', async function () {
+          expect(await network.provider.send('eth_getCode', [pa1d.address])).to.equal(
+            (await artifacts.readArtifact('PA1D')).deployedBytecode
+          );
+        });
+      });
+    });
+    /*describe('SampleERC20', async function () {
+      context('check deployed bytecode', async function () {
+        it('returns correct bytecode', async function () {
+          expect(await network.provider.send('eth_getCode', [sampleErc20.address])).to.equal(
+            (await artifacts.readArtifact('SampleERC20')).deployedBytecode
+          );
+        });
+      });
+    });*/
+    /*describe('SampleERC721', async function () {
+      context('check deployed bytecode', async function () {
+        it('returns correct bytecode', async function () {
+          expect(await network.provider.send('eth_getCode', [sampleErc721.address])).to.equal(
+            (await artifacts.readArtifact('SampleERC721')).deployedBytecode
+          );
+        });
+      });
+    });*/
+    describe('SecureStorage', async function () {
+      context('check deployed bytecode', async function () {
+        it('returns correct bytecode', async function () {
+          expect(await network.provider.send('eth_getCode', [secureStorage.address])).to.equal(
+            (await artifacts.readArtifact('SecureStorage')).deployedBytecode
+          );
+        });
+      });
+    });
+    describe('SecureStorageProxy', async function () {
+      context('check deployed bytecode', async function () {
+        it('returns correct bytecode', async function () {
+          expect(await network.provider.send('eth_getCode', [secureStorageProxy.address])).to.equal(
+            (await artifacts.readArtifact('SecureStorageProxy')).deployedBytecode
+          );
+        });
+      });
     });
   });
 });

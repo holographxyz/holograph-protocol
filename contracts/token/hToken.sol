@@ -184,7 +184,7 @@ contract hToken is ERC20H {
   function holographNativeToken(address msgSender, address recipient) external payable onlyHolographer {
     require(
       (IHolographer(holographer()).getOriginChain() ==
-        IHolograph(0x020be79e2D5a6a0204C07970F3586dc379d142e0).getChainType()),
+        IHolograph(IHolographer(holographer()).getHolograph()).getChainType()),
       "hToken: not native token"
     );
     require(msg.value > 0, "hToken: no value received");
@@ -207,7 +207,7 @@ contract hToken is ERC20H {
     require(ERC20(address(this)).balanceOf(msgSender) >= amount, "hToken: not enough hToken(s)");
     require(
       (IHolographer(holographer()).getOriginChain() ==
-        IHolograph(0x020be79e2D5a6a0204C07970F3586dc379d142e0).getChainType()),
+        IHolograph(IHolographer(holographer()).getHolograph()).getChainType()),
       "hToken: not on native chain"
     );
     require(address(this).balance >= amount, "hToken: not enough native tokens");
@@ -289,7 +289,7 @@ contract hToken is ERC20H {
   ) external view onlyHolographer returns (uint256) {
     if (
       IHolographer(holographer()).getOriginChain() ==
-      IHolograph(0x020be79e2D5a6a0204C07970F3586dc379d142e0).getChainType()
+      IHolograph(IHolographer(holographer()).getHolograph()).getChainType()
     ) {
       return address(this).balance;
     } else {
