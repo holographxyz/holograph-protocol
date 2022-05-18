@@ -24,8 +24,8 @@
     "test": "hardhat test",
     "typechain": "hardhat typechain",
     "verify": "hardhat verify",
-    "prettier:check": "prettier --ignore-path .gitignore --list-different .",
-    "prettier:fix": "prettier --ignore-path .gitignore --write ."
+    "prettier:check": "prettier --loglevel error --ignore-path .gitignore --list-different .",
+    "prettier:fix": "prettier --loglevel error --ignore-path .gitignore --write ."
   },
   "dependencies": {
     "hardhat-deploy-holographed": "https://github.com/cxip-labs/hardhat-deploy-holographed.git",
