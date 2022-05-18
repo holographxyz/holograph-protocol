@@ -9,7 +9,7 @@ import { types, task, HardhatUserConfig } from 'hardhat/config';
 import dotenv from 'dotenv';
 dotenv.config();
 
-import './plugins/hardhat-holograph-address-injector';
+import 'hardhat-holograph-contract-builder';
 
 const networks = JSON.parse(fs.readFileSync('./config/networks.json', 'utf8'));
 
@@ -152,7 +152,7 @@ const config: HardhatUserConfig = {
   etherscan: {
     apiKey: ETHERSCAN_API_KEY,
   },
-  holographAddressInjector: {
+  hardhatHolographContractBuilder: {
     runOnCompile: true,
     verbose: false,
   },

@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "hardhat-deploy-holographed": "https://github.com/cxip-labs/hardhat-deploy-holographed.git",
+    "hardhat-holograph-contract-builder": "https://github.com/cxip-labs/hardhat-holograph-contract-builder.git",
     "path": "^0.12.7",
     "truffle-hdwallet-provider": "^1.0.17",
     "web3": "^1.7.0",

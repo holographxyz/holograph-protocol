@@ -4774,6 +4774,10 @@ hardhat-gas-reporter@^1.0.4:
     eth-gas-reporter "^0.2.24"
     sha1 "^1.1.1"
 
+"hardhat-holograph-contract-builder@https://github.com/cxip-labs/hardhat-holograph-contract-builder.git":
+  version "1.0.0"
+  resolved "https://github.com/cxip-labs/hardhat-holograph-contract-builder.git#73158bcf42b577ab0b7cf804df029f85f568ab7c"
+
 hardhat@^2.6.3:
   version "2.9.5"
   resolved "https://registry.yarnpkg.com/hardhat/-/hardhat-2.9.5.tgz#6814a9f3afd5630ffe6bcb05a4367eb259c9222a"
