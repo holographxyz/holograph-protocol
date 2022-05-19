@@ -13,8 +13,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     generateInitCode(
       ['string', 'string', 'uint16', 'uint256', 'bytes'],
       [
-        'Holograph ERC20 Token', // contractName
-        'HolographERC20', // contractSymbol
+        'Holograph ERC721 Collection', // contractName
+        'hNFT', // contractSymbol
         1000, // contractBps == 0%
         0, // eventConfig
         '0x', // initCode

@@ -50,7 +50,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       web3.eth.abi.encodeParameters(
         ['string', 'string', 'uint8', 'uint256', 'bytes'],
         [
-          network.tokenName + '(Holographed)', // string memory contractName
+          network.tokenName + ' (Holographed)', // string memory contractName
           'h' + network.tokenSymbol, // string memory contractSymbol
           18, // uint8 contractDecimals
           '0x' + '00'.repeat(32), // uint256 eventConfig

@@ -15,6 +15,8 @@ interface IHolographRegistry {
 
   function factoryDeployedHash(bytes32 hash, address contractAddress) external;
 
+  function getHolographedHashAddress(bytes32 hash) external view returns (address);
+
   function getHToken(uint32 chainId) external view returns (address hToken);
 
   function isHolographedContract(address smartContract) external view returns (bool);

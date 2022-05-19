@@ -156,6 +156,31 @@ const sha256 = function (x: string): string {
   return '0x' + crypto.createHash('sha256').update(x, 'utf8').digest('hex');
 };
 
+const getHolographedContractHash = async function (deployer: string, contractName: string, contractType: string, chainId: string, salt: string, initCode: string): Promise<BytesLike> {
+  const web3 = new Web3();
+  const artifact: ContractFactory = await ethers.getContractFactory(contractName);
+  const contractHash = '0x' + web3.utils.asciiToHex(contractType).substring(2).padStart(64, '0');
+  const config = [
+    contractHash, // bytes32 contractType
+    chainId, // uint32 chainType
+    salt, // bytes32 salt
+    artifact.bytecode, // bytes byteCode
+    initCode // bytes initCode
+  ];
+  const hash = web3.utils.hexToBytes(
+    web3.utils.keccak256(
+      '0x' +
+        config[0].substring(2) +
+        config[1].substring(2) +
+        config[2].substring(2) +
+        web3.utils.keccak256(config[3]).substring(2) +
+        web3.utils.keccak256(config[4]).substring(2) +
+        deployer.substring(2)
+    )
+  );
+  return hash;
+};
+
 export {
   generateInitCode,
   generateDeployCode,
@@ -167,4 +192,5 @@ export {
   ZERO_ADDRESS,
   remove0x,
   sha256,
+  getHolographedContractHash
 };

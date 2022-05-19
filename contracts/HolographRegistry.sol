@@ -229,6 +229,13 @@ contract HolographRegistry is Admin, Initializable {
   }
 
   /*
+   * @dev Returns the address for a holographed hash
+   */
+  function getHolographedHashAddress(bytes32 hash) external view returns (address) {
+    return _holographedContractsHashMap[hash];
+  }
+
+  /*
    * @dev Returns the hToken address for a given chain id.
    */
   function getHToken(uint32 chainId) external view returns (address) {

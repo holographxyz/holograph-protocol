@@ -142,7 +142,7 @@ contract hToken is ERC20H {
   /*
    * @dev Event that is triggered when ERC20 token is converted into hToken.
    */
-  event Deposit(address indexed token, address indexed from, uint256 amount);
+  event TokenDeposit(address indexed token, address indexed from, uint256 amount);
 
   /*
    * @dev Event that is triggered when hToken is converted into native token.
@@ -152,7 +152,7 @@ contract hToken is ERC20H {
   /*
    * @dev Event that is triggered when hToken is converted into ERC20 token.
    */
-  event Withdrawal(address indexed token, address indexed to, uint256 amount);
+  event TokenWithdrawal(address indexed token, address indexed to, uint256 amount);
 
   modifier onlyOwner(address msgSender) {
     require(msgSender == _owner, "owner only function");
@@ -250,7 +250,7 @@ contract hToken is ERC20H {
       recipient = msgSender;
     }
     ERC20Holograph(holographer()).sourceMint(recipient, amount);
-    emit Deposit(token, msgSender, amount);
+    emit TokenDeposit(token, msgSender, amount);
   }
 
   /*
@@ -281,7 +281,7 @@ contract hToken is ERC20H {
     uint256 difference = currentBalance - previousBalance;
     require(difference == adjustedAmount, "hToken: incorrect new balance");
     ERC20Holograph(holographer()).sourceBurn(msgSender, amount);
-    emit Withdrawal(token, recipient, adjustedAmount);
+    emit TokenWithdrawal(token, recipient, adjustedAmount);
   }
 
   function availableNativeTokens(
