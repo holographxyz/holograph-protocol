@@ -45,12 +45,18 @@
         "type": "uint256"
       }
     ],
-    "name": "Deposit",
+    "name": "TokenDeposit",
     "type": "event"
   },
   {
     "anonymous": false,
     "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
       {
         "indexed": true,
         "internalType": "address",
@@ -64,18 +70,12 @@
         "type": "uint256"
       }
     ],
-    "name": "Withdrawal",
+    "name": "TokenWithdrawal",
     "type": "event"
   },
   {
     "anonymous": false,
     "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
       {
         "indexed": true,
         "internalType": "address",
