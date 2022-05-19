@@ -177,6 +177,6 @@ func.tags = [
   'HolographBridgeProxy',
   'Holograph',
   'PA1D',
-  'DeploySources'
+  'DeploySources',
 ];
 func.dependencies = ['HolographGenesis'];

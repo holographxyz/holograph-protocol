@@ -51,10 +51,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         web3.eth.abi.encodeParameters(
           ['address', 'uint16'],
           [
-            deployer.address ,// owner
-            0 // fee (bps)
+            deployer.address, // owner
+            0, // fee (bps)
           ]
-        )
+        ),
       ]
     ), // bytes initCode
   ];
@@ -106,7 +106,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         web3.eth.abi.encodeParameters(
           ['address'],
           [
-            deployer.address // owner
+            deployer.address, // owner
           ]
         ),
       ]
@@ -160,7 +160,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         web3.eth.abi.encodeParameters(
           ['address'],
           [
-            deployer.address // owner
+            deployer.address, // owner
           ]
         ),
       ]
@@ -207,5 +207,5 @@ func.dependencies = [
   'DeployERC721',
   'DeployERC1155',
   'RegisterTemplates',
-  'hToken'
+  'hToken',
 ];
