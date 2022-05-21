@@ -1,11 +1,13 @@
+declare var global: any;
 import fs from 'fs';
-import { ethers } from 'hardhat';
 import { BytesLike, ContractFactory, Contract } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy-holographed/types';
+import { LeanHardhatRuntimeEnvironment, hreSplit } from '../scripts/utils/helpers';
 import Web3 from 'web3';
 
-const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
+const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
+  let { hre, hre2 } = hreSplit(hre1, global.__companionNetwork);
   const error = function (err: string) {
     console.log(err);
     process.exit();
@@ -13,14 +15,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const web3 = new Web3();
 
-  const holographRegistryProxy = await ethers.getContract('HolographRegistryProxy');
-  const holographRegistry = ((await ethers.getContract('HolographRegistry')) as Contract).attach(
+  const holographRegistryProxy = await hre.ethers.getContract('HolographRegistryProxy');
+  const holographRegistry = ((await hre.ethers.getContract('HolographRegistry')) as Contract).attach(
     holographRegistryProxy.address
   );
 
-  const erc20 = await ethers.getContract('HolographERC20');
-  const erc721 = await ethers.getContract('HolographERC721');
-  const pa1d = await ethers.getContract('PA1D');
+  const erc20 = await hre.ethers.getContract('HolographERC20');
+  const erc721 = await hre.ethers.getContract('HolographERC721');
+  const pa1d = await hre.ethers.getContract('PA1D');
 
   const erc721Hash = '0x' + web3.utils.asciiToHex('HolographERC721').substring(2).padStart(64, '0');
   if ((await holographRegistry.getContractTypeAddress(erc721Hash)) != erc721.address) {

@@ -1,3 +1,4 @@
+declare var global: any;
 import fs from 'fs';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy-holographed/types';
@@ -7,11 +8,14 @@ import {
   genesisDeployHelper,
   generateInitCode,
   zeroAddress,
+  LeanHardhatRuntimeEnvironment,
+  hreSplit,
 } from '../scripts/utils/helpers';
 
 const networks = JSON.parse(fs.readFileSync('./config/networks.json', 'utf8'));
 
-const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
+const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
+  let { hre, hre2 } = hreSplit(hre1, global.__companionNetwork);
   const { deployments, getNamedAccounts } = hre;
   const { deploy, deterministicCustom } = deployments;
   const { deployer } = await getNamedAccounts();
@@ -27,7 +31,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     generateInitCode(
       ['uint32', 'address', 'address', 'address', 'address'],
       [
-        '0x' + networks[hre.network.name].holographId.toString(16).padStart(8, '0'),
+        '0x' + networks[hre.networkName].holographId.toString(16).padStart(8, '0'),
         zeroAddress(),
         zeroAddress(),
         zeroAddress(),
@@ -147,7 +151,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     generateInitCode(
       ['uint32', 'address', 'address', 'address', 'address'],
       [
-        '0x' + networks[hre.network.name].holographId.toString(16).padStart(8, '0'),
+        '0x' + networks[hre.networkName].holographId.toString(16).padStart(8, '0'),
         holographRegistryProxy.address,
         holographFactoryProxy.address,
         holographBridgeProxy.address,

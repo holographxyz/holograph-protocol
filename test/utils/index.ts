@@ -1,10 +1,13 @@
+declare var global: any;
 import fs from 'fs';
 import { expect, assert } from 'chai';
-import { ethers, artifacts, deployments } from 'hardhat';
-import { Artifacts, HardhatRuntimeEnvironment } from 'hardhat/types';
+import { EthereumProvider, Artifacts, HardhatRuntimeEnvironment } from 'hardhat/types';
+import { Address, Deployment, DeploymentsExtension } from 'hardhat-deploy-holographed/types';
 import Web3 from 'web3';
 import { BigNumberish, BytesLike, ContractFactory, Contract } from 'ethers';
-
+import type { ethers } from 'ethers';
+import type EthersT from 'ethers';
+import { HardhatEthersHelpers } from '@nomiclabs/hardhat-ethers/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
   CxipERC721,
@@ -29,6 +32,11 @@ import {
   SecureStorageProxy,
 } from '../../typechain-types';
 import {
+  LeanHardhatRuntimeEnvironment,
+  Network,
+  Networks,
+  l2Ethers,
+  hreSplit,
   utf8ToBytes32,
   ZERO_ADDRESS,
   sha256,
@@ -36,31 +44,18 @@ import {
   generateInitCode,
 } from '../../scripts/utils/helpers';
 
-const hre: HardhatRuntimeEnvironment = require('hardhat');
+let hre1: HardhatRuntimeEnvironment = require('hardhat');
 const networks: Networks = JSON.parse(fs.readFileSync('./config/networks.json', 'utf8')) as Networks;
-const network: Network = networks[hre.network.name];
-const web3 = new Web3();
-const chainId = '0x' + network.holographId.toString(16).padStart(8, '0');
-
-export interface Network {
-  chain: number;
-  rpc: string;
-  holographId: number;
-  tokenName: string;
-  tokenSymbol: string;
-}
-
-export interface Networks {
-  [key: string]: Network;
-}
 
 export interface PreTest {
-  hre: HardhatRuntimeEnvironment;
-  artifacts: Artifacts;
+  hre: LeanHardhatRuntimeEnvironment;
+  hre2: LeanHardhatRuntimeEnvironment;
   networks: Networks;
   network: Network;
+  network2: Network;
   web3: Web3;
   chainId: BytesLike;
+  chainId2: BytesLike;
   deployer: SignerWithAddress;
   wallet1: SignerWithAddress;
   wallet2: SignerWithAddress;
@@ -105,8 +100,15 @@ export interface PreTest {
   cxipErc721Enforcer: HolographERC721;
 }
 
-export default async function (): Promise<PreTest> {
-  await deployments.fixture([
+export default async function (l2?: boolean): Promise<PreTest> {
+  const web3 = new Web3();
+  let { hre, hre2 } = hreSplit(hre1, l2);
+  const network: Network = networks[hre.networkName];
+  const network2: Network = networks[hre2.networkName];
+  const chainId: BytesLike = '0x' + network.holographId.toString(16).padStart(8, '0');
+  const chainId2: BytesLike = '0x' + network2.holographId.toString(16).padStart(8, '0');
+
+  await hre.deployments.fixture([
     'HolographGenesis',
     'HolographRegistry',
     'HolographRegistryProxy',
@@ -129,7 +131,7 @@ export default async function (): Promise<PreTest> {
     'CxipERC721',
   ]);
 
-  const accounts = await ethers.getSigners();
+  const accounts = await hre.ethers.getSigners();
   const deployer: SignerWithAddress = accounts[0];
   const wallet1: SignerWithAddress = accounts[1];
   const wallet2: SignerWithAddress = accounts[2];
@@ -181,32 +183,32 @@ export default async function (): Promise<PreTest> {
   let sampleErc721Hash: BytesLike;
   let cxipErc721Hash: BytesLike;
 
-  cxipErc721 = (await ethers.getContractOrNull('CxipERC721')) as CxipERC721;
-  erc20Mock = (await ethers.getContract('ERC20Mock')) as ERC20Mock;
-  holograph = (await ethers.getContract('Holograph')) as Holograph;
-  holographBridge = (await ethers.getContract('HolographBridge')) as HolographBridge;
-  holographBridgeProxy = (await ethers.getContract('HolographBridgeProxy')) as HolographBridgeProxy;
-  // holographer = (await ethers.getContractOrNull('Holographer')) as Holographer;
-  holographErc20 = (await ethers.getContract('HolographERC20')) as HolographERC20;
-  holographErc721 = (await ethers.getContract('HolographERC721')) as HolographERC721;
-  holographFactory = (await ethers.getContract('HolographFactory')) as HolographFactory;
-  holographFactoryProxy = (await ethers.getContract('HolographFactoryProxy')) as HolographFactoryProxy;
-  holographGenesis = (await ethers.getContract('HolographGenesis')) as HolographGenesis;
-  holographRegistry = (await ethers.getContract('HolographRegistry')) as HolographRegistry;
-  holographRegistryProxy = (await ethers.getContract('HolographRegistryProxy')) as HolographRegistryProxy;
-  // hToken = (await ethers.getContractOrNull('hToken')) as HToken;
-  mockErc721Receiver = (await ethers.getContract('MockERC721Receiver')) as MockERC721Receiver;
-  pa1d = (await ethers.getContract('PA1D')) as PA1D;
-  // sampleErc20 = (await ethers.getContractOrNull('SampleERC20')) as SampleERC20;
-  // sampleErc721 = (await ethers.getContractOrNull('SampleERC721')) as SampleERC721;
-  secureStorage = (await ethers.getContract('SecureStorage')) as SecureStorage;
-  secureStorageProxy = (await ethers.getContract('SecureStorageProxy')) as SecureStorageProxy;
+  cxipErc721 = (await hre.ethers.getContractOrNull('CxipERC721')) as CxipERC721;
+  erc20Mock = (await hre.ethers.getContract('ERC20Mock')) as ERC20Mock;
+  holograph = (await hre.ethers.getContract('Holograph')) as Holograph;
+  holographBridge = (await hre.ethers.getContract('HolographBridge')) as HolographBridge;
+  holographBridgeProxy = (await hre.ethers.getContract('HolographBridgeProxy')) as HolographBridgeProxy;
+  // holographer = (await hre.ethers.getContractOrNull('Holographer')) as Holographer;
+  holographErc20 = (await hre.ethers.getContract('HolographERC20')) as HolographERC20;
+  holographErc721 = (await hre.ethers.getContract('HolographERC721')) as HolographERC721;
+  holographFactory = (await hre.ethers.getContract('HolographFactory')) as HolographFactory;
+  holographFactoryProxy = (await hre.ethers.getContract('HolographFactoryProxy')) as HolographFactoryProxy;
+  holographGenesis = (await hre.ethers.getContract('HolographGenesis')) as HolographGenesis;
+  holographRegistry = (await hre.ethers.getContract('HolographRegistry')) as HolographRegistry;
+  holographRegistryProxy = (await hre.ethers.getContract('HolographRegistryProxy')) as HolographRegistryProxy;
+  // hToken = (await hre.ethers.getContractOrNull('hToken')) as HToken;
+  mockErc721Receiver = (await hre.ethers.getContract('MockERC721Receiver')) as MockERC721Receiver;
+  pa1d = (await hre.ethers.getContract('PA1D')) as PA1D;
+  // sampleErc20 = (await hre.ethers.getContractOrNull('SampleERC20')) as SampleERC20;
+  // sampleErc721 = (await hre.ethers.getContractOrNull('SampleERC721')) as SampleERC721;
+  secureStorage = (await hre.ethers.getContract('SecureStorage')) as SecureStorage;
+  secureStorageProxy = (await hre.ethers.getContract('SecureStorageProxy')) as SecureStorageProxy;
 
   bridge = holographBridge.attach(await holograph.getBridge()) as HolographBridge;
   factory = holographFactory.attach(await holograph.getFactory()) as HolographFactory;
   registry = holographRegistry.attach(await holograph.getRegistry()) as HolographRegistry;
 
-  holographer = (await ethers.getContractAt('Holographer', await registry.getHToken(chainId))) as Holographer;
+  holographer = (await hre.ethers.getContractAt('Holographer', await registry.getHToken(chainId))) as Holographer;
 
   hTokenHash = await getHolographedContractHash(
     deployer.address,
@@ -231,15 +233,15 @@ export default async function (): Promise<PreTest> {
       ]
     )
   );
-  hTokenHolographer = (await ethers.getContractAt(
+  hTokenHolographer = (await hre.ethers.getContractAt(
     'Holographer',
     await registry.getHolographedHashAddress(hTokenHash)
   )) as Holographer;
-  hTokenEnforcer = (await ethers.getContractAt(
+  hTokenEnforcer = (await hre.ethers.getContractAt(
     'HolographERC20',
     await hTokenHolographer.getHolographEnforcer()
   )) as HolographERC20;
-  hToken = (await ethers.getContractAt('hToken', await hTokenHolographer.getSourceContract())) as HToken;
+  hToken = (await hre.ethers.getContractAt('hToken', await hTokenHolographer.getSourceContract())) as HToken;
 
   sampleErc20Hash = await getHolographedContractHash(
     deployer.address,
@@ -264,15 +266,15 @@ export default async function (): Promise<PreTest> {
       ]
     )
   );
-  sampleErc20Holographer = (await ethers.getContractAt(
+  sampleErc20Holographer = (await hre.ethers.getContractAt(
     'Holographer',
     await registry.getHolographedHashAddress(sampleErc20Hash)
   )) as Holographer;
-  sampleErc20Enforcer = (await ethers.getContractAt(
+  sampleErc20Enforcer = (await hre.ethers.getContractAt(
     'HolographERC20',
     await sampleErc20Holographer.getHolographEnforcer()
   )) as HolographERC20;
-  sampleErc20 = (await ethers.getContractAt(
+  sampleErc20 = (await hre.ethers.getContractAt(
     'SampleERC20',
     await sampleErc20Holographer.getSourceContract()
   )) as SampleERC20;
@@ -299,15 +301,15 @@ export default async function (): Promise<PreTest> {
       ]
     )
   );
-  sampleErc721Holographer = (await ethers.getContractAt(
+  sampleErc721Holographer = (await hre.ethers.getContractAt(
     'Holographer',
     await registry.getHolographedHashAddress(sampleErc721Hash)
   )) as Holographer;
-  sampleErc721Enforcer = (await ethers.getContractAt(
+  sampleErc721Enforcer = (await hre.ethers.getContractAt(
     'HolographERC721',
     await sampleErc721Holographer.getHolographEnforcer()
   )) as HolographERC721;
-  sampleErc721 = (await ethers.getContractAt(
+  sampleErc721 = (await hre.ethers.getContractAt(
     'SampleERC721',
     await sampleErc721Holographer.getSourceContract()
   )) as SampleERC721;
@@ -334,26 +336,28 @@ export default async function (): Promise<PreTest> {
       ]
     )
   );
-  cxipErc721Holographer = (await ethers.getContractAt(
+  cxipErc721Holographer = (await hre.ethers.getContractAt(
     'Holographer',
     await registry.getHolographedHashAddress(cxipErc721Hash)
   )) as Holographer;
-  cxipErc721Enforcer = (await ethers.getContractAt(
+  cxipErc721Enforcer = (await hre.ethers.getContractAt(
     'HolographERC721',
     await cxipErc721Holographer.getHolographEnforcer()
   )) as HolographERC721;
-  cxipErc721 = (await ethers.getContractAt(
+  cxipErc721 = (await hre.ethers.getContractAt(
     'CxipERC721',
     await cxipErc721Holographer.getSourceContract()
   )) as CxipERC721;
 
   return {
     hre,
-    artifacts,
+    hre2,
     networks,
     network,
+    network2,
     web3,
     chainId,
+    chainId2,
     deployer,
     wallet1,
     wallet2,

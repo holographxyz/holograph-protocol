@@ -6,7 +6,6 @@ This project contains the latest version of the Holograph Bridge Protocol.
                          ┌───────────┐
                          │ HOLOGRAPH │
                          └───────────┘
-
 ╔═════════════════════════════════════════════════════════════╗
 ║                                                             ║
 ║                            / ^ \                            ║
@@ -27,7 +26,6 @@ This project contains the latest version of the Holograph Bridge Protocol.
 ║    ,          ╠╣     ,        ,'      *    ╠╣               ║
 ║~~~~~^~~~~~~~~┌╬╬┐~~~^~~~~~~~~^^~~~~~~~~^~~┌╬╬┐~~~~~~~^~~~~~~║
 ╚══════════════╩╩╩╩═════════════════════════╩╩╩╩══════════════╝
-
             - one bridge = infinite possibilities -
 ```
 

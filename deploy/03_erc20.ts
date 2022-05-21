@@ -1,8 +1,15 @@
+declare var global: any;
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy-holographed/types';
-import { genesisDeployHelper, generateInitCode } from '../scripts/utils/helpers';
+import {
+  LeanHardhatRuntimeEnvironment,
+  hreSplit,
+  genesisDeployHelper,
+  generateInitCode,
+} from '../scripts/utils/helpers';
 
-const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
+const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
+  let { hre, hre2 } = hreSplit(hre1, global.__companionNetwork);
   const salt: string = '0x' + '00'.repeat(12);
 
   // HolographERC20

@@ -1,19 +1,20 @@
+declare var global: any;
 import fs from 'fs';
-import { ethers } from 'hardhat';
 import { BigNumberish, BytesLike, ContractFactory, Contract } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy-holographed/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { zeroAddress } from '../scripts/utils/helpers';
+import { LeanHardhatRuntimeEnvironment, hreSplit, zeroAddress } from '../scripts/utils/helpers';
 import Web3 from 'web3';
 
 const networks = JSON.parse(fs.readFileSync('./config/networks.json', 'utf8'));
 
-const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const accounts = await ethers.getSigners();
+const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
+  let { hre, hre2 } = hreSplit(hre1, global.__companionNetwork);
+  const accounts = await hre.ethers.getSigners();
   const deployer: SignerWithAddress = accounts[0];
 
-  const network = networks[hre.network.name];
+  const network = networks[hre.networkName];
 
   const error = function (err: string) {
     console.log(err);
@@ -22,20 +23,20 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const web3 = new Web3();
 
-  const holographFactoryProxy = await ethers.getContract('HolographFactoryProxy');
-  const holographFactory = ((await ethers.getContract('HolographFactory')) as Contract).attach(
+  const holographFactoryProxy = await hre.ethers.getContract('HolographFactoryProxy');
+  const holographFactory = ((await hre.ethers.getContract('HolographFactory')) as Contract).attach(
     holographFactoryProxy.address
   );
 
-  const holographRegistryProxy = await ethers.getContract('HolographRegistryProxy');
-  const holographRegistry = ((await ethers.getContract('HolographRegistry')) as Contract).attach(
+  const holographRegistryProxy = await hre.ethers.getContract('HolographRegistryProxy');
+  const holographRegistry = ((await hre.ethers.getContract('HolographRegistry')) as Contract).attach(
     holographRegistryProxy.address
   );
 
   const chainId = '0x' + network.holographId.toString(16).padStart(8, '0');
 
   const erc20Hash = '0x' + web3.utils.asciiToHex('HolographERC20').substring(2).padStart(64, '0');
-  const sampleErc20Artifact: ContractFactory = await ethers.getContractFactory('SampleERC20');
+  const sampleErc20Artifact: ContractFactory = await hre.ethers.getContractFactory('SampleERC20');
   const erc20Config = [
     erc20Hash, // bytes32 contractType
     chainId, // uint32 chainType
@@ -90,7 +91,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
 
   const erc721Hash = '0x' + web3.utils.asciiToHex('HolographERC721').substring(2).padStart(64, '0');
-  const sampleErc721Artifact: ContractFactory = await ethers.getContractFactory('SampleERC721');
+  const sampleErc721Artifact: ContractFactory = await hre.ethers.getContractFactory('SampleERC721');
   const erc721Config = [
     erc721Hash, // bytes32 contractType
     chainId, // uint32 chainType
@@ -144,7 +145,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
 
   const cxipErc721Hash = '0x' + web3.utils.asciiToHex('HolographERC721').substring(2).padStart(64, '0');
-  const cxipErc721Artifact: ContractFactory = await ethers.getContractFactory('CxipERC721');
+  const cxipErc721Artifact: ContractFactory = await hre.ethers.getContractFactory('CxipERC721');
   const cxipErc721Config = [
     cxipErc721Hash, // bytes32 contractType
     chainId, // uint32 chainType

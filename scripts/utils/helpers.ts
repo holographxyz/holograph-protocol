@@ -1,9 +1,143 @@
+declare var global: any;
 import Web3 from 'web3';
 import crypto from 'crypto';
-import { ethers } from 'hardhat';
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { DeployFunction, Deployment } from 'hardhat-deploy-holographed/types';
-import { BytesLike, ContractFactory, Contract } from 'ethers';
+import { EthereumProvider, Artifacts, HardhatRuntimeEnvironment } from 'hardhat/types';
+import { DeployFunction, Address, Deployment, DeploymentsExtension } from 'hardhat-deploy-holographed/types';
+import { BigNumberish, BytesLike, ContractFactory, Contract } from 'ethers';
+import type { ethers } from 'ethers';
+import type EthersT from 'ethers';
+import { HardhatEthersHelpers } from '@nomiclabs/hardhat-ethers/types';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { lazyObject } from 'hardhat/plugins';
+import {
+  getContractAt,
+  getContractFactory,
+  getSigners,
+  getSigner,
+  getContract,
+  getContractOrNull,
+  getNamedSigners,
+  getNamedSigner,
+  getSignerOrNull,
+  getNamedSignerOrNull,
+  getUnnamedSigners,
+} from '@nomiclabs/hardhat-ethers/internal/helpers';
+import type * as ProviderProxyT from '@nomiclabs/hardhat-ethers/internal/provider-proxy';
+
+export interface LeanHardhatRuntimeEnvironment {
+  networkName: string;
+  deployments: DeploymentsExtension;
+  getNamedAccounts: () => Promise<{
+    [name: string]: Address;
+  }>;
+  getUnnamedAccounts: () => Promise<string[]>;
+  getChainId(): Promise<string>;
+  provider: EthereumProvider;
+  ethers: typeof ethers & HardhatEthersHelpers;
+  artifacts: Artifacts;
+}
+
+export interface Network {
+  chain: number;
+  rpc: string;
+  holographId: number;
+  tokenName: string;
+  tokenSymbol: string;
+}
+
+export interface Networks {
+  [key: string]: Network;
+}
+
+const isDefined = function (obj: any): boolean {
+  return typeof obj !== 'undefined';
+};
+
+const l2Ethers = function (hre1: HardhatRuntimeEnvironment) {
+  let hre = { ...hre1 };
+  hre.deployments = hre1.companionNetworks['l2'].deployments;
+  hre.getNamedAccounts = hre1.companionNetworks['l2'].getNamedAccounts;
+  hre.getUnnamedAccounts = hre1.companionNetworks['l2'].getUnnamedAccounts;
+  hre.getChainId = hre1.companionNetworks['l2'].getChainId;
+  //hre.network.provider = hre1.companionNetworks['l2'].provider;
+  hre.ethers = lazyObject(() => {
+    const { createProviderProxy } =
+      require('@nomiclabs/hardhat-ethers/internal/provider-proxy') as typeof ProviderProxyT;
+
+    const { ethers } = require('ethers') as typeof EthersT;
+
+    const providerProxy = createProviderProxy(hre1.companionNetworks['l2'].provider);
+
+    return {
+      ...ethers,
+
+      // The provider wrapper should be removed once this is released
+      // https://github.com/nomiclabs/hardhat/pull/608
+      provider: providerProxy,
+
+      // We cast to any here as we hit a limitation of Function#bind and
+      // overloads. See: https://github.com/microsoft/TypeScript/issues/28582
+      getContractFactory: getContractFactory.bind(null, hre) as any,
+      getContractAt: async <T extends EthersT.Contract>(
+        nameOrAbi: string | any[],
+        address: string,
+        signer?: EthersT.Signer | string
+      ) => getContractAt<T>(hre, nameOrAbi, address, signer),
+
+      getSigners: async () => getSigners(hre),
+      getSigner: async (address) => getSigner(hre, address),
+      getSignerOrNull: async (address) => getSignerOrNull(hre, address),
+
+      getNamedSigners: async () => getNamedSigners(hre),
+      getNamedSigner: async (name) => getNamedSigner(hre, name),
+      getNamedSignerOrNull: async (name) => getNamedSignerOrNull(hre, name),
+      getUnnamedSigners: async () => getUnnamedSigners(hre),
+
+      getContract: async <T extends EthersT.Contract>(name: string, signer?: EthersT.Signer | string) =>
+        getContract<T>(hre, name, signer),
+      getContractOrNull: async <T extends EthersT.Contract>(name: string, signer?: EthersT.Signer | string) =>
+        getContractOrNull<T>(hre, name, signer),
+    };
+  });
+  return hre.ethers;
+};
+
+const hreSplit = function (
+  hre1: HardhatRuntimeEnvironment,
+  flip?: boolean
+): { hre: LeanHardhatRuntimeEnvironment; hre2: LeanHardhatRuntimeEnvironment } {
+  let hre: LeanHardhatRuntimeEnvironment = {
+    networkName: hre1.network.name,
+    deployments: hre1.deployments,
+    getNamedAccounts: hre1.getNamedAccounts,
+    getUnnamedAccounts: hre1.getUnnamedAccounts,
+    getChainId: hre1.getChainId,
+    provider: hre1.network.provider,
+    ethers: hre1.ethers,
+    artifacts: hre1.artifacts,
+  };
+  let hre2: LeanHardhatRuntimeEnvironment = isDefined(hre1.network.companionNetworks['l2'])
+    ? {
+        networkName: hre1.network.companionNetworks['l2'],
+        deployments: hre1.companionNetworks['l2'].deployments,
+        getNamedAccounts: hre1.companionNetworks['l2'].getNamedAccounts,
+        getUnnamedAccounts: hre1.companionNetworks['l2'].getUnnamedAccounts,
+        getChainId: hre1.companionNetworks['l2'].getChainId,
+        provider: hre1.companionNetworks['l2'].provider,
+        ethers: l2Ethers(hre1),
+        artifacts: hre1.artifacts,
+      }
+    : hre;
+  if (flip) {
+    let hre3: LeanHardhatRuntimeEnvironment = hre;
+    hre = hre2;
+    hre2 = hre3;
+  }
+  return {
+    hre,
+    hre2,
+  };
+};
 
 const generateInitCode = function (vars: string[], vals: any[]): string {
   const web3 = new Web3();
@@ -54,12 +188,12 @@ const isContractDeployed = function (contract: Contract | null): boolean {
 };
 
 const genesisDeriveFutureAddress = async function (
-  hre: HardhatRuntimeEnvironment,
+  hre: LeanHardhatRuntimeEnvironment,
   salt: string,
   name: string,
   initCode: string
 ): Promise<string> {
-  const { deployments, getNamedAccounts } = hre;
+  const { deployments, getNamedAccounts, ethers } = hre;
   const { deploy, deterministicCustom } = deployments;
   const { deployer } = await getNamedAccounts();
   let holographGenesis: any = await ethers.getContractOrNull('HolographGenesis');
@@ -83,12 +217,12 @@ const genesisDeriveFutureAddress = async function (
 };
 
 const genesisDeployHelper = async function (
-  hre: HardhatRuntimeEnvironment,
+  hre: LeanHardhatRuntimeEnvironment,
   salt: string,
   name: string,
   initCode: string
 ): Promise<Contract> {
-  const { deployments, getNamedAccounts } = hre;
+  const { deployments, getNamedAccounts, ethers } = hre;
   const { deploy, deterministicCustom } = deployments;
   const { deployer } = await getNamedAccounts();
   let holographGenesis: any = await ethers.getContractOrNull('HolographGenesis');
@@ -164,8 +298,9 @@ const getHolographedContractHash = async function (
   salt: string,
   initCode: string
 ): Promise<BytesLike> {
+  const hre: HardhatRuntimeEnvironment = require('hardhat');
   const web3 = new Web3();
-  const artifact: ContractFactory = await ethers.getContractFactory(contractName);
+  const artifact: ContractFactory = await hre.ethers.getContractFactory(contractName);
   const contractHash = '0x' + web3.utils.asciiToHex(contractType).substring(2).padStart(64, '0');
   const config = [
     contractHash, // bytes32 contractType
@@ -189,6 +324,9 @@ const getHolographedContractHash = async function (
 };
 
 export {
+  isDefined,
+  l2Ethers,
+  hreSplit,
   generateInitCode,
   generateDeployCode,
   zeroAddress,
