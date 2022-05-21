@@ -100,6 +100,20 @@ export interface PreTest {
   cxipErc721Enforcer: HolographERC721;
 }
 
+const animatedLoader = function (text: string) {
+  process.stdout.write('\n');
+  const symbols: string[] = ['▄▄▄', '▄▄■', '▄■▀', '■▀▀', '▀▀▀', '▀▀■', '▀■▄', '■▄▄'];
+  let counter: number = 0;
+  return setInterval(() => {
+    let symbol: string = symbols[counter];
+    counter++;
+    if (counter == symbols.length) {
+      counter = 0;
+    }
+    process.stdout.write('    ' + '\x1b[33m' + symbol + '\x1b[0m' + text + '\x1b[0m' + '\r');
+  }, 100);
+};
+
 export default async function (l2?: boolean): Promise<PreTest> {
   const web3 = new Web3();
   let { hre, hre2 } = hreSplit(hre1, l2);
@@ -108,6 +122,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
   const chainId: BytesLike = '0x' + network.holographId.toString(16).padStart(8, '0');
   const chainId2: BytesLike = '0x' + network2.holographId.toString(16).padStart(8, '0');
 
+  let loop = animatedLoader('\x1b[2m' + ' loading/deploying relevant contracts');
   await hre.deployments.fixture([
     'HolographGenesis',
     'HolographRegistry',
@@ -130,6 +145,10 @@ export default async function (l2?: boolean): Promise<PreTest> {
     'SampleERC721',
     'CxipERC721',
   ]);
+  clearInterval(loop);
+  process.stdout.write(
+    '    ' + '\x1b[32m' + '███' + '\x1b[0m' + '\x1b[2m' + ' relevant contracts loaded' + '\x1b[0m' + '\n\n'
+  );
 
   const accounts = await hre.ethers.getSigners();
   const deployer: SignerWithAddress = accounts[0];

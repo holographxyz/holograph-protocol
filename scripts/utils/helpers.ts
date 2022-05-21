@@ -251,11 +251,11 @@ const genesisDeployHelper = async function (
       saltHash: deployer + salt.substring(2),
       deployCode: generateDeployCode(salt, contractBytecode, initCode),
     });
-    console.log('future "' + name + '" address is', contractDeterministic.address);
+    deployments.log('future "' + name + '" address is', contractDeterministic.address);
     await contractDeterministic.deploy();
     contract = await ethers.getContract(name);
   } else {
-    console.log('reusing "' + name + '" at', contract?.address);
+    deployments.log('reusing "' + name + '" at', contract?.address);
   }
   if (contract == null) {
     return {} as Contract;

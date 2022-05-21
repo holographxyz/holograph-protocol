@@ -9,7 +9,7 @@ import Web3 from 'web3';
 const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   let { hre, hre2 } = hreSplit(hre1, global.__companionNetwork);
   const error = function (err: string) {
-    console.log(err);
+    hre.deployments.log(err);
     process.exit();
   };
 
@@ -27,31 +27,31 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   const erc721Hash = '0x' + web3.utils.asciiToHex('HolographERC721').substring(2).padStart(64, '0');
   if ((await holographRegistry.getContractTypeAddress(erc721Hash)) != erc721.address) {
     const erc721Tx = await holographRegistry.setContractTypeAddress(erc721Hash, erc721.address).catch(error);
-    console.log('Transaction hash:', erc721Tx.hash);
+    hre.deployments.log('Transaction hash:', erc721Tx.hash);
     await erc721Tx.wait();
-    console.log(`Registered erc721 to: ${await holographRegistry.getContractTypeAddress(erc721Hash)}`);
+    hre.deployments.log(`Registered erc721 to: ${await holographRegistry.getContractTypeAddress(erc721Hash)}`);
   } else {
-    console.log('erc721 is already registered');
+    hre.deployments.log('erc721 is already registered');
   }
 
   const erc20Hash = '0x' + web3.utils.asciiToHex('HolographERC20').substring(2).padStart(64, '0');
   if ((await holographRegistry.getContractTypeAddress(erc20Hash)) != erc20.address) {
     const erc20Tx = await holographRegistry.setContractTypeAddress(erc20Hash, erc20.address).catch(error);
-    console.log('Transaction hash:', erc20Tx.hash);
+    hre.deployments.log('Transaction hash:', erc20Tx.hash);
     await erc20Tx.wait();
-    console.log(`Registered erc20 to: ${await holographRegistry.getContractTypeAddress(erc20Hash)}`);
+    hre.deployments.log(`Registered erc20 to: ${await holographRegistry.getContractTypeAddress(erc20Hash)}`);
   } else {
-    console.log('erc20 is already registered');
+    hre.deployments.log('erc20 is already registered');
   }
 
   const pa1dHash = '0x' + web3.utils.asciiToHex('PA1D').substring(2).padStart(64, '0');
   if ((await holographRegistry.getContractTypeAddress(pa1dHash)) != pa1d.address) {
     const pa1dTx = await holographRegistry.setContractTypeAddress(pa1dHash, pa1d.address).catch(error);
-    console.log('Transaction hash:', pa1dTx.hash);
+    hre.deployments.log('Transaction hash:', pa1dTx.hash);
     await pa1dTx.wait();
-    console.log(`Registered pa1d to: ${await holographRegistry.getContractTypeAddress(pa1dHash)}`);
+    hre.deployments.log(`Registered pa1d to: ${await holographRegistry.getContractTypeAddress(pa1dHash)}`);
   } else {
-    console.log('pa1d is already registered');
+    hre.deployments.log('pa1d is already registered');
   }
 };
 

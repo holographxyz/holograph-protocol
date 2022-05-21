@@ -3,12 +3,12 @@ import { expect, assert } from 'chai';
 import { PreTest } from './utils';
 import setup from './utils';
 
-describe('Testing the Holograph protocol (L1)', async () => {
+describe('Validating the Holograph Protocol deployments (L2)', async () => {
   let _: PreTest;
 
   before(async () => {
-    global.__companionNetwork = false;
-    _ = await setup();
+    global.__companionNetwork = true;
+    _ = await setup(true);
   });
 
   after(async () => {

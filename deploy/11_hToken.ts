@@ -17,7 +17,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   const network = networks[hre.networkName];
 
   const error = function (err: string) {
-    console.log(err);
+    hre.deployments.log(err);
     process.exit();
   };
 
@@ -38,7 +38,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   let hTokenAddress = await holographRegistry.getHToken(chainId);
 
   if (hTokenAddress == zeroAddress()) {
-    console.log('need to deploy "hToken" for chain:', chainId);
+    hre.deployments.log('need to deploy "hToken" for chain:', chainId);
 
     const hTokenArtifact: ContractFactory = await hre.ethers.getContractFactory('hToken');
 
@@ -94,9 +94,9 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     const setHTokenTx = await holographRegistry.setHToken(chainId, hTokenAddress);
     await setHTokenTx.wait();
 
-    console.log('deployed "hToken" at:', await holographRegistry.getHToken(chainId));
+    hre.deployments.log('deployed "hToken" at:', await holographRegistry.getHToken(chainId));
   } else {
-    console.log('reusing "hToken" at:', hTokenAddress);
+    hre.deployments.log('reusing "hToken" at:', hTokenAddress);
   }
 };
 

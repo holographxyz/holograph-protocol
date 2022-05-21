@@ -17,7 +17,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   const network = networks[hre.networkName];
 
   const error = function (err: string) {
-    console.log(err);
+    hre.deployments.log(err);
     process.exit();
   };
 
@@ -72,7 +72,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   );
   let sampleErc20Address = await holographRegistry.getHolographedHashAddress(erc20ConfigHash);
   if (sampleErc20Address == zeroAddress()) {
-    console.log('need to deploy "SampleERC20" for chain:', chainId);
+    hre.deployments.log('need to deploy "SampleERC20" for chain:', chainId);
     const sig = await deployer.signMessage(erc20ConfigHash);
     const signature: { r: BytesLike; s: BytesLike; v: BigNumberish } = {
       r: '0x' + sig.substring(2, 66),
@@ -85,9 +85,12 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       throw new Error('BridgeableContractDeployed event not fired');
     }
     sampleErc20Address = deployResult.events[0].args[0];
-    console.log('deployed "SampleERC20" at:', await holographRegistry.getHolographedHashAddress(erc20ConfigHash));
+    hre.deployments.log(
+      'deployed "SampleERC20" at:',
+      await holographRegistry.getHolographedHashAddress(erc20ConfigHash)
+    );
   } else {
-    console.log('reusing "SampleERC20" at:', sampleErc20Address);
+    hre.deployments.log('reusing "SampleERC20" at:', sampleErc20Address);
   }
 
   const erc721Hash = '0x' + web3.utils.asciiToHex('HolographERC721').substring(2).padStart(64, '0');
@@ -126,7 +129,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   );
   let sampleErc721Address = await holographRegistry.getHolographedHashAddress(erc721ConfigHash);
   if (sampleErc721Address == zeroAddress()) {
-    console.log('need to deploy "SampleERC721" for chain:', chainId);
+    hre.deployments.log('need to deploy "SampleERC721" for chain:', chainId);
     const sig = await deployer.signMessage(erc721ConfigHash);
     const signature: { r: BytesLike; s: BytesLike; v: BigNumberish } = {
       r: '0x' + sig.substring(2, 66),
@@ -139,9 +142,12 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       throw new Error('BridgeableContractDeployed event not fired');
     }
     sampleErc721Address = deployResult.events[0].args[0];
-    console.log('deployed "SampleERC721" at:', await holographRegistry.getHolographedHashAddress(erc721ConfigHash));
+    hre.deployments.log(
+      'deployed "SampleERC721" at:',
+      await holographRegistry.getHolographedHashAddress(erc721ConfigHash)
+    );
   } else {
-    console.log('reusing "SampleERC721" at:', sampleErc721Address);
+    hre.deployments.log('reusing "SampleERC721" at:', sampleErc721Address);
   }
 
   const cxipErc721Hash = '0x' + web3.utils.asciiToHex('HolographERC721').substring(2).padStart(64, '0');
@@ -180,7 +186,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   );
   let cxipErc721Address = await holographRegistry.getHolographedHashAddress(cxipErc721ConfigHash);
   if (cxipErc721Address == zeroAddress()) {
-    console.log('need to deploy "CxipERC721" for chain:', chainId);
+    hre.deployments.log('need to deploy "CxipERC721" for chain:', chainId);
     const sig = await deployer.signMessage(cxipErc721ConfigHash);
     const signature: { r: BytesLike; s: BytesLike; v: BigNumberish } = {
       r: '0x' + sig.substring(2, 66),
@@ -193,9 +199,12 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       throw new Error('BridgeableContractDeployed event not fired');
     }
     cxipErc721Address = deployResult.events[0].args[0];
-    console.log('deployed "CxipERC721" at:', await holographRegistry.getHolographedHashAddress(cxipErc721ConfigHash));
+    hre.deployments.log(
+      'deployed "CxipERC721" at:',
+      await holographRegistry.getHolographedHashAddress(cxipErc721ConfigHash)
+    );
   } else {
-    console.log('reusing "CxipERC721" at:', cxipErc721Address);
+    hre.deployments.log('reusing "CxipERC721" at:', cxipErc721Address);
   }
 };
 

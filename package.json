@@ -28,6 +28,7 @@
     "prettier:fix": "prettier --loglevel error --ignore-path .gitignore --write ."
   },
   "dependencies": {
+    "chai-ethers": "^0.0.1",
     "hardhat-deploy-holographed": "https://github.com/cxip-labs/hardhat-deploy-holographed.git",
     "hardhat-holograph-contract-builder": "https://github.com/cxip-labs/hardhat-holograph-contract-builder.git",
     "path": "^0.12.7",

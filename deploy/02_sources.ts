@@ -39,7 +39,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       ]
     )
   );
-  console.log('the futureHolographAddress is', futureHolographAddress);
+  hre.deployments.log('the future "Holograph" address is', futureHolographAddress);
 
   // HolographRegistry
   let holographRegistry = await genesisDeployHelper(

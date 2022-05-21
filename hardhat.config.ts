@@ -1,8 +1,8 @@
 import fs from 'fs';
-import '@nomiclabs/hardhat-waffle';
 import '@typechain/hardhat';
 import 'hardhat-gas-reporter';
 import 'hardhat-deploy-holographed';
+import '@nomiclabs/hardhat-waffle';
 import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-etherscan';
 import { types, task, HardhatUserConfig } from 'hardhat/config';
