@@ -634,4 +634,6 @@ describe('Testing the Holograph ERC20 Enforcer (L1)', async function () {
   // "sourceMint(address,uint256)"
   // "sourceMintBatch(address[],uint256[])"
   // "sourceTransfer(address,address,uint256)"
+
+  // SHOULD ALSO TEST RE-ENTRANCY WITH A MOCK RECEIVER THAT ATTEMPTS A RE-ENTRANT CALL MIDWAY
 });
