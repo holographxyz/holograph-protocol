@@ -655,10 +655,6 @@ describe('Testing the Holograph ERC20 Enforcer (L1)', async function () {
 
   describe('Source tests', async function () {
     describe('Minting', async function () {
-      // "sourceBurn(address,uint256)"
-    });
-
-    describe('Burning', async function () {
       // "sourceMint(address,uint256)"
       // "sourceMintBatch(address[],uint256[])"
     });
@@ -666,15 +662,19 @@ describe('Testing the Holograph ERC20 Enforcer (L1)', async function () {
     describe('Transferring', async function () {
       // "sourceTransfer(address,address,uint256)"
     });
+
+    describe('Burning', async function () {
+      // "sourceBurn(address,uint256)"
+    });
   });
 
   describe('Basic bridge tests', async function () {
-    describe('Bridge IN', async function () {
-      // "holographBridgeIn(uint32,address,address,uint256,bytes)"
-    });
-
     describe('Bridge OUT', async function () {
       // "holographBridgeOut(uint32,address,address,address,uint256)"
+    });
+
+    describe('Bridge IN', async function () {
+      // "holographBridgeIn(uint32,address,address,uint256,bytes)"
     });
   });
 
