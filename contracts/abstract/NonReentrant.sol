@@ -104,9 +104,7 @@
 pragma solidity 0.8.13;
 
 abstract contract NonReentrant {
-  constructor() {
-    setStatus(1);
-  }
+  constructor() {}
 
   modifier nonReentrant() {
     require(getStatus() != 2, "ERC20: reentrant call");

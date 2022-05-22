@@ -55,13 +55,22 @@ const isDefined = function (obj: any): boolean {
   return typeof obj !== 'undefined';
 };
 
+const randomHex = function (bytes: number): string {
+  let text: string = '';
+  for (let i: number = 0; i < bytes; i++) {
+    text += Math.floor(Math.random() * 255)
+      .toString(16)
+      .padStart(2, '0');
+  }
+  return '0x' + text;
+};
+
 const l2Ethers = function (hre1: HardhatRuntimeEnvironment) {
   let hre = { ...hre1 };
   hre.deployments = hre1.companionNetworks['l2'].deployments;
   hre.getNamedAccounts = hre1.companionNetworks['l2'].getNamedAccounts;
   hre.getUnnamedAccounts = hre1.companionNetworks['l2'].getUnnamedAccounts;
   hre.getChainId = hre1.companionNetworks['l2'].getChainId;
-  //hre.network.provider = hre1.companionNetworks['l2'].provider;
   hre.ethers = lazyObject(() => {
     const { createProviderProxy } =
       require('@nomiclabs/hardhat-ethers/internal/provider-proxy') as typeof ProviderProxyT;
@@ -363,6 +372,7 @@ const getHolographedContractHash = async function (
 
 export {
   isDefined,
+  randomHex,
   l2Ethers,
   hreSplit,
   functionHash,

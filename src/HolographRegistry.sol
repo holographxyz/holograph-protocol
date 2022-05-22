@@ -45,7 +45,7 @@ contract HolographRegistry is Admin, Initializable {
   /*
    * @dev Constructor is left empty and only the admin address is set.
    */
-  constructor() Admin(false) {}
+  constructor() {}
 
   /*
    * @dev An array of initially reserved contract types for admin only to set.
@@ -54,6 +54,7 @@ contract HolographRegistry is Admin, Initializable {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
     (address holograph, bytes32[] memory reservedTypes) = abi.decode(data, (address, bytes32[]));
     assembly {
+      sstore(precomputeslot("eip1967.Holograph.Bridge.admin"), origin())
       sstore(precomputeslot("eip1967.Holograph.Bridge.holograph"), holograph)
     }
     for (uint256 i = 0; i < reservedTypes.length; i++) {

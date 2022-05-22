@@ -8,13 +8,14 @@ import "../abstract/Initializable.sol";
 import "../interface/IInitializable.sol";
 
 contract HolographFactoryProxy is Admin, Initializable {
-  constructor() Admin(false) {}
+  constructor() {}
 
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
     (address factory, bytes memory initCode) = abi.decode(data, (address, bytes));
     assembly {
       sstore(precomputeslot("eip1967.Holograph.Bridge.factory"), factory)
+      sstore(precomputeslot("eip1967.Holograph.Bridge.admin"), origin())
     }
     (bool success, bytes memory returnData) = factory.delegatecall(abi.encodeWithSignature("init(bytes)", initCode));
     bytes4 selector = abi.decode(returnData, (bytes4));

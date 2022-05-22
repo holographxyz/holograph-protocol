@@ -142,10 +142,14 @@ contract PA1D is Admin, Owner, Initializable {
    * @notice Constructor is empty and not utilised.
    * @dev Since the smart contract is being used inside of a fallback context, the constructor function is not being used.
    */
-  constructor() Admin(true) Owner(true) {}
+  constructor() {}
 
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "PA1D: already initialized");
+    assembly {
+      sstore(0x5705f5753aa4f617eef2cae1dada3d3355e9387b04d19191f09b545e684ca50d, caller())
+      sstore(0x89b583059fdb0b2e807359b64eba1a8a1e6d099210701fafe6dad5dd2cd64fb8, caller())
+    }
     (address receiver, uint256 bp) = abi.decode(data, (address, uint256));
     setRoyalties(0, payable(receiver), bp);
     _setInitialized();

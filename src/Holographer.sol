@@ -16,7 +16,7 @@ contract Holographer is Admin, Initializable {
   /*
    * @dev Constructor is left empty and only the admin address is set.
    */
-  constructor() Admin(true) {}
+  constructor() {}
 
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPHER: already initialized");
@@ -24,6 +24,7 @@ contract Holographer is Admin, Initializable {
     (uint32 originChain, address holograph, address secureStorage, bytes32 contractType, address sourceContract) = abi
       .decode(encoded, (uint32, address, address, bytes32, address));
     assembly {
+      sstore(precomputeslot("eip1967.Holograph.Bridge.admin"), caller())
       sstore(precomputeslot("eip1967.Holograph.Bridge.originChain"), originChain)
       sstore(precomputeslot("eip1967.Holograph.Bridge.holograph"), holograph)
       sstore(precomputeslot("eip1967.Holograph.Bridge.secureStorage"), secureStorage)

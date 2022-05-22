@@ -201,7 +201,7 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
    * @notice Constructor is empty and not utilised.
    * @dev To make exact CREATE2 deployment possible, constructor is left empty. We utilize the "init" function instead.
    */
-  constructor() Admin(false) Owner(true) {}
+  constructor() {}
 
   /**
    * @notice Gets a base64 encoded contract JSON file.
@@ -389,6 +389,10 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
    */
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "ERC721: already initialized");
+    assembly {
+      sstore(0x5705f5753aa4f617eef2cae1dada3d3355e9387b04d19191f09b545e684ca50d, origin())
+      sstore(0x89b583059fdb0b2e807359b64eba1a8a1e6d099210701fafe6dad5dd2cd64fb8, caller())
+    }
     (
       string memory contractName,
       string memory contractSymbol,

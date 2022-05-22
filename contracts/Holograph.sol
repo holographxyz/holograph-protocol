@@ -109,7 +109,7 @@ import "./abstract/Initializable.sol";
 import "./interface/IInitializable.sol";
 
 contract Holograph is Admin, Initializable {
-  constructor() Admin(false) {}
+  constructor() {}
 
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
@@ -118,6 +118,7 @@ contract Holograph is Admin, Initializable {
       (uint32, address, address, address, address)
     );
     assembly {
+      sstore(0x5705f5753aa4f617eef2cae1dada3d3355e9387b04d19191f09b545e684ca50d, origin())
       sstore(0xf659863303d91045cf6f5789ae687c591017a1efd53ebb2eec518fb10873ecb8, chainType)
       sstore(0x460c4059d72b144253e5fc4e2aacbae2bcd6362c67862cd58ecbab0e7b10c349, registry)
       sstore(0x7eefc8e705e14d34b5d1d6c3ea7f4e20cecb5956b182bac952a455d9372b87e2, factory)

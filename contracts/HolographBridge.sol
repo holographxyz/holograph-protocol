@@ -130,7 +130,7 @@ contract HolographBridge is Admin, Initializable {
   /*
    * @dev Constructor is left empty and only the admin address is set.
    */
-  constructor() Admin(false) {}
+  constructor() {}
 
   modifier onlyOperator() {
     // ultimately the goal is to do a sanity check that msg.sender is currently holding an operator license
@@ -141,6 +141,7 @@ contract HolographBridge is Admin, Initializable {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
     (address holograph, address registry, address factory) = abi.decode(data, (address, address, address));
     assembly {
+      sstore(0x5705f5753aa4f617eef2cae1dada3d3355e9387b04d19191f09b545e684ca50d, origin())
       sstore(0x1eee493315beeac80829afd0aaa340f3821cabe68571a2743478e81638a3d94d, holograph)
       sstore(0x460c4059d72b144253e5fc4e2aacbae2bcd6362c67862cd58ecbab0e7b10c349, registry)
       sstore(0x7eefc8e705e14d34b5d1d6c3ea7f4e20cecb5956b182bac952a455d9372b87e2, factory)

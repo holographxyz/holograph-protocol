@@ -188,14 +188,9 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
   mapping(address => Counters.Counter) private _nonces;
 
   /**
-   * @dev Event emitted when contract owner is changed.
-   */
-  event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
-
-  /**
    * @dev Constructor does not accept any parameters.
    */
-  constructor() Admin(false) Owner(true) NonReentrant() {}
+  constructor() {}
 
   /**
    * @notice Initializes the collection.
@@ -203,6 +198,11 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
    */
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "ERC20: already initialized");
+    assembly {
+      sstore(0x5bf044ad06f1ee9ee2fcd7caf4e944279b877408c76c4515cca6b4e937b01334, 1)
+      sstore(0x5705f5753aa4f617eef2cae1dada3d3355e9387b04d19191f09b545e684ca50d, origin())
+      sstore(0x89b583059fdb0b2e807359b64eba1a8a1e6d099210701fafe6dad5dd2cd64fb8, caller())
+    }
     (
       string memory contractName,
       string memory contractSymbol,

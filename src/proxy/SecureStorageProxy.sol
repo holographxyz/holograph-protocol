@@ -8,13 +8,14 @@ import "../abstract/Initializable.sol";
 import "../interface/IInitializable.sol";
 
 contract SecureStorageProxy is Admin, Initializable {
-  constructor() Admin(true) {}
+  constructor() {}
 
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
     (address secureStorage, bytes memory initCode) = abi.decode(data, (address, bytes));
     assembly {
       sstore(precomputeslot("eip1967.Holograph.Bridge.secureStorage"), secureStorage)
+      sstore(precomputeslot("eip1967.Holograph.Bridge.admin"), origin())
     }
     (bool success, bytes memory returnData) = secureStorage.delegatecall(
       abi.encodeWithSignature("init(bytes)", initCode)

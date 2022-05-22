@@ -3,18 +3,7 @@
 /*SOLIDITY_COMPILER_VERSION*/
 
 abstract contract Admin {
-  constructor(bool useSender) {
-    address adminAddress = (useSender ? msg.sender : tx.origin);
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.admin')) - 1);
-    assembly {
-      sstore(
-        /* slot */
-        precomputeslot("eip1967.Holograph.Bridge.admin"),
-        adminAddress
-      )
-    }
-  }
+  constructor() {}
 
   modifier onlyAdmin() {
     require(msg.sender == getAdmin(), "HOLOGRAPH: admin only function");

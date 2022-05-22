@@ -3,18 +3,12 @@
 /*SOLIDITY_COMPILER_VERSION*/
 
 abstract contract Owner {
-  constructor(bool useSender) {
-    address ownerAddress = (useSender ? msg.sender : tx.origin);
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.owner')) - 1);
-    assembly {
-      sstore(
-        /* slot */
-        precomputeslot("eip1967.Holograph.Bridge.owner"),
-        ownerAddress
-      )
-    }
-  }
+  /**
+   * @dev Event emitted when contract owner is changed.
+   */
+  event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+
+  constructor() {}
 
   modifier onlyOwner() virtual {
     require(msg.sender == getOwner(), "HOLOGRAPH: owner only function");
@@ -39,6 +33,7 @@ abstract contract Owner {
   function setOwner(address ownerAddress) public onlyOwner {
     // The slot hash has been precomputed for gas optimizaion
     // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.owner')) - 1);
+    address previousOwner = getOwner();
     assembly {
       sstore(
         /* slot */
@@ -46,6 +41,7 @@ abstract contract Owner {
         ownerAddress
       )
     }
+    emit OwnershipTransferred(previousOwner, ownerAddress);
   }
 
   function transferOwnership(address newOwner) public onlyOwner {
