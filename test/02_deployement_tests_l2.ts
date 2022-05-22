@@ -3,7 +3,7 @@ import { expect, assert } from 'chai';
 import { PreTest } from './utils';
 import setup from './utils';
 
-describe('Validating the Holograph Protocol deployments (L2)', async () => {
+describe.skip('Validating the Holograph Protocol deployments (L2)', async () => {
   let _: PreTest;
 
   before(async () => {

@@ -188,7 +188,7 @@ contract ERC20Mock is
     uint8 contractDecimals,
     string memory domainSeperator,
     string memory domainVersion
-  ) EIP712(domainSeperator, domainVersion) {
+  ) {
     _name = contractName;
     _symbol = contractSymbol;
     _decimals = contractDecimals;
@@ -243,6 +243,7 @@ contract ERC20Mock is
     _supportedInterfaces[
       ERC20Permit.permit.selector ^ ERC20Permit.nonces.selector ^ ERC20Permit.DOMAIN_SEPARATOR.selector
     ] = true;
+    _eip712_init(domainSeperator, domainVersion);
   }
 
   /*

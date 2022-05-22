@@ -11,7 +11,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
 
   const mockErc20Tokens = await deploy('ERC20Mock', {
     from: deployer,
-    args: ['Wrapped ETH (MOCK)', 'WETHmock', 18, 'DomainSeperator', '1'],
+    args: ['Wrapped ETH (MOCK)', 'WETHmock', 18, 'ERC20Mock', '1'],
     log: true,
   });
 };

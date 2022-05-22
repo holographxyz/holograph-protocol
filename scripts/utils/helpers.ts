@@ -49,6 +49,8 @@ export interface Networks {
   [key: string]: Network;
 }
 
+const web3 = new Web3();
+
 const isDefined = function (obj: any): boolean {
   return typeof obj !== 'undefined';
 };
@@ -139,13 +141,50 @@ const hreSplit = function (
   };
 };
 
+const functionHash = function (func: string): string {
+  return web3.eth.abi.encodeFunctionSignature(func);
+};
+
+const bitwiseXorHexString = function (pinBlock1: string, pinBlock2: string): string {
+  pinBlock1 = pinBlock1.substring(2);
+  pinBlock2 = pinBlock2.substring(2);
+  let result: string = '';
+  for (let index: number = 0; index < 8; index++) {
+    let temp: string = (parseInt(pinBlock1.charAt(index), 16) ^ parseInt(pinBlock2.charAt(index), 16))
+      .toString(16)
+      .toLowerCase();
+    result += temp;
+  }
+  return '0x' + result;
+};
+
+const XOR = function (hashes: string[]): string {
+  let output: string = '0x00000000';
+  for (let i: number = 0, l: number = hashes.length; i < l; i++) {
+    output = bitwiseXorHexString(output, hashes[i]);
+  }
+  return output;
+};
+
+const buildDomainSeperator = function (chainId: number, name: string, version: string, address: string): string {
+  let nameHash: string = web3.utils.keccak256(web3.utils.utf8ToHex(name));
+  let versionHash: string = web3.utils.keccak256(web3.utils.utf8ToHex(version));
+  let typeHash: string = web3.utils.keccak256(
+    web3.utils.utf8ToHex('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)')
+  );
+  return web3.utils.keccak256(
+    web3.eth.abi.encodeParameters(
+      ['bytes32', 'bytes32', 'bytes32', 'uint256', 'address'],
+      [typeHash, nameHash, versionHash, chainId, address]
+    )
+  );
+};
+
 const generateInitCode = function (vars: string[], vals: any[]): string {
-  const web3 = new Web3();
   return web3.eth.abi.encodeParameters(vars, vals);
 };
 
 const generateDeployCode = function (salt: string, byteCode: string, initCode: string): string {
-  const web3 = new Web3();
   return web3.eth.abi.encodeFunctionCall(
     {
       name: 'deploy',
@@ -299,7 +338,6 @@ const getHolographedContractHash = async function (
   initCode: string
 ): Promise<BytesLike> {
   const hre: HardhatRuntimeEnvironment = require('hardhat');
-  const web3 = new Web3();
   const artifact: ContractFactory = await hre.ethers.getContractFactory(contractName);
   const contractHash = '0x' + web3.utils.asciiToHex(contractType).substring(2).padStart(64, '0');
   const config = [
@@ -327,6 +365,9 @@ export {
   isDefined,
   l2Ethers,
   hreSplit,
+  functionHash,
+  XOR,
+  buildDomainSeperator,
   generateInitCode,
   generateDeployCode,
   zeroAddress,

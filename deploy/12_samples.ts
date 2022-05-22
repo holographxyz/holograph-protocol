@@ -43,12 +43,14 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     '0x' + '00'.repeat(32), // bytes32 salt
     sampleErc20Artifact.bytecode, // bytes byteCode
     web3.eth.abi.encodeParameters(
-      ['string', 'string', 'uint8', 'uint256', 'bytes'],
+      ['string', 'string', 'uint8', 'uint256', 'string', 'string', 'bytes'],
       [
         'Sample ERC20 Token', // string memory contractName
         'SMPL', // string memory contractSymbol
         18, // uint8 decimals
         '0x' + '00'.repeat(32), // uint256 eventConfig
+        'Sample ERC20 Token', // string domainSeperator
+        '1', // string domainVersion
         web3.eth.abi.encodeParameters(
           ['address', 'uint16'],
           [

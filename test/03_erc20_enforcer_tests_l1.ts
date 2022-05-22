@@ -3,7 +3,7 @@ import { expect, assert } from 'chai';
 import { PreTest } from './utils';
 import setup from './utils';
 import { BigNumberish, BytesLike } from 'ethers';
-import { zeroAddress } from '../scripts/utils/helpers';
+import { zeroAddress, functionHash, XOR, buildDomainSeperator } from '../scripts/utils/helpers';
 
 import {
   CxipERC721,
@@ -55,7 +55,154 @@ describe('Testing the Holograph ERC20 Enforcer (L1)', async function () {
 
   afterEach(async function () {});
 
-  describe('Check that deployed ERC20 token contract data is correct', async function () {
+  describe('Check interfaces', async function () {
+    describe('ERC165', async function () {
+      it('ERC165 interface supported', async function () {
+        expect(await ERC20.supportsInterface(functionHash('supportsInterface(bytes4)'))).to.be.true;
+      });
+    });
+
+    describe('ERC20', async function () {
+      it('allowance supported', async function () {
+        expect(await ERC20.supportsInterface(functionHash('allowance(address,address)'))).to.be.true;
+      });
+
+      it('approve supported', async function () {
+        expect(await ERC20.supportsInterface(functionHash('approve(address,uint256)'))).to.be.true;
+      });
+
+      it('balanceOf supported', async function () {
+        expect(await ERC20.supportsInterface(functionHash('balanceOf(address)'))).to.be.true;
+      });
+
+      it('totalSupply supported', async function () {
+        expect(await ERC20.supportsInterface(functionHash('totalSupply()'))).to.be.true;
+      });
+
+      it('transfer supported', async function () {
+        expect(await ERC20.supportsInterface(functionHash('transfer(address,uint256)'))).to.be.true;
+      });
+
+      it('transferFrom supported', async function () {
+        expect(await ERC20.supportsInterface(functionHash('transferFrom(address,address,uint256)'))).to.be.true;
+      });
+
+      it('ERC20 interface supported', async function () {
+        expect(
+          await ERC20.supportsInterface(
+            XOR([
+              functionHash('allowance(address,address)'),
+              functionHash('approve(address,uint256)'),
+              functionHash('balanceOf(address)'),
+              functionHash('totalSupply()'),
+              functionHash('transfer(address,uint256)'),
+              functionHash('transferFrom(address,address,uint256)'),
+            ])
+          )
+        ).to.be.true;
+      });
+    });
+
+    describe('ERC20Metadata', async function () {
+      it('name supported', async function () {
+        expect(await ERC20.supportsInterface(functionHash('name()'))).to.be.true;
+      });
+
+      it('symbol supported', async function () {
+        expect(await ERC20.supportsInterface(functionHash('symbol()'))).to.be.true;
+      });
+
+      it('decimals supported', async function () {
+        expect(await ERC20.supportsInterface(functionHash('decimals()'))).to.be.true;
+      });
+
+      it('ERC20Metadata interface supported', async function () {
+        expect(
+          await ERC20.supportsInterface(
+            XOR([functionHash('name()'), functionHash('symbol()'), functionHash('decimals()')])
+          )
+        ).to.be.true;
+      });
+    });
+
+    describe('ERC20Burnable', async function () {
+      it('burn supported', async function () {
+        expect(await ERC20.supportsInterface(functionHash('burn(uint256)'))).to.be.true;
+      });
+
+      it('burnFrom supported', async function () {
+        expect(await ERC20.supportsInterface(functionHash('burnFrom(address,uint256)'))).to.be.true;
+      });
+
+      it('ERC20Burnable interface supported', async function () {
+        expect(
+          await ERC20.supportsInterface(XOR([functionHash('burn(uint256)'), functionHash('burnFrom(address,uint256)')]))
+        ).to.be.true;
+      });
+    });
+
+    describe('ERC20Safer', async function () {
+      it('safeTransfer supported', async function () {
+        expect(await ERC20.supportsInterface(functionHash('safeTransfer(address,uint256)'))).to.be.true;
+      });
+
+      it('safeTransfer (with bytes) supported', async function () {
+        expect(await ERC20.supportsInterface(functionHash('safeTransfer(address,uint256,bytes)'))).to.be.true;
+      });
+
+      it('safeTransferFrom supported', async function () {
+        expect(await ERC20.supportsInterface(functionHash('safeTransferFrom(address,address,uint256)'))).to.be.true;
+      });
+
+      it('safeTransferFrom (with bytes) supported', async function () {
+        expect(await ERC20.supportsInterface(functionHash('safeTransferFrom(address,address,uint256,bytes)'))).to.be
+          .true;
+      });
+
+      it('ERC20Safer interface supported', async function () {
+        expect(
+          await ERC20.supportsInterface(
+            XOR([
+              functionHash('safeTransfer(address,uint256)'),
+              functionHash('safeTransfer(address,uint256,bytes)'),
+              functionHash('safeTransferFrom(address,address,uint256)'),
+              functionHash('safeTransferFrom(address,address,uint256,bytes)'),
+            ])
+          )
+        ).to.be.true;
+      });
+    });
+
+    describe('ERC20Permit', async function () {
+      it('permit supported', async function () {
+        expect(
+          await ERC20.supportsInterface(functionHash('permit(address,address,uint256,uint256,uint8,bytes32,bytes32)'))
+        ).to.be.true;
+      });
+
+      it('nonces supported', async function () {
+        expect(await ERC20.supportsInterface(functionHash('nonces(address)'))).to.be.true;
+      });
+
+      it('DOMAIN_SEPARATOR supported', async function () {
+        expect(await ERC20.supportsInterface(functionHash('DOMAIN_SEPARATOR()'))).to.be.true;
+      });
+
+      it('ERC20Permit interface supported', async function () {
+        expect(
+          await ERC20.supportsInterface(
+            XOR([
+              functionHash('permit(address,address,uint256,uint256,uint8,bytes32,bytes32)'),
+              functionHash('nonces(address)'),
+              functionHash('DOMAIN_SEPARATOR()'),
+            ])
+          )
+        ).to.be.true;
+      });
+    });
+  });
+
+  describe('Test ERC20Metadata', async function () {
     describe('token name:', async function () {
       it('should return "' + tokenName + '" for token name', async function () {
         expect(await ERC20.name()).to.equal(tokenName);
@@ -97,7 +244,7 @@ describe('Testing the Holograph ERC20 Enforcer (L1)', async function () {
     });
   });
 
-  describe('Test token transfers', async function () {
+  describe('Test ERC20', async function () {
     describe('token approvals', async function () {
       const maxValue: BytesLike = '0x' + 'ff'.repeat(32);
       const halfValue: BytesLike = '0x' + '00'.repeat(16) + 'ff'.repeat(16);
@@ -237,7 +384,7 @@ describe('Testing the Holograph ERC20 Enforcer (L1)', async function () {
     });
   });
 
-  describe('Test token burning', async function () {
+  describe('Test ERC20Burnable', async function () {
     it('should fail burning more tokens than current balance', async function () {
       await expect(ERC20.connect(_.wallet1).burn(tokensWei)).to.be.revertedWith('ERC20: amount exceeds balance');
     });
@@ -267,6 +414,16 @@ describe('Testing the Holograph ERC20 Enforcer (L1)', async function () {
         .to.emit(ERC20, 'Transfer')
         .withArgs(_.deployer.address, zeroAddress(), tokensWei);
       expect(await ERC20.totalSupply()).to.equal(0);
+    });
+  });
+
+  describe('Test ERC20Permit', async function () {
+    describe('Check domain seperator', async function () {
+      it('should return correct domain seperator', async function () {
+        expect(await ERC20.DOMAIN_SEPARATOR()).to.equal(
+          buildDomainSeperator(_.network.chain, 'Sample ERC20 Token', '1', ERC20.address)
+        );
+      });
     });
   });
 });

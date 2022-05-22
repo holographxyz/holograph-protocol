@@ -94,7 +94,7 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
   /**
    * @dev Constructor does not accept any parameters.
    */
-  constructor() Admin(false) Owner(true) NonReentrant() EIP712("DomainSeperatorHere", "1") {}
+  constructor() Admin(false) Owner(true) NonReentrant() {}
 
   /**
    * @notice Initializes the collection.
@@ -107,8 +107,10 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
       string memory contractSymbol,
       uint8 contractDecimals,
       uint256 eventConfig,
+      string memory domainSeperator,
+      string memory domainVersion,
       bytes memory initCode
-    ) = abi.decode(data, (string, string, uint8, uint256, bytes));
+    ) = abi.decode(data, (string, string, uint8, uint256, string, string, bytes));
     _name = contractName;
     _symbol = contractSymbol;
     _decimals = contractDecimals;
@@ -173,6 +175,7 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
     ] = true;
 
     _setInitialized();
+    _eip712_init(domainSeperator, domainVersion);
     return IInitializable.init.selector;
   }
 
