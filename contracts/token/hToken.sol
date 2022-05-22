@@ -109,6 +109,7 @@ import "../interface/ERC20.sol";
 import "../interface/ERC20Holograph.sol";
 import "../interface/IHolograph.sol";
 import "../interface/IHolographer.sol";
+import "../interface/Ownable.sol";
 
 import "../library/Strings.sol";
 
@@ -118,7 +119,7 @@ import "../library/Strings.sol";
  * @notice A smart contract for minting and managing Holograph's Bridgeable ERC20 Tokens.
  * @dev The entire logic and functionality of the smart contract is self-contained.
  */
-contract hToken is ERC20H {
+contract hToken is ERC20H, Ownable {
   /*
    * @dev Address of initial creator/owner of the contract.
    */
@@ -170,8 +171,8 @@ contract hToken is ERC20H {
    * @dev Special function to allow a one time initialisation on deployment.
    */
   function init(bytes memory data) external override returns (bytes4) {
-    (address owner, uint16 fee) = abi.decode(data, (address, uint16));
-    _owner = owner;
+    (address contractOwner, uint16 fee) = abi.decode(data, (address, uint16));
+    _owner = contractOwner;
     _feeBp = fee;
     // run underlying initializer logic
     return _init(data);
@@ -315,5 +316,17 @@ contract hToken is ERC20H {
     bool supported
   ) external onlyHolographer onlyOwner(msgSender) {
     _supportedWrappers[token] = supported;
+  }
+
+  function owner() external view returns (address) {
+    return _owner;
+  }
+
+  function isOwner() external view returns (bool) {
+    return msg.sender == _owner;
+  }
+
+  function isOwner(address wallet) external view returns (bool) {
+    return wallet == _owner;
   }
 }

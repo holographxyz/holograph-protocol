@@ -138,11 +138,7 @@ abstract contract ERC20H is Initializable, HolographedERC20 {
     require(!_isInitialized(), "ERC20: already initialized");
     address _holographer = msg.sender;
     assembly {
-      sstore(
-        /* slot */
-        0x6e5f8ca8411e7bcc0b4514ebbbdd1e5a67471d01255657bdeed111c1c4204aec,
-        _holographer
-      )
+      sstore(0x6e5f8ca8411e7bcc0b4514ebbbdd1e5a67471d01255657bdeed111c1c4204aec, _holographer)
     }
     _setInitialized();
     return IInitializable.init.selector;
@@ -153,10 +149,7 @@ abstract contract ERC20H is Initializable, HolographedERC20 {
    */
   function holographer() internal view returns (address _holographer) {
     assembly {
-      _holographer := sload(
-        /* slot */
-        0x6e5f8ca8411e7bcc0b4514ebbbdd1e5a67471d01255657bdeed111c1c4204aec
-      )
+      _holographer := sload(0x6e5f8ca8411e7bcc0b4514ebbbdd1e5a67471d01255657bdeed111c1c4204aec)
     }
   }
 

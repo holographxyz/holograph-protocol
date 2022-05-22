@@ -587,18 +587,43 @@ describe('Testing the Holograph ERC20 Enforcer (L1)', async function () {
     });
   });
 
-  describe('Leftover tests', async function () {
+  describe('Ownership tests', async function () {
     describe('Owner', async function () {
-      it('should return "HolographFactoryProxy" address', async function () {
-        expect(await ERC20.owner()).to.equal(_.holographFactoryProxy.address);
+      it('should return deployer address', async function () {
+        expect(await ERC20.owner()).to.equal(_.deployer.address);
+      });
+
+      it('deployer should return true for isOwner', async function () {
+        expect(await SAMPLEERC20.attach(_.sampleErc20.address)['isOwner()']()).to.be.true;
+      });
+
+      it('deployer should return true for isOwner (msgSender)', async function () {
+        expect(await SAMPLEERC20.attach(ERC20.address)['isOwner(address)'](zeroAddress())).to.be.true;
+      });
+
+      it('wallet1 should return false for isOwner', async function () {
+        expect(await SAMPLEERC20.attach(_.sampleErc20.address).connect(_.wallet1)['isOwner()']()).to.be.false;
       });
 
       it('should return "HolographFactoryProxy" address', async function () {
         expect(await ERC20.getOwner()).to.equal(_.holographFactoryProxy.address);
       });
 
-      // "setOwner(address)"
-      // "transferOwnership(address)"
+      it('deployer should fail transferring ownership', async function () {
+        await expect(ERC20.setOwner(_.wallet1.address)).to.be.revertedWith('HOLOGRAPH: owner only function');
+      });
+
+      it.skip('deployer should set owner to wallet1', async function () {
+        await expect(ERC20.setOwner(_.wallet1.address))
+          .to.emit(ERC20, 'OwnershipTransferred')
+          .withArgs(_.deployer.address, _.wallet1.address);
+      });
+
+      it.skip('wallet1 should transfer ownership to deployer', async function () {
+        await expect(ERC20.connect(_.wallet1).transferOwnership(_.deployer.address))
+          .to.emit(ERC20, 'OwnershipTransferred')
+          .withArgs(_.wallet1.address, _.deployer.address);
+      });
     });
 
     describe('Admin', async function () {
@@ -628,12 +653,30 @@ describe('Testing the Holograph ERC20 Enforcer (L1)', async function () {
     });
   });
 
-  // "holographBridgeIn(uint32,address,address,uint256,bytes)"
-  // "holographBridgeOut(uint32,address,address,address,uint256)"
-  // "sourceBurn(address,uint256)"
-  // "sourceMint(address,uint256)"
-  // "sourceMintBatch(address[],uint256[])"
-  // "sourceTransfer(address,address,uint256)"
+  describe('Source tests', async function () {
+    describe('Minting', async function () {
+      // "sourceBurn(address,uint256)"
+    });
+
+    describe('Burning', async function () {
+      // "sourceMint(address,uint256)"
+      // "sourceMintBatch(address[],uint256[])"
+    });
+
+    describe('Transferring', async function () {
+      // "sourceTransfer(address,address,uint256)"
+    });
+  });
+
+  describe('Basic bridge tests', async function () {
+    describe('Bridge IN', async function () {
+      // "holographBridgeIn(uint32,address,address,uint256,bytes)"
+    });
+
+    describe('Bridge OUT', async function () {
+      // "holographBridgeOut(uint32,address,address,address,uint256)"
+    });
+  });
 
   // SHOULD ALSO TEST RE-ENTRANCY WITH A MOCK RECEIVER THAT ATTEMPTS A RE-ENTRANT CALL MIDWAY
 });

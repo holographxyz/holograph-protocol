@@ -5,6 +5,7 @@
 import "../abstract/ERC20H.sol";
 
 import "../interface/ERC20Holograph.sol";
+import "../interface/Ownable.sol";
 
 import "../library/Strings.sol";
 
@@ -14,7 +15,7 @@ import "../library/Strings.sol";
  * @notice A smart contract for minting and managing Holograph Bridgeable ERC20 Tokens.
  * @dev The entire logic and functionality of the smart contract is self-contained.
  */
-contract SampleERC20 is ERC20H {
+contract SampleERC20 is ERC20H, Ownable {
   /*
    * @dev Address of initial creator/owner of the contract.
    */
@@ -42,8 +43,8 @@ contract SampleERC20 is ERC20H {
    */
   function init(bytes memory data) external override returns (bytes4) {
     // do your own custom logic here
-    address owner = abi.decode(data, (address));
-    _owner = owner;
+    address contractOwner = abi.decode(data, (address));
+    _owner = contractOwner;
     // run underlying initializer logic
     return _init(data);
   }
@@ -87,5 +88,17 @@ contract SampleERC20 is ERC20H {
     uint256 /* _amount*/
   ) external view override onlyHolographer returns (bytes memory _data) {
     _data = abi.encode(_walletSalts[_to]);
+  }
+
+  function owner() external view returns (address) {
+    return _owner;
+  }
+
+  function isOwner() external view returns (bool) {
+    return msg.sender == _owner;
+  }
+
+  function isOwner(address wallet) external view returns (bool) {
+    return wallet == _owner;
   }
 }

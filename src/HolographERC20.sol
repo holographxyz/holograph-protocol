@@ -24,6 +24,7 @@ import "./interface/IHolograph.sol";
 import "./interface/IHolographer.sol";
 import "./interface/IHolographRegistry.sol";
 import "./interface/IInitializable.sol";
+import "./interface/Ownable.sol";
 
 import "./library/Address.sol";
 import "./library/Base64.sol";
@@ -177,6 +178,10 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
     _setInitialized();
     _eip712_init(domainSeperator, domainVersion);
     return IInitializable.init.selector;
+  }
+
+  function owner() public view override returns (address) {
+    return Ownable(source()).owner();
   }
 
   /**

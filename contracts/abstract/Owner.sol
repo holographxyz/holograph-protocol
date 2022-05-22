@@ -116,7 +116,7 @@ abstract contract Owner {
     _;
   }
 
-  function owner() public view returns (address) {
+  function owner() public view virtual returns (address) {
     return getOwner();
   }
 
