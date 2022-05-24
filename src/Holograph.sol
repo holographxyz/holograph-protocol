@@ -12,13 +12,18 @@ contract Holograph is Admin, Initializable {
 
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
-    (uint32 chainType, address registry, address factory, address bridge, address secureStorage) = abi.decode(
-      data,
-      (uint32, address, address, address, address)
-    );
+    (
+      uint32 chainType,
+      address interfaces,
+      address registry,
+      address factory,
+      address bridge,
+      address secureStorage
+    ) = abi.decode(data, (uint32, address, address, address, address, address));
     assembly {
       sstore(precomputeslot("eip1967.Holograph.Bridge.admin"), origin())
       sstore(precomputeslot("eip1967.Holograph.Bridge.chainType"), chainType)
+      sstore(precomputeslot("eip1967.Holograph.Bridge.interfaces"), interfaces)
       sstore(precomputeslot("eip1967.Holograph.Bridge.registry"), registry)
       sstore(precomputeslot("eip1967.Holograph.Bridge.factory"), factory)
       sstore(precomputeslot("eip1967.Holograph.Bridge.bridge"), bridge)
@@ -95,6 +100,26 @@ contract Holograph is Admin, Initializable {
         /* slot */
         precomputeslot("eip1967.Holograph.Bridge.factory"),
         factory
+      )
+    }
+  }
+
+  function getInterfaces() external view returns (address interfaces) {
+    // The slot hash has been precomputed for gas optimizaion
+    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.interfaces')) - 1);
+    assembly {
+      interfaces := sload(precomputeslot("eip1967.Holograph.Bridge.interfaces"))
+    }
+  }
+
+  function setInterfaces(address interfaces) external onlyAdmin {
+    // The slot hash has been precomputed for gas optimizaion
+    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.interfaces')) - 1);
+    assembly {
+      sstore(
+        /* slot */
+        precomputeslot("eip1967.Holograph.Bridge.interfaces"),
+        interfaces
       )
     }
   }

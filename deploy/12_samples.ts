@@ -43,7 +43,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     '0x' + '00'.repeat(32), // bytes32 salt
     sampleErc20Artifact.bytecode, // bytes byteCode
     web3.eth.abi.encodeParameters(
-      ['string', 'string', 'uint8', 'uint256', 'string', 'string', 'bytes'],
+      ['string', 'string', 'uint8', 'uint256', 'string', 'string', 'bool', 'bytes'],
       [
         'Sample ERC20 Token', // string memory contractName
         'SMPL', // string memory contractSymbol
@@ -51,6 +51,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
         '0x' + '00'.repeat(32), // uint256 eventConfig
         'Sample ERC20 Token', // string domainSeperator
         '1', // string domainVersion
+        false, // bool skipInit
         web3.eth.abi.encodeParameters(
           ['address', 'uint16'],
           [
@@ -103,12 +104,13 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     '0x' + '00'.repeat(32), // bytes32 salt
     sampleErc721Artifact.bytecode, // bytes byteCode
     web3.eth.abi.encodeParameters(
-      ['string', 'string', 'uint16', 'uint256', 'bytes'],
+      ['string', 'string', 'uint16', 'uint256', 'bool', 'bytes'],
       [
         'Sample ERC721 Contract', // string memory contractName
         'SMPLR', // string memory contractSymbol
         1000, // uint16 contractBps
         '0x' + '00'.repeat(32), // uint256 eventConfig
+        false, // bool skipInit
         web3.eth.abi.encodeParameters(
           ['address'],
           [
@@ -140,10 +142,10 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     };
     const depoyTx = await holographFactory.deployHolographableContract(erc721Config, signature, deployer.address);
     const deployResult = await depoyTx.wait();
-    if (deployResult.events.length < 1 || deployResult.events[0].event != 'BridgeableContractDeployed') {
+    if (deployResult.events.length < 2 || deployResult.events[1].event != 'BridgeableContractDeployed') {
       throw new Error('BridgeableContractDeployed event not fired');
     }
-    sampleErc721Address = deployResult.events[0].args[0];
+    sampleErc721Address = deployResult.events[1].args[0];
     hre.deployments.log(
       'deployed "SampleERC721" at:',
       await holographRegistry.getHolographedHashAddress(erc721ConfigHash)
@@ -160,12 +162,13 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     '0x' + '00'.repeat(32), // bytes32 salt
     cxipErc721Artifact.bytecode, // bytes byteCode
     web3.eth.abi.encodeParameters(
-      ['string', 'string', 'uint16', 'uint256', 'bytes'],
+      ['string', 'string', 'uint16', 'uint256', 'bool', 'bytes'],
       [
         'CXIP ERC721 Collection', // string memory contractName
         'CXIP', // string memory contractSymbol
         1000, // uint16 contractBps
         '0x' + '00'.repeat(32), // uint256 eventConfig
+        false, // bool skipInit
         web3.eth.abi.encodeParameters(
           ['address'],
           [
@@ -197,10 +200,10 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     };
     const depoyTx = await holographFactory.deployHolographableContract(cxipErc721Config, signature, deployer.address);
     const deployResult = await depoyTx.wait();
-    if (deployResult.events.length < 1 || deployResult.events[0].event != 'BridgeableContractDeployed') {
+    if (deployResult.events.length < 2 || deployResult.events[1].event != 'BridgeableContractDeployed') {
       throw new Error('BridgeableContractDeployed event not fired');
     }
-    cxipErc721Address = deployResult.events[0].args[0];
+    cxipErc721Address = deployResult.events[1].args[0];
     hre.deployments.log(
       'deployed "CxipERC721" at:',
       await holographRegistry.getHolographedHashAddress(cxipErc721ConfigHash)

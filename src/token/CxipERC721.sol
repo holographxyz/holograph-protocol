@@ -72,7 +72,7 @@ contract CxipERC721 is ERC721H {
   ) external onlyHolographer onlyOwner(msgSender) {
     ERC721Holograph H721 = ERC721Holograph(holographer());
     if (tokenId == 0) {
-      while (H721.exists(uint256(_currentTokenId))) {
+      while (H721.exists(uint256(_currentTokenId)) || H721.burned(uint256(_currentTokenId))) {
         _currentTokenId += 1;
       }
       tokenId = _currentTokenId;

@@ -26,7 +26,7 @@
  |~~~~~^~~~~~~~~/##\~~~^~~~~~~~~^^~~~~~~~~^~~/##\~~~~~~~^~~~~~~|
  |_____________________________________________________________|
 
-             - one bridge, infinite possibilities -
+      - one protocol, one bridge = infinite possibilities -
 
 
  ***************************************************************
@@ -138,7 +138,7 @@ abstract contract ERC20H is Initializable, HolographedERC20 {
     require(!_isInitialized(), "ERC20: already initialized");
     address _holographer = msg.sender;
     assembly {
-      sstore(0x6e5f8ca8411e7bcc0b4514ebbbdd1e5a67471d01255657bdeed111c1c4204aec, _holographer)
+      sstore(0xe860eb97addcc8d7a4df2e57474b879e6fae678a490e3807075a99030ddd9250, _holographer)
     }
     _setInitialized();
     return IInitializable.init.selector;
@@ -149,7 +149,7 @@ abstract contract ERC20H is Initializable, HolographedERC20 {
    */
   function holographer() internal view returns (address _holographer) {
     assembly {
-      _holographer := sload(0x6e5f8ca8411e7bcc0b4514ebbbdd1e5a67471d01255657bdeed111c1c4204aec)
+      _holographer := sload(0xe860eb97addcc8d7a4df2e57474b879e6fae678a490e3807075a99030ddd9250)
     }
   }
 
@@ -282,5 +282,9 @@ abstract contract ERC20H is Initializable, HolographedERC20 {
   ) external virtual onlyHolographer returns (bool success) {
     _success = true;
     return _success;
+  }
+
+  function supportsInterface(bytes4) external pure returns (bool) {
+    return false;
   }
 }

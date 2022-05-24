@@ -18,7 +18,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     salt,
     'HolographERC20',
     generateInitCode(
-      ['string', 'string', 'uint16', 'uint256', 'string', 'string', 'bytes'],
+      ['string', 'string', 'uint16', 'uint256', 'string', 'string', 'bool', 'bytes'],
       [
         'Holograph ERC20 Token', // contractName
         'HolographERC20', // contractSymbol
@@ -26,6 +26,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
         0, // eventConfig
         'HolographERC20', // domainSeperator
         '1', // domainVersion
+        true, // skipInit
         '0x', // initCode
       ]
     )

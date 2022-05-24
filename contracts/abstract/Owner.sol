@@ -26,7 +26,7 @@
  |~~~~~^~~~~~~~~/##\~~~^~~~~~~~~^^~~~~~~~~^~~/##\~~~~~~~^~~~~~~|
  |_____________________________________________________________|
 
-             - one bridge, infinite possibilities -
+      - one protocol, one bridge = infinite possibilities -
 
 
  ***************************************************************
@@ -149,6 +149,21 @@ abstract contract Owner {
     require(newOwner != address(0), "HOLOGRAPH: zero address");
     assembly {
       sstore(0x89b583059fdb0b2e807359b64eba1a8a1e6d099210701fafe6dad5dd2cd64fb8, newOwner)
+    }
+  }
+
+  function ownerCall(address target, bytes calldata data) external payable onlyOwner {
+    assembly {
+      calldatacopy(0, data.offset, data.length)
+      let result := call(gas(), target, callvalue(), 0, data.length, 0, 0)
+      returndatacopy(0, 0, returndatasize())
+      switch result
+      case 0 {
+        revert(0, returndatasize())
+      }
+      default {
+        return(0, returndatasize())
+      }
     }
   }
 }

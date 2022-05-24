@@ -44,8 +44,8 @@ contract SampleERC721 is ERC721H {
    */
   function init(bytes memory data) external override returns (bytes4) {
     // do your own custom logic here
-    address owner = abi.decode(data, (address));
-    _owner = owner;
+    address contractOwner = abi.decode(data, (address));
+    _owner = contractOwner;
     // run underlying initializer logic
     return _init(data);
   }
@@ -60,17 +60,25 @@ contract SampleERC721 is ERC721H {
   }
 
   /*
-   * @dev Sample mint where anyone can mint any token, with a custom URI
+   * @dev Sample mint where anyone can mint specific token, with a custom URI
    */
   function mint(
     address msgSender,
     address to,
+    uint224 tokenId,
     string calldata URI
   ) external onlyHolographer onlyOwner(msgSender) {
-    _currentTokenId++;
-    ERC721Holograph(holographer()).sourceMint(to, _currentTokenId);
-    uint256 _tokenId = ERC721Holograph(holographer()).sourceGetChainPrepend() + uint256(_currentTokenId);
-    _tokenURIs[_tokenId] = URI;
+    ERC721Holograph H721 = ERC721Holograph(holographer());
+    if (tokenId == 0) {
+      _currentTokenId += 1;
+      while (H721.exists(uint256(_currentTokenId)) || H721.burned(uint256(_currentTokenId))) {
+        _currentTokenId += 1;
+      }
+      tokenId = _currentTokenId;
+    }
+    H721.sourceMint(to, tokenId);
+    uint256 id = H721.sourceGetChainPrepend() + uint256(tokenId);
+    _tokenURIs[id] = URI;
   }
 
   function test(address msgSender) external view onlyHolographer returns (string memory) {
@@ -104,5 +112,17 @@ contract SampleERC721 is ERC721H {
   ) external override onlyHolographer returns (bool) {
     delete _tokenURIs[_tokenId];
     return true;
+  }
+
+  function owner() external view returns (address) {
+    return _owner;
+  }
+
+  function isOwner() external view returns (bool) {
+    return msg.sender == _owner;
+  }
+
+  function isOwner(address wallet) external view returns (bool) {
+    return wallet == _owner;
   }
 }

@@ -39,7 +39,7 @@ abstract contract ERC721H is Initializable, HolographedERC721 {
     assembly {
       sstore(
         /* slot */
-        precomputeslot("eip1967.Holograph.Bridge.Holographer"),
+        precomputeslot("eip1967.Holograph.Bridge.holographer"),
         _holographer
       )
     }
@@ -48,13 +48,13 @@ abstract contract ERC721H is Initializable, HolographedERC721 {
   }
 
   /*
-   * @dev Address of Holograph ERC20 standards enforcer smart contract.
+   * @dev Address of Holograph ERC721 standards enforcer smart contract.
    */
   function holographer() internal view returns (address _holographer) {
     assembly {
       _holographer := sload(
         /* slot */
-        precomputeslot("eip1967.Holograph.Bridge.Holographer")
+        precomputeslot("eip1967.Holograph.Bridge.holographer")
       )
     }
   }
@@ -185,9 +185,29 @@ abstract contract ERC721H is Initializable, HolographedERC721 {
     return _success;
   }
 
-  function msgSender() external view returns (address sender) {
-    assembly {
-      sender := sload(precomputeslot("eip1967.Holograph.Bridge.temp.msgSender"))
-    }
+  function afterOnERC721Received(
+    address, /* _operator*/
+    address, /* _from*/
+    address, /* _to*/
+    uint256, /* _tokenId*/
+    bytes calldata /* _data*/
+  ) external virtual onlyHolographer returns (bool success) {
+    _success = true;
+    return _success;
+  }
+
+  function beforeOnERC721Received(
+    address, /* _operator*/
+    address, /* _from*/
+    address, /* _to*/
+    uint256, /* _tokenId*/
+    bytes calldata /* _data*/
+  ) external virtual onlyHolographer returns (bool success) {
+    _success = true;
+    return _success;
+  }
+
+  function supportsInterface(bytes4) external pure returns (bool) {
+    return false;
   }
 }

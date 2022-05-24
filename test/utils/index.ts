@@ -10,6 +10,7 @@ import type EthersT from 'ethers';
 import { HardhatEthersHelpers } from '@nomiclabs/hardhat-ethers/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
+  Admin,
   CxipERC721,
   ERC20Mock,
   Holograph,
@@ -24,7 +25,9 @@ import {
   HolographRegistry,
   HolographRegistryProxy,
   HToken,
+  Interfaces,
   MockERC721Receiver,
+  Owner,
   PA1D,
   SampleERC20,
   SampleERC721,
@@ -67,6 +70,7 @@ export interface PreTest {
   wallet8: SignerWithAddress;
   wallet9: SignerWithAddress;
   wallet10: SignerWithAddress;
+  admin: Admin;
   cxipErc721: CxipERC721;
   erc20Mock: ERC20Mock;
   holograph: Holograph;
@@ -81,7 +85,9 @@ export interface PreTest {
   holographRegistry: HolographRegistry;
   holographRegistryProxy: HolographRegistryProxy;
   hToken: HToken;
+  interfaces: Interfaces;
   mockErc721Receiver: MockERC721Receiver;
+  owner: Owner;
   pa1d: PA1D;
   sampleErc20: SampleERC20;
   sampleErc721: SampleERC721;
@@ -125,6 +131,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
   let loop = animatedLoader('\x1b[2m' + ' loading/deploying relevant contracts');
   await hre.deployments.fixture([
     'HolographGenesis',
+    'Interfaces',
     'HolographRegistry',
     'HolographRegistryProxy',
     'SecureStorage',
@@ -163,6 +170,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
   const wallet9: SignerWithAddress = accounts[9];
   const wallet10: SignerWithAddress = accounts[10];
 
+  let admin: Admin;
   let cxipErc721: CxipERC721;
   let erc20Mock: ERC20Mock;
   let holograph: Holograph;
@@ -177,7 +185,9 @@ export default async function (l2?: boolean): Promise<PreTest> {
   let holographRegistry: HolographRegistry;
   let holographRegistryProxy: HolographRegistryProxy;
   let hToken: HToken;
+  let interfaces: Interfaces;
   let mockErc721Receiver: MockERC721Receiver;
+  let owner: Owner;
   let pa1d: PA1D;
   let sampleErc20: SampleERC20;
   let sampleErc721: SampleERC721;
@@ -202,6 +212,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
   let sampleErc721Hash: BytesLike;
   let cxipErc721Hash: BytesLike;
 
+  admin = (await hre.ethers.getContractOrNull('Admin')) as Admin;
   cxipErc721 = (await hre.ethers.getContractOrNull('CxipERC721')) as CxipERC721;
   erc20Mock = (await hre.ethers.getContract('ERC20Mock')) as ERC20Mock;
   holograph = (await hre.ethers.getContract('Holograph')) as Holograph;
@@ -216,7 +227,9 @@ export default async function (l2?: boolean): Promise<PreTest> {
   holographRegistry = (await hre.ethers.getContract('HolographRegistry')) as HolographRegistry;
   holographRegistryProxy = (await hre.ethers.getContract('HolographRegistryProxy')) as HolographRegistryProxy;
   // hToken = (await hre.ethers.getContractOrNull('hToken')) as HToken;
+  interfaces = (await hre.ethers.getContractOrNull('Interfaces')) as Interfaces;
   mockErc721Receiver = (await hre.ethers.getContract('MockERC721Receiver')) as MockERC721Receiver;
+  owner = (await hre.ethers.getContractOrNull('Owner')) as Owner;
   pa1d = (await hre.ethers.getContract('PA1D')) as PA1D;
   // sampleErc20 = (await hre.ethers.getContractOrNull('SampleERC20')) as SampleERC20;
   // sampleErc721 = (await hre.ethers.getContractOrNull('SampleERC721')) as SampleERC721;
@@ -236,7 +249,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
     chainId, // chainId
     '0x' + '00'.repeat(32), // salt
     generateInitCode(
-      ['string', 'string', 'uint8', 'uint256', 'string', 'string', 'bytes'],
+      ['string', 'string', 'uint8', 'uint256', 'string', 'string', 'bool', 'bytes'],
       [
         network.tokenName + ' (Holographed)', // string memory contractName
         'h' + network.tokenSymbol, // string memory contractSymbol
@@ -244,6 +257,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
         '0x' + '00'.repeat(32), // uint256 eventConfig
         network.tokenName + ' (Holographed)', // string domainSeperator
         '1', // string domainVersion
+        false, // bool skipInit
         generateInitCode(
           ['address', 'uint16'],
           [
@@ -271,7 +285,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
     chainId, // chainId
     '0x' + '00'.repeat(32), // salt
     generateInitCode(
-      ['string', 'string', 'uint8', 'uint256', 'string', 'string', 'bytes'],
+      ['string', 'string', 'uint8', 'uint256', 'string', 'string', 'bool', 'bytes'],
       [
         'Sample ERC20 Token', // string memory contractName
         'SMPL', // string memory contractSymbol
@@ -279,6 +293,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
         '0x' + '00'.repeat(32), // uint256 eventConfig
         'Sample ERC20 Token', // string domainSeperator
         '1', // string domainVersion
+        false, // bool skipInit
         generateInitCode(
           ['address', 'uint16'],
           [
@@ -309,12 +324,13 @@ export default async function (l2?: boolean): Promise<PreTest> {
     chainId, // chainId
     '0x' + '00'.repeat(32), // salt
     generateInitCode(
-      ['string', 'string', 'uint16', 'uint256', 'bytes'],
+      ['string', 'string', 'uint16', 'uint256', 'bool', 'bytes'],
       [
         'Sample ERC721 Contract', // string memory contractName
         'SMPLR', // string memory contractSymbol
         1000, // uint16 contractBps
         '0x' + '00'.repeat(32), // uint256 eventConfig
+        false, // bool skipInit
         generateInitCode(
           ['address'],
           [
@@ -344,12 +360,13 @@ export default async function (l2?: boolean): Promise<PreTest> {
     chainId, // chainId
     '0x' + '00'.repeat(32), // salt
     generateInitCode(
-      ['string', 'string', 'uint16', 'uint256', 'bytes'],
+      ['string', 'string', 'uint16', 'uint256', 'bool', 'bytes'],
       [
         'CXIP ERC721 Collection', // string memory contractName
         'CXIP', // string memory contractSymbol
         1000, // uint16 contractBps
         '0x' + '00'.repeat(32), // uint256 eventConfig
+        false, // bool skipInit
         generateInitCode(
           ['address'],
           [
@@ -392,6 +409,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
     wallet8,
     wallet9,
     wallet10,
+    admin,
     cxipErc721,
     erc20Mock,
     holograph,
@@ -406,7 +424,9 @@ export default async function (l2?: boolean): Promise<PreTest> {
     holographRegistry,
     holographRegistryProxy,
     hToken,
+    interfaces,
     mockErc721Receiver,
+    owner,
     pa1d,
     sampleErc20,
     sampleErc721,

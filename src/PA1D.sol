@@ -55,6 +55,21 @@ contract PA1D is Admin, Owner, Initializable {
     return IInitializable.init.selector;
   }
 
+  function initPA1D(bytes memory data) external returns (bytes4) {
+    uint256 initialized;
+    assembly {
+      initialized := sload(precomputeslot("eip1967.Holograph.PA1D.initialized"))
+    }
+    require(initialized == 0, "PA1D: already initialized");
+    (address receiver, uint256 bp) = abi.decode(data, (address, uint256));
+    setRoyalties(0, payable(receiver), bp);
+    initialized = 1;
+    assembly {
+      sstore(precomputeslot("eip1967.Holograph.PA1D.initialized"), initialized)
+    }
+    return IInitializable.init.selector;
+  }
+
   /**
    * @notice Check if message sender is a legitimate owner of the smart contract
    * @dev We check owner, admin, and identity for a more comprehensive coverage.

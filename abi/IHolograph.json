@@ -40,6 +40,19 @@
   },
   {
     "inputs": [],
+    "name": "getInterfaces",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "interfacesAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "getRegistry",
     "outputs": [
       {

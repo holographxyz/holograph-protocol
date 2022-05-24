@@ -50,4 +50,19 @@ abstract contract Owner {
       sstore(precomputeslot("eip1967.Holograph.Bridge.owner"), newOwner)
     }
   }
+
+  function ownerCall(address target, bytes calldata data) external payable onlyOwner {
+    assembly {
+      calldatacopy(0, data.offset, data.length)
+      let result := call(gas(), target, callvalue(), 0, data.length, 0, 0)
+      returndatacopy(0, 0, returndatasize())
+      switch result
+      case 0 {
+        revert(0, returndatasize())
+      }
+      default {
+        return(0, returndatasize())
+      }
+    }
+  }
 }

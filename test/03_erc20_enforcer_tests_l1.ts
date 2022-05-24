@@ -3,9 +3,17 @@ import { expect, assert } from 'chai';
 import { PreTest } from './utils';
 import setup from './utils';
 import { BigNumberish, BytesLike, BigNumber } from 'ethers';
-import { zeroAddress, functionHash, XOR, buildDomainSeperator, randomHex } from '../scripts/utils/helpers';
+import {
+  zeroAddress,
+  functionHash,
+  XOR,
+  buildDomainSeperator,
+  randomHex,
+  generateInitCode,
+} from '../scripts/utils/helpers';
 
 import {
+  Admin,
   CxipERC721,
   ERC20Mock,
   Holograph,
@@ -20,7 +28,9 @@ import {
   HolographRegistry,
   HolographRegistryProxy,
   HToken,
+  Interfaces,
   MockERC721Receiver,
+  Owner,
   PA1D,
   SampleERC20,
   SampleERC721,
@@ -57,6 +67,10 @@ describe('Testing the Holograph ERC20 Enforcer (L1)', async function () {
 
   describe('Check interfaces', async function () {
     describe('ERC165', async function () {
+      it('supportsInterface supported', async function () {
+        expect(await ERC20.supportsInterface(functionHash('supportsInterface(bytes4)'))).to.be.true;
+      });
+
       it('ERC165 interface supported', async function () {
         expect(await ERC20.supportsInterface(functionHash('supportsInterface(bytes4)'))).to.be.true;
       });
@@ -202,6 +216,25 @@ describe('Testing the Holograph ERC20 Enforcer (L1)', async function () {
     });
   });
 
+  describe('Test Initializer', async function () {
+    it('should fail initializing already initialized Holographer', async function () {
+      await expect(
+        ERC20.init(generateInitCode(['bytes', 'bytes'], ['0x' + '00'.repeat(32), '0x' + '00'.repeat(32)]))
+      ).to.be.revertedWith('HOLOGRAPHER: already initialized');
+    });
+
+    it('should fail initializing already initialized ERC721 Enforcer', async function () {
+      await expect(
+        _.sampleErc20Enforcer.init(
+          generateInitCode(
+            ['string', 'string', 'uint8', 'uint256', 'bool', 'bytes'],
+            ['', '', '0x00', '0x' + '00'.repeat(32), false, '0x' + '00'.repeat(32)]
+          )
+        )
+      ).to.be.revertedWith('ERC20: already initialized');
+    });
+  });
+
   describe('Test ERC20Metadata', async function () {
     describe('token name:', async function () {
       it('should return "' + tokenName + '" for token name', async function () {
@@ -336,6 +369,18 @@ describe('Testing the Holograph ERC20 Enforcer (L1)', async function () {
           .withArgs(_.deployer.address, _.wallet2.address, 0);
       });
 
+      it('should fail for non-contract onERC20Received call', async function () {
+        await expect(ERC20.onERC20Received(_.deployer.address, _.deployer.address, tokensWei, '0x')).to.be.revertedWith(
+          'ERC20: operator not contract'
+        );
+      });
+
+      it('should fail for fake onERC20Received', async function () {
+        await expect(
+          ERC20.onERC20Received(_.erc20Mock.address, _.deployer.address, tokensWei, '0x')
+        ).to.be.revertedWith('ERC20: balance check failed');
+      });
+      //
       // "onERC20Received(address,address,uint256,bytes)"
       // "safeTransfer(address,uint256)"
       // "safeTransferFrom(address,address,uint256)"
@@ -613,26 +658,32 @@ describe('Testing the Holograph ERC20 Enforcer (L1)', async function () {
         await expect(ERC20.setOwner(_.wallet1.address)).to.be.revertedWith('HOLOGRAPH: owner only function');
       });
 
-      it.skip('deployer should set owner to wallet1', async function () {
-        await expect(ERC20.setOwner(_.wallet1.address))
+      it('deployer should set owner to deployer', async function () {
+        let admin: Admin = (await _.hre.ethers.getContractAt('Admin', _.holographFactoryProxy.address)) as Admin;
+        let calldata: string = _.web3.eth.abi.encodeFunctionCall(
+          { name: 'setOwner', type: 'function', inputs: [{ type: 'address', name: 'ownerAddress' }] },
+          [_.deployer.address]
+        );
+        await expect(admin.adminCall(ERC20.address, calldata))
           .to.emit(ERC20, 'OwnershipTransferred')
-          .withArgs(_.deployer.address, _.wallet1.address);
+          .withArgs(_.holographFactoryProxy.address, _.deployer.address);
+        expect(await ERC20.getOwner()).to.equal(_.deployer.address);
       });
 
-      it.skip('wallet1 should transfer ownership to deployer', async function () {
-        await expect(ERC20.connect(_.wallet1).transferOwnership(_.deployer.address))
+      it('deployer should transfer ownership to "HolographFactoryProxy"', async function () {
+        await expect(ERC20.setOwner(_.holographFactoryProxy.address))
           .to.emit(ERC20, 'OwnershipTransferred')
-          .withArgs(_.wallet1.address, _.deployer.address);
+          .withArgs(_.deployer.address, _.holographFactoryProxy.address);
       });
     });
 
     describe('Admin', async function () {
-      it('should return deployer address', async function () {
-        expect(await ERC20.admin()).to.equal(_.deployer.address);
+      it('admin() should return "HolographFactoryProxy" address', async function () {
+        expect(await ERC20.admin()).to.equal(_.holographFactoryProxy.address);
       });
 
-      it('should return deployer address', async function () {
-        expect(await ERC20.getAdmin()).to.equal(_.deployer.address);
+      it('getAdmin() should return "HolographFactoryProxy" address', async function () {
+        expect(await ERC20.getAdmin()).to.equal(_.holographFactoryProxy.address);
       });
 
       it('wallet1 should fail setting admin', async function () {
@@ -641,14 +692,20 @@ describe('Testing the Holograph ERC20 Enforcer (L1)', async function () {
         );
       });
 
-      it('deployer should succeed setting admin', async function () {
-        await ERC20.setAdmin(_.wallet1.address);
+      it('deployer should succeed setting admin via "HolographFactoryProxy"', async function () {
+        let admin: Admin = (await _.hre.ethers.getContractAt('Admin', _.holographFactoryProxy.address)) as Admin;
+        let calldata: string = _.web3.eth.abi.encodeFunctionCall(
+          { name: 'setAdmin', type: 'function', inputs: [{ type: 'address', name: 'adminAddress' }] },
+          [_.deployer.address]
+        );
 
-        expect(await ERC20.admin()).to.equal(_.wallet1.address);
-
-        await ERC20.connect(_.wallet1).setAdmin(_.deployer.address);
+        await admin.adminCall(ERC20.address, calldata);
 
         expect(await ERC20.admin()).to.equal(_.deployer.address);
+
+        await ERC20.setAdmin(_.holographFactoryProxy.address);
+
+        expect(await ERC20.admin()).to.equal(_.holographFactoryProxy.address);
       });
     });
   });

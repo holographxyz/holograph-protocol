@@ -26,7 +26,7 @@
  |~~~~~^~~~~~~~~/##\~~~^~~~~~~~~^^~~~~~~~~^~~/##\~~~~~~~^~~~~~~|
  |_____________________________________________________________|
 
-             - one bridge, infinite possibilities -
+      - one protocol, one bridge = infinite possibilities -
 
 
  ***************************************************************
@@ -109,6 +109,8 @@ interface IHolograph {
   function getBridge() external view returns (address bridgeAddress);
 
   function getFactory() external view returns (address factoryAddress);
+
+  function getInterfaces() external view returns (address interfacesAddress);
 
   function getRegistry() external view returns (address registryAddress);
 }

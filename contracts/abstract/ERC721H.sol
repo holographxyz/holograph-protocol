@@ -26,7 +26,7 @@
  |~~~~~^~~~~~~~~/##\~~~^~~~~~~~~^^~~~~~~~~^~~/##\~~~~~~~^~~~~~~|
  |_____________________________________________________________|
 
-             - one bridge, infinite possibilities -
+      - one protocol, one bridge = infinite possibilities -
 
 
  ***************************************************************
@@ -140,7 +140,7 @@ abstract contract ERC721H is Initializable, HolographedERC721 {
     assembly {
       sstore(
         /* slot */
-        0x6e5f8ca8411e7bcc0b4514ebbbdd1e5a67471d01255657bdeed111c1c4204aec,
+        0xe860eb97addcc8d7a4df2e57474b879e6fae678a490e3807075a99030ddd9250,
         _holographer
       )
     }
@@ -149,13 +149,13 @@ abstract contract ERC721H is Initializable, HolographedERC721 {
   }
 
   /*
-   * @dev Address of Holograph ERC20 standards enforcer smart contract.
+   * @dev Address of Holograph ERC721 standards enforcer smart contract.
    */
   function holographer() internal view returns (address _holographer) {
     assembly {
       _holographer := sload(
         /* slot */
-        0x6e5f8ca8411e7bcc0b4514ebbbdd1e5a67471d01255657bdeed111c1c4204aec
+        0xe860eb97addcc8d7a4df2e57474b879e6fae678a490e3807075a99030ddd9250
       )
     }
   }
@@ -286,9 +286,29 @@ abstract contract ERC721H is Initializable, HolographedERC721 {
     return _success;
   }
 
-  function msgSender() external view returns (address sender) {
-    assembly {
-      sender := sload(0x8441fa6ff843f273d23d65e882c7fe479d103e38c6404b1e55f13302c0f3fc78)
-    }
+  function afterOnERC721Received(
+    address, /* _operator*/
+    address, /* _from*/
+    address, /* _to*/
+    uint256, /* _tokenId*/
+    bytes calldata /* _data*/
+  ) external virtual onlyHolographer returns (bool success) {
+    _success = true;
+    return _success;
+  }
+
+  function beforeOnERC721Received(
+    address, /* _operator*/
+    address, /* _from*/
+    address, /* _to*/
+    uint256, /* _tokenId*/
+    bytes calldata /* _data*/
+  ) external virtual onlyHolographer returns (bool success) {
+    _success = true;
+    return _success;
+  }
+
+  function supportsInterface(bytes4) external pure returns (bool) {
+    return false;
   }
 }

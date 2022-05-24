@@ -9,5 +9,7 @@ interface IHolograph {
 
   function getFactory() external view returns (address factoryAddress);
 
+  function getInterfaces() external view returns (address interfacesAddress);
+
   function getRegistry() external view returns (address registryAddress);
 }

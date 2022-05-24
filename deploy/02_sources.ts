@@ -41,6 +41,9 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   );
   hre.deployments.log('the future "Holograph" address is', futureHolographAddress);
 
+  // Interfaces
+  let interfaces = await genesisDeployHelper(hre, salt, 'Interfaces', generateInitCode(['address'], [deployer]));
+
   // HolographRegistry
   let holographRegistry = await genesisDeployHelper(
     hre,
@@ -149,9 +152,10 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     salt,
     'Holograph',
     generateInitCode(
-      ['uint32', 'address', 'address', 'address', 'address'],
+      ['uint32', 'address', 'address', 'address', 'address', 'address'],
       [
         '0x' + networks[hre.networkName].holographId.toString(16).padStart(8, '0'),
+        interfaces.address,
         holographRegistryProxy.address,
         holographFactoryProxy.address,
         holographBridgeProxy.address,
@@ -171,6 +175,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
 
 export default func;
 func.tags = [
+  'Interfaces',
   'HolographRegistry',
   'HolographRegistryProxy',
   'SecureStorage',

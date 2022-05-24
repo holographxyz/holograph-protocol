@@ -49,7 +49,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       '0x' + '00'.repeat(32), // bytes32 salt
       hTokenArtifact.bytecode, // bytes byteCode
       web3.eth.abi.encodeParameters(
-        ['string', 'string', 'uint8', 'uint256', 'string', 'string', 'bytes'],
+        ['string', 'string', 'uint8', 'uint256', 'string', 'string', 'bool', 'bytes'],
         [
           network.tokenName + ' (Holographed)', // string memory contractName
           'h' + network.tokenSymbol, // string memory contractSymbol
@@ -57,6 +57,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
           '0x' + '00'.repeat(32), // uint256 eventConfig
           network.tokenName + ' (Holographed)', // string domainSeperator
           '1', // string domainVersion
+          false, // bool skipInit
           web3.eth.abi.encodeParameters(
             ['address', 'uint16'],
             [
