@@ -13,6 +13,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     from: deployer,
     args: [],
     log: true,
+    waitConfirmations: 1,
   });
 };
 export default func;

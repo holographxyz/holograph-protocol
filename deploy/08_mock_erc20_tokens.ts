@@ -13,6 +13,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     from: deployer,
     args: ['Wrapped ETH (MOCK)', 'WETHmock', 18, 'ERC20Mock', '1'],
     log: true,
+    waitConfirmations: 1,
   });
 };
 
