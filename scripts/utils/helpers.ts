@@ -352,7 +352,6 @@ const genesisDeployHelper = async function (
     deployments.log('future "' + name + '" address is', contractDeterministic.address);
     await contractDeterministic.deploy();
     contract = await ethers.getContract(name);
-    await sleep(1000);
   } else {
     deployments.log('reusing "' + name + '" at', contract?.address);
   }
@@ -422,10 +421,10 @@ const getHolographedContractHash = async function (
 };
 
 const sleep = async function (ms: number) {
-//  if (typeof (global.__throttled) !== 'undefined' && !global.__throttled) {
-    return new Promise (resolve => { resolve(true) });
+//  if (typeof (global.__throttled) !== 'undefined' && global.__throttled) {
+    return new Promise (resolve => setTimeout(resolve, ms));
 //  } else {
-//    return new Promise (resolve => setTimeout(resolve, ms));
+//    return new Promise (resolve => { resolve(true) });
 //  }
 };
 
