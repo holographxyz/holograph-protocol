@@ -346,6 +346,7 @@ const genesisDeployHelper = async function (
       deployerAddress: holographGenesis?.address,
       saltHash: deployer + salt.substring(2),
       deployCode: generateDeployCode(salt, contractBytecode, initCode),
+      waitConfirmations: 1
     });
     deployments.log('future "' + name + '" address is', contractDeterministic.address);
     await contractDeterministic.deploy();
