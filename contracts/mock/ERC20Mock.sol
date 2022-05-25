@@ -239,6 +239,9 @@ contract ERC20Mock is
     _supportedInterfaces[0xb88d4fde] = true;
     _supportedInterfaces[bytes4(0x423f6cef) ^ bytes4(0xeb795549) ^ bytes4(0x42842e0e) ^ bytes4(0xb88d4fde)] = true;
 
+    // ERC20Receiver
+    _supportedInterfaces[ERC20Receiver.onERC20Received.selector] = true;
+
     // ERC20Permit
     _supportedInterfaces[ERC20Permit.permit.selector] = true;
     _supportedInterfaces[ERC20Permit.nonces.selector] = true;
@@ -251,6 +254,14 @@ contract ERC20Mock is
 
   function toggleWorks(bool active) external {
     _works = active;
+  }
+
+  function transferTokens(
+    address payable token,
+    address to,
+    uint256 amount
+  ) external {
+    ERC20(token).transfer(to, amount);
   }
 
   /*

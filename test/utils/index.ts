@@ -127,9 +127,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
   const network2: Network = networks[hre2.networkName];
   const chainId: BytesLike = '0x' + network.holographId.toString(16).padStart(8, '0');
   const chainId2: BytesLike = '0x' + network2.holographId.toString(16).padStart(8, '0');
-
-  let loop = animatedLoader('\x1b[2m' + ' loading/deploying relevant contracts');
-  await hre.deployments.fixture([
+  const fixtures: string[] = [
     'HolographGenesis',
     'Interfaces',
     'HolographRegistry',
@@ -151,10 +149,13 @@ export default async function (l2?: boolean): Promise<PreTest> {
     'SampleERC20',
     'SampleERC721',
     'CxipERC721',
-  ]);
+  ];
+
+  let loop = animatedLoader('\x1b[2m' + ' loading/deploying relevant contracts');
+  await hre.deployments.fixture(fixtures);
   clearInterval(loop);
   process.stdout.write(
-    '    ' + '\x1b[32m' + '███' + '\x1b[0m' + '\x1b[2m' + ' relevant contracts loaded' + '\x1b[0m' + '\n\n'
+    '    ' + '\x1b[32m' + '███' + '\x1b[0m' + '\x1b[2m' + ' relevant contracts loaded           ' + '\x1b[0m' + '\n\n'
   );
 
   const accounts = await hre.ethers.getSigners();
@@ -287,7 +288,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
     generateInitCode(
       ['string', 'string', 'uint8', 'uint256', 'string', 'string', 'bool', 'bytes'],
       [
-        'Sample ERC20 Token', // string memory contractName
+        'Sample ERC20 Token (' + hre.networkName + ')', // string memory contractName
         'SMPL', // string memory contractSymbol
         18, // uint8 contractDecimals
         '0x' + '00'.repeat(32), // uint256 eventConfig
@@ -326,7 +327,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
     generateInitCode(
       ['string', 'string', 'uint16', 'uint256', 'bool', 'bytes'],
       [
-        'Sample ERC721 Contract', // string memory contractName
+        'Sample ERC721 Contract (' + hre.networkName + ')', // string memory contractName
         'SMPLR', // string memory contractSymbol
         1000, // uint16 contractBps
         '0x' + '00'.repeat(32), // uint256 eventConfig
@@ -362,7 +363,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
     generateInitCode(
       ['string', 'string', 'uint16', 'uint256', 'bool', 'bytes'],
       [
-        'CXIP ERC721 Collection', // string memory contractName
+        'CXIP ERC721 Collection (' + hre.networkName + ')', // string memory contractName
         'CXIP', // string memory contractSymbol
         1000, // uint16 contractBps
         '0x' + '00'.repeat(32), // uint256 eventConfig

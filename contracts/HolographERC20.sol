@@ -671,7 +671,7 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
         // we have erc165 support
         if (ERC165(recipient).supportsInterface(0x534f5876)) {
           // we have eip-4524 support
-          try ERC20Receiver(recipient).onERC20Received(msg.sender, account, amount, data) returns (bytes4 retval) {
+          try ERC20Receiver(recipient).onERC20Received(address(this), account, amount, data) returns (bytes4 retval) {
             return retval == ERC20Receiver.onERC20Received.selector;
           } catch (bytes memory reason) {
             if (reason.length == 0) {

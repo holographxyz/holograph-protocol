@@ -3,7 +3,7 @@ import Web3 from 'web3';
 import crypto from 'crypto';
 import { EthereumProvider, Artifacts, HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction, Address, Deployment, DeploymentsExtension } from 'hardhat-deploy-holographed/types';
-import { BigNumberish, BytesLike, ContractFactory, Contract } from 'ethers';
+import { BigNumberish, BytesLike, ContractFactory, Contract, BigNumber } from 'ethers';
 import type { ethers } from 'ethers';
 import type EthersT from 'ethers';
 import { HardhatEthersHelpers } from '@nomiclabs/hardhat-ethers/types';
@@ -49,10 +49,20 @@ export interface Networks {
   [key: string]: Network;
 }
 
+export interface Signature {
+  r: string;
+  s: string;
+  v: string;
+}
+
 const web3 = new Web3();
 
 const isDefined = function (obj: any): boolean {
   return typeof obj !== 'undefined';
+};
+
+const toHex = function (bytes: number[]): string {
+  return web3.utils.bytesToHex(bytes);
 };
 
 const randomHex = function (bytes: number): string {
@@ -63,6 +73,27 @@ const randomHex = function (bytes: number): string {
       .padStart(2, '0');
   }
   return '0x' + text;
+};
+
+const StrictECDSA = function (signature: Signature): Signature {
+  const validator: BigNumber = BigNumber.from('0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0');
+  if (parseInt(signature.v) < 27) {
+    signature.v = '0x' + (27).toString(16).padStart(2, '0');
+  }
+  if (BigNumber.from(signature.s).gt(validator)) {
+    // we have an issue
+    signature.s = BigNumber.from('0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141')
+      .sub(BigNumber.from(signature.s))
+      .toHexString();
+    let v = parseInt(signature.v);
+    if (v == 27) {
+      v = 28;
+    } else {
+      v = 27;
+    }
+    signature.v = '0x' + v.toString(16).padStart(2, '0');
+  }
+  return signature;
 };
 
 const l2Ethers = function (hre1: HardhatRuntimeEnvironment) {
@@ -78,6 +109,7 @@ const l2Ethers = function (hre1: HardhatRuntimeEnvironment) {
     const { ethers } = require('ethers') as typeof EthersT;
 
     const providerProxy = createProviderProxy(hre1.companionNetworks['l2'].provider);
+    hre1.companionNetworks['l2'].provider.setMaxListeners(100);
 
     return {
       ...ethers,
@@ -372,7 +404,9 @@ const getHolographedContractHash = async function (
 
 export {
   isDefined,
+  toHex,
   randomHex,
+  StrictECDSA,
   l2Ethers,
   hreSplit,
   functionHash,

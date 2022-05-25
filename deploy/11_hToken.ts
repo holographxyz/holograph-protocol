@@ -4,7 +4,7 @@ import { BigNumberish, BytesLike, ContractFactory, Contract } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy-holographed/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { LeanHardhatRuntimeEnvironment, hreSplit, zeroAddress } from '../scripts/utils/helpers';
+import { LeanHardhatRuntimeEnvironment, Signature, hreSplit, zeroAddress, StrictECDSA } from '../scripts/utils/helpers';
 import Web3 from 'web3';
 
 const networks = JSON.parse(fs.readFileSync('./config/networks.json', 'utf8'));
@@ -82,11 +82,11 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     );
 
     const sig = await deployer.signMessage(hash);
-    const signature: { r: BytesLike; s: BytesLike; v: BigNumberish } = {
+    const signature: Signature = StrictECDSA({
       r: '0x' + sig.substring(2, 66),
       s: '0x' + sig.substring(66, 130),
       v: '0x' + sig.substring(130, 132),
-    };
+    } as Signature);
 
     const depoyTx = await holographFactory.deployHolographableContract(config, signature, deployer.address);
     const deployResult = await depoyTx.wait();

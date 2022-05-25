@@ -4,7 +4,7 @@ import { BigNumberish, BytesLike, ContractFactory, Contract } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy-holographed/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { LeanHardhatRuntimeEnvironment, hreSplit, zeroAddress } from '../scripts/utils/helpers';
+import { LeanHardhatRuntimeEnvironment, Signature, hreSplit, zeroAddress, StrictECDSA } from '../scripts/utils/helpers';
 import Web3 from 'web3';
 
 const networks = JSON.parse(fs.readFileSync('./config/networks.json', 'utf8'));
@@ -45,7 +45,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     web3.eth.abi.encodeParameters(
       ['string', 'string', 'uint8', 'uint256', 'string', 'string', 'bool', 'bytes'],
       [
-        'Sample ERC20 Token', // string memory contractName
+        'Sample ERC20 Token (' + hre.networkName + ')', // string memory contractName
         'SMPL', // string memory contractSymbol
         18, // uint8 decimals
         '0x' + '00'.repeat(32), // uint256 eventConfig
@@ -77,11 +77,11 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   if (sampleErc20Address == zeroAddress()) {
     hre.deployments.log('need to deploy "SampleERC20" for chain:', chainId);
     const sig = await deployer.signMessage(erc20ConfigHash);
-    const signature: { r: BytesLike; s: BytesLike; v: BigNumberish } = {
+    const signature: Signature = StrictECDSA({
       r: '0x' + sig.substring(2, 66),
       s: '0x' + sig.substring(66, 130),
       v: '0x' + sig.substring(130, 132),
-    };
+    } as Signature);
     const depoyTx = await holographFactory.deployHolographableContract(erc20Config, signature, deployer.address);
     const deployResult = await depoyTx.wait();
     if (deployResult.events.length < 1 || deployResult.events[0].event != 'BridgeableContractDeployed') {
@@ -106,7 +106,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     web3.eth.abi.encodeParameters(
       ['string', 'string', 'uint16', 'uint256', 'bool', 'bytes'],
       [
-        'Sample ERC721 Contract', // string memory contractName
+        'Sample ERC721 Contract (' + hre.networkName + ')', // string memory contractName
         'SMPLR', // string memory contractSymbol
         1000, // uint16 contractBps
         '0x' + '00'.repeat(32), // uint256 eventConfig
@@ -135,11 +135,11 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   if (sampleErc721Address == zeroAddress()) {
     hre.deployments.log('need to deploy "SampleERC721" for chain:', chainId);
     const sig = await deployer.signMessage(erc721ConfigHash);
-    const signature: { r: BytesLike; s: BytesLike; v: BigNumberish } = {
+    const signature: Signature = StrictECDSA({
       r: '0x' + sig.substring(2, 66),
       s: '0x' + sig.substring(66, 130),
       v: '0x' + sig.substring(130, 132),
-    };
+    } as Signature);
     const depoyTx = await holographFactory.deployHolographableContract(erc721Config, signature, deployer.address);
     const deployResult = await depoyTx.wait();
     if (deployResult.events.length < 2 || deployResult.events[1].event != 'BridgeableContractDeployed') {
@@ -164,7 +164,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     web3.eth.abi.encodeParameters(
       ['string', 'string', 'uint16', 'uint256', 'bool', 'bytes'],
       [
-        'CXIP ERC721 Collection', // string memory contractName
+        'CXIP ERC721 Collection (' + hre.networkName + ')', // string memory contractName
         'CXIP', // string memory contractSymbol
         1000, // uint16 contractBps
         '0x' + '00'.repeat(32), // uint256 eventConfig
@@ -193,11 +193,11 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   if (cxipErc721Address == zeroAddress()) {
     hre.deployments.log('need to deploy "CxipERC721" for chain:', chainId);
     const sig = await deployer.signMessage(cxipErc721ConfigHash);
-    const signature: { r: BytesLike; s: BytesLike; v: BigNumberish } = {
+    const signature: Signature = StrictECDSA({
       r: '0x' + sig.substring(2, 66),
       s: '0x' + sig.substring(66, 130),
       v: '0x' + sig.substring(130, 132),
-    };
+    } as Signature);
     const depoyTx = await holographFactory.deployHolographableContract(cxipErc721Config, signature, deployer.address);
     const deployResult = await depoyTx.wait();
     if (deployResult.events.length < 2 || deployResult.events[1].event != 'BridgeableContractDeployed') {
