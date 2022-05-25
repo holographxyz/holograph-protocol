@@ -109,7 +109,7 @@ const l2Ethers = function (hre1: HardhatRuntimeEnvironment) {
     const { ethers } = require('ethers') as typeof EthersT;
 
     const providerProxy = createProviderProxy(hre1.companionNetworks['l2'].provider);
-    hre1.companionNetworks['l2'].provider.setMaxListeners(100);
+    //hre1.companionNetworks['l2'].provider.setMaxListeners(100);
 
     return {
       ...ethers,
@@ -149,30 +149,46 @@ const hreSplit = function (
   hre1: HardhatRuntimeEnvironment,
   flip?: boolean
 ): { hre: LeanHardhatRuntimeEnvironment; hre2: LeanHardhatRuntimeEnvironment } {
-  let hre: LeanHardhatRuntimeEnvironment = {
-    networkName: hre1.network.name,
-    deployments: hre1.deployments,
-    getNamedAccounts: hre1.getNamedAccounts,
-    getUnnamedAccounts: hre1.getUnnamedAccounts,
-    getChainId: hre1.getChainId,
-    provider: hre1.network.provider,
-    ethers: hre1.ethers,
-    artifacts: hre1.artifacts,
-  };
-  let hre2: LeanHardhatRuntimeEnvironment = isDefined(hre1.network.companionNetworks['l2'])
-    ? {
-        networkName: hre1.network.companionNetworks['l2'],
-        deployments: hre1.companionNetworks['l2'].deployments,
-        getNamedAccounts: hre1.companionNetworks['l2'].getNamedAccounts,
-        getUnnamedAccounts: hre1.companionNetworks['l2'].getUnnamedAccounts,
-        getChainId: hre1.companionNetworks['l2'].getChainId,
-        provider: hre1.companionNetworks['l2'].provider,
-        ethers: l2Ethers(hre1),
-        artifacts: hre1.artifacts,
-      }
-    : hre;
+  if (!isDefined(hre1.network.companionNetworks['l2'])) {
+    throw new Error(
+      'A companion network is required for multi-chain testing. Use "companionNetworks" inside of Hardhat networks config file.'
+    );
+  }
+  let hre: LeanHardhatRuntimeEnvironment;
+  let hre2: LeanHardhatRuntimeEnvironment;
+  let hre3: LeanHardhatRuntimeEnvironment;
+  if (typeof global.__hreL1 === 'undefined') {
+    hre = {
+      networkName: hre1.network.name,
+      deployments: hre1.deployments,
+      getNamedAccounts: hre1.getNamedAccounts,
+      getUnnamedAccounts: hre1.getUnnamedAccounts,
+      getChainId: hre1.getChainId,
+      provider: hre1.network.provider,
+      ethers: hre1.ethers,
+      artifacts: hre1.artifacts,
+    };
+    global.__hreL1 = hre;
+  } else {
+    hre = global.__hreL1 as LeanHardhatRuntimeEnvironment;
+  }
+  if (typeof global.__hreL2 === 'undefined') {
+    hre2 = {
+      networkName: hre1.network.companionNetworks['l2'],
+      deployments: hre1.companionNetworks['l2'].deployments,
+      getNamedAccounts: hre1.companionNetworks['l2'].getNamedAccounts,
+      getUnnamedAccounts: hre1.companionNetworks['l2'].getUnnamedAccounts,
+      getChainId: hre1.companionNetworks['l2'].getChainId,
+      provider: hre1.companionNetworks['l2'].provider,
+      ethers: l2Ethers(hre1),
+      artifacts: hre1.artifacts,
+    };
+    global.__hreL2 = hre2;
+  } else {
+    hre2 = global.__hreL2 as LeanHardhatRuntimeEnvironment;
+  }
   if (flip) {
-    let hre3: LeanHardhatRuntimeEnvironment = hre;
+    hre3 = hre;
     hre = hre2;
     hre2 = hre3;
   }

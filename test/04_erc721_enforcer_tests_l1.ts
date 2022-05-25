@@ -74,8 +74,6 @@ describe('Testing the Holograph ERC721 Enforcer (L1)', async function () {
 
   after(async function () {
     global.__companionNetwork = false;
-    l1 = {} as unknown as PreTest;
-    l2 = {} as unknown as PreTest;
   });
 
   beforeEach(async function () {});

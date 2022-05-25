@@ -17,8 +17,6 @@ describe('Validating the Holograph Protocol deployments (L1)', async () => {
 
   after(async () => {
     global.__companionNetwork = false;
-    l1 = {} as unknown as PreTest;
-    l2 = {} as unknown as PreTest;
   });
 
   beforeEach(async () => {});
