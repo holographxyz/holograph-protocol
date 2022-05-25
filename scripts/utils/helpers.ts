@@ -351,6 +351,7 @@ const genesisDeployHelper = async function (
     deployments.log('future "' + name + '" address is', contractDeterministic.address);
     await contractDeterministic.deploy();
     contract = await ethers.getContract(name);
+    await sleep(1000);
   } else {
     deployments.log('reusing "' + name + '" at', contract?.address);
   }
@@ -419,6 +420,10 @@ const getHolographedContractHash = async function (
   return hash;
 };
 
+const sleep = async function (ms: number) {
+  return new Promise (resolve => setTimeout(resolve, ms));
+};
+
 export {
   isDefined,
   toHex,
@@ -440,4 +445,5 @@ export {
   remove0x,
   sha256,
   getHolographedContractHash,
+  sleep,
 };

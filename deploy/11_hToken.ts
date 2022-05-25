@@ -4,7 +4,7 @@ import { BigNumberish, BytesLike, ContractFactory, Contract } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy-holographed/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { LeanHardhatRuntimeEnvironment, Signature, hreSplit, zeroAddress, StrictECDSA } from '../scripts/utils/helpers';
+import { LeanHardhatRuntimeEnvironment, Signature, hreSplit, zeroAddress, StrictECDSA, sleep } from '../scripts/utils/helpers';
 import Web3 from 'web3';
 
 const networks = JSON.parse(fs.readFileSync('./config/networks.json', 'utf8'));
@@ -90,6 +90,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
 
     const depoyTx = await holographFactory.deployHolographableContract(config, signature, deployer.address);
     const deployResult = await depoyTx.wait();
+    await sleep(1000);
     if (deployResult.events.length < 1 || deployResult.events[0].event != 'BridgeableContractDeployed') {
       throw new Error('BridgeableContractDeployed event not fired');
     }
