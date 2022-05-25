@@ -14,6 +14,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     args: ['Wrapped ETH (MOCK)', 'WETHmock', 18, 'ERC20Mock', '1'],
     log: true,
     waitConfirmations: 1,
+    nonce: await hre.ethers.provider.getTransactionCount(deployer),
   });
   await sleep(1000);
 };

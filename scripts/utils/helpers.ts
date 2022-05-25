@@ -346,7 +346,8 @@ const genesisDeployHelper = async function (
       deployerAddress: holographGenesis?.address,
       saltHash: deployer + salt.substring(2),
       deployCode: generateDeployCode(salt, contractBytecode, initCode),
-      waitConfirmations: 1
+      waitConfirmations: 1,
+      nonce: await ethers.provider.getTransactionCount(deployer),
     });
     deployments.log('future "' + name + '" address is', contractDeterministic.address);
     await contractDeterministic.deploy();
@@ -421,7 +422,11 @@ const getHolographedContractHash = async function (
 };
 
 const sleep = async function (ms: number) {
-  return new Promise (resolve => setTimeout(resolve, ms));
+//  if (typeof (global.__throttled) !== 'undefined' && !global.__throttled) {
+    return new Promise (resolve => { resolve(true) });
+//  } else {
+//    return new Promise (resolve => setTimeout(resolve, ms));
+//  }
 };
 
 export {

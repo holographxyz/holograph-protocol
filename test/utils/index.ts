@@ -152,7 +152,9 @@ export default async function (l2?: boolean): Promise<PreTest> {
   ];
 
   let loop = animatedLoader('\x1b[2m' + ' loading/deploying relevant contracts');
+  global.__throttled = false;
   await hre.deployments.fixture(fixtures);
+  global.__throttled = false;
   clearInterval(loop);
   process.stdout.write(
     '    ' + '\x1b[32m' + '███' + '\x1b[0m' + '\x1b[2m' + ' relevant contracts loaded           ' + '\x1b[0m' + '\n\n'

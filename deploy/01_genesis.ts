@@ -25,6 +25,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       args: [],
       log: true,
       waitConfirmations: 1,
+      nonce: await hre.ethers.provider.getTransactionCount(deployer),
     });
     await sleep(1000);
   }

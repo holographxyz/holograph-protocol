@@ -88,7 +88,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       v: '0x' + sig.substring(130, 132),
     } as Signature);
 
-    const depoyTx = await holographFactory.deployHolographableContract(config, signature, deployer.address);
+    const depoyTx = await holographFactory.deployHolographableContract(config, signature, deployer.address, { nonce: await hre.ethers.provider.getTransactionCount(deployer.address), });
     const deployResult = await depoyTx.wait();
     await sleep(1000);
     if (deployResult.events.length < 1 || deployResult.events[0].event != 'BridgeableContractDeployed') {
