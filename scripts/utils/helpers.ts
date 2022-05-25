@@ -421,11 +421,7 @@ const getHolographedContractHash = async function (
 };
 
 const sleep = async function (ms: number) {
-//  if (typeof (global.__throttled) !== 'undefined' && global.__throttled) {
-    return new Promise (resolve => setTimeout(resolve, ms));
-//  } else {
-//    return new Promise (resolve => { resolve(true) });
-//  }
+  return new Promise((resolve) => setTimeout(resolve, ms));
 };
 
 export {
