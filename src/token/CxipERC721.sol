@@ -6,8 +6,6 @@ import "../abstract/ERC721H.sol";
 
 import "../interface/ERC721Holograph.sol";
 
-import "../library/Strings.sol";
-
 import "../struct/TokenData.sol";
 
 /**

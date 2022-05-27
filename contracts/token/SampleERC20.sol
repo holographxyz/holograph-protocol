@@ -107,8 +107,6 @@ import "../abstract/ERC20H.sol";
 
 import "../interface/ERC20Holograph.sol";
 
-import "../library/Strings.sol";
-
 /**
  * @title Sample ERC-20 token that is bridgeable via Holograph
  * @author CXIP-Labs
@@ -149,10 +147,6 @@ contract SampleERC20 is ERC20H {
         abi.encodePacked(to, amount, block.timestamp, block.number, blockhash(block.number - 1))
       );
     }
-  }
-
-  function test() external view onlyHolographer returns (string memory) {
-    return string(abi.encodePacked("it works! ", Strings.toHexString(msgSender())));
   }
 
   function bridgeIn(

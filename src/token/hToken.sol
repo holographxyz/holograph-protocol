@@ -9,8 +9,6 @@ import "../interface/ERC20Holograph.sol";
 import "../interface/IHolograph.sol";
 import "../interface/IHolographer.sol";
 
-import "../library/Strings.sol";
-
 /**
  * @title Holograph token (aka hToken), used to wrap and bridge native tokens across blockchains.
  * @author CXIP-Labs

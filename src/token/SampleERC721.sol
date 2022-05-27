@@ -6,8 +6,6 @@ import "../abstract/ERC721H.sol";
 
 import "../interface/ERC721Holograph.sol";
 
-import "../library/Strings.sol";
-
 /**
  * @title Sample ERC-721 Collection that is bridgeable via Holograph
  * @author CXIP-Labs
@@ -71,10 +69,6 @@ contract SampleERC721 is ERC721H {
     H721.sourceMint(to, tokenId);
     uint256 id = H721.sourceGetChainPrepend() + uint256(tokenId);
     _tokenURIs[id] = URI;
-  }
-
-  function test() external view onlyHolographer returns (string memory) {
-    return string(abi.encodePacked("it works! ", Strings.toHexString(msgSender())));
   }
 
   function bridgeIn(
