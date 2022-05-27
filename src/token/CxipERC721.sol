@@ -17,11 +17,6 @@ import "../struct/TokenData.sol";
  * @dev The entire logic and functionality of the smart contract is self-contained.
  */
 contract CxipERC721 is ERC721H {
-  /*
-   * @dev Address of initial creator/owner of the collection.
-   */
-  address private _owner;
-
   /**
    * @dev Token data mapped by token id.
    */
@@ -31,11 +26,6 @@ contract CxipERC721 is ERC721H {
    * @dev Internal reference used for minting incremental token ids.
    */
   uint224 private _currentTokenId;
-
-  modifier onlyOwner(address msgSender) {
-    require(msgSender == _owner, "owner only function");
-    _;
-  }
 
   /**
    * @notice Constructor is empty and not utilised.
@@ -65,11 +55,7 @@ contract CxipERC721 is ERC721H {
       string(abi.encodePacked("https://arweave.net/", _tokenData[_tokenId].arweave, _tokenData[_tokenId].arweave2));
   }
 
-  function cxipMint(
-    address msgSender,
-    uint224 tokenId,
-    TokenData calldata tokenData
-  ) external onlyHolographer onlyOwner(msgSender) {
+  function cxipMint(uint224 tokenId, TokenData calldata tokenData) external onlyHolographer onlyOwner {
     ERC721Holograph H721 = ERC721Holograph(holographer());
     if (tokenId == 0) {
       while (H721.exists(uint256(_currentTokenId)) || H721.burned(uint256(_currentTokenId))) {

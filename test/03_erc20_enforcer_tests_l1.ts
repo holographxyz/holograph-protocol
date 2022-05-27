@@ -275,7 +275,7 @@ describe('Testing the Holograph ERC20 Enforcer (L1)', async function () {
       });
 
       it('should emit Transfer event for ' + totalTokens + ' ' + tokenSymbol + ' tokens', async function () {
-        await expect(SAMPLEERC20.mint(zeroAddress(), l1.deployer.address, tokensWei))
+        await expect(SAMPLEERC20.mint(l1.deployer.address, tokensWei))
           .to.emit(ERC20, 'Transfer')
           .withArgs(zeroAddress(), l1.deployer.address, tokensWei);
       });
@@ -622,7 +622,7 @@ describe('Testing the Holograph ERC20 Enforcer (L1)', async function () {
     });
 
     it('should fail burning via not approved spender', async function () {
-      await expect(SAMPLEERC20.mint(zeroAddress(), l1.deployer.address, tokensWei))
+      await expect(SAMPLEERC20.mint(l1.deployer.address, tokensWei))
         .to.emit(ERC20, 'Transfer')
         .withArgs(zeroAddress(), l1.deployer.address, tokensWei);
 
@@ -793,7 +793,7 @@ describe('Testing the Holograph ERC20 Enforcer (L1)', async function () {
       });
 
       it('deployer should return true for isOwner (msgSender)', async function () {
-        expect(await SAMPLEERC20.attach(ERC20.address)['isOwner(address)'](zeroAddress())).to.be.true;
+        expect(await SAMPLEERC20.attach(ERC20.address)['isOwner()']()).to.be.true;
       });
 
       it('wallet1 should return false for isOwner', async function () {

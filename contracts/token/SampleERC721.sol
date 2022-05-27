@@ -117,21 +117,14 @@ import "../library/Strings.sol";
  */
 contract SampleERC721 is ERC721H {
   /*
-   * @dev Address of initial creator/owner of the collection.
+   * @dev Mapping of all token URIs.
    */
-  address private _owner;
-
   mapping(uint256 => string) private _tokenURIs;
 
   /*
    * @dev Internal reference used for minting incremental token ids.
    */
   uint224 private _currentTokenId;
-
-  modifier onlyOwner(address msgSender) {
-    require(msgSender == _owner, "owner only function");
-    _;
-  }
 
   /**
    * @notice Constructor is empty and not utilised.
@@ -164,11 +157,10 @@ contract SampleERC721 is ERC721H {
    * @dev Sample mint where anyone can mint specific token, with a custom URI
    */
   function mint(
-    address msgSender,
     address to,
     uint224 tokenId,
     string calldata URI
-  ) external onlyHolographer onlyOwner(msgSender) {
+  ) external onlyHolographer onlyOwner {
     ERC721Holograph H721 = ERC721Holograph(holographer());
     if (tokenId == 0) {
       _currentTokenId += 1;
@@ -182,8 +174,8 @@ contract SampleERC721 is ERC721H {
     _tokenURIs[id] = URI;
   }
 
-  function test(address msgSender) external view onlyHolographer returns (string memory) {
-    return string(abi.encodePacked("it works! ", Strings.toHexString(msgSender)));
+  function test() external view onlyHolographer returns (string memory) {
+    return string(abi.encodePacked("it works! ", Strings.toHexString(msgSender())));
   }
 
   function bridgeIn(
@@ -213,17 +205,5 @@ contract SampleERC721 is ERC721H {
   ) external override onlyHolographer returns (bool) {
     delete _tokenURIs[_tokenId];
     return true;
-  }
-
-  function owner() external view returns (address) {
-    return _owner;
-  }
-
-  function isOwner() external view returns (bool) {
-    return msg.sender == _owner;
-  }
-
-  function isOwner(address wallet) external view returns (bool) {
-    return wallet == _owner;
   }
 }

@@ -7,7 +7,7 @@ import { LeanHardhatRuntimeEnvironment, hreSplit } from '../scripts/utils/helper
 import Web3 from 'web3';
 
 const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
-  let { hre, hre2 } = hreSplit(hre1, global.__companionNetwork);
+  let { hre, hre2 } = await hreSplit(hre1, global.__companionNetwork);
   const { deployer } = await hre.getNamedAccounts();
 
   const error = function (err: string) {

@@ -15,7 +15,7 @@ import {
 const networks = JSON.parse(fs.readFileSync('./config/networks.json', 'utf8'));
 
 const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
-  let { hre, hre2 } = hreSplit(hre1, global.__companionNetwork);
+  let { hre, hre2 } = await hreSplit(hre1, global.__companionNetwork);
   const { deployments, getNamedAccounts } = hre;
   const { deploy, deterministicCustom } = deployments;
   const { deployer } = await getNamedAccounts();

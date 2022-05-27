@@ -10,7 +10,7 @@ import Web3 from 'web3';
 const networks = JSON.parse(fs.readFileSync('./config/networks.json', 'utf8'));
 
 const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
-  let { hre, hre2 } = hreSplit(hre1, global.__companionNetwork);
+  let { hre, hre2 } = await hreSplit(hre1, global.__companionNetwork);
   const accounts = await hre.ethers.getSigners();
   const deployer: SignerWithAddress = accounts[0];
 

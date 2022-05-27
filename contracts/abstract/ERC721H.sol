@@ -109,12 +109,26 @@ import "../interface/HolographedERC721.sol";
 
 abstract contract ERC721H is Initializable, HolographedERC721 {
   /*
+   * @dev Address of initial creator/owner of the collection.
+   */
+  address internal _owner;
+
+  /*
    * @dev Dummy variable to prevent empty functions from making "switch to pure" warnings.
    */
   bool private _success;
 
   modifier onlyHolographer() {
     require(msg.sender == holographer(), "holographer only function");
+    _;
+  }
+
+  modifier onlyOwner() {
+    if (msg.sender == holographer()) {
+      require(msgSender() == _owner, "owner only function");
+    } else {
+      require(msg.sender == _owner, "owner only function");
+    }
     _;
   }
 
@@ -146,6 +160,15 @@ abstract contract ERC721H is Initializable, HolographedERC721 {
     }
     _setInitialized();
     return IInitializable.init.selector;
+  }
+
+  /*
+   * @dev The Holographer passes original msg.sender via calldata. This function extracts it.
+   */
+  function msgSender() internal pure returns (address sender) {
+    assembly {
+      sender := calldataload(sub(calldatasize(), 0x20))
+    }
   }
 
   /*
@@ -310,5 +333,21 @@ abstract contract ERC721H is Initializable, HolographedERC721 {
 
   function supportsInterface(bytes4) external pure returns (bool) {
     return false;
+  }
+
+  function owner() external view returns (address) {
+    return _owner;
+  }
+
+  function isOwner() external view returns (bool) {
+    if (msg.sender == holographer()) {
+      return msgSender() == _owner;
+    } else {
+      return msg.sender == _owner;
+    }
+  }
+
+  function isOwner(address wallet) external view returns (bool) {
+    return wallet == _owner;
   }
 }

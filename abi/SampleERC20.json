@@ -490,11 +490,6 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "msgSender",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
         "name": "to",
         "type": "address"
       },
@@ -542,13 +537,7 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "msgSender",
-        "type": "address"
-      }
-    ],
+    "inputs": [],
     "name": "test",
     "outputs": [
       {

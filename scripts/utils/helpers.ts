@@ -145,10 +145,10 @@ const l2Ethers = function (hre1: HardhatRuntimeEnvironment) {
   return hre.ethers;
 };
 
-const hreSplit = function (
+const hreSplit = async function (
   hre1: HardhatRuntimeEnvironment,
   flip?: boolean
-): { hre: LeanHardhatRuntimeEnvironment; hre2: LeanHardhatRuntimeEnvironment } {
+): Promise<{ hre: LeanHardhatRuntimeEnvironment; hre2: LeanHardhatRuntimeEnvironment }> {
   if (!isDefined(hre1.network.companionNetworks['l2'])) {
     throw new Error(
       'A companion network is required for multi-chain testing. Use "companionNetworks" inside of Hardhat networks config file.'

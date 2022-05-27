@@ -875,21 +875,6 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
       }
     } else {
       /*
-            _target = source();
-            assembly {
-                calldatacopy(0, 0, calldatasize())
-                let result := call(gas(), _target, 0, 0, calldatasize(), 0, 0)
-                returndatacopy(0, 0, returndatasize())
-                switch result
-                case 0 {
-                    revert(0, returndatasize())
-                }
-                default {
-                    return(0, returndatasize())
-                }
-            }
-*/
-      /*
        * @dev We forward the calldata to source contract via a call request.
        *  Since this replaces msg.sender with address(this), we inject original msg.sender into calldata.
        *  This allows us to protect this contract's storage layer from source contract's malicious actions.
@@ -898,9 +883,8 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
       _target = source();
       assembly {
         calldatacopy(0, 0, calldatasize())
-        // we inject msg.sender into the calldata 32 byte slot right after 4 byte function selector
-        mstore(4, caller())
-        let result := call(gas(), _target, callvalue(), 0, calldatasize(), 0, 0)
+        mstore(calldatasize(), caller())
+        let result := call(gas(), _target, callvalue(), 0, add(calldatasize(), 32), 0, 0)
         returndatacopy(0, 0, returndatasize())
         switch result
         case 0 {

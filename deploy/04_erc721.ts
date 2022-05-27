@@ -9,7 +9,7 @@ import {
 } from '../scripts/utils/helpers';
 
 const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
-  let { hre, hre2 } = hreSplit(hre1, global.__companionNetwork);
+  let { hre, hre2 } = await hreSplit(hre1, global.__companionNetwork);
   const { getNamedAccounts } = hre;
   const { deployer } = await getNamedAccounts();
 

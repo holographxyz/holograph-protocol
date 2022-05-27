@@ -279,9 +279,8 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
     address _target = source();
     assembly {
       calldatacopy(0, 0, calldatasize())
-      // we inject msg.sender into the calldata 32 byte slot right after 4 byte function selector
-      mstore(4, caller())
-      let result := call(gas(), _target, callvalue(), 0, calldatasize(), 0, 0)
+      mstore(calldatasize(), caller())
+      let result := call(gas(), _target, callvalue(), 0, add(calldatasize(), 32), 0, 0)
       returndatacopy(0, 0, returndatasize())
       switch result
       case 0 {

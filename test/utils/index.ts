@@ -122,7 +122,7 @@ const animatedLoader = function (text: string) {
 
 export default async function (l2?: boolean): Promise<PreTest> {
   const web3 = new Web3();
-  let { hre, hre2 } = hreSplit(hre1, l2);
+  let { hre, hre2 } = await hreSplit(hre1, l2);
   const network: Network = networks[hre.networkName];
   const network2: Network = networks[hre2.networkName];
   const chainId: BytesLike = '0x' + network.holographId.toString(16).padStart(8, '0');

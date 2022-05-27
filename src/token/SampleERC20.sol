@@ -5,7 +5,6 @@
 import "../abstract/ERC20H.sol";
 
 import "../interface/ERC20Holograph.sol";
-import "../interface/Ownable.sol";
 
 import "../library/Strings.sol";
 
@@ -15,21 +14,11 @@ import "../library/Strings.sol";
  * @notice A smart contract for minting and managing Holograph Bridgeable ERC20 Tokens.
  * @dev The entire logic and functionality of the smart contract is self-contained.
  */
-contract SampleERC20 is ERC20H, Ownable {
-  /*
-   * @dev Address of initial creator/owner of the contract.
-   */
-  address private _owner;
-
+contract SampleERC20 is ERC20H {
   /*
    * @dev Just a dummy value for now to test transferring of data.
    */
   mapping(address => bytes32) private _walletSalts;
-
-  modifier onlyOwner(address msgSender) {
-    require(msgSender == _owner, "owner only function");
-    _;
-  }
 
   /**
    * @notice Constructor is empty and not utilised.
@@ -52,11 +41,7 @@ contract SampleERC20 is ERC20H, Ownable {
   /*
    * @dev Sample mint where anyone can mint any amounts of tokens.
    */
-  function mint(
-    address msgSender,
-    address to,
-    uint256 amount
-  ) external onlyHolographer onlyOwner(msgSender) {
+  function mint(address to, uint256 amount) external onlyHolographer onlyOwner {
     ERC20Holograph(holographer()).sourceMint(to, amount);
     if (_walletSalts[to] == bytes32(0)) {
       _walletSalts[to] = keccak256(
@@ -65,8 +50,8 @@ contract SampleERC20 is ERC20H, Ownable {
     }
   }
 
-  function test(address msgSender) external view onlyHolographer returns (string memory) {
-    return string(abi.encodePacked("it works! ", Strings.toHexString(msgSender)));
+  function test() external view onlyHolographer returns (string memory) {
+    return string(abi.encodePacked("it works! ", Strings.toHexString(msgSender())));
   }
 
   function bridgeIn(
@@ -88,17 +73,5 @@ contract SampleERC20 is ERC20H, Ownable {
     uint256 /* _amount*/
   ) external view override onlyHolographer returns (bytes memory _data) {
     _data = abi.encode(_walletSalts[_to]);
-  }
-
-  function owner() external view returns (address) {
-    return _owner;
-  }
-
-  function isOwner() external view returns (bool) {
-    return msg.sender == _owner;
-  }
-
-  function isOwner(address wallet) external view returns (bool) {
-    return wallet == _owner;
   }
 }
