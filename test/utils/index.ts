@@ -35,6 +35,8 @@ import {
   SecureStorageProxy,
 } from '../../typechain-types';
 import {
+  Erc20Config,
+  Erc721Config,
   LeanHardhatRuntimeEnvironment,
   Network,
   Networks,
@@ -44,6 +46,8 @@ import {
   ZERO_ADDRESS,
   sha256,
   getHolographedContractHash,
+  generateErc20Config,
+  generateErc721Config,
   generateInitCode,
 } from '../../scripts/utils/helpers';
 
@@ -208,10 +212,10 @@ export default async function (l2?: boolean): Promise<PreTest> {
   let cxipErc721Holographer: Holographer;
   let cxipErc721Enforcer: HolographERC721;
 
-  let hTokenHash: BytesLike;
-  let sampleErc20Hash: BytesLike;
-  let sampleErc721Hash: BytesLike;
-  let cxipErc721Hash: BytesLike;
+  let hTokenHash: Erc20Config;
+  let sampleErc20Hash: Erc20Config;
+  let sampleErc721Hash: Erc721Config;
+  let cxipErc721Hash: Erc721Config;
 
   admin = (await hre.ethers.getContractOrNull('Admin')) as Admin;
   cxipErc721 = (await hre.ethers.getContractOrNull('CxipERC721')) as CxipERC721;
@@ -243,35 +247,22 @@ export default async function (l2?: boolean): Promise<PreTest> {
 
   holographer = (await hre.ethers.getContractAt('Holographer', await registry.getHToken(chainId))) as Holographer;
 
-  hTokenHash = await getHolographedContractHash(
+  hTokenHash = await generateErc20Config(
+    network,
     deployer.address,
-    'hToken', // contractName
-    'HolographERC20', // contractType
-    chainId, // chainId
-    '0x' + '00'.repeat(32), // salt
-    generateInitCode(
-      ['string', 'string', 'uint8', 'uint256', 'string', 'string', 'bool', 'bytes'],
-      [
-        network.tokenName + ' (Holographed)', // string memory contractName
-        'h' + network.tokenSymbol, // string memory contractSymbol
-        18, // uint8 contractDecimals
-        '0x' + '00'.repeat(32), // uint256 eventConfig
-        network.tokenName + ' (Holographed)', // string domainSeperator
-        '1', // string domainVersion
-        false, // bool skipInit
-        generateInitCode(
-          ['address', 'uint16'],
-          [
-            deployer.address, // owner
-            0, // fee (bps)
-          ]
-        ),
-      ]
-    )
+    'hToken',
+    network.tokenName + ' (Holographed)',
+    'h' + network.tokenSymbol,
+    network.tokenName + ' (Holographed)',
+    '1',
+    18,
+    '0x' + '00'.repeat(32),
+    generateInitCode(['address', 'uint16'], [deployer.address, 0]),
+    '0x' + '00'.repeat(32)
   );
   hTokenHolographer = (await hre.ethers.getContractAt(
     'Holographer',
-    await registry.getHolographedHashAddress(hTokenHash)
+    await registry.getHolographedHashAddress(hTokenHash.erc20ConfigHash)
   )) as Holographer;
   hTokenEnforcer = (await hre.ethers.getContractAt(
     'HolographERC20',
@@ -279,35 +270,22 @@ export default async function (l2?: boolean): Promise<PreTest> {
   )) as HolographERC20;
   hToken = (await hre.ethers.getContractAt('hToken', await hTokenHolographer.getSourceContract())) as HToken;
 
-  sampleErc20Hash = await getHolographedContractHash(
+  sampleErc20Hash = await generateErc20Config(
+    network,
     deployer.address,
-    'SampleERC20', // contractName
-    'HolographERC20', // contractType
-    chainId, // chainId
-    '0x' + '00'.repeat(32), // salt
-    generateInitCode(
-      ['string', 'string', 'uint8', 'uint256', 'string', 'string', 'bool', 'bytes'],
-      [
-        'Sample ERC20 Token (' + hre.networkName + ')', // string memory contractName
-        'SMPL', // string memory contractSymbol
-        18, // uint8 contractDecimals
-        '0x' + '00'.repeat(32), // uint256 eventConfig
-        'Sample ERC20 Token', // string domainSeperator
-        '1', // string domainVersion
-        false, // bool skipInit
-        generateInitCode(
-          ['address', 'uint16'],
-          [
-            deployer.address, // owner
-            0, // fee (bps)
-          ]
-        ),
-      ]
-    )
+    'SampleERC20',
+    'Sample ERC20 Token (' + hre.networkName + ')',
+    'SMPL',
+    'Sample ERC20 Token',
+    '1',
+    18,
+    '0x' + '00'.repeat(32),
+    generateInitCode(['address', 'uint16'], [deployer.address, 0]),
+    '0x' + '00'.repeat(32)
   );
   sampleErc20Holographer = (await hre.ethers.getContractAt(
     'Holographer',
-    await registry.getHolographedHashAddress(sampleErc20Hash)
+    await registry.getHolographedHashAddress(sampleErc20Hash.erc20ConfigHash)
   )) as Holographer;
   sampleErc20Enforcer = (await hre.ethers.getContractAt(
     'HolographERC20',
@@ -318,32 +296,20 @@ export default async function (l2?: boolean): Promise<PreTest> {
     await sampleErc20Holographer.getSourceContract()
   )) as SampleERC20;
 
-  sampleErc721Hash = await getHolographedContractHash(
+  sampleErc721Hash = await generateErc721Config(
+    network,
     deployer.address,
-    'SampleERC721', // contractName
-    'HolographERC721', // contractType
-    chainId, // chainId
-    '0x' + '00'.repeat(32), // salt
-    generateInitCode(
-      ['string', 'string', 'uint16', 'uint256', 'bool', 'bytes'],
-      [
-        'Sample ERC721 Contract (' + hre.networkName + ')', // string memory contractName
-        'SMPLR', // string memory contractSymbol
-        1000, // uint16 contractBps
-        '0x' + '00'.repeat(32), // uint256 eventConfig
-        false, // bool skipInit
-        generateInitCode(
-          ['address'],
-          [
-            deployer.address, // owner
-          ]
-        ),
-      ]
-    )
+    'SampleERC721',
+    'Sample ERC721 Contract (' + hre.networkName + ')',
+    'SMPLR',
+    1000,
+    '0x' + '00'.repeat(32),
+    generateInitCode(['address'], [deployer.address]),
+    '0x' + '00'.repeat(32)
   );
   sampleErc721Holographer = (await hre.ethers.getContractAt(
     'Holographer',
-    await registry.getHolographedHashAddress(sampleErc721Hash)
+    await registry.getHolographedHashAddress(sampleErc721Hash.erc721ConfigHash)
   )) as Holographer;
   sampleErc721Enforcer = (await hre.ethers.getContractAt(
     'HolographERC721',
@@ -354,32 +320,20 @@ export default async function (l2?: boolean): Promise<PreTest> {
     await sampleErc721Holographer.getSourceContract()
   )) as SampleERC721;
 
-  cxipErc721Hash = await getHolographedContractHash(
+  cxipErc721Hash = await generateErc721Config(
+    network,
     deployer.address,
-    'CxipERC721', // contractName
-    'HolographERC721', // contractType
-    chainId, // chainId
-    '0x' + '00'.repeat(32), // salt
-    generateInitCode(
-      ['string', 'string', 'uint16', 'uint256', 'bool', 'bytes'],
-      [
-        'CXIP ERC721 Collection (' + hre.networkName + ')', // string memory contractName
-        'CXIP', // string memory contractSymbol
-        1000, // uint16 contractBps
-        '0x' + '00'.repeat(32), // uint256 eventConfig
-        false, // bool skipInit
-        generateInitCode(
-          ['address'],
-          [
-            deployer.address, // owner
-          ]
-        ),
-      ]
-    )
+    'CxipERC721',
+    'CXIP ERC721 Collection (' + hre.networkName + ')',
+    'CXIP',
+    1000,
+    '0x' + '00'.repeat(32),
+    generateInitCode(['address'], [deployer.address]),
+    '0x' + '00'.repeat(32)
   );
   cxipErc721Holographer = (await hre.ethers.getContractAt(
     'Holographer',
-    await registry.getHolographedHashAddress(cxipErc721Hash)
+    await registry.getHolographedHashAddress(cxipErc721Hash.erc721ConfigHash)
   )) as Holographer;
   cxipErc721Enforcer = (await hre.ethers.getContractAt(
     'HolographERC721',

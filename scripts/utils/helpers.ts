@@ -1,4 +1,5 @@
 declare var global: any;
+import fs from 'fs';
 import Web3 from 'web3';
 import crypto from 'crypto';
 import { EthereumProvider, Artifacts, HardhatRuntimeEnvironment } from 'hardhat/types';
@@ -23,6 +24,7 @@ import {
   getUnnamedSigners,
 } from '@nomiclabs/hardhat-ethers/internal/helpers';
 import type * as ProviderProxyT from '@nomiclabs/hardhat-ethers/internal/provider-proxy';
+import { DeploymentConfigStruct } from '../../typechain-types/HolographFactory';
 
 export interface LeanHardhatRuntimeEnvironment {
   networkName: string;
@@ -388,6 +390,118 @@ const sha256 = function (x: string): string {
   return '0x' + crypto.createHash('sha256').update(x, 'utf8').digest('hex');
 };
 
+export interface Erc721Config {
+  erc721Config: DeploymentConfigStruct;
+  erc721ConfigHash: BytesLike;
+  erc721ConfigHashBytes: number[];
+}
+const generateErc721Config = async function (
+  network: Network,
+  deployer: BytesLike,
+  contractName: string,
+  collectionName: string,
+  collectionSymbol: string,
+  royaltyBps: BigNumberish,
+  eventConfig: BytesLike,
+  initCode: BytesLike,
+  salt: BytesLike
+): Promise<Erc721Config> {
+  let hre: HardhatRuntimeEnvironment = require('hardhat');
+  let chainId: string = '0x' + network.holographId.toString(16).padStart(8, '0');
+  let erc721Hash: string = '0x' + web3.utils.asciiToHex('HolographERC721').substring(2).padStart(64, '0');
+  let artifact: ContractFactory = await hre.ethers.getContractFactory(contractName);
+  let erc721Config: DeploymentConfigStruct = {
+    contractType: erc721Hash,
+    chainType: chainId,
+    salt: salt,
+    byteCode: artifact.bytecode,
+    initCode: generateInitCode(
+      ['string', 'string', 'uint16', 'uint256', 'bool', 'bytes'],
+      [
+        collectionName, // string memory contractName
+        collectionSymbol, // string memory contractSymbol
+        royaltyBps, // uint16 contractBps
+        '0x' + '00'.repeat(32), // uint256 eventConfig
+        false, // bool skipInit
+        initCode,
+      ]
+    ),
+  };
+  let erc721ConfigHash: BytesLike = web3.utils.keccak256(
+    '0x' +
+      (erc721Config.contractType as string).substring(2) +
+      (erc721Config.chainType as string).substring(2) +
+      (erc721Config.salt as string).substring(2) +
+      web3.utils.keccak256(erc721Config.byteCode as string).substring(2) +
+      web3.utils.keccak256(erc721Config.initCode as string).substring(2) +
+      (deployer as string).substring(2)
+  );
+  let erc721ConfigHashBytes: number[] = web3.utils.hexToBytes(erc721ConfigHash);
+  return {
+    erc721Config,
+    erc721ConfigHash,
+    erc721ConfigHashBytes,
+  } as Erc721Config;
+};
+
+export interface Erc20Config {
+  erc20Config: DeploymentConfigStruct;
+  erc20ConfigHash: BytesLike;
+  erc20ConfigHashBytes: number[];
+}
+const generateErc20Config = async function (
+  network: Network,
+  deployer: BytesLike,
+  contractName: string,
+  tokenName: string,
+  tokenSymbol: string,
+  domainSeperator: string,
+  domainVersion: string,
+  decimals: BigNumberish,
+  eventConfig: BytesLike,
+  initCode: BytesLike,
+  salt: BytesLike
+): Promise<Erc20Config> {
+  let hre: HardhatRuntimeEnvironment = require('hardhat');
+  let chainId: string = '0x' + network.holographId.toString(16).padStart(8, '0');
+  let erc20Hash: string = '0x' + web3.utils.asciiToHex('HolographERC20').substring(2).padStart(64, '0');
+  let artifact: ContractFactory = await hre.ethers.getContractFactory(contractName);
+  let erc20Config: DeploymentConfigStruct = {
+    contractType: erc20Hash,
+    chainType: chainId,
+    salt: salt,
+    byteCode: artifact.bytecode,
+    initCode: generateInitCode(
+      ['string', 'string', 'uint8', 'uint256', 'string', 'string', 'bool', 'bytes'],
+      [
+        tokenName, // string memory tokenName
+        tokenSymbol, // string memory tokenSymbol
+        decimals, // uint8 decimals
+        '0x' + '00'.repeat(32), // uint256 eventConfig
+        domainSeperator,
+        domainVersion,
+        false, // bool skipInit
+        initCode,
+      ]
+    ),
+  };
+  let erc20ConfigHash: BytesLike = web3.utils.keccak256(
+    '0x' +
+      (erc20Config.contractType as string).substring(2) +
+      (erc20Config.chainType as string).substring(2) +
+      (erc20Config.salt as string).substring(2) +
+      web3.utils.keccak256(erc20Config.byteCode as string).substring(2) +
+      web3.utils.keccak256(erc20Config.initCode as string).substring(2) +
+      (deployer as string).substring(2)
+  );
+  let erc20ConfigHashBytes: number[] = web3.utils.hexToBytes(erc20ConfigHash);
+  return {
+    erc20Config,
+    erc20ConfigHash,
+    erc20ConfigHashBytes,
+  } as Erc20Config;
+};
+
 const getHolographedContractHash = async function (
   deployer: string,
   contractName: string,
@@ -444,6 +558,8 @@ export {
   ZERO_ADDRESS,
   remove0x,
   sha256,
+  generateErc721Config,
+  generateErc20Config,
   getHolographedContractHash,
   sleep,
 };

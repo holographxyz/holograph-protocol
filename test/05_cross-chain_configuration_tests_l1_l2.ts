@@ -13,6 +13,8 @@ import {
   buildDomainSeperator,
   randomHex,
   generateInitCode,
+  generateErc20Config,
+  generateErc721Config,
 } from '../scripts/utils/helpers';
 
 import {
@@ -259,44 +261,18 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
   describe('Deploy cross-chain contracts', async function () {
     describe('hToken', async function () {
       it('deploy l1 equivalent on l2', async function () {
-        let chainId: string = '0x' + l1.network.holographId.toString(16).padStart(8, '0');
-        let erc20Hash: string = '0x' + l1.web3.utils.asciiToHex('HolographERC20').substring(2).padStart(64, '0');
-        let hTokenErc20Artifact: ContractFactory = await l1.hre.ethers.getContractFactory('hToken');
-        let erc20Config: DeploymentConfigStruct = {
-          contractType: erc20Hash,
-          chainType: chainId,
-          salt: '0x' + '00'.repeat(32),
-          byteCode: hTokenErc20Artifact.bytecode,
-          initCode: generateInitCode(
-            ['string', 'string', 'uint8', 'uint256', 'string', 'string', 'bool', 'bytes'],
-            [
-              l1.network.tokenName + ' (Holographed)', // string memory contractName
-              'h' + l1.network.tokenSymbol, // string memory contractSymbol
-              18, // uint8 contractDecimals
-              '0x' + '00'.repeat(32), // uint256 eventConfig
-              l1.network.tokenName + ' (Holographed)', // string domainSeperator
-              '1', // string domainVersion
-              false, // bool skipInit
-              generateInitCode(
-                ['address', 'uint16'],
-                [
-                  l1.deployer.address, // owner
-                  0, // fee (bps)
-                ]
-              ),
-            ]
-          ),
-        };
-        let erc20ConfigHash: number[] = l1.web3.utils.hexToBytes(
-          l1.web3.utils.keccak256(
-            '0x' +
-              (erc20Config.contractType as string).substring(2) +
-              (erc20Config.chainType as string).substring(2) +
-              (erc20Config.salt as string).substring(2) +
-              l1.web3.utils.keccak256(erc20Config.byteCode as string).substring(2) +
-              l1.web3.utils.keccak256(erc20Config.initCode as string).substring(2) +
-              l1.deployer.address.substring(2)
-          )
+        let { erc20Config, erc20ConfigHash, erc20ConfigHashBytes } = await generateErc20Config(
+          l1.network,
+          l1.deployer.address,
+          'hToken',
+          l1.network.tokenName + ' (Holographed)',
+          'h' + l1.network.tokenSymbol,
+          l1.network.tokenName + ' (Holographed)',
+          '1',
+          18,
+          '0x' + '00'.repeat(32),
+          generateInitCode(['address', 'uint16'], [l1.deployer.address, 0]),
+          '0x' + '00'.repeat(32)
         );
 
         let hTokenErc20Address = await l2.registry.getHolographedHashAddress(erc20ConfigHash);
@@ -305,7 +281,7 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
 
         hTokenErc20Address = await l1.registry.getHolographedHashAddress(erc20ConfigHash);
 
-        let sig = await l1.deployer.signMessage(erc20ConfigHash);
+        let sig = await l1.deployer.signMessage(erc20ConfigHashBytes);
         let signature: Signature = StrictECDSA({
           r: '0x' + sig.substring(2, 66),
           s: '0x' + sig.substring(66, 130),
@@ -314,48 +290,22 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
 
         await expect(l2.factory.deployHolographableContract(erc20Config, signature, l1.deployer.address))
           .to.emit(l2.factory, 'BridgeableContractDeployed')
-          .withArgs(hTokenErc20Address, toHex(erc20ConfigHash));
+          .withArgs(hTokenErc20Address, erc20ConfigHash);
       });
 
       it('deploy l2 equivalent on l1', async function () {
-        let chainId: string = '0x' + l2.network.holographId.toString(16).padStart(8, '0');
-        let erc20Hash: string = '0x' + l2.web3.utils.asciiToHex('HolographERC20').substring(2).padStart(64, '0');
-        let hTokenErc20Artifact: ContractFactory = await l2.hre.ethers.getContractFactory('hToken');
-        let erc20Config: DeploymentConfigStruct = {
-          contractType: erc20Hash,
-          chainType: chainId,
-          salt: '0x' + '00'.repeat(32),
-          byteCode: hTokenErc20Artifact.bytecode,
-          initCode: generateInitCode(
-            ['string', 'string', 'uint8', 'uint256', 'string', 'string', 'bool', 'bytes'],
-            [
-              l2.network.tokenName + ' (Holographed)', // string memory contractName
-              'h' + l2.network.tokenSymbol, // string memory contractSymbol
-              18, // uint8 contractDecimals
-              '0x' + '00'.repeat(32), // uint256 eventConfig
-              l2.network.tokenName + ' (Holographed)', // string domainSeperator
-              '1', // string domainVersion
-              false, // bool skipInit
-              generateInitCode(
-                ['address', 'uint16'],
-                [
-                  l2.deployer.address, // owner
-                  0, // fee (bps)
-                ]
-              ),
-            ]
-          ),
-        };
-        let erc20ConfigHash: number[] = l2.web3.utils.hexToBytes(
-          l2.web3.utils.keccak256(
-            '0x' +
-              (erc20Config.contractType as string).substring(2) +
-              (erc20Config.chainType as string).substring(2) +
-              (erc20Config.salt as string).substring(2) +
-              l2.web3.utils.keccak256(erc20Config.byteCode as string).substring(2) +
-              l2.web3.utils.keccak256(erc20Config.initCode as string).substring(2) +
-              l2.deployer.address.substring(2)
-          )
+        let { erc20Config, erc20ConfigHash, erc20ConfigHashBytes } = await generateErc20Config(
+          l2.network,
+          l2.deployer.address,
+          'hToken',
+          l2.network.tokenName + ' (Holographed)',
+          'h' + l2.network.tokenSymbol,
+          l2.network.tokenName + ' (Holographed)',
+          '1',
+          18,
+          '0x' + '00'.repeat(32),
+          generateInitCode(['address', 'uint16'], [l2.deployer.address, 0]),
+          '0x' + '00'.repeat(32)
         );
 
         let hTokenErc20Address = await l1.registry.getHolographedHashAddress(erc20ConfigHash);
@@ -364,7 +314,7 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
 
         hTokenErc20Address = await l2.registry.getHolographedHashAddress(erc20ConfigHash);
 
-        let sig = await l2.deployer.signMessage(erc20ConfigHash);
+        let sig = await l2.deployer.signMessage(erc20ConfigHashBytes);
         let signature: Signature = StrictECDSA({
           r: '0x' + sig.substring(2, 66),
           s: '0x' + sig.substring(66, 130),
@@ -373,50 +323,24 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
 
         await expect(l1.factory.deployHolographableContract(erc20Config, signature, l2.deployer.address))
           .to.emit(l1.factory, 'BridgeableContractDeployed')
-          .withArgs(hTokenErc20Address, toHex(erc20ConfigHash));
+          .withArgs(hTokenErc20Address, erc20ConfigHash);
       });
     });
 
     describe('SampleERC20', async function () {
       it('deploy l1 equivalent on l2', async function () {
-        let chainId: string = '0x' + l1.network.holographId.toString(16).padStart(8, '0');
-        let erc20Hash: string = '0x' + l1.web3.utils.asciiToHex('HolographERC20').substring(2).padStart(64, '0');
-        let sampleErc20Artifact: ContractFactory = await l1.hre.ethers.getContractFactory('SampleERC20');
-        let erc20Config: DeploymentConfigStruct = {
-          contractType: erc20Hash,
-          chainType: chainId,
-          salt: '0x' + '00'.repeat(32),
-          byteCode: sampleErc20Artifact.bytecode,
-          initCode: generateInitCode(
-            ['string', 'string', 'uint8', 'uint256', 'string', 'string', 'bool', 'bytes'],
-            [
-              'Sample ERC20 Token (' + l1.hre.networkName + ')', // string memory contractName
-              'SMPL', // string memory contractSymbol
-              18, // uint8 decimals
-              '0x' + '00'.repeat(32), // uint256 eventConfig
-              'Sample ERC20 Token', // string domainSeperator
-              '1', // string domainVersion
-              false, // bool skipInit
-              generateInitCode(
-                ['address', 'uint16'],
-                [
-                  l1.deployer.address, // owner
-                  0, // fee (bps)
-                ]
-              ),
-            ]
-          ),
-        };
-        let erc20ConfigHash: number[] = l1.web3.utils.hexToBytes(
-          l1.web3.utils.keccak256(
-            '0x' +
-              (erc20Config.contractType as string).substring(2) +
-              (erc20Config.chainType as string).substring(2) +
-              (erc20Config.salt as string).substring(2) +
-              l1.web3.utils.keccak256(erc20Config.byteCode as string).substring(2) +
-              l1.web3.utils.keccak256(erc20Config.initCode as string).substring(2) +
-              l1.deployer.address.substring(2)
-          )
+        let { erc20Config, erc20ConfigHash, erc20ConfigHashBytes } = await generateErc20Config(
+          l1.network,
+          l1.deployer.address,
+          'SampleERC20',
+          'Sample ERC20 Token (' + l1.hre.networkName + ')',
+          'SMPL',
+          'Sample ERC20 Token',
+          '1',
+          18,
+          '0x' + '00'.repeat(32),
+          generateInitCode(['address', 'uint16'], [l1.deployer.address, 0]),
+          '0x' + '00'.repeat(32)
         );
 
         let sampleErc20Address = await l2.registry.getHolographedHashAddress(erc20ConfigHash);
@@ -425,7 +349,7 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
 
         sampleErc20Address = await l1.registry.getHolographedHashAddress(erc20ConfigHash);
 
-        let sig = await l1.deployer.signMessage(erc20ConfigHash);
+        let sig = await l1.deployer.signMessage(erc20ConfigHashBytes);
         let signature: Signature = StrictECDSA({
           r: '0x' + sig.substring(2, 66),
           s: '0x' + sig.substring(66, 130),
@@ -434,48 +358,22 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
 
         await expect(l2.factory.deployHolographableContract(erc20Config, signature, l1.deployer.address))
           .to.emit(l2.factory, 'BridgeableContractDeployed')
-          .withArgs(sampleErc20Address, toHex(erc20ConfigHash));
+          .withArgs(sampleErc20Address, erc20ConfigHash);
       });
 
       it('deploy l2 equivalent on l1', async function () {
-        let chainId: string = '0x' + l2.network.holographId.toString(16).padStart(8, '0');
-        let erc20Hash: string = '0x' + l2.web3.utils.asciiToHex('HolographERC20').substring(2).padStart(64, '0');
-        let sampleErc20Artifact: ContractFactory = await l2.hre.ethers.getContractFactory('SampleERC20');
-        let erc20Config: DeploymentConfigStruct = {
-          contractType: erc20Hash,
-          chainType: chainId,
-          salt: '0x' + '00'.repeat(32),
-          byteCode: sampleErc20Artifact.bytecode,
-          initCode: generateInitCode(
-            ['string', 'string', 'uint8', 'uint256', 'string', 'string', 'bool', 'bytes'],
-            [
-              'Sample ERC20 Token (' + l2.hre.networkName + ')', // string memory contractName
-              'SMPL', // string memory contractSymbol
-              18, // uint8 decimals
-              '0x' + '00'.repeat(32), // uint256 eventConfig
-              'Sample ERC20 Token', // string domainSeperator
-              '1', // string domainVersion
-              false, // bool skipInit
-              generateInitCode(
-                ['address', 'uint16'],
-                [
-                  l2.deployer.address, // owner
-                  0, // fee (bps)
-                ]
-              ),
-            ]
-          ),
-        };
-        let erc20ConfigHash: number[] = l2.web3.utils.hexToBytes(
-          l2.web3.utils.keccak256(
-            '0x' +
-              (erc20Config.contractType as string).substring(2) +
-              (erc20Config.chainType as string).substring(2) +
-              (erc20Config.salt as string).substring(2) +
-              l2.web3.utils.keccak256(erc20Config.byteCode as string).substring(2) +
-              l2.web3.utils.keccak256(erc20Config.initCode as string).substring(2) +
-              l2.deployer.address.substring(2)
-          )
+        let { erc20Config, erc20ConfigHash, erc20ConfigHashBytes } = await generateErc20Config(
+          l2.network,
+          l2.deployer.address,
+          'SampleERC20',
+          'Sample ERC20 Token (' + l2.hre.networkName + ')',
+          'SMPL',
+          'Sample ERC20 Token',
+          '1',
+          18,
+          '0x' + '00'.repeat(32),
+          generateInitCode(['address', 'uint16'], [l1.deployer.address, 0]),
+          '0x' + '00'.repeat(32)
         );
 
         let sampleErc20Address = await l1.registry.getHolographedHashAddress(erc20ConfigHash);
@@ -484,7 +382,7 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
 
         sampleErc20Address = await l2.registry.getHolographedHashAddress(erc20ConfigHash);
 
-        let sig = await l2.deployer.signMessage(erc20ConfigHash);
+        let sig = await l2.deployer.signMessage(erc20ConfigHashBytes);
         let signature: Signature = StrictECDSA({
           r: '0x' + sig.substring(2, 66),
           s: '0x' + sig.substring(66, 130),
@@ -493,47 +391,22 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
 
         await expect(l1.factory.deployHolographableContract(erc20Config, signature, l2.deployer.address))
           .to.emit(l1.factory, 'BridgeableContractDeployed')
-          .withArgs(sampleErc20Address, toHex(erc20ConfigHash));
+          .withArgs(sampleErc20Address, erc20ConfigHash);
       });
     });
 
     describe('SampleERC721', async function () {
       it('deploy l1 equivalent on l2', async function () {
-        let chainId: string = '0x' + l1.network.holographId.toString(16).padStart(8, '0');
-        let erc721Hash: string = '0x' + l1.web3.utils.asciiToHex('HolographERC721').substring(2).padStart(64, '0');
-        let sampleErc721Artifact: ContractFactory = await l1.hre.ethers.getContractFactory('SampleERC721');
-        let erc721Config: DeploymentConfigStruct = {
-          contractType: erc721Hash,
-          chainType: chainId,
-          salt: '0x' + '00'.repeat(32),
-          byteCode: sampleErc721Artifact.bytecode,
-          initCode: generateInitCode(
-            ['string', 'string', 'uint16', 'uint256', 'bool', 'bytes'],
-            [
-              'Sample ERC721 Contract (' + l1.hre.networkName + ')', // string memory contractName
-              'SMPLR', // string memory contractSymbol
-              1000, // uint16 contractBps
-              '0x' + '00'.repeat(32), // uint256 eventConfig
-              false, // bool skipInit
-              generateInitCode(
-                ['address'],
-                [
-                  l1.deployer.address, // owner
-                ]
-              ),
-            ]
-          ),
-        };
-        let erc721ConfigHash: number[] = l1.web3.utils.hexToBytes(
-          l1.web3.utils.keccak256(
-            '0x' +
-              (erc721Config.contractType as string).substring(2) +
-              (erc721Config.chainType as string).substring(2) +
-              (erc721Config.salt as string).substring(2) +
-              l1.web3.utils.keccak256(erc721Config.byteCode as string).substring(2) +
-              l1.web3.utils.keccak256(erc721Config.initCode as string).substring(2) +
-              l1.deployer.address.substring(2)
-          )
+        let { erc721Config, erc721ConfigHash, erc721ConfigHashBytes } = await generateErc721Config(
+          l1.network,
+          l1.deployer.address,
+          'SampleERC721',
+          'Sample ERC721 Contract (' + l1.hre.networkName + ')',
+          'SMPLR',
+          1000,
+          '0x' + '00'.repeat(32),
+          generateInitCode(['address'], [l1.deployer.address /*owner*/]),
+          '0x' + '00'.repeat(32)
         );
 
         let sampleErc721Address = await l2.registry.getHolographedHashAddress(erc721ConfigHash);
@@ -542,7 +415,7 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
 
         sampleErc721Address = await l1.registry.getHolographedHashAddress(erc721ConfigHash);
 
-        let sig = await l1.deployer.signMessage(erc721ConfigHash);
+        let sig = await l1.deployer.signMessage(erc721ConfigHashBytes);
         let signature: Signature = StrictECDSA({
           r: '0x' + sig.substring(2, 66),
           s: '0x' + sig.substring(66, 130),
@@ -551,45 +424,20 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
 
         await expect(l2.factory.deployHolographableContract(erc721Config, signature, l1.deployer.address))
           .to.emit(l2.factory, 'BridgeableContractDeployed')
-          .withArgs(sampleErc721Address, toHex(erc721ConfigHash));
+          .withArgs(sampleErc721Address, erc721ConfigHash);
       });
 
       it('deploy l2 equivalent on l1', async function () {
-        let chainId: string = '0x' + l2.network.holographId.toString(16).padStart(8, '0');
-        let erc721Hash: string = '0x' + l2.web3.utils.asciiToHex('HolographERC721').substring(2).padStart(64, '0');
-        let sampleErc721Artifact: ContractFactory = await l2.hre.ethers.getContractFactory('SampleERC721');
-        let erc721Config: DeploymentConfigStruct = {
-          contractType: erc721Hash,
-          chainType: chainId,
-          salt: '0x' + '00'.repeat(32),
-          byteCode: sampleErc721Artifact.bytecode,
-          initCode: generateInitCode(
-            ['string', 'string', 'uint16', 'uint256', 'bool', 'bytes'],
-            [
-              'Sample ERC721 Contract (' + l2.hre.networkName + ')', // string memory contractName
-              'SMPLR', // string memory contractSymbol
-              1000, // uint16 contractBps
-              '0x' + '00'.repeat(32), // uint256 eventConfig
-              false, // bool skipInit
-              generateInitCode(
-                ['address'],
-                [
-                  l2.deployer.address, // owner
-                ]
-              ),
-            ]
-          ),
-        };
-        let erc721ConfigHash: number[] = l2.web3.utils.hexToBytes(
-          l2.web3.utils.keccak256(
-            '0x' +
-              (erc721Config.contractType as string).substring(2) +
-              (erc721Config.chainType as string).substring(2) +
-              (erc721Config.salt as string).substring(2) +
-              l2.web3.utils.keccak256(erc721Config.byteCode as string).substring(2) +
-              l2.web3.utils.keccak256(erc721Config.initCode as string).substring(2) +
-              l2.deployer.address.substring(2)
-          )
+        let { erc721Config, erc721ConfigHash, erc721ConfigHashBytes } = await generateErc721Config(
+          l2.network,
+          l2.deployer.address,
+          'SampleERC721',
+          'Sample ERC721 Contract (' + l2.hre.networkName + ')',
+          'SMPLR',
+          1000,
+          '0x' + '00'.repeat(32),
+          generateInitCode(['address'], [l2.deployer.address /*owner*/]),
+          '0x' + '00'.repeat(32)
         );
 
         let sampleErc721Address = await l1.registry.getHolographedHashAddress(erc721ConfigHash);
@@ -598,7 +446,7 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
 
         sampleErc721Address = await l2.registry.getHolographedHashAddress(erc721ConfigHash);
 
-        let sig = await l2.deployer.signMessage(erc721ConfigHash);
+        let sig = await l2.deployer.signMessage(erc721ConfigHashBytes);
         let signature: Signature = StrictECDSA({
           r: '0x' + sig.substring(2, 66),
           s: '0x' + sig.substring(66, 130),
@@ -607,47 +455,22 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
 
         await expect(l1.factory.deployHolographableContract(erc721Config, signature, l2.deployer.address))
           .to.emit(l1.factory, 'BridgeableContractDeployed')
-          .withArgs(sampleErc721Address, toHex(erc721ConfigHash));
+          .withArgs(sampleErc721Address, erc721ConfigHash);
       });
     });
 
     describe('CxipERC721', async function () {
       it('deploy l1 equivalent on l2', async function () {
-        let chainId: string = '0x' + l1.network.holographId.toString(16).padStart(8, '0');
-        let erc721Hash: string = '0x' + l1.web3.utils.asciiToHex('HolographERC721').substring(2).padStart(64, '0');
-        let cxipErc721Artifact: ContractFactory = await l1.hre.ethers.getContractFactory('CxipERC721');
-        let erc721Config: DeploymentConfigStruct = {
-          contractType: erc721Hash,
-          chainType: chainId,
-          salt: '0x' + '00'.repeat(32),
-          byteCode: cxipErc721Artifact.bytecode,
-          initCode: generateInitCode(
-            ['string', 'string', 'uint16', 'uint256', 'bool', 'bytes'],
-            [
-              'CXIP ERC721 Collection (' + l1.hre.networkName + ')', // string memory contractName
-              'CXIP', // string memory contractSymbol
-              1000, // uint16 contractBps
-              '0x' + '00'.repeat(32), // uint256 eventConfig
-              false, // bool skipInit
-              generateInitCode(
-                ['address'],
-                [
-                  l1.deployer.address, // owner
-                ]
-              ),
-            ]
-          ),
-        };
-        let erc721ConfigHash: number[] = l1.web3.utils.hexToBytes(
-          l1.web3.utils.keccak256(
-            '0x' +
-              (erc721Config.contractType as string).substring(2) +
-              (erc721Config.chainType as string).substring(2) +
-              (erc721Config.salt as string).substring(2) +
-              l1.web3.utils.keccak256(erc721Config.byteCode as string).substring(2) +
-              l1.web3.utils.keccak256(erc721Config.initCode as string).substring(2) +
-              l1.deployer.address.substring(2)
-          )
+        let { erc721Config, erc721ConfigHash, erc721ConfigHashBytes } = await generateErc721Config(
+          l1.network,
+          l1.deployer.address,
+          'CxipERC721',
+          'CXIP ERC721 Collection (' + l1.hre.networkName + ')',
+          'CXIP',
+          1000,
+          '0x' + '00'.repeat(32),
+          generateInitCode(['address'], [l1.deployer.address /*owner*/]),
+          '0x' + '00'.repeat(32)
         );
 
         let cxipErc721Address = await l2.registry.getHolographedHashAddress(erc721ConfigHash);
@@ -656,7 +479,7 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
 
         cxipErc721Address = await l1.registry.getHolographedHashAddress(erc721ConfigHash);
 
-        let sig = await l1.deployer.signMessage(erc721ConfigHash);
+        let sig = await l1.deployer.signMessage(erc721ConfigHashBytes);
         let signature: Signature = StrictECDSA({
           r: '0x' + sig.substring(2, 66),
           s: '0x' + sig.substring(66, 130),
@@ -665,45 +488,20 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
 
         await expect(l2.factory.deployHolographableContract(erc721Config, signature, l1.deployer.address))
           .to.emit(l2.factory, 'BridgeableContractDeployed')
-          .withArgs(cxipErc721Address, toHex(erc721ConfigHash));
+          .withArgs(cxipErc721Address, erc721ConfigHash);
       });
 
       it('deploy l2 equivalent on l1', async function () {
-        let chainId: string = '0x' + l2.network.holographId.toString(16).padStart(8, '0');
-        let erc721Hash: string = '0x' + l2.web3.utils.asciiToHex('HolographERC721').substring(2).padStart(64, '0');
-        let cxipErc721Artifact: ContractFactory = await l2.hre.ethers.getContractFactory('CxipERC721');
-        let erc721Config: DeploymentConfigStruct = {
-          contractType: erc721Hash,
-          chainType: chainId,
-          salt: '0x' + '00'.repeat(32),
-          byteCode: cxipErc721Artifact.bytecode,
-          initCode: generateInitCode(
-            ['string', 'string', 'uint16', 'uint256', 'bool', 'bytes'],
-            [
-              'CXIP ERC721 Collection (' + l2.hre.networkName + ')', // string memory contractName
-              'CXIP', // string memory contractSymbol
-              1000, // uint16 contractBps
-              '0x' + '00'.repeat(32), // uint256 eventConfig
-              false, // bool skipInit
-              generateInitCode(
-                ['address'],
-                [
-                  l2.deployer.address, // owner
-                ]
-              ),
-            ]
-          ),
-        };
-        let erc721ConfigHash: number[] = l2.web3.utils.hexToBytes(
-          l2.web3.utils.keccak256(
-            '0x' +
-              (erc721Config.contractType as string).substring(2) +
-              (erc721Config.chainType as string).substring(2) +
-              (erc721Config.salt as string).substring(2) +
-              l2.web3.utils.keccak256(erc721Config.byteCode as string).substring(2) +
-              l2.web3.utils.keccak256(erc721Config.initCode as string).substring(2) +
-              l2.deployer.address.substring(2)
-          )
+        let { erc721Config, erc721ConfigHash, erc721ConfigHashBytes } = await generateErc721Config(
+          l2.network,
+          l2.deployer.address,
+          'CxipERC721',
+          'CXIP ERC721 Collection (' + l2.hre.networkName + ')',
+          'CXIP',
+          1000,
+          '0x' + '00'.repeat(32),
+          generateInitCode(['address'], [l2.deployer.address /*owner*/]),
+          '0x' + '00'.repeat(32)
         );
 
         let cxipErc721Address = await l1.registry.getHolographedHashAddress(erc721ConfigHash);
@@ -712,7 +510,7 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
 
         cxipErc721Address = await l2.registry.getHolographedHashAddress(erc721ConfigHash);
 
-        let sig = await l2.deployer.signMessage(erc721ConfigHash);
+        let sig = await l2.deployer.signMessage(erc721ConfigHashBytes);
         let signature: Signature = StrictECDSA({
           r: '0x' + sig.substring(2, 66),
           s: '0x' + sig.substring(66, 130),
@@ -721,7 +519,7 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
 
         await expect(l1.factory.deployHolographableContract(erc721Config, signature, l2.deployer.address))
           .to.emit(l1.factory, 'BridgeableContractDeployed')
-          .withArgs(cxipErc721Address, toHex(erc721ConfigHash));
+          .withArgs(cxipErc721Address, erc721ConfigHash);
       });
     });
   });

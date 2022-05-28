@@ -4,7 +4,15 @@ import { BigNumberish, BytesLike, ContractFactory, Contract } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy-holographed/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { LeanHardhatRuntimeEnvironment, Signature, hreSplit, zeroAddress, StrictECDSA } from '../scripts/utils/helpers';
+import {
+  LeanHardhatRuntimeEnvironment,
+  Signature,
+  hreSplit,
+  zeroAddress,
+  StrictECDSA,
+  generateErc20Config,
+  generateInitCode,
+} from '../scripts/utils/helpers';
 import Web3 from 'web3';
 
 const networks = JSON.parse(fs.readFileSync('./config/networks.json', 'utf8'));
@@ -40,55 +48,28 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   if (hTokenAddress == zeroAddress()) {
     hre.deployments.log('need to deploy "hToken" for chain:', chainId);
 
-    const hTokenArtifact: ContractFactory = await hre.ethers.getContractFactory('hToken');
-
-    const erc20Hash = '0x' + web3.utils.asciiToHex('HolographERC20').substring(2).padStart(64, '0');
-    const config = [
-      erc20Hash, // bytes32 contractType
-      chainId, // uint32 chainType
-      '0x' + '00'.repeat(32), // bytes32 salt
-      hTokenArtifact.bytecode, // bytes byteCode
-      web3.eth.abi.encodeParameters(
-        ['string', 'string', 'uint8', 'uint256', 'string', 'string', 'bool', 'bytes'],
-        [
-          network.tokenName + ' (Holographed)', // string memory contractName
-          'h' + network.tokenSymbol, // string memory contractSymbol
-          18, // uint8 contractDecimals
-          '0x' + '00'.repeat(32), // uint256 eventConfig
-          network.tokenName + ' (Holographed)', // string domainSeperator
-          '1', // string domainVersion
-          false, // bool skipInit
-          web3.eth.abi.encodeParameters(
-            ['address', 'uint16'],
-            [
-              deployer.address, // owner
-              0, // fee (bps)
-            ]
-          ),
-        ]
-      ), // bytes initCode
-    ];
-
-    const hash = web3.utils.hexToBytes(
-      web3.utils.keccak256(
-        '0x' +
-          config[0].substring(2) +
-          config[1].substring(2) +
-          config[2].substring(2) +
-          web3.utils.keccak256(config[3]).substring(2) +
-          web3.utils.keccak256(config[4]).substring(2) +
-          deployer.address.substring(2)
-      )
+    let { erc20Config, erc20ConfigHash, erc20ConfigHashBytes } = await generateErc20Config(
+      network,
+      deployer.address,
+      'hToken',
+      network.tokenName + ' (Holographed)',
+      'h' + network.tokenSymbol,
+      network.tokenName + ' (Holographed)',
+      '1',
+      18,
+      '0x' + '00'.repeat(32),
+      generateInitCode(['address', 'uint16'], [deployer.address, 0]),
+      '0x' + '00'.repeat(32)
     );
 
-    const sig = await deployer.signMessage(hash);
+    const sig = await deployer.signMessage(erc20ConfigHashBytes);
     const signature: Signature = StrictECDSA({
       r: '0x' + sig.substring(2, 66),
       s: '0x' + sig.substring(66, 130),
       v: '0x' + sig.substring(130, 132),
     } as Signature);
 
-    const depoyTx = await holographFactory.deployHolographableContract(config, signature, deployer.address, {
+    const depoyTx = await holographFactory.deployHolographableContract(erc20Config, signature, deployer.address, {
       nonce: await hre.ethers.provider.getTransactionCount(deployer.address),
     });
     const deployResult = await depoyTx.wait();
