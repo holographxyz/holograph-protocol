@@ -179,5 +179,4 @@ func.dependencies = [
   'DeployERC721',
   'DeployERC1155',
   'RegisterTemplates',
-  'hToken',
 ];

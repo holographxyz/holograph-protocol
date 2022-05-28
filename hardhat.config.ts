@@ -127,6 +127,7 @@ const config: HardhatUserConfig = {
   },
   namedAccounts: {
     deployer: 0,
+    lzEndpoint: 10,
   },
   solidity: {
     version: SOLIDITY_VERSION,

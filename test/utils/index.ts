@@ -146,6 +146,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
     'PA1D',
     'HolographERC20',
     'HolographERC721',
+    'LayerZero',
     'ERC20Mock',
     'MockERC721Receiver',
     'RegisterTemplates',

@@ -18,15 +18,15 @@ abstract contract ERC20H is Initializable, HolographedERC20 {
   bool private _success;
 
   modifier onlyHolographer() {
-    require(msg.sender == holographer(), "holographer only function");
+    require(msg.sender == holographer(), "ERC20: holographer only");
     _;
   }
 
   modifier onlyOwner() {
     if (msg.sender == holographer()) {
-      require(msgSender() == _owner, "owner only function");
+      require(msgSender() == _owner, "ERC20: owner only function");
     } else {
-      require(msg.sender == _owner, "owner only function");
+      require(msg.sender == _owner, "ERC20: owner only function");
     }
     _;
   }
@@ -91,9 +91,12 @@ abstract contract ERC20H is Initializable, HolographedERC20 {
     address, /* _from*/
     address, /* _to*/
     uint256 /* _amount*/
-  ) external view virtual onlyHolographer returns (bytes memory _data) {
-    // just here to prevent "make pure" warning
-    _data = abi.encode(holographer());
+  ) external virtual onlyHolographer returns (bytes memory _data) {
+    /*
+     * @dev This is just here to suppress unused parameter warning
+     */
+    _data = abi.encodePacked(holographer());
+    _success = true;
   }
 
   function afterApprove(

@@ -18,15 +18,15 @@ abstract contract ERC721H is Initializable, HolographedERC721 {
   bool private _success;
 
   modifier onlyHolographer() {
-    require(msg.sender == holographer(), "holographer only function");
+    require(msg.sender == holographer(), "ERC721: holographer only");
     _;
   }
 
   modifier onlyOwner() {
     if (msg.sender == holographer()) {
-      require(msgSender() == _owner, "owner only function");
+      require(msgSender() == _owner, "ERC721: owner only function");
     } else {
-      require(msg.sender == _owner, "owner only function");
+      require(msg.sender == _owner, "ERC721: owner only function");
     }
     _;
   }
@@ -98,7 +98,8 @@ abstract contract ERC721H is Initializable, HolographedERC721 {
     address, /* _from*/
     address, /* _to*/
     uint256 /* _tokenId*/
-  ) external view virtual onlyHolographer returns (bytes memory _data) {
+  ) external virtual onlyHolographer returns (bytes memory _data) {
+    _success = true;
     _data = abi.encode(holographer());
   }
 

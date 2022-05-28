@@ -88,11 +88,4 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
 
 export default func;
 func.tags = ['hToken'];
-func.dependencies = [
-  'HolographGenesis',
-  'DeploySources',
-  'DeployERC20',
-  'DeployERC721',
-  'DeployERC1155',
-  'RegisterTemplates',
-];
+func.dependencies = ['HolographGenesis', 'DeploySources', 'DeployERC20', 'RegisterTemplates'];

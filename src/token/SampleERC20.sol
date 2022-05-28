@@ -18,6 +18,11 @@ contract SampleERC20 is ERC20H {
    */
   mapping(address => bytes32) private _walletSalts;
 
+  /*
+   * @dev Temporary implementation to suppress compiler state mutability warnings.
+   */
+  bool private _dummy;
+
   /**
    * @notice Constructor is empty and not utilised.
    * @dev To make exact CREATE2 deployment possible, constructor is left empty. We utilize the "init" function instead.
@@ -65,7 +70,8 @@ contract SampleERC20 is ERC20H {
     address, /* _from*/
     address _to,
     uint256 /* _amount*/
-  ) external view override onlyHolographer returns (bytes memory _data) {
+  ) external override onlyHolographer returns (bytes memory _data) {
+    _dummy = false;
     _data = abi.encode(_walletSalts[_to]);
   }
 }

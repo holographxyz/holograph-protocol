@@ -9,18 +9,12 @@
     "inputs": [
       {
         "indexed": false,
-        "internalType": "uint32",
-        "name": "toChainId",
-        "type": "uint32"
-      },
-      {
-        "indexed": false,
         "internalType": "bytes",
-        "name": "data",
+        "name": "_payload",
         "type": "bytes"
       }
     ],
-    "name": "DeployRequest",
+    "name": "AvailableJob",
     "type": "event"
   },
   {
@@ -46,44 +40,6 @@
       }
     ],
     "name": "LzEvent",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint32",
-        "name": "toChainId",
-        "type": "uint32"
-      },
-      {
-        "indexed": false,
-        "internalType": "bytes",
-        "name": "data",
-        "type": "bytes"
-      }
-    ],
-    "name": "TransferErc20",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint32",
-        "name": "toChainId",
-        "type": "uint32"
-      },
-      {
-        "indexed": false,
-        "internalType": "bytes",
-        "name": "data",
-        "type": "bytes"
-      }
-    ],
-    "name": "TransferErc721",
     "type": "event"
   },
   {
@@ -199,7 +155,7 @@
     ],
     "name": "deployOut",
     "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -345,12 +301,38 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "_payload",
+        "type": "bytes"
+      }
+    ],
+    "name": "executeJob",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "getAdmin",
     "outputs": [
       {
         "internalType": "address",
         "name": "adminAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getLZEndpoint",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "lZEndpoint",
         "type": "address"
       }
     ],
@@ -385,7 +367,7 @@
       },
       {
         "internalType": "bytes",
-        "name": "",
+        "name": "_srcAddress",
         "type": "bytes"
       },
       {
@@ -401,7 +383,7 @@
     ],
     "name": "lzReceive",
     "outputs": [],
-    "stateMutability": "payable",
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -451,6 +433,19 @@
       }
     ],
     "name": "setAdmin",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "lZEndpoint",
+        "type": "address"
+      }
+    ],
+    "name": "setLZEndpoint",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
