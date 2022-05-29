@@ -387,21 +387,6 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
     // let l1ContractName = contractName + '(' + l1.hre.networkName + ')';
     // let l2ContractName = contractName + '(' + l2.hre.networkName + ')';
 
-    /*
-  sampleErc721Holographer = (await hre.ethers.getContractAt(
-    'Holographer',
-    await registry.getHolographedHashAddress(sampleErc721Hash.erc721ConfigHash)
-  )) as Holographer;
-  sampleErc721Enforcer = (await hre.ethers.getContractAt(
-    'HolographERC721',
-    await sampleErc721Holographer.getHolographEnforcer()
-  )) as HolographERC721;
-  sampleErc721 = (await hre.ethers.getContractAt(
-    'SampleERC721',
-    await sampleErc721Holographer.getSourceContract()
-  )) as SampleERC721;
-*/
-
     describe('check current state', async function () {
       it('l1 should have a total supply of 0 on l1', async function () {
         expect(await l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).totalSupply()).to.equal(0);
@@ -467,6 +452,7 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           .withArgs(zeroAddress(), l1.deployer.address, thirdNFTl2);
       });
     });
+
     describe('validate bridge functionality', async function () {
       it('token #3 bridge out on l1 should succeed', async function () {
         let payload: BytesLike =
