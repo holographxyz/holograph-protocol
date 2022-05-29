@@ -103,7 +103,7 @@
 
 pragma solidity 0.8.13;
 
-import "../abstract/ERC20H.sol";
+import "../abstract/StrictERC20H.sol";
 
 import "../interface/ERC20Holograph.sol";
 
@@ -113,7 +113,7 @@ import "../interface/ERC20Holograph.sol";
  * @notice A smart contract for minting and managing Holograph Bridgeable ERC20 Tokens.
  * @dev The entire logic and functionality of the smart contract is self-contained.
  */
-contract SampleERC20 is ERC20H {
+contract SampleERC20 is StrictERC20H {
   /*
    * @dev Just a dummy value for now to test transferring of data.
    */

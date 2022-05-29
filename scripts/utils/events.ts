@@ -52,3 +52,7 @@ export function ConfigureEvents(
   }
   return hex;
 }
+
+export function AllEventsEnabled(): string {
+  return '0x' + 'ff'.repeat(32);
+}

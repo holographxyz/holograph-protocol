@@ -115,7 +115,7 @@ import "./interface/ERC721.sol";
 import "./interface/ERC721Holograph.sol";
 import "./interface/ERC721Metadata.sol";
 import "./interface/ERC721TokenReceiver.sol";
-import "./interface/HolographedERC721.sol";
+import "./interface/StrictHolographedERC721.sol";
 import "./interface/IHolograph.sol";
 import "./interface/IHolographer.sol";
 import "./interface/IHolographRegistry.sol";
@@ -909,8 +909,8 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
   /**
    * @dev Get the source smart contract as bridgeable interface.
    */
-  function SourceERC721() internal view returns (HolographedERC721) {
-    return HolographedERC721(source());
+  function SourceERC721() internal view returns (StrictHolographedERC721) {
+    return StrictHolographedERC721(source());
   }
 
   /**

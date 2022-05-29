@@ -103,86 +103,24 @@
 
 pragma solidity 0.8.13;
 
-import "../abstract/Initializable.sol";
+import "../interface/HolographedERC721.sol";
+import "../interface/StrictHolographedERC721.sol";
 
-import "../interface/HolographedERC20.sol";
+import "./ERC721H.sol";
 
-abstract contract ERC20H is Initializable, HolographedERC20 {
-  /*
-   * @dev Address of initial creator/owner of the token contract.
-   */
-  address internal _owner;
-
+abstract contract StrictERC721H is ERC721H, StrictHolographedERC721 {
   /*
    * @dev Dummy variable to prevent empty functions from making "switch to pure" warnings.
    */
   bool private _success;
 
-  modifier onlyHolographer() {
-    require(msg.sender == holographer(), "ERC20: holographer only");
-    _;
-  }
-
-  modifier onlyOwner() {
-    if (msg.sender == holographer()) {
-      require(msgSender() == _owner, "ERC20: owner only function");
-    } else {
-      require(msg.sender == _owner, "ERC20: owner only function");
-    }
-    _;
-  }
-
-  /**
-   * @notice Constructor is empty and not utilised.
-   * @dev To make exact CREATE2 deployment possible, constructor is left empty. We utilize the "init" function instead.
-   */
-  constructor() {}
-
-  /**
-   * @notice Initializes the collection.
-   * @dev Special function to allow a one time initialisation on deployment. Also configures and deploys royalties.
-   */
-  function init(bytes memory data) external virtual override returns (bytes4) {
-    return _init(data);
-  }
-
-  function _init(
-    bytes memory /* data*/
-  ) internal returns (bytes4) {
-    require(!_isInitialized(), "ERC20: already initialized");
-    address _holographer = msg.sender;
-    assembly {
-      sstore(0xe860eb97addcc8d7a4df2e57474b879e6fae678a490e3807075a99030ddd9250, _holographer)
-    }
-    _setInitialized();
-    return IInitializable.init.selector;
-  }
-
-  /*
-   * @dev The Holographer passes original msg.sender via calldata. This function extracts it.
-   */
-  function msgSender() internal pure returns (address sender) {
-    assembly {
-      sender := calldataload(sub(calldatasize(), 0x20))
-    }
-  }
-
-  /*
-   * @dev Address of Holograph ERC20 standards enforcer smart contract.
-   */
-  function holographer() internal view returns (address _holographer) {
-    assembly {
-      _holographer := sload(0xe860eb97addcc8d7a4df2e57474b879e6fae678a490e3807075a99030ddd9250)
-    }
-  }
-
   function bridgeIn(
     uint32, /* _chainId*/
     address, /* _from*/
     address, /* _to*/
-    uint256, /* _amount*/
+    uint256, /* _tokenId*/
     bytes calldata /* _data*/
-  ) external virtual onlyHolographer returns (bool) {
+  ) external virtual override(ERC721H, HolographedERC721) onlyHolographer returns (bool) {
     _success = true;
     return true;
   }
@@ -191,53 +129,137 @@ abstract contract ERC20H is Initializable, HolographedERC20 {
     uint32, /* _chainId*/
     address, /* _from*/
     address, /* _to*/
-    uint256 /* _amount*/
-  ) external virtual onlyHolographer returns (bytes memory _data) {
-    /*
-     * @dev This is just here to suppress unused parameter warning
-     */
-    _data = abi.encodePacked(holographer());
+    uint256 /* _tokenId*/
+  ) external virtual override(ERC721H, HolographedERC721) onlyHolographer returns (bytes memory _data) {
     _success = true;
+    _data = abi.encode(holographer());
   }
 
-  function supportsInterface(bytes4) external pure returns (bool) {
-    return false;
+  function afterApprove(
+    address, /* _owner*/
+    address, /* _to*/
+    uint256 /* _tokenId*/
+  ) external virtual onlyHolographer returns (bool success) {
+    _success = true;
+    return _success;
   }
 
-  function owner() external view returns (address) {
-    return _owner;
+  function beforeApprove(
+    address, /* _owner*/
+    address, /* _to*/
+    uint256 /* _tokenId*/
+  ) external virtual onlyHolographer returns (bool success) {
+    _success = true;
+    return _success;
   }
 
-  function isOwner() external view returns (bool) {
-    if (msg.sender == holographer()) {
-      return msgSender() == _owner;
-    } else {
-      return msg.sender == _owner;
-    }
+  function afterApprovalAll(
+    address, /* _to*/
+    bool /* _approved*/
+  ) external virtual onlyHolographer returns (bool success) {
+    _success = true;
+    return _success;
   }
 
-  function isOwner(address wallet) external view returns (bool) {
-    return wallet == _owner;
+  function beforeApprovalAll(
+    address, /* _to*/
+    bool /* _approved*/
+  ) external virtual onlyHolographer returns (bool success) {
+    _success = true;
+    return _success;
   }
 
-  /*
-   * @dev Defined here to suppress compiler warnings
-   */
-  receive() external payable {}
+  function afterBurn(
+    address, /* _owner*/
+    uint256 /* _tokenId*/
+  ) external virtual onlyHolographer returns (bool success) {
+    _success = true;
+    return _success;
+  }
 
-  /*
-   * @dev Return true for any un-implemented event hooks
-   */
-  fallback() external payable {
-    assembly {
-      switch eq(sload(0xe860eb97addcc8d7a4df2e57474b879e6fae678a490e3807075a99030ddd9250), caller())
-      case 1 {
-        mstore(0x80, 0x0000000000000000000000000000000000000000000000000000000000000001)
-        return(0x80, 0x20)
-      }
-      default {
-        revert(0x00, 0x00)
-      }
-    }
+  function beforeBurn(
+    address, /* _owner*/
+    uint256 /* _tokenId*/
+  ) external virtual onlyHolographer returns (bool success) {
+    _success = true;
+    return _success;
+  }
+
+  function afterMint(
+    address, /* _owner*/
+    uint256 /* _tokenId*/
+  ) external virtual onlyHolographer returns (bool success) {
+    _success = true;
+    return _success;
+  }
+
+  function beforeMint(
+    address, /* _owner*/
+    uint256 /* _tokenId*/
+  ) external virtual onlyHolographer returns (bool success) {
+    _success = true;
+    return _success;
+  }
+
+  function afterSafeTransfer(
+    address, /* _from*/
+    address, /* _to*/
+    uint256, /* _tokenId*/
+    bytes calldata /* _data*/
+  ) external virtual onlyHolographer returns (bool success) {
+    _success = true;
+    return _success;
+  }
+
+  function beforeSafeTransfer(
+    address, /* _from*/
+    address, /* _to*/
+    uint256, /* _tokenId*/
+    bytes calldata /* _data*/
+  ) external virtual onlyHolographer returns (bool success) {
+    _success = true;
+    return _success;
+  }
+
+  function afterTransfer(
+    address, /* _from*/
+    address, /* _to*/
+    uint256, /* _tokenId*/
+    bytes calldata /* _data*/
+  ) external virtual onlyHolographer returns (bool success) {
+    _success = true;
+    return _success;
+  }
+
+  function beforeTransfer(
+    address, /* _from*/
+    address, /* _to*/
+    uint256, /* _tokenId*/
+    bytes calldata /* _data*/
+  ) external virtual onlyHolographer returns (bool success) {
+    _success = true;
+    return _success;
+  }
+
+  function afterOnERC721Received(
+    address, /* _operator*/
+    address, /* _from*/
+    address, /* _to*/
+    uint256, /* _tokenId*/
+    bytes calldata /* _data*/
+  ) external virtual onlyHolographer returns (bool success) {
+    _success = true;
+    return _success;
+  }
+
+  function beforeOnERC721Received(
+    address, /* _operator*/
+    address, /* _from*/
+    address, /* _to*/
+    uint256, /* _tokenId*/
+    bytes calldata /* _data*/
+  ) external virtual onlyHolographer returns (bool success) {
+    _success = true;
+    return _success;
   }
 }

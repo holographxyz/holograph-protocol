@@ -2,7 +2,7 @@
 
 /*SOLIDITY_COMPILER_VERSION*/
 
-import "../abstract/ERC721H.sol";
+import "../abstract/StrictERC721H.sol";
 
 import "../interface/ERC721Holograph.sol";
 
@@ -12,7 +12,7 @@ import "../interface/ERC721Holograph.sol";
  * @notice A smart contract for minting and managing Holograph Bridgeable ERC721 NFTs.
  * @dev The entire logic and functionality of the smart contract is self-contained.
  */
-contract SampleERC721 is ERC721H {
+contract SampleERC721 is StrictERC721H {
   /*
    * @dev Mapping of all token URIs.
    */

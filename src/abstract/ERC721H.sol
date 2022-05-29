@@ -103,134 +103,6 @@ abstract contract ERC721H is Initializable, HolographedERC721 {
     _data = abi.encode(holographer());
   }
 
-  function afterApprove(
-    address, /* _owner*/
-    address, /* _to*/
-    uint256 /* _tokenId*/
-  ) external virtual onlyHolographer returns (bool success) {
-    _success = true;
-    return _success;
-  }
-
-  function beforeApprove(
-    address, /* _owner*/
-    address, /* _to*/
-    uint256 /* _tokenId*/
-  ) external virtual onlyHolographer returns (bool success) {
-    _success = true;
-    return _success;
-  }
-
-  function afterApprovalAll(
-    address, /* _to*/
-    bool /* _approved*/
-  ) external virtual onlyHolographer returns (bool success) {
-    _success = true;
-    return _success;
-  }
-
-  function beforeApprovalAll(
-    address, /* _to*/
-    bool /* _approved*/
-  ) external virtual onlyHolographer returns (bool success) {
-    _success = true;
-    return _success;
-  }
-
-  function afterBurn(
-    address, /* _owner*/
-    uint256 /* _tokenId*/
-  ) external virtual onlyHolographer returns (bool success) {
-    _success = true;
-    return _success;
-  }
-
-  function beforeBurn(
-    address, /* _owner*/
-    uint256 /* _tokenId*/
-  ) external virtual onlyHolographer returns (bool success) {
-    _success = true;
-    return _success;
-  }
-
-  function afterMint(
-    address, /* _owner*/
-    uint256 /* _tokenId*/
-  ) external virtual onlyHolographer returns (bool success) {
-    _success = true;
-    return _success;
-  }
-
-  function beforeMint(
-    address, /* _owner*/
-    uint256 /* _tokenId*/
-  ) external virtual onlyHolographer returns (bool success) {
-    _success = true;
-    return _success;
-  }
-
-  function afterSafeTransfer(
-    address, /* _from*/
-    address, /* _to*/
-    uint256, /* _tokenId*/
-    bytes calldata /* _data*/
-  ) external virtual onlyHolographer returns (bool success) {
-    _success = true;
-    return _success;
-  }
-
-  function beforeSafeTransfer(
-    address, /* _from*/
-    address, /* _to*/
-    uint256, /* _tokenId*/
-    bytes calldata /* _data*/
-  ) external virtual onlyHolographer returns (bool success) {
-    _success = true;
-    return _success;
-  }
-
-  function afterTransfer(
-    address, /* _from*/
-    address, /* _to*/
-    uint256, /* _tokenId*/
-    bytes calldata /* _data*/
-  ) external virtual onlyHolographer returns (bool success) {
-    _success = true;
-    return _success;
-  }
-
-  function beforeTransfer(
-    address, /* _from*/
-    address, /* _to*/
-    uint256, /* _tokenId*/
-    bytes calldata /* _data*/
-  ) external virtual onlyHolographer returns (bool success) {
-    _success = true;
-    return _success;
-  }
-
-  function afterOnERC721Received(
-    address, /* _operator*/
-    address, /* _from*/
-    address, /* _to*/
-    uint256, /* _tokenId*/
-    bytes calldata /* _data*/
-  ) external virtual onlyHolographer returns (bool success) {
-    _success = true;
-    return _success;
-  }
-
-  function beforeOnERC721Received(
-    address, /* _operator*/
-    address, /* _from*/
-    address, /* _to*/
-    uint256, /* _tokenId*/
-    bytes calldata /* _data*/
-  ) external virtual onlyHolographer returns (bool success) {
-    _success = true;
-    return _success;
-  }
-
   function supportsInterface(bytes4) external pure returns (bool) {
     return false;
   }
@@ -249,5 +121,26 @@ abstract contract ERC721H is Initializable, HolographedERC721 {
 
   function isOwner(address wallet) external view returns (bool) {
     return wallet == _owner;
+  }
+
+  /*
+   * @dev Defined here to suppress compiler warnings
+   */
+  receive() external payable {}
+
+  /*
+   * @dev Return true for any un-implemented event hooks
+   */
+  fallback() external payable {
+    assembly {
+      switch eq(sload(precomputeslot("eip1967.Holograph.Bridge.holographer")), caller())
+      case 1 {
+        mstore(0x80, 0x0000000000000000000000000000000000000000000000000000000000000001)
+        return(0x80, 0x20)
+      }
+      default {
+        revert(0x00, 0x00)
+      }
+    }
   }
 }
