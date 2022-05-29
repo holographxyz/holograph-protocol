@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "chai-ethers": "^0.0.1",
+    "ganache": "^7.2.0",
     "hardhat-deploy-holographed": "https://github.com/cxip-labs/hardhat-deploy-holographed.git",
     "hardhat-holograph-contract-builder": "https://github.com/cxip-labs/hardhat-holograph-contract-builder.git",
     "path": "^0.12.7",

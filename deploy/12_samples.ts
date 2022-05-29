@@ -14,6 +14,12 @@ import {
   generateErc721Config,
   generateInitCode,
 } from '../scripts/utils/helpers';
+import {
+  HolographERC20Event,
+  HolographERC721Event,
+  HolographERC1155Event,
+  ConfigureEvents,
+} from '../scripts/utils/events';
 import Web3 from 'web3';
 
 const networks = JSON.parse(fs.readFileSync('./config/networks.json', 'utf8'));
@@ -53,7 +59,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     'Sample ERC20 Token',
     '1',
     18,
-    '0x' + '00'.repeat(32),
+    ConfigureEvents([HolographERC20Event.bridgeIn, HolographERC20Event.bridgeOut]),
     generateInitCode(['address', 'uint16'], [deployer.address, 0]),
     '0x' + '00'.repeat(32)
   );
@@ -94,7 +100,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     'Sample ERC721 Contract (' + hre.networkName + ')',
     'SMPLR',
     1000,
-    '0x' + '00'.repeat(32),
+    ConfigureEvents([HolographERC721Event.bridgeIn, HolographERC721Event.bridgeOut, HolographERC721Event.afterBurn]),
     generateInitCode(['address'], [deployer.address]),
     '0x' + '00'.repeat(32)
   );
@@ -135,7 +141,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     'CXIP ERC721 Collection (' + hre.networkName + ')',
     'CXIP',
     1000,
-    '0x' + '00'.repeat(32),
+    ConfigureEvents([HolographERC721Event.bridgeIn, HolographERC721Event.bridgeOut, HolographERC721Event.afterBurn]),
     generateInitCode(['address'], [deployer.address]),
     '0x' + '00'.repeat(32)
   );

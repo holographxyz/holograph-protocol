@@ -13,6 +13,7 @@ import {
   StrictECDSA,
   generateInitCode,
 } from '../scripts/utils/helpers';
+import { HolographERC20Event, ConfigureEvents } from '../scripts/utils/events';
 
 import {
   Admin,

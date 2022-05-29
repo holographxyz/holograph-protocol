@@ -50,6 +50,12 @@ import {
   generateErc721Config,
   generateInitCode,
 } from '../../scripts/utils/helpers';
+import {
+  HolographERC20Event,
+  HolographERC721Event,
+  HolographERC1155Event,
+  ConfigureEvents,
+} from '../../scripts/utils/events';
 
 let hre1: HardhatRuntimeEnvironment = require('hardhat');
 const networks: Networks = JSON.parse(fs.readFileSync('./config/networks.json', 'utf8')) as Networks;
@@ -74,6 +80,7 @@ export interface PreTest {
   wallet8: SignerWithAddress;
   wallet9: SignerWithAddress;
   wallet10: SignerWithAddress;
+  lzEndpoint: SignerWithAddress;
   admin: Admin;
   cxipErc721: CxipERC721;
   erc20Mock: ERC20Mock;
@@ -175,6 +182,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
   const wallet8: SignerWithAddress = accounts[8];
   const wallet9: SignerWithAddress = accounts[9];
   const wallet10: SignerWithAddress = accounts[10];
+  const lzEndpoint: SignerWithAddress = accounts[10];
 
   let admin: Admin;
   let cxipErc721: CxipERC721;
@@ -257,7 +265,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
     network.tokenName + ' (Holographed)',
     '1',
     18,
-    '0x' + '00'.repeat(32),
+    ConfigureEvents([]),
     generateInitCode(['address', 'uint16'], [deployer.address, 0]),
     '0x' + '00'.repeat(32)
   );
@@ -280,7 +288,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
     'Sample ERC20 Token',
     '1',
     18,
-    '0x' + '00'.repeat(32),
+    ConfigureEvents([HolographERC20Event.bridgeIn, HolographERC20Event.bridgeOut]),
     generateInitCode(['address', 'uint16'], [deployer.address, 0]),
     '0x' + '00'.repeat(32)
   );
@@ -304,7 +312,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
     'Sample ERC721 Contract (' + hre.networkName + ')',
     'SMPLR',
     1000,
-    '0x' + '00'.repeat(32),
+    ConfigureEvents([HolographERC721Event.bridgeIn, HolographERC721Event.bridgeOut, HolographERC721Event.afterBurn]),
     generateInitCode(['address'], [deployer.address]),
     '0x' + '00'.repeat(32)
   );
@@ -328,7 +336,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
     'CXIP ERC721 Collection (' + hre.networkName + ')',
     'CXIP',
     1000,
-    '0x' + '00'.repeat(32),
+    ConfigureEvents([HolographERC721Event.bridgeIn, HolographERC721Event.bridgeOut, HolographERC721Event.afterBurn]),
     generateInitCode(['address'], [deployer.address]),
     '0x' + '00'.repeat(32)
   );
@@ -365,6 +373,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
     wallet8,
     wallet9,
     wallet10,
+    lzEndpoint,
     admin,
     cxipErc721,
     erc20Mock,

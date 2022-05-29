@@ -11,6 +11,7 @@ import {
   randomHex,
   generateInitCode,
 } from '../scripts/utils/helpers';
+import { HolographERC721Event, ConfigureEvents } from '../scripts/utils/events';
 
 import {
   Admin,

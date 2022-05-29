@@ -63,8 +63,16 @@ const isDefined = function (obj: any): boolean {
   return typeof obj !== 'undefined';
 };
 
-const toHex = function (bytes: number[]): string {
+const bytesToHex = function (bytes: number[]): string {
   return web3.utils.bytesToHex(bytes);
+};
+
+const hexToBytes = function (hex: string): number[] {
+  return web3.utils.hexToBytes(hex);
+};
+
+const stringToHex = function (str: string): string {
+  return web3.utils.utf8ToHex(str) as string;
 };
 
 const randomHex = function (bytes: number): string {
@@ -406,7 +414,12 @@ const generateErc721Config = async function (
   initCode: BytesLike,
   salt: BytesLike
 ): Promise<Erc721Config> {
-  let hre: HardhatRuntimeEnvironment = require('hardhat');
+  let hre: LeanHardhatRuntimeEnvironment;
+  if (typeof global.__hreL1 === 'undefined') {
+    throw new Error('LeanHardhatRuntimeEnvironment has not been cached yet.');
+  } else {
+    hre = global.__hreL1 as LeanHardhatRuntimeEnvironment;
+  }
   let chainId: string = '0x' + network.holographId.toString(16).padStart(8, '0');
   let erc721Hash: string = '0x' + web3.utils.asciiToHex('HolographERC721').substring(2).padStart(64, '0');
   let artifact: ContractFactory = await hre.ethers.getContractFactory(contractName);
@@ -421,7 +434,7 @@ const generateErc721Config = async function (
         collectionName, // string memory contractName
         collectionSymbol, // string memory contractSymbol
         royaltyBps, // uint16 contractBps
-        '0x' + '00'.repeat(32), // uint256 eventConfig
+        eventConfig, // uint256 eventConfig
         false, // bool skipInit
         initCode,
       ]
@@ -462,7 +475,12 @@ const generateErc20Config = async function (
   initCode: BytesLike,
   salt: BytesLike
 ): Promise<Erc20Config> {
-  let hre: HardhatRuntimeEnvironment = require('hardhat');
+  let hre: LeanHardhatRuntimeEnvironment;
+  if (typeof global.__hreL1 === 'undefined') {
+    throw new Error('LeanHardhatRuntimeEnvironment has not been cached yet.');
+  } else {
+    hre = global.__hreL1 as LeanHardhatRuntimeEnvironment;
+  }
   let chainId: string = '0x' + network.holographId.toString(16).padStart(8, '0');
   let erc20Hash: string = '0x' + web3.utils.asciiToHex('HolographERC20').substring(2).padStart(64, '0');
   let artifact: ContractFactory = await hre.ethers.getContractFactory(contractName);
@@ -477,7 +495,7 @@ const generateErc20Config = async function (
         tokenName, // string memory tokenName
         tokenSymbol, // string memory tokenSymbol
         decimals, // uint8 decimals
-        '0x' + '00'.repeat(32), // uint256 eventConfig
+        eventConfig, // uint256 eventConfig
         domainSeperator,
         domainVersion,
         false, // bool skipInit
@@ -540,7 +558,9 @@ const sleep = async function (ms: number) {
 
 export {
   isDefined,
-  toHex,
+  bytesToHex,
+  hexToBytes,
+  stringToHex,
   randomHex,
   StrictECDSA,
   l2Ethers,

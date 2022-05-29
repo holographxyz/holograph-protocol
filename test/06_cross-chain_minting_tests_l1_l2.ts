@@ -9,6 +9,8 @@ import {
   zeroAddress,
   functionHash,
   XOR,
+  hexToBytes,
+  stringToHex,
   buildDomainSeperator,
   randomHex,
   generateInitCode,
@@ -21,7 +23,7 @@ import {
   HolographERC1155Event,
   ConfigureEvents,
 } from '../scripts/utils/events';
-
+import ChainId from '../scripts/utils/chain';
 import {
   Admin,
   CxipERC721,
@@ -49,9 +51,17 @@ import {
 } from '../typechain-types';
 import { DeploymentConfigStruct } from '../typechain-types/HolographFactory';
 
-describe('Testing cross-chain configurations (L1 & L2)', async function () {
+describe('Testing cross-chain minting (L1 & L2)', async function () {
   let l1: PreTest;
   let l2: PreTest;
+
+  let totalNFTs: number = 2;
+  let firstNFTl1: BigNumber = BigNumber.from(1);
+  let firstNFTl2: BigNumber = BigNumber.from(1);
+  let secondNFTl1: BigNumber = BigNumber.from(2);
+  let secondNFTl2: BigNumber = BigNumber.from(2);
+  let thirdNFTl1: BigNumber = BigNumber.from(3);
+  let thirdNFTl2: BigNumber = BigNumber.from(3);
 
   before(async function () {
     global.__companionNetwork = false;
@@ -59,6 +69,16 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
     global.__companionNetwork = true;
     l2 = await setup(true);
     global.__companionNetwork = false;
+
+    firstNFTl2 = BigNumber.from('0x' + l2.network.holographId.toString(16).padStart(8, '0') + '00'.repeat(28)).add(
+      firstNFTl1
+    );
+    secondNFTl2 = BigNumber.from('0x' + l2.network.holographId.toString(16).padStart(8, '0') + '00'.repeat(28)).add(
+      secondNFTl1
+    );
+    thirdNFTl2 = BigNumber.from('0x' + l2.network.holographId.toString(16).padStart(8, '0') + '00'.repeat(28)).add(
+      thirdNFTl1
+    );
   });
 
   after(async function () {
@@ -68,200 +88,6 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
   beforeEach(async function () {});
 
   afterEach(async function () {});
-
-  describe('Validate cross-chain data', async function () {
-    describe('CxipERC721', async function () {
-      it('contract addresses should not match', async function () {
-        expect(l1.cxipErc721.address).to.not.equal(l2.cxipErc721.address);
-      });
-    });
-
-    describe('ERC20Mock', async function () {
-      it('contract addresses should match', async function () {
-        expect(l1.erc20Mock.address).to.equal(l2.erc20Mock.address);
-      });
-    });
-
-    describe('Holograph', async function () {
-      it('contract addresses should match', async function () {
-        expect(l1.holograph.address).to.equal(l2.holograph.address);
-      });
-    });
-
-    describe('HolographBridge', async function () {
-      it('contract addresses should match', async function () {
-        expect(l1.holographBridge.address).to.equal(l2.holographBridge.address);
-      });
-    });
-
-    describe('HolographBridgeProxy', async function () {
-      it('contract addresses should match', async function () {
-        expect(l1.holographBridgeProxy.address).to.equal(l2.holographBridgeProxy.address);
-      });
-    });
-
-    describe('Holographer', async function () {
-      it('contract addresses should not match', async function () {
-        expect(l1.holographer.address).to.not.equal(l2.holographer.address);
-      });
-    });
-
-    describe('HolographERC20', async function () {
-      it('contract addresses should match', async function () {
-        expect(l1.holographErc20.address).to.equal(l2.holographErc20.address);
-      });
-    });
-
-    describe('HolographERC721', async function () {
-      it('contract addresses should match', async function () {
-        expect(l1.holographErc721.address).to.equal(l2.holographErc721.address);
-      });
-    });
-
-    describe('HolographFactory', async function () {
-      it('contract addresses should match', async function () {
-        expect(l1.holographFactory.address).to.equal(l2.holographFactory.address);
-      });
-    });
-
-    describe('HolographFactoryProxy', async function () {
-      it('contract addresses should match', async function () {
-        expect(l1.holographFactoryProxy.address).to.equal(l2.holographFactoryProxy.address);
-      });
-    });
-
-    describe('HolographGenesis', async function () {
-      it('contract addresses should match', async function () {
-        expect(l1.holographGenesis.address).to.equal(l2.holographGenesis.address);
-      });
-    });
-
-    describe('HolographRegistry', async function () {
-      it('contract addresses should match', async function () {
-        expect(l1.holographRegistry.address).to.equal(l2.holographRegistry.address);
-      });
-    });
-
-    describe('HolographRegistryProxy', async function () {
-      it('contract addresses should match', async function () {
-        expect(l1.holographRegistryProxy.address).to.equal(l2.holographRegistryProxy.address);
-      });
-    });
-
-    describe('hToken', async function () {
-      it('contract addresses should not match', async function () {
-        expect(l1.hToken.address).to.not.equal(l2.hToken.address);
-      });
-    });
-
-    describe('Interfaces', async function () {
-      it('contract addresses should match', async function () {
-        expect(l1.interfaces.address).to.equal(l2.interfaces.address);
-      });
-    });
-
-    describe('MockERC721Receiver', async function () {
-      it('contract addresses should match', async function () {
-        expect(l1.mockErc721Receiver.address).to.equal(l2.mockErc721Receiver.address);
-      });
-    });
-
-    describe('PA1D', async function () {
-      it('contract addresses should match', async function () {
-        expect(l1.pa1d.address).to.equal(l2.pa1d.address);
-      });
-    });
-
-    describe('SampleERC20', async function () {
-      it('contract addresses should not match', async function () {
-        expect(l1.sampleErc20.address).to.not.equal(l2.sampleErc20.address);
-      });
-    });
-
-    describe('SampleERC721', async function () {
-      it('contract addresses should not match', async function () {
-        expect(l1.sampleErc721.address).to.not.equal(l2.sampleErc721.address);
-      });
-    });
-
-    describe('SecureStorage', async function () {
-      it('contract addresses should match', async function () {
-        expect(l1.secureStorage.address).to.equal(l2.secureStorage.address);
-      });
-    });
-
-    describe('SecureStorageProxy', async function () {
-      it('contract addresses should match', async function () {
-        expect(l1.secureStorageProxy.address).to.equal(l2.secureStorageProxy.address);
-      });
-    });
-
-    describe('HolographRegistry', async function () {
-      it('contract addresses should match', async function () {
-        expect(l1.registry.address).to.equal(l2.registry.address);
-      });
-    });
-
-    describe('HolographFactory', async function () {
-      it('contract addresses should match', async function () {
-        expect(l1.factory.address).to.equal(l2.factory.address);
-      });
-    });
-
-    describe('HolographBridge', async function () {
-      it('contract addresses should match', async function () {
-        expect(l1.bridge.address).to.equal(l2.bridge.address);
-      });
-    });
-
-    describe('hToken Holographer', async function () {
-      it('contract addresses should not match', async function () {
-        expect(l1.hTokenHolographer.address).to.not.equal(l2.hTokenHolographer.address);
-      });
-    });
-
-    describe('hToken HolographERC20 Enforcer', async function () {
-      it('contract addresses should match', async function () {
-        expect(l1.hTokenEnforcer.address).to.equal(l2.hTokenEnforcer.address);
-      });
-    });
-
-    describe('SampleERC20 Holographer', async function () {
-      it('contract addresses should not match', async function () {
-        expect(l1.sampleErc20Holographer.address).to.not.equal(l2.sampleErc20Holographer.address);
-      });
-    });
-
-    describe('SampleERC20 HolographERC20 Enforcer', async function () {
-      it('contract addresses should match', async function () {
-        expect(l1.sampleErc20Enforcer.address).to.equal(l2.sampleErc20Enforcer.address);
-      });
-    });
-
-    describe('SampleERC721 Holographer', async function () {
-      it('contract addresses should not match', async function () {
-        expect(l1.sampleErc721Holographer.address).to.not.equal(l2.sampleErc721Holographer.address);
-      });
-    });
-
-    describe('SampleERC721 HolographERC721 Enforcer', async function () {
-      it('contract addresses should match', async function () {
-        expect(l1.sampleErc721Enforcer.address).to.equal(l2.sampleErc721Enforcer.address);
-      });
-    });
-
-    describe('CxipERC721 Holographer', async function () {
-      it('contract addresses should not match', async function () {
-        expect(l1.cxipErc721Holographer.address).to.not.equal(l2.cxipErc721Holographer.address);
-      });
-    });
-
-    describe('CxipERC721 HolographERC721 Enforcer', async function () {
-      it('contract addresses should match', async function () {
-        expect(l1.cxipErc721Enforcer.address).to.equal(l2.cxipErc721Enforcer.address);
-      });
-    });
-  });
 
   describe('Deploy cross-chain contracts', async function () {
     describe('hToken', async function () {
@@ -545,25 +371,213 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
     });
   });
 
-  describe('Verify chain configs', async function () {
-    describe('LayerZero endpoints', async function () {
-      it('should not be empty', async function () {
-        expect(await l1.bridge.getLZEndpoint()).to.not.equal(zeroAddress());
+  describe('SampleERC721', async function () {
+    let contractName: string = 'Sample ERC721 Contract ';
+    let contractSymbol: string = 'SMPLR';
+    const contractBps: number = 1000;
+    const contractImage: string = '';
+    const contractExternalLink: string = '';
+    const tokenURIs: string[] = [
+      'undefined',
+      'https://holograph.xyz/sample1.json',
+      'https://holograph.xyz/sample2.json',
+      'https://holograph.xyz/sample3.json',
+    ];
+    const totalNFTs: number = 2;
+    // let l1ContractName = contractName + '(' + l1.hre.networkName + ')';
+    // let l2ContractName = contractName + '(' + l2.hre.networkName + ')';
 
-        expect(await l2.bridge.getLZEndpoint()).to.not.equal(zeroAddress());
+    /*
+  sampleErc721Holographer = (await hre.ethers.getContractAt(
+    'Holographer',
+    await registry.getHolographedHashAddress(sampleErc721Hash.erc721ConfigHash)
+  )) as Holographer;
+  sampleErc721Enforcer = (await hre.ethers.getContractAt(
+    'HolographERC721',
+    await sampleErc721Holographer.getHolographEnforcer()
+  )) as HolographERC721;
+  sampleErc721 = (await hre.ethers.getContractAt(
+    'SampleERC721',
+    await sampleErc721Holographer.getSourceContract()
+  )) as SampleERC721;
+*/
+
+    describe('check current state', async function () {
+      it('l1 should have a total supply of 0 on l1', async function () {
+        expect(await l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).totalSupply()).to.equal(0);
       });
-      it('should be same address on both chains', async function () {
-        expect(await l1.bridge.getLZEndpoint()).to.equal(await l2.bridge.getLZEndpoint());
+
+      it('l1 should have a total supply of 0 on l2', async function () {
+        expect(await l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).totalSupply()).to.equal(0);
+      });
+
+      it('l2 should have a total supply of 0 on l2', async function () {
+        expect(await l2.sampleErc721Enforcer.attach(l2.sampleErc721Holographer.address).totalSupply()).to.equal(0);
+      });
+
+      it('l2 should have a total supply of 0 on l1', async function () {
+        expect(await l1.sampleErc721Enforcer.attach(l2.sampleErc721Holographer.address).totalSupply()).to.equal(0);
       });
     });
 
-    describe('Chain IDs', async function () {
-      it('l1 chain id should be correct', async function () {
-        expect(await l1.holograph.getChainType()).to.equal(l1.network.holographId);
+    describe('validate mint functionality', async function () {
+      it('l1 should mint token #1 as #1 on l1', async function () {
+        await expect(
+          l1.sampleErc721.attach(l1.sampleErc721Holographer.address).mint(l1.deployer.address, firstNFTl1, tokenURIs[1])
+        )
+          .to.emit(l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
+          .withArgs(zeroAddress(), l1.deployer.address, firstNFTl1);
       });
 
-      it('l2 chain id should be correct', async function () {
-        expect(await l2.holograph.getChainType()).to.equal(l2.network.holographId);
+      it('l1 should mint token #1 not as #1 on l2', async function () {
+        await expect(
+          l2.sampleErc721.attach(l1.sampleErc721Holographer.address).mint(l1.deployer.address, firstNFTl1, tokenURIs[1])
+        )
+          .to.emit(l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
+          .withArgs(zeroAddress(), l1.deployer.address, firstNFTl2);
+      });
+
+      it('mint tokens #2 and #3 on l1 and l2', async function () {
+        await expect(
+          l1.sampleErc721
+            .attach(l1.sampleErc721Holographer.address)
+            .mint(l1.deployer.address, secondNFTl1, tokenURIs[2])
+        )
+          .to.emit(l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
+          .withArgs(zeroAddress(), l1.deployer.address, secondNFTl1);
+
+        await expect(
+          l2.sampleErc721
+            .attach(l1.sampleErc721Holographer.address)
+            .mint(l1.deployer.address, secondNFTl1, tokenURIs[2])
+        )
+          .to.emit(l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
+          .withArgs(zeroAddress(), l1.deployer.address, secondNFTl2);
+
+        await expect(
+          l1.sampleErc721.attach(l1.sampleErc721Holographer.address).mint(l1.deployer.address, thirdNFTl1, tokenURIs[3])
+        )
+          .to.emit(l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
+          .withArgs(zeroAddress(), l1.deployer.address, thirdNFTl1);
+
+        await expect(
+          l2.sampleErc721.attach(l1.sampleErc721Holographer.address).mint(l1.deployer.address, thirdNFTl1, tokenURIs[3])
+        )
+          .to.emit(l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
+          .withArgs(zeroAddress(), l1.deployer.address, thirdNFTl2);
+      });
+    });
+    describe('validate bridge functionality', async function () {
+      it('token #3 bridge out on l1 should succeed', async function () {
+        let payload: BytesLike =
+          functionHash('erc721in(uint32,address,address,address,uint256,bytes)') +
+          generateInitCode(
+            ['uint32', 'address', 'address', 'address', 'uint256', 'bytes'],
+            [
+              l1.network.holographId,
+              l1.sampleErc721Holographer.address,
+              l1.deployer.address,
+              l2.deployer.address,
+              thirdNFTl1.toHexString(),
+              generateInitCode(['bytes'], [hexToBytes(stringToHex(tokenURIs[3]))]),
+            ]
+          ).substring(2);
+
+        await expect(
+          l1.bridge.erc721out(
+            l2.network.holographId,
+            l1.sampleErc721Holographer.address,
+            l1.deployer.address,
+            l2.deployer.address,
+            thirdNFTl1
+          )
+        )
+          .to.emit(l1.bridge, 'LzEvent')
+          .withArgs(ChainId.hlg2lz(l2.network.holographId), l1.bridge.address.toLowerCase(), payload);
+
+        await expect(
+          l2.bridge
+            .connect(l2.lzEndpoint)
+            .lzReceive(ChainId.hlg2lz(l1.network.holographId), l1.bridge.address, 0, payload)
+        )
+          .to.emit(l2.bridge, 'AvailableJob')
+          .withArgs(payload);
+      });
+
+      it('token #3 bridge out on l2 should succeed', async function () {
+        let payload: BytesLike =
+          functionHash('erc721in(uint32,address,address,address,uint256,bytes)') +
+          generateInitCode(
+            ['uint32', 'address', 'address', 'address', 'uint256', 'bytes'],
+            [
+              l2.network.holographId,
+              l1.sampleErc721Holographer.address,
+              l2.deployer.address,
+              l1.deployer.address,
+              thirdNFTl2.toHexString(),
+              generateInitCode(['bytes'], [hexToBytes(stringToHex(tokenURIs[3]))]),
+            ]
+          ).substring(2);
+
+        await expect(
+          l2.bridge.erc721out(
+            l1.network.holographId,
+            l1.sampleErc721Holographer.address,
+            l2.deployer.address,
+            l1.deployer.address,
+            thirdNFTl2
+          )
+        )
+          .to.emit(l2.bridge, 'LzEvent')
+          .withArgs(ChainId.hlg2lz(l1.network.holographId), l2.bridge.address.toLowerCase(), payload);
+
+        await expect(
+          l1.bridge
+            .connect(l1.lzEndpoint)
+            .lzReceive(ChainId.hlg2lz(l2.network.holographId), l2.bridge.address, 0, payload)
+        )
+          .to.emit(l1.bridge, 'AvailableJob')
+          .withArgs(payload);
+      });
+
+      it('token #3 bridge in on l2 should succeed', async function () {
+        let payload: BytesLike =
+          functionHash('erc721in(uint32,address,address,address,uint256,bytes)') +
+          generateInitCode(
+            ['uint32', 'address', 'address', 'address', 'uint256', 'bytes'],
+            [
+              l1.network.holographId,
+              l1.sampleErc721Holographer.address,
+              l1.deployer.address,
+              l2.deployer.address,
+              thirdNFTl1.toHexString(),
+              generateInitCode(['bytes'], [hexToBytes(stringToHex(tokenURIs[3]))]),
+            ]
+          ).substring(2);
+
+        await expect(l2.bridge.executeJob(payload))
+          .to.emit(l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
+          .withArgs(l2.bridge.address, l2.deployer.address, thirdNFTl1.toHexString());
+      });
+
+      it('token #3 bridge in on l1 should succeed', async function () {
+        let payload: BytesLike =
+          functionHash('erc721in(uint32,address,address,address,uint256,bytes)') +
+          generateInitCode(
+            ['uint32', 'address', 'address', 'address', 'uint256', 'bytes'],
+            [
+              l2.network.holographId,
+              l1.sampleErc721Holographer.address,
+              l2.deployer.address,
+              l1.deployer.address,
+              thirdNFTl2.toHexString(),
+              generateInitCode(['bytes'], [hexToBytes(stringToHex(tokenURIs[3]))]),
+            ]
+          ).substring(2);
+
+        await expect(l1.bridge.executeJob(payload))
+          .to.emit(l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
+          .withArgs(l1.bridge.address, l1.deployer.address, thirdNFTl2.toHexString());
       });
     });
   });

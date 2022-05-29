@@ -150,11 +150,14 @@ contract HolographBridge is Admin, Initializable {
   }
 
   modifier onlyLZ() {
-    // check and only allow calls from LayerZero relayers
     assembly {
-      if not(eq(sload(0x2944abfef32f38db0df81ab8a585718b1584ffa240274312f8a85cb682b6b688), caller())) {
-        mstore(0x00, "HOLOGRAPH: LZ only endpoint")
-        revert(0x00, 0x1b)
+      switch eq(sload(0x2944abfef32f38db0df81ab8a585718b1584ffa240274312f8a85cb682b6b688), caller())
+      case 0 {
+        mstore(0x80, 0x08c379a000000000000000000000000000000000000000000000000000000000)
+        mstore(0xa0, 0x0000002000000000000000000000000000000000000000000000000000000000)
+        mstore(0xc0, 0x0000001b484f4c4f47524150483a204c5a206f6e6c7920656e64706f696e7400)
+        mstore(0xe0, 0x0000000000000000000000000000000000000000000000000000000000000000)
+        revert(0x80, 0xc4)
       }
     }
     _;
@@ -179,14 +182,18 @@ contract HolographBridge is Admin, Initializable {
     uint64, /* _nonce*/
     bytes calldata _payload
   ) external onlyLZ {
-    address sourceAddress;
     assembly {
       let ptr := mload(0x40)
-      calldatacopy(ptr, sub(_srcAddress.offset, 2), add(_srcAddress.length, 2))
-      sourceAddress := mload(sub(ptr, 10))
+      calldatacopy(add(ptr, 0x0c), _srcAddress.offset, _srcAddress.length)
+      switch eq(mload(ptr), address())
+      case 0 {
+        mstore(0x80, 0x08c379a000000000000000000000000000000000000000000000000000000000)
+        mstore(0xa0, 0x0000002000000000000000000000000000000000000000000000000000000000)
+        mstore(0xc0, 0x0000001e484f4c4f47524150483a20756e617574686f72697a65642073656e64)
+        mstore(0xe0, 0x6572000000000000000000000000000000000000000000000000000000000000)
+        revert(0x80, 0xc4)
+      }
     }
-    require(sourceAddress == address(this), "HOLOGRAPH: unauthorized sender");
-    //    require(keccak256(abi.encodePacked(_srcAddress)) == keccak256(abi.encodePacked(address(this))), "HOLOGRAPH: unauthorized sender");
     _availableJobs[keccak256(_payload)] = true;
     emit AvailableJob(_payload);
   }
@@ -195,9 +202,9 @@ contract HolographBridge is Admin, Initializable {
     bytes32 hash = keccak256(_payload);
     require(_availableJobs[hash], "HOLOGRAPH: invalid job");
     assembly {
-      calldatacopy(0, 0, calldatasize())
-      mstore(calldatasize(), caller())
-      let result := callcode(gas(), address(), callvalue(), 0, add(calldatasize(), 32), 0, 0)
+      calldatacopy(0, _payload.offset, _payload.length)
+      mstore(_payload.length, caller())
+      let result := callcode(gas(), address(), callvalue(), 0, add(_payload.length, 32), 0, 0)
       if eq(result, 0) {
         returndatacopy(0, 0, returndatasize())
         revert(0, returndatasize())
@@ -213,7 +220,7 @@ contract HolographBridge is Admin, Initializable {
     address payable, /* _refundAddress*/
     address, /* _zroPaymentAddress*/
     bytes calldata /* _adapterParams*/
-  ) external payable onlyOperator {
+  ) external payable onlyBridge {
     // we really don't care about anything and just emit an event that we can leverage for multichain replication
     emit LzEvent(_dstChainId, _destination, _payload);
   }
@@ -251,6 +258,7 @@ contract HolographBridge is Admin, Initializable {
         erc721.isApprovedForAll(tokenOwner, msg.sender),
       "HOLOGRAPH: not approved/owner"
     );
+    require(to != address(0), "HOLOGRAPH: zero address");
     (bytes4 selector, bytes memory data) = erc721.holographBridgeOut(toChain, from, to, tokenId);
     require(selector == ERC721Holograph.holographBridgeOut.selector, "HOLOGRAPH: bridge out failed");
     HolographBridge(payable(address(this))).send{value: msg.value}(

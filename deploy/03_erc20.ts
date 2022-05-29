@@ -7,6 +7,7 @@ import {
   genesisDeployHelper,
   generateInitCode,
 } from '../scripts/utils/helpers';
+import { HolographERC20Event, ConfigureEvents } from '../scripts/utils/events';
 
 const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   let { hre, hre2 } = await hreSplit(hre1, global.__companionNetwork);
@@ -23,7 +24,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
         'Holograph ERC20 Token', // contractName
         'HolographERC20', // contractSymbol
         18, // contractDecimals
-        0, // eventConfig
+        ConfigureEvents([]), // eventConfig
         'HolographERC20', // domainSeperator
         '1', // domainVersion
         true, // skipInit

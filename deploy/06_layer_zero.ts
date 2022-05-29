@@ -30,7 +30,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     await lzTx.wait();
     hre.deployments.log(`Registered lzEndpoint to: ${await holographBridge.getLZEndpoint()}`);
   } else {
-    hre.deployments.log('lzEndpoint is already registered');
+    hre.deployments.log(`lzEndpoint is already registered to: ${await holographBridge.getLZEndpoint()}`);
   }
 };
 

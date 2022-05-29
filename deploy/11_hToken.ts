@@ -13,6 +13,7 @@ import {
   generateErc20Config,
   generateInitCode,
 } from '../scripts/utils/helpers';
+import { HolographERC20Event, ConfigureEvents } from '../scripts/utils/events';
 import Web3 from 'web3';
 
 const networks = JSON.parse(fs.readFileSync('./config/networks.json', 'utf8'));
@@ -57,7 +58,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       network.tokenName + ' (Holographed)',
       '1',
       18,
-      '0x' + '00'.repeat(32),
+      ConfigureEvents([]),
       generateInitCode(['address', 'uint16'], [deployer.address, 0]),
       '0x' + '00'.repeat(32)
     );
