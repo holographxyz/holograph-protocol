@@ -168,8 +168,7 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
   function executeJob(bytes calldata _payload) external onlyOperator {
     assembly {
       calldatacopy(0, _payload.offset, _payload.length)
-      mstore(_payload.length, caller())
-      let result := callcode(gas(), address(), callvalue(), 0, add(_payload.length, 32), 0, 0)
+      let result := callcode(gas(), address(), callvalue(), 0, _payload.length, 0, 0)
       if eq(result, 0) {
         returndatacopy(0, 0, returndatasize())
         revert(0, returndatasize())
