@@ -25,25 +25,18 @@ contract HolographBridgeProxy is Admin, Initializable {
   }
 
   function getBridge() external view returns (address bridge) {
-    // The slot hash has been precomputed for gas optimizaion
+    // The slot hash has been precomputed for gas optimization
     // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.bridge')) - 1);
     assembly {
-      bridge := sload(
-        /* slot */
-        precomputeslot("eip1967.Holograph.Bridge.bridge")
-      )
+      bridge := sload(precomputeslot("eip1967.Holograph.Bridge.bridge"))
     }
   }
 
   function setBridge(address bridge) external onlyAdmin {
-    // The slot hash has been precomputed for gas optimizaion
+    // The slot hash has been precomputed for gas optimization
     // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.bridge')) - 1);
     assembly {
-      sstore(
-        /* slot */
-        precomputeslot("eip1967.Holograph.Bridge.bridge"),
-        bridge
-      )
+      sstore(precomputeslot("eip1967.Holograph.Bridge.bridge"), bridge)
     }
   }
 

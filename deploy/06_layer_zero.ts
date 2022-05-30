@@ -17,20 +17,20 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
 
   const web3 = new Web3();
 
-  const holographBridgeProxy = await hre.ethers.getContract('HolographBridgeProxy');
-  const holographBridge = ((await hre.ethers.getContract('HolographBridge')) as Contract).attach(
-    holographBridgeProxy.address
+  const holographOperatorProxy = await hre.ethers.getContract('HolographOperatorProxy');
+  const holographOperator = ((await hre.ethers.getContract('HolographOperator')) as Contract).attach(
+    holographOperatorProxy.address
   );
 
-  if ((await holographBridge.getLZEndpoint()) != lzEndpoint) {
-    const lzTx = await holographBridge
+  if ((await holographOperator.getLZEndpoint()) != lzEndpoint) {
+    const lzTx = await holographOperator
       .setLZEndpoint(lzEndpoint, { nonce: await hre.ethers.provider.getTransactionCount(deployer) })
       .catch(error);
     hre.deployments.log('Transaction hash:', lzTx.hash);
     await lzTx.wait();
-    hre.deployments.log(`Registered lzEndpoint to: ${await holographBridge.getLZEndpoint()}`);
+    hre.deployments.log(`Registered lzEndpoint to: ${await holographOperator.getLZEndpoint()}`);
   } else {
-    hre.deployments.log(`lzEndpoint is already registered to: ${await holographBridge.getLZEndpoint()}`);
+    hre.deployments.log(`lzEndpoint is already registered to: ${await holographOperator.getLZEndpoint()}`);
   }
 };
 

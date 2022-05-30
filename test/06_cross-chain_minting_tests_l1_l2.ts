@@ -77,7 +77,6 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
     'https://holograph.xyz/sample2.json',
     'https://holograph.xyz/sample3.json',
   ];
-  // const totalNFTs: number = 2;
   // let l1ContractName = contractName + '(' + l1.hre.networkName + ')';
   // let l2ContractName = contractName + '(' + l2.hre.networkName + ')';
 
@@ -492,15 +491,15 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
             thirdNFTl1
           )
         )
-          .to.emit(l1.bridge, 'LzEvent')
-          .withArgs(ChainId.hlg2lz(l2.network.holographId), l1.bridge.address.toLowerCase(), payload);
+          .to.emit(l1.operator, 'LzEvent')
+          .withArgs(ChainId.hlg2lz(l2.network.holographId), l1.operator.address.toLowerCase(), payload);
 
         await expect(
-          l2.bridge
+          l2.operator
             .connect(l2.lzEndpoint)
-            .lzReceive(ChainId.hlg2lz(l1.network.holographId), l1.bridge.address, 0, payload)
+            .lzReceive(ChainId.hlg2lz(l1.network.holographId), l1.operator.address, 0, payload)
         )
-          .to.emit(l2.bridge, 'AvailableJob')
+          .to.emit(l2.operator, 'AvailableJob')
           .withArgs(payload);
 
         await expect(
@@ -520,15 +519,15 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
             thirdNFTl2
           )
         )
-          .to.emit(l2.bridge, 'LzEvent')
-          .withArgs(ChainId.hlg2lz(l1.network.holographId), l2.bridge.address.toLowerCase(), payload);
+          .to.emit(l2.operator, 'LzEvent')
+          .withArgs(ChainId.hlg2lz(l1.network.holographId), l2.operator.address.toLowerCase(), payload);
 
         await expect(
-          l1.bridge
+          l1.operator
             .connect(l1.lzEndpoint)
-            .lzReceive(ChainId.hlg2lz(l2.network.holographId), l2.bridge.address, 0, payload)
+            .lzReceive(ChainId.hlg2lz(l2.network.holographId), l2.operator.address, 0, payload)
         )
-          .to.emit(l1.bridge, 'AvailableJob')
+          .to.emit(l1.operator, 'AvailableJob')
           .withArgs(payload);
 
         await expect(
@@ -539,7 +538,7 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
       it('token #3 bridge in on l2 should succeed', async function () {
         let payload: BytesLike = payloadThirdNFTl1;
 
-        await expect(l2.bridge.executeJob(payload))
+        await expect(l2.operator.executeJob(payload))
           .to.emit(l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
           .withArgs(l2.bridge.address, l2.deployer.address, thirdNFTl1.toHexString());
 
@@ -551,7 +550,7 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
       it('token #3 bridge in on l1 should succeed', async function () {
         let payload: BytesLike = payloadThirdNFTl2;
 
-        await expect(l1.bridge.executeJob(payload))
+        await expect(l1.operator.executeJob(payload))
           .to.emit(l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
           .withArgs(l1.bridge.address, l1.deployer.address, thirdNFTl2.toHexString());
 
@@ -591,13 +590,13 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
       it('bridged in token #3 bridge in on l2 should fail', async function () {
         let payload: BytesLike = payloadThirdNFTl1;
 
-        await expect(l2.bridge.executeJob(payload)).to.be.revertedWith('HOLOGRAPH: invalid job');
+        await expect(l2.operator.executeJob(payload)).to.be.revertedWith('HOLOGRAPH: invalid job');
       });
 
       it('bridged in token #3 bridge in on l1 should fail', async function () {
         let payload: BytesLike = payloadThirdNFTl2;
 
-        await expect(l1.bridge.executeJob(payload)).to.be.revertedWith('HOLOGRAPH: invalid job');
+        await expect(l1.operator.executeJob(payload)).to.be.revertedWith('HOLOGRAPH: invalid job');
       });
     });
   });

@@ -106,37 +106,122 @@ pragma solidity 0.8.13;
 import "./abstract/Admin.sol";
 import "./abstract/Initializable.sol";
 
-import "./interface/ERC20Holograph.sol";
-import "./interface/ERC721Holograph.sol";
 import "./interface/IHolograph.sol";
 import "./interface/IHolographBridge.sol";
-import "./interface/IHolographFactory.sol";
 import "./interface/IHolographOperator.sol";
 import "./interface/IHolographRegistry.sol";
 import "./interface/IInitializable.sol";
 
 import "./library/ChainId.sol";
 
-import "./struct/DeploymentConfig.sol";
-import "./struct/Verification.sol";
-
 /**
- * @dev This smart contract contains the actual core bridging logic.
+ * @dev This smart contract contains the actual core operator logic.
  */
-contract HolographBridge is Admin, Initializable, IHolographBridge {
+contract HolographOperator is Admin, Initializable, IHolographOperator {
+  /**
+   * @dev Internal mapping of hashes for valid operator jobs.
+   */
+  mapping(bytes32 => bool) private _availableJobs;
+
+  /**
+   * @dev Event is emitted for every time that a valid job is available.
+   */
+  event AvailableJob(bytes _payload);
+
+  event LzEvent(uint16 _dstChainId, bytes _destination, bytes _payload);
+
+  modifier onlyBridge() {
+    require(msg.sender == _bridge(), "HOLOGRAPH: bridge only call");
+    _;
+  }
+
+  modifier onlyLZ() {
+    assembly {
+      switch eq(sload(0x2944abfef32f38db0df81ab8a585718b1584ffa240274312f8a85cb682b6b688), caller())
+      case 0 {
+        mstore(0x80, 0x08c379a000000000000000000000000000000000000000000000000000000000)
+        mstore(0xa0, 0x0000002000000000000000000000000000000000000000000000000000000000)
+        mstore(0xc0, 0x0000001b484f4c4f47524150483a204c5a206f6e6c7920656e64706f696e7400)
+        mstore(0xe0, 0x0000000000000000000000000000000000000000000000000000000000000000)
+        revert(0x80, 0xc4)
+      }
+    }
+    _;
+  }
+
   /**
    * @dev Constructor is left empty and only the admin address is set.
    */
   constructor() {}
 
-  modifier onlyBridge() {
-    require(msg.sender == address(this), "HOLOGRAPH: bridge only call");
-    _;
+  function init(bytes memory data) external override returns (bytes4) {
+    require(!_isInitialized(), "HOLOGRAPH: already initialized");
+    (address holograph, address registry, address bridge) = abi.decode(data, (address, address, address));
+    assembly {
+      sstore(0x5705f5753aa4f617eef2cae1dada3d3355e9387b04d19191f09b545e684ca50d, origin())
+      sstore(0x1eee493315beeac80829afd0aaa340f3821cabe68571a2743478e81638a3d94d, holograph)
+      sstore(0x03be85923973d3197c19b1ad1f9b28c331dd9229cd80cbf84926b2286fc4563f, bridge)
+      sstore(0x460c4059d72b144253e5fc4e2aacbae2bcd6362c67862cd58ecbab0e7b10c349, registry)
+    }
+    _setInitialized();
+    return IInitializable.init.selector;
   }
 
-  modifier onlyOperator() {
+  function lzReceive(
+    uint16, /* _srcChainId*/
+    bytes calldata _srcAddress,
+    uint64, /* _nonce*/
+    bytes calldata _payload
+  ) external onlyLZ {
     assembly {
-      switch eq(sload(0x7bef7d8d97f57f9aa64de319c8598b5cdc7c3d2715fc02428415a98281ca6bdc), caller())
+      let ptr := mload(0x40)
+      calldatacopy(add(ptr, 0x0c), _srcAddress.offset, _srcAddress.length)
+      switch eq(mload(ptr), address())
+      case 0 {
+        mstore(0x80, 0x08c379a000000000000000000000000000000000000000000000000000000000)
+        mstore(0xa0, 0x0000002000000000000000000000000000000000000000000000000000000000)
+        mstore(0xc0, 0x0000001e484f4c4f47524150483a20756e617574686f72697a65642073656e64)
+        mstore(0xe0, 0x6572000000000000000000000000000000000000000000000000000000000000)
+        revert(0x80, 0xc4)
+      }
+    }
+    _availableJobs[keccak256(_payload)] = true;
+    emit AvailableJob(_payload);
+  }
+
+  function executeJob(bytes calldata _payload) external {
+    // we do our operator logic here
+    // we will also manage gas/value here
+    bytes32 hash = keccak256(_payload);
+    require(_availableJobs[hash], "HOLOGRAPH: invalid job");
+    assembly {
+      calldatacopy(0, 0, calldatasize())
+      let result := call(
+        gas(),
+        sload(0x03be85923973d3197c19b1ad1f9b28c331dd9229cd80cbf84926b2286fc4563f),
+        callvalue(),
+        0,
+        calldatasize(),
+        0,
+        0
+      )
+      if eq(result, 0) {
+        returndatacopy(0, 0, returndatasize())
+        revert(0, returndatasize())
+      }
+    }
+    _availableJobs[hash] = false;
+  }
+
+  function jobEstimator(
+    uint16 _srcChainId,
+    bytes calldata _srcAddress,
+    uint64 _nonce,
+    bytes calldata _payload
+  ) external {
+    assembly {
+      // switch eq(sload(0x64cf6cf9ad5921ebcb693f7949677bb85fb7da9db9bf2ca491de330b219f5e9a), caller())
+      switch eq(mload(0x60), caller())
       case 0 {
         mstore(0x80, 0x08c379a000000000000000000000000000000000000000000000000000000000)
         mstore(0xa0, 0x0000002000000000000000000000000000000000000000000000000000000000)
@@ -145,161 +230,26 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
         revert(0x80, 0xc4)
       }
     }
-    _;
+    IHolographOperator(address(this)).lzReceive(_srcChainId, _srcAddress, _nonce, _payload);
+    IHolographOperator(address(this)).executeJob(_payload);
   }
 
-  function init(bytes memory data) external override returns (bytes4) {
-    require(!_isInitialized(), "HOLOGRAPH: already initialized");
-    (address holograph, address registry, address factory, address operator) = abi.decode(
-      data,
-      (address, address, address, address)
-    );
+  function send(
+    uint16 _dstChainId,
+    bytes calldata _destination,
+    bytes calldata _payload,
+    address payable, /* _refundAddress*/
+    address, /* _zroPaymentAddress*/
+    bytes calldata /* _adapterParams*/
+  ) external payable onlyBridge {
+    // we really don't care about anything and just emit an event that we can leverage for multichain replication
+    emit LzEvent(_dstChainId, _destination, _payload);
+  }
+
+  function _bridge() internal view returns (address bridge) {
     assembly {
-      // sstore(0x64cf6cf9ad5921ebcb693f7949677bb85fb7da9db9bf2ca491de330b219f5e9a, 0x000000000000000000000000000000000000000000000000000000000000dead)
-      sstore(0x5705f5753aa4f617eef2cae1dada3d3355e9387b04d19191f09b545e684ca50d, origin())
-      sstore(0x1eee493315beeac80829afd0aaa340f3821cabe68571a2743478e81638a3d94d, holograph)
-      sstore(0x460c4059d72b144253e5fc4e2aacbae2bcd6362c67862cd58ecbab0e7b10c349, registry)
-      sstore(0x7eefc8e705e14d34b5d1d6c3ea7f4e20cecb5956b182bac952a455d9372b87e2, factory)
-      sstore(0x7bef7d8d97f57f9aa64de319c8598b5cdc7c3d2715fc02428415a98281ca6bdc, operator)
+      bridge := sload(0x03be85923973d3197c19b1ad1f9b28c331dd9229cd80cbf84926b2286fc4563f)
     }
-    _setInitialized();
-    return IInitializable.init.selector;
-  }
-
-  function executeJob(bytes calldata _payload) external onlyOperator {
-    assembly {
-      calldatacopy(0, _payload.offset, _payload.length)
-      mstore(_payload.length, caller())
-      let result := callcode(gas(), address(), callvalue(), 0, add(_payload.length, 32), 0, 0)
-      if eq(result, 0) {
-        returndatacopy(0, 0, returndatasize())
-        revert(0, returndatasize())
-      }
-    }
-  }
-
-  function erc721in(
-    uint32 fromChain,
-    address collection,
-    address from,
-    address to,
-    uint256 tokenId,
-    bytes calldata data
-  ) external onlyBridge {
-    require(IHolographRegistry(_registry()).isHolographedContract(collection), "HOLOGRAPH: not holographed");
-    require(
-      ERC721Holograph(collection).holographBridgeIn(fromChain, from, to, tokenId, data) ==
-        ERC721Holograph.holographBridgeIn.selector,
-      "HOLOGRAPH: bridge in failed"
-    );
-  }
-
-  function erc721out(
-    uint32 toChain,
-    address collection,
-    address from,
-    address to,
-    uint256 tokenId
-  ) external payable {
-    require(IHolographRegistry(_registry()).isHolographedContract(collection), "HOLOGRAPH: not holographed");
-    ERC721Holograph erc721 = ERC721Holograph(collection);
-    require(erc721.exists(tokenId), "HOLOGRAPH: token doesn't exist");
-    address tokenOwner = erc721.ownerOf(tokenId);
-    require(
-      tokenOwner == msg.sender ||
-        erc721.getApproved(tokenId) == msg.sender ||
-        erc721.isApprovedForAll(tokenOwner, msg.sender),
-      "HOLOGRAPH: not approved/owner"
-    );
-    require(to != address(0), "HOLOGRAPH: zero address");
-    (bytes4 selector, bytes memory data) = erc721.holographBridgeOut(toChain, from, to, tokenId);
-    require(selector == ERC721Holograph.holographBridgeOut.selector, "HOLOGRAPH: bridge out failed");
-    IHolographOperator(payable(_operator())).send{value: msg.value}(
-      ChainId.hlg2lz(toChain),
-      abi.encodePacked(_operator()),
-      abi.encodeWithSignature(
-        "erc721in(uint32,address,address,address,uint256,bytes)",
-        IHolograph(_holograph()).getChainType(),
-        collection,
-        from,
-        to,
-        tokenId,
-        data
-      ),
-      payable(msg.sender),
-      _operator(),
-      bytes("")
-    );
-  }
-
-  function erc20in(
-    uint32 fromChain,
-    address token,
-    address from,
-    address to,
-    uint256 amount,
-    bytes calldata data
-  ) external onlyBridge {
-    require(IHolographRegistry(_registry()).isHolographedContract(token), "HOLOGRAPH: not holographed");
-    require(
-      ERC20Holograph(token).holographBridgeIn(fromChain, from, to, amount, data) ==
-        ERC20Holograph.holographBridgeIn.selector,
-      "HOLOGRAPH: bridge in failed"
-    );
-  }
-
-  function erc20out(
-    uint32 toChain,
-    address token,
-    address from,
-    address to,
-    uint256 amount
-  ) external payable {
-    require(IHolographRegistry(_registry()).isHolographedContract(token), "HOLOGRAPH: not holographed");
-    ERC20Holograph erc20 = ERC20Holograph(token);
-    require(erc20.balanceOf(from) >= amount, "HOLOGRAPH: not enough tokens");
-    (bytes4 selector, bytes memory data) = erc20.holographBridgeOut(toChain, msg.sender, from, to, amount);
-    require(selector == ERC20Holograph.holographBridgeOut.selector, "HOLOGRAPH: bridge out failed");
-    IHolographOperator(payable(_operator())).send{value: msg.value}(
-      ChainId.hlg2lz(toChain),
-      abi.encodePacked(_operator()),
-      abi.encodeWithSignature(
-        "erc20in(uint32,address,address,address,uint256,bytes)",
-        IHolograph(_holograph()).getChainType(),
-        token,
-        from,
-        to,
-        amount,
-        data
-      ),
-      payable(msg.sender),
-      _operator(),
-      bytes("")
-    );
-  }
-
-  function deployIn(bytes calldata data) external onlyBridge {
-    (DeploymentConfig memory config, Verification memory signature, address signer) = abi.decode(
-      data,
-      (DeploymentConfig, Verification, address)
-    );
-    IHolographFactory(_factory()).deployHolographableContract(config, signature, signer);
-  }
-
-  function deployOut(
-    uint32 toChain,
-    DeploymentConfig calldata config,
-    Verification calldata signature,
-    address signer
-  ) external payable {
-    IHolographOperator(payable(_operator())).send{value: msg.value}(
-      ChainId.hlg2lz(toChain),
-      abi.encodePacked(_operator()),
-      abi.encodeWithSignature("deployIn(,bytes)", abi.encode(config, signature, signer)),
-      payable(msg.sender),
-      _operator(),
-      bytes("")
-    );
   }
 
   function _holograph() internal view returns (address holograph) {
@@ -308,21 +258,21 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     }
   }
 
-  function _factory() internal view returns (address factory) {
-    assembly {
-      factory := sload(0x7eefc8e705e14d34b5d1d6c3ea7f4e20cecb5956b182bac952a455d9372b87e2)
-    }
-  }
-
-  function _operator() internal view returns (address operator) {
-    assembly {
-      operator := sload(0x7bef7d8d97f57f9aa64de319c8598b5cdc7c3d2715fc02428415a98281ca6bdc)
-    }
-  }
-
   function _registry() internal view returns (address registry) {
     assembly {
       registry := sload(0x460c4059d72b144253e5fc4e2aacbae2bcd6362c67862cd58ecbab0e7b10c349)
+    }
+  }
+
+  function getLZEndpoint() external view returns (address lZEndpoint) {
+    assembly {
+      lZEndpoint := sload(0x2944abfef32f38db0df81ab8a585718b1584ffa240274312f8a85cb682b6b688)
+    }
+  }
+
+  function setLZEndpoint(address lZEndpoint) external onlyAdmin {
+    assembly {
+      sstore(0x2944abfef32f38db0df81ab8a585718b1584ffa240274312f8a85cb682b6b688, lZEndpoint)
     }
   }
 }

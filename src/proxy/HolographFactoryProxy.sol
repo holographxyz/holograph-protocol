@@ -25,25 +25,18 @@ contract HolographFactoryProxy is Admin, Initializable {
   }
 
   function getFactory() external view returns (address factory) {
-    // The slot hash has been precomputed for gas optimizaion
+    // The slot hash has been precomputed for gas optimization
     // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.factory')) - 1);
     assembly {
-      factory := sload(
-        /* slot */
-        precomputeslot("eip1967.Holograph.Bridge.factory")
-      )
+      factory := sload(precomputeslot("eip1967.Holograph.Bridge.factory"))
     }
   }
 
   function setFactory(address factory) external onlyAdmin {
-    // The slot hash has been precomputed for gas optimizaion
+    // The slot hash has been precomputed for gas optimization
     // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.factory')) - 1);
     assembly {
-      sstore(
-        /* slot */
-        precomputeslot("eip1967.Holograph.Bridge.factory"),
-        factory
-      )
+      sstore(precomputeslot("eip1967.Holograph.Bridge.factory"), factory)
     }
   }
 

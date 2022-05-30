@@ -129,6 +129,22 @@ describe('Validating the Holograph Protocol deployments (L2)', async () => {
       });
     });
 
+    describe('HolographOperator:', async function () {
+      it('should return correct bytecode', async function () {
+        expect(await l2.hre.provider.send('eth_getCode', [l2.holographOperator.address])).to.equal(
+          (await l2.hre.artifacts.readArtifact('HolographOperator')).deployedBytecode
+        );
+      });
+    });
+
+    describe('HolographOperatorProxy:', async function () {
+      it('should return correct bytecode', async function () {
+        expect(await l2.hre.provider.send('eth_getCode', [l2.holographOperatorProxy.address])).to.equal(
+          (await l2.hre.artifacts.readArtifact('HolographOperatorProxy')).deployedBytecode
+        );
+      });
+    });
+
     describe('HolographRegistry:', async function () {
       it('should return correct bytecode', async function () {
         expect(await l2.hre.provider.send('eth_getCode', [l2.holographRegistry.address])).to.equal(

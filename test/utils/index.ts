@@ -22,6 +22,8 @@ import {
   HolographFactory,
   HolographFactoryProxy,
   HolographGenesis,
+  HolographOperator,
+  HolographOperatorProxy,
   HolographRegistry,
   HolographRegistryProxy,
   HToken,
@@ -93,6 +95,8 @@ export interface PreTest {
   holographFactory: HolographFactory;
   holographFactoryProxy: HolographFactoryProxy;
   holographGenesis: HolographGenesis;
+  holographOperator: HolographOperator;
+  holographOperatorProxy: HolographOperatorProxy;
   holographRegistry: HolographRegistry;
   holographRegistryProxy: HolographRegistryProxy;
   hToken: HToken;
@@ -104,9 +108,10 @@ export interface PreTest {
   sampleErc721: SampleERC721;
   secureStorage: SecureStorage;
   secureStorageProxy: SecureStorageProxy;
-  registry: HolographRegistry;
-  factory: HolographFactory;
   bridge: HolographBridge;
+  factory: HolographFactory;
+  operator: HolographOperator;
+  registry: HolographRegistry;
   hTokenHolographer: Holographer;
   hTokenEnforcer: HolographERC20;
   sampleErc20Holographer: Holographer;
@@ -148,6 +153,8 @@ export default async function (l2?: boolean): Promise<PreTest> {
     'Interfaces',
     'HolographRegistry',
     'HolographRegistryProxy',
+    'HolographOperator',
+    'HolographOperatorProxy',
     'SecureStorage',
     'SecureStorageProxy',
     'HolographFactory',
@@ -201,6 +208,8 @@ export default async function (l2?: boolean): Promise<PreTest> {
   let holographFactory: HolographFactory;
   let holographFactoryProxy: HolographFactoryProxy;
   let holographGenesis: HolographGenesis;
+  let holographOperator: HolographOperator;
+  let holographOperatorProxy: HolographOperatorProxy;
   let holographRegistry: HolographRegistry;
   let holographRegistryProxy: HolographRegistryProxy;
   let hToken: HToken;
@@ -214,6 +223,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
   let secureStorageProxy: SecureStorageProxy;
 
   let registry: HolographRegistry;
+  let operator: HolographOperator;
   let factory: HolographFactory;
   let bridge: HolographBridge;
 
@@ -243,6 +253,8 @@ export default async function (l2?: boolean): Promise<PreTest> {
   holographFactory = (await hre.ethers.getContract('HolographFactory')) as HolographFactory;
   holographFactoryProxy = (await hre.ethers.getContract('HolographFactoryProxy')) as HolographFactoryProxy;
   holographGenesis = (await hre.ethers.getContract('HolographGenesis')) as HolographGenesis;
+  holographOperator = (await hre.ethers.getContract('HolographOperator')) as HolographOperator;
+  holographOperatorProxy = (await hre.ethers.getContract('HolographOperatorProxy')) as HolographOperatorProxy;
   holographRegistry = (await hre.ethers.getContract('HolographRegistry')) as HolographRegistry;
   holographRegistryProxy = (await hre.ethers.getContract('HolographRegistryProxy')) as HolographRegistryProxy;
   // hToken = (await hre.ethers.getContractOrNull('hToken')) as HToken;
@@ -257,6 +269,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
 
   bridge = holographBridge.attach(await holograph.getBridge()) as HolographBridge;
   factory = holographFactory.attach(await holograph.getFactory()) as HolographFactory;
+  operator = holographOperator.attach(await holograph.getOperator()) as HolographOperator;
   registry = holographRegistry.attach(await holograph.getRegistry()) as HolographRegistry;
 
   holographer = (await hre.ethers.getContractAt('Holographer', await registry.getHToken(chainId))) as Holographer;
@@ -393,6 +406,8 @@ export default async function (l2?: boolean): Promise<PreTest> {
     holographFactory,
     holographFactoryProxy,
     holographGenesis,
+    holographOperator,
+    holographOperatorProxy,
     holographRegistry,
     holographRegistryProxy,
     hToken,
@@ -404,9 +419,10 @@ export default async function (l2?: boolean): Promise<PreTest> {
     sampleErc721,
     secureStorage,
     secureStorageProxy,
-    registry,
-    factory,
     bridge,
+    factory,
+    operator,
+    registry,
     hTokenHolographer,
     hTokenEnforcer,
     sampleErc20Holographer,

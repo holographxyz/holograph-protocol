@@ -6,8 +6,9 @@ import "./abstract/Admin.sol";
 import "./abstract/Initializable.sol";
 
 import "./interface/IInitializable.sol";
+import "./interface/IHolograph.sol";
 
-contract Holograph is Admin, Initializable {
+contract Holograph is Admin, Initializable, IHolograph {
   constructor() {}
 
   function init(bytes memory data) external override returns (bytes4) {
@@ -18,8 +19,9 @@ contract Holograph is Admin, Initializable {
       address registry,
       address factory,
       address bridge,
+      address operator,
       address secureStorage
-    ) = abi.decode(data, (uint32, address, address, address, address, address));
+    ) = abi.decode(data, (uint32, address, address, address, address, address, address));
     assembly {
       sstore(precomputeslot("eip1967.Holograph.Bridge.admin"), origin())
       sstore(precomputeslot("eip1967.Holograph.Bridge.chainType"), chainType)
@@ -27,6 +29,7 @@ contract Holograph is Admin, Initializable {
       sstore(precomputeslot("eip1967.Holograph.Bridge.registry"), registry)
       sstore(precomputeslot("eip1967.Holograph.Bridge.factory"), factory)
       sstore(precomputeslot("eip1967.Holograph.Bridge.bridge"), bridge)
+      sstore(precomputeslot("eip1967.Holograph.Bridge.operator"), operator)
       sstore(precomputeslot("eip1967.Holograph.Bridge.secureStorage"), secureStorage)
     }
     _setInitialized();
@@ -121,6 +124,22 @@ contract Holograph is Admin, Initializable {
         precomputeslot("eip1967.Holograph.Bridge.interfaces"),
         interfaces
       )
+    }
+  }
+
+  function getOperator() external view returns (address operator) {
+    // The slot hash has been precomputed for gas optimizaion
+    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.operator')) - 1);
+    assembly {
+      operator := sload(precomputeslot("eip1967.Holograph.Bridge.operator"))
+    }
+  }
+
+  function setOperator(address operator) external onlyAdmin {
+    // The slot hash has been precomputed for gas optimizaion
+    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.operator')) - 1);
+    assembly {
+      sstore(precomputeslot("eip1967.Holograph.Bridge.operator"), operator)
     }
   }
 

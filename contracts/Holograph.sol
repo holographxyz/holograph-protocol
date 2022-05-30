@@ -107,8 +107,9 @@ import "./abstract/Admin.sol";
 import "./abstract/Initializable.sol";
 
 import "./interface/IInitializable.sol";
+import "./interface/IHolograph.sol";
 
-contract Holograph is Admin, Initializable {
+contract Holograph is Admin, Initializable, IHolograph {
   constructor() {}
 
   function init(bytes memory data) external override returns (bytes4) {
@@ -119,8 +120,9 @@ contract Holograph is Admin, Initializable {
       address registry,
       address factory,
       address bridge,
+      address operator,
       address secureStorage
-    ) = abi.decode(data, (uint32, address, address, address, address, address));
+    ) = abi.decode(data, (uint32, address, address, address, address, address, address));
     assembly {
       sstore(0x5705f5753aa4f617eef2cae1dada3d3355e9387b04d19191f09b545e684ca50d, origin())
       sstore(0xf659863303d91045cf6f5789ae687c591017a1efd53ebb2eec518fb10873ecb8, chainType)
@@ -128,6 +130,7 @@ contract Holograph is Admin, Initializable {
       sstore(0x460c4059d72b144253e5fc4e2aacbae2bcd6362c67862cd58ecbab0e7b10c349, registry)
       sstore(0x7eefc8e705e14d34b5d1d6c3ea7f4e20cecb5956b182bac952a455d9372b87e2, factory)
       sstore(0x03be85923973d3197c19b1ad1f9b28c331dd9229cd80cbf84926b2286fc4563f, bridge)
+      sstore(0x7bef7d8d97f57f9aa64de319c8598b5cdc7c3d2715fc02428415a98281ca6bdc, operator)
       sstore(0xd26498b26a05274577b8ac2e3250418da53433f3ff82027428ee3c530702cdec, secureStorage)
     }
     _setInitialized();
@@ -222,6 +225,22 @@ contract Holograph is Admin, Initializable {
         0x23e584d4fb363739321c1e56c9bcdc29517a4c57065f8502226c995fd15b2472,
         interfaces
       )
+    }
+  }
+
+  function getOperator() external view returns (address operator) {
+    // The slot hash has been precomputed for gas optimizaion
+    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.operator')) - 1);
+    assembly {
+      operator := sload(0x7bef7d8d97f57f9aa64de319c8598b5cdc7c3d2715fc02428415a98281ca6bdc)
+    }
+  }
+
+  function setOperator(address operator) external onlyAdmin {
+    // The slot hash has been precomputed for gas optimizaion
+    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.operator')) - 1);
+    assembly {
+      sstore(0x7bef7d8d97f57f9aa64de319c8598b5cdc7c3d2715fc02428415a98281ca6bdc, operator)
     }
   }
 

@@ -131,6 +131,18 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
       });
     });
 
+    describe('HolographOperator', async function () {
+      it('contract addresses should match', async function () {
+        expect(l1.holographOperator.address).to.equal(l2.holographOperator.address);
+      });
+    });
+
+    describe('HolographOperatorProxy', async function () {
+      it('contract addresses should match', async function () {
+        expect(l1.holographOperatorProxy.address).to.equal(l2.holographOperatorProxy.address);
+      });
+    });
+
     describe('HolographRegistry', async function () {
       it('contract addresses should match', async function () {
         expect(l1.holographRegistry.address).to.equal(l2.holographRegistry.address);
@@ -543,12 +555,12 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
   describe('Verify chain configs', async function () {
     describe('LayerZero endpoints', async function () {
       it('should not be empty', async function () {
-        expect(await l1.bridge.getLZEndpoint()).to.not.equal(zeroAddress());
+        expect(await l1.operator.getLZEndpoint()).to.not.equal(zeroAddress());
 
-        expect(await l2.bridge.getLZEndpoint()).to.not.equal(zeroAddress());
+        expect(await l2.operator.getLZEndpoint()).to.not.equal(zeroAddress());
       });
       it('should be same address on both chains', async function () {
-        expect(await l1.bridge.getLZEndpoint()).to.equal(await l2.bridge.getLZEndpoint());
+        expect(await l1.operator.getLZEndpoint()).to.equal(await l2.operator.getLZEndpoint());
       });
     });
 

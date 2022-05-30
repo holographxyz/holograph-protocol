@@ -103,18 +103,59 @@
 
 pragma solidity 0.8.13;
 
-interface IHolograph {
-  function getChainType() external view returns (uint32 chainType);
+import "../abstract/Admin.sol";
+import "../abstract/Initializable.sol";
 
-  function getBridge() external view returns (address bridgeAddress);
+import "../interface/IInitializable.sol";
 
-  function getFactory() external view returns (address factoryAddress);
+contract HolographOperatorProxy is Admin, Initializable {
+  constructor() {}
 
-  function getInterfaces() external view returns (address interfacesAddress);
+  function init(bytes memory data) external override returns (bytes4) {
+    require(!_isInitialized(), "HOLOGRAPH: already initialized");
+    (address operator, bytes memory initCode) = abi.decode(data, (address, bytes));
+    assembly {
+      sstore(0x7bef7d8d97f57f9aa64de319c8598b5cdc7c3d2715fc02428415a98281ca6bdc, operator)
+      sstore(0x5705f5753aa4f617eef2cae1dada3d3355e9387b04d19191f09b545e684ca50d, origin())
+    }
+    (bool success, bytes memory returnData) = operator.delegatecall(abi.encodeWithSignature("init(bytes)", initCode));
+    bytes4 selector = abi.decode(returnData, (bytes4));
+    require(success && selector == IInitializable.init.selector, "initialization failed");
+    _setInitialized();
+    return IInitializable.init.selector;
+  }
 
-  function getOperator() external view returns (address operatorAddress);
+  function getOperator() external view returns (address operator) {
+    // The slot hash has been precomputed for gas optimization
+    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.operator')) - 1);
+    assembly {
+      operator := sload(0x7bef7d8d97f57f9aa64de319c8598b5cdc7c3d2715fc02428415a98281ca6bdc)
+    }
+  }
 
-  function getRegistry() external view returns (address registryAddress);
+  function setOperator(address operator) external onlyAdmin {
+    // The slot hash has been precomputed for gas optimization
+    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.operator')) - 1);
+    assembly {
+      sstore(0x7bef7d8d97f57f9aa64de319c8598b5cdc7c3d2715fc02428415a98281ca6bdc, operator)
+    }
+  }
 
-  function getSecureStorage() external view returns (address secureStorageAddress);
+  receive() external payable {}
+
+  fallback() external payable {
+    assembly {
+      let operator := sload(0x7bef7d8d97f57f9aa64de319c8598b5cdc7c3d2715fc02428415a98281ca6bdc)
+      calldatacopy(0, 0, calldatasize())
+      let result := delegatecall(gas(), operator, 0, calldatasize(), 0, 0)
+      returndatacopy(0, 0, returndatasize())
+      switch result
+      case 0 {
+        revert(0, returndatasize())
+      }
+      default {
+        return(0, returndatasize())
+      }
+    }
+  }
 }

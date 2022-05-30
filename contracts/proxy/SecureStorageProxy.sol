@@ -129,25 +129,18 @@ contract SecureStorageProxy is Admin, Initializable {
   }
 
   function getSecureStorage() external view returns (address secureStorage) {
-    // The slot hash has been precomputed for gas optimizaion
+    // The slot hash has been precomputed for gas optimization
     // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.secureStorage')) - 1);
     assembly {
-      secureStorage := sload(
-        /* slot */
-        0xd26498b26a05274577b8ac2e3250418da53433f3ff82027428ee3c530702cdec
-      )
+      secureStorage := sload(0xd26498b26a05274577b8ac2e3250418da53433f3ff82027428ee3c530702cdec)
     }
   }
 
   function setSecureStorage(address secureStorage) external onlyAdmin {
-    // The slot hash has been precomputed for gas optimizaion
+    // The slot hash has been precomputed for gas optimization
     // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.secureStorage')) - 1);
     assembly {
-      sstore(
-        /* slot */
-        0xd26498b26a05274577b8ac2e3250418da53433f3ff82027428ee3c530702cdec,
-        secureStorage
-      )
+      sstore(0xd26498b26a05274577b8ac2e3250418da53433f3ff82027428ee3c530702cdec, secureStorage)
     }
   }
 

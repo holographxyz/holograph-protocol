@@ -25,25 +25,18 @@ contract HolographRegistryProxy is Admin, Initializable {
   }
 
   function getRegistry() external view returns (address registry) {
-    // The slot hash has been precomputed for gas optimizaion
+    // The slot hash has been precomputed for gas optimization
     // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.registry')) - 1);
     assembly {
-      registry := sload(
-        /* slot */
-        precomputeslot("eip1967.Holograph.Bridge.registry")
-      )
+      registry := sload(precomputeslot("eip1967.Holograph.Bridge.registry"))
     }
   }
 
   function setRegistry(address registry) external onlyAdmin {
-    // The slot hash has been precomputed for gas optimizaion
+    // The slot hash has been precomputed for gas optimization
     // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.registry')) - 1);
     assembly {
-      sstore(
-        /* slot */
-        precomputeslot("eip1967.Holograph.Bridge.registry"),
-        registry
-      )
+      sstore(precomputeslot("eip1967.Holograph.Bridge.registry"), registry)
     }
   }
 

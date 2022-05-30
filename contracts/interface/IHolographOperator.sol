@@ -103,18 +103,31 @@
 
 pragma solidity 0.8.13;
 
-interface IHolograph {
-  function getChainType() external view returns (uint32 chainType);
+interface IHolographOperator {
+  function lzReceive(
+    uint16 _srcChainId,
+    bytes calldata _srcAddress,
+    uint64 _nonce,
+    bytes calldata _payload
+  ) external;
 
-  function getBridge() external view returns (address bridgeAddress);
+  function executeJob(bytes calldata _payload) external;
 
-  function getFactory() external view returns (address factoryAddress);
+  function jobEstimator(
+    uint16 _srcChainId,
+    bytes calldata _srcAddress,
+    uint64 _nonce,
+    bytes calldata _payload
+  ) external;
 
-  function getInterfaces() external view returns (address interfacesAddress);
+  function send(
+    uint16 _dstChainId,
+    bytes calldata _destination,
+    bytes calldata _payload,
+    address payable _refundAddress,
+    address _zroPaymentAddress,
+    bytes calldata _adapterParams
+  ) external payable;
 
-  function getOperator() external view returns (address operatorAddress);
-
-  function getRegistry() external view returns (address registryAddress);
-
-  function getSecureStorage() external view returns (address secureStorageAddress);
+  function getLZEndpoint() external view returns (address lZEndpoint);
 }

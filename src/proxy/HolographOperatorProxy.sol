@@ -7,39 +7,36 @@ import "../abstract/Initializable.sol";
 
 import "../interface/IInitializable.sol";
 
-contract SecureStorageProxy is Admin, Initializable {
+contract HolographOperatorProxy is Admin, Initializable {
   constructor() {}
 
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
-    (address secureStorage, bytes memory initCode) = abi.decode(data, (address, bytes));
+    (address operator, bytes memory initCode) = abi.decode(data, (address, bytes));
     assembly {
-      sstore(precomputeslot("eip1967.Holograph.Bridge.secureStorage"), secureStorage)
+      sstore(precomputeslot("eip1967.Holograph.Bridge.operator"), operator)
       sstore(precomputeslot("eip1967.Holograph.Bridge.admin"), origin())
     }
-    (bool success, bytes memory returnData) = secureStorage.delegatecall(
-      abi.encodeWithSignature("init(bytes)", initCode)
-    );
+    (bool success, bytes memory returnData) = operator.delegatecall(abi.encodeWithSignature("init(bytes)", initCode));
     bytes4 selector = abi.decode(returnData, (bytes4));
     require(success && selector == IInitializable.init.selector, "initialization failed");
-
     _setInitialized();
     return IInitializable.init.selector;
   }
 
-  function getSecureStorage() external view returns (address secureStorage) {
+  function getOperator() external view returns (address operator) {
     // The slot hash has been precomputed for gas optimization
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.secureStorage')) - 1);
+    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.operator')) - 1);
     assembly {
-      secureStorage := sload(precomputeslot("eip1967.Holograph.Bridge.secureStorage"))
+      operator := sload(precomputeslot("eip1967.Holograph.Bridge.operator"))
     }
   }
 
-  function setSecureStorage(address secureStorage) external onlyAdmin {
+  function setOperator(address operator) external onlyAdmin {
     // The slot hash has been precomputed for gas optimization
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.secureStorage')) - 1);
+    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.operator')) - 1);
     assembly {
-      sstore(precomputeslot("eip1967.Holograph.Bridge.secureStorage"), secureStorage)
+      sstore(precomputeslot("eip1967.Holograph.Bridge.operator"), operator)
     }
   }
 
@@ -47,9 +44,9 @@ contract SecureStorageProxy is Admin, Initializable {
 
   fallback() external payable {
     assembly {
-      let secureStorage := sload(precomputeslot("eip1967.Holograph.Bridge.secureStorage"))
+      let operator := sload(precomputeslot("eip1967.Holograph.Bridge.operator"))
       calldatacopy(0, 0, calldatasize())
-      let result := delegatecall(gas(), secureStorage, 0, calldatasize(), 0, 0)
+      let result := delegatecall(gas(), operator, 0, calldatasize(), 0, 0)
       returndatacopy(0, 0, returndatasize())
       switch result
       case 0 {

@@ -103,18 +103,52 @@
 
 pragma solidity 0.8.13;
 
-interface IHolograph {
-  function getChainType() external view returns (uint32 chainType);
+import "../struct/DeploymentConfig.sol";
+import "../struct/Verification.sol";
 
-  function getBridge() external view returns (address bridgeAddress);
+interface IHolographBridge {
+  function executeJob(bytes calldata _payload) external;
 
-  function getFactory() external view returns (address factoryAddress);
+  function erc721in(
+    uint32 fromChain,
+    address collection,
+    address from,
+    address to,
+    uint256 tokenId,
+    bytes calldata data
+  ) external;
 
-  function getInterfaces() external view returns (address interfacesAddress);
+  function erc721out(
+    uint32 toChain,
+    address collection,
+    address from,
+    address to,
+    uint256 tokenId
+  ) external payable;
 
-  function getOperator() external view returns (address operatorAddress);
+  function erc20in(
+    uint32 fromChain,
+    address token,
+    address from,
+    address to,
+    uint256 amount,
+    bytes calldata data
+  ) external;
 
-  function getRegistry() external view returns (address registryAddress);
+  function erc20out(
+    uint32 toChain,
+    address token,
+    address from,
+    address to,
+    uint256 amount
+  ) external payable;
 
-  function getSecureStorage() external view returns (address secureStorageAddress);
+  function deployIn(bytes calldata data) external;
+
+  function deployOut(
+    uint32 toChain,
+    DeploymentConfig calldata config,
+    Verification calldata signature,
+    address signer
+  ) external payable;
 }
