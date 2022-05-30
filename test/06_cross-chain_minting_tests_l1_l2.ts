@@ -503,7 +503,9 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           .to.emit(l2.bridge, 'AvailableJob')
           .withArgs(payload);
 
-        await expect(l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).ownerOf(thirdNFTl1)).to.be.revertedWith('ERC721: token does not exist');
+        await expect(
+          l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).ownerOf(thirdNFTl1)
+        ).to.be.revertedWith('ERC721: token does not exist');
       });
 
       it('token #3 bridge out on l2 should succeed', async function () {
@@ -529,7 +531,9 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           .to.emit(l1.bridge, 'AvailableJob')
           .withArgs(payload);
 
-        await expect(l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).ownerOf(thirdNFTl2)).to.be.revertedWith('ERC721: token does not exist');
+        await expect(
+          l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).ownerOf(thirdNFTl2)
+        ).to.be.revertedWith('ERC721: token does not exist');
       });
 
       it('token #3 bridge in on l2 should succeed', async function () {
@@ -539,7 +543,9 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           .to.emit(l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
           .withArgs(l2.bridge.address, l2.deployer.address, thirdNFTl1.toHexString());
 
-        expect(await l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).ownerOf(thirdNFTl1)).to.equal(l2.deployer.address);
+        expect(await l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).ownerOf(thirdNFTl1)).to.equal(
+          l2.deployer.address
+        );
       });
 
       it('token #3 bridge in on l1 should succeed', async function () {
@@ -549,7 +555,9 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           .to.emit(l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
           .withArgs(l1.bridge.address, l1.deployer.address, thirdNFTl2.toHexString());
 
-        expect(await l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).ownerOf(thirdNFTl2)).to.equal(l1.deployer.address);
+        expect(await l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).ownerOf(thirdNFTl2)).to.equal(
+          l1.deployer.address
+        );
       });
 
       it('bridge out token #3 bridge out on l1 should fail', async function () {
