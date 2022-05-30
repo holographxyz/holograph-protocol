@@ -54,7 +54,6 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
       (address, address, address, address)
     );
     assembly {
-      // sstore(precomputeslot("eip1967.Holograph.Bridge.deadAddress"), 0x000000000000000000000000000000000000000000000000000000000000dead)
       sstore(precomputeslot("eip1967.Holograph.Bridge.admin"), origin())
       sstore(precomputeslot("eip1967.Holograph.Bridge.holograph"), holograph)
       sstore(precomputeslot("eip1967.Holograph.Bridge.registry"), registry)
@@ -194,7 +193,7 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     IHolographOperator(payable(_operator())).send{value: msg.value}(
       ChainId.hlg2lz(toChain),
       abi.encodePacked(_operator()),
-      abi.encodeWithSignature("deployIn(,bytes)", abi.encode(config, signature, signer)),
+      abi.encodeWithSignature("deployIn(bytes)", abi.encode(config, signature, signer)),
       payable(msg.sender),
       _operator(),
       bytes("")

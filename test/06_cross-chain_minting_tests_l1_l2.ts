@@ -129,7 +129,7 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
 
   afterEach(async function () {});
 
-  describe('Deploy cross-chain contracts', async function () {
+  describe('Deploy cross-chain contracts via bridge deploy', async function () {
     describe('hToken', async function () {
       it('deploy l1 equivalent on l2', async function () {
         let { erc20Config, erc20ConfigHash, erc20ConfigHashBytes } = await generateErc20Config(
@@ -159,9 +159,45 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           v: '0x' + sig.substring(130, 132),
         } as Signature);
 
-        await expect(l2.factory.deployHolographableContract(erc20Config, signature, l1.deployer.address))
+        let payload: BytesLike =
+          functionHash('deployIn(bytes)') +
+          generateInitCode(
+            ['bytes'],
+            [
+              generateInitCode(
+                ['tuple(bytes32,uint32,bytes32,bytes,bytes)', 'tuple(bytes32,bytes32,uint8)', 'address'],
+                [
+                  [
+                    erc20Config.contractType,
+                    erc20Config.chainType,
+                    erc20Config.salt,
+                    erc20Config.byteCode,
+                    erc20Config.initCode,
+                  ],
+                  [signature.r, signature.s, signature.v],
+                  l1.deployer.address,
+                ]
+              ),
+            ]
+          ).substring(2);
+
+        await expect(l1.bridge.deployOut(l2.network.holographId, erc20Config, signature, l1.deployer.address))
+          .to.emit(l1.operator, 'LzEvent')
+          .withArgs(ChainId.hlg2lz(l2.network.holographId), l1.operator.address.toLowerCase(), payload);
+
+        await expect(
+          l2.operator
+            .connect(l2.lzEndpoint)
+            .lzReceive(ChainId.hlg2lz(l1.network.holographId), l1.operator.address, 0, payload)
+        )
+          .to.emit(l2.operator, 'AvailableJob')
+          .withArgs(payload);
+
+        await expect(l2.operator.executeJob(payload))
           .to.emit(l2.factory, 'BridgeableContractDeployed')
           .withArgs(hTokenErc20Address, erc20ConfigHash);
+
+        expect(await l2.registry.getHolographedHashAddress(erc20ConfigHash)).to.equal(hTokenErc20Address);
       });
 
       it('deploy l2 equivalent on l1', async function () {
@@ -192,9 +228,45 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           v: '0x' + sig.substring(130, 132),
         } as Signature);
 
-        await expect(l1.factory.deployHolographableContract(erc20Config, signature, l2.deployer.address))
+        let payload: BytesLike =
+          functionHash('deployIn(bytes)') +
+          generateInitCode(
+            ['bytes'],
+            [
+              generateInitCode(
+                ['tuple(bytes32,uint32,bytes32,bytes,bytes)', 'tuple(bytes32,bytes32,uint8)', 'address'],
+                [
+                  [
+                    erc20Config.contractType,
+                    erc20Config.chainType,
+                    erc20Config.salt,
+                    erc20Config.byteCode,
+                    erc20Config.initCode,
+                  ],
+                  [signature.r, signature.s, signature.v],
+                  l1.deployer.address,
+                ]
+              ),
+            ]
+          ).substring(2);
+
+        await expect(l2.bridge.deployOut(l1.network.holographId, erc20Config, signature, l2.deployer.address))
+          .to.emit(l2.operator, 'LzEvent')
+          .withArgs(ChainId.hlg2lz(l1.network.holographId), l2.operator.address.toLowerCase(), payload);
+
+        await expect(
+          l1.operator
+            .connect(l1.lzEndpoint)
+            .lzReceive(ChainId.hlg2lz(l2.network.holographId), l2.operator.address, 0, payload)
+        )
+          .to.emit(l1.operator, 'AvailableJob')
+          .withArgs(payload);
+
+        await expect(l1.operator.executeJob(payload))
           .to.emit(l1.factory, 'BridgeableContractDeployed')
           .withArgs(hTokenErc20Address, erc20ConfigHash);
+
+        expect(await l1.registry.getHolographedHashAddress(erc20ConfigHash)).to.equal(hTokenErc20Address);
       });
     });
 
@@ -227,9 +299,45 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           v: '0x' + sig.substring(130, 132),
         } as Signature);
 
-        await expect(l2.factory.deployHolographableContract(erc20Config, signature, l1.deployer.address))
+        let payload: BytesLike =
+          functionHash('deployIn(bytes)') +
+          generateInitCode(
+            ['bytes'],
+            [
+              generateInitCode(
+                ['tuple(bytes32,uint32,bytes32,bytes,bytes)', 'tuple(bytes32,bytes32,uint8)', 'address'],
+                [
+                  [
+                    erc20Config.contractType,
+                    erc20Config.chainType,
+                    erc20Config.salt,
+                    erc20Config.byteCode,
+                    erc20Config.initCode,
+                  ],
+                  [signature.r, signature.s, signature.v],
+                  l1.deployer.address,
+                ]
+              ),
+            ]
+          ).substring(2);
+
+        await expect(l1.bridge.deployOut(l2.network.holographId, erc20Config, signature, l1.deployer.address))
+          .to.emit(l1.operator, 'LzEvent')
+          .withArgs(ChainId.hlg2lz(l2.network.holographId), l1.operator.address.toLowerCase(), payload);
+
+        await expect(
+          l2.operator
+            .connect(l2.lzEndpoint)
+            .lzReceive(ChainId.hlg2lz(l1.network.holographId), l1.operator.address, 0, payload)
+        )
+          .to.emit(l2.operator, 'AvailableJob')
+          .withArgs(payload);
+
+        await expect(l2.operator.executeJob(payload))
           .to.emit(l2.factory, 'BridgeableContractDeployed')
           .withArgs(sampleErc20Address, erc20ConfigHash);
+
+        expect(await l2.registry.getHolographedHashAddress(erc20ConfigHash)).to.equal(sampleErc20Address);
       });
 
       it('deploy l2 equivalent on l1', async function () {
@@ -260,9 +368,45 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           v: '0x' + sig.substring(130, 132),
         } as Signature);
 
-        await expect(l1.factory.deployHolographableContract(erc20Config, signature, l2.deployer.address))
+        let payload: BytesLike =
+          functionHash('deployIn(bytes)') +
+          generateInitCode(
+            ['bytes'],
+            [
+              generateInitCode(
+                ['tuple(bytes32,uint32,bytes32,bytes,bytes)', 'tuple(bytes32,bytes32,uint8)', 'address'],
+                [
+                  [
+                    erc20Config.contractType,
+                    erc20Config.chainType,
+                    erc20Config.salt,
+                    erc20Config.byteCode,
+                    erc20Config.initCode,
+                  ],
+                  [signature.r, signature.s, signature.v],
+                  l1.deployer.address,
+                ]
+              ),
+            ]
+          ).substring(2);
+
+        await expect(l2.bridge.deployOut(l1.network.holographId, erc20Config, signature, l2.deployer.address))
+          .to.emit(l2.operator, 'LzEvent')
+          .withArgs(ChainId.hlg2lz(l1.network.holographId), l2.operator.address.toLowerCase(), payload);
+
+        await expect(
+          l1.operator
+            .connect(l1.lzEndpoint)
+            .lzReceive(ChainId.hlg2lz(l2.network.holographId), l2.operator.address, 0, payload)
+        )
+          .to.emit(l1.operator, 'AvailableJob')
+          .withArgs(payload);
+
+        await expect(l1.operator.executeJob(payload))
           .to.emit(l1.factory, 'BridgeableContractDeployed')
           .withArgs(sampleErc20Address, erc20ConfigHash);
+
+        expect(await l1.registry.getHolographedHashAddress(erc20ConfigHash)).to.equal(sampleErc20Address);
       });
     });
 
@@ -297,9 +441,45 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           v: '0x' + sig.substring(130, 132),
         } as Signature);
 
-        await expect(l2.factory.deployHolographableContract(erc721Config, signature, l1.deployer.address))
+        let payload: BytesLike =
+          functionHash('deployIn(bytes)') +
+          generateInitCode(
+            ['bytes'],
+            [
+              generateInitCode(
+                ['tuple(bytes32,uint32,bytes32,bytes,bytes)', 'tuple(bytes32,bytes32,uint8)', 'address'],
+                [
+                  [
+                    erc721Config.contractType,
+                    erc721Config.chainType,
+                    erc721Config.salt,
+                    erc721Config.byteCode,
+                    erc721Config.initCode,
+                  ],
+                  [signature.r, signature.s, signature.v],
+                  l1.deployer.address,
+                ]
+              ),
+            ]
+          ).substring(2);
+
+        await expect(l1.bridge.deployOut(l2.network.holographId, erc721Config, signature, l1.deployer.address))
+          .to.emit(l1.operator, 'LzEvent')
+          .withArgs(ChainId.hlg2lz(l2.network.holographId), l1.operator.address.toLowerCase(), payload);
+
+        await expect(
+          l2.operator
+            .connect(l2.lzEndpoint)
+            .lzReceive(ChainId.hlg2lz(l1.network.holographId), l1.operator.address, 0, payload)
+        )
+          .to.emit(l2.operator, 'AvailableJob')
+          .withArgs(payload);
+
+        await expect(l2.operator.executeJob(payload))
           .to.emit(l2.factory, 'BridgeableContractDeployed')
           .withArgs(sampleErc721Address, erc721ConfigHash);
+
+        expect(await l2.registry.getHolographedHashAddress(erc721ConfigHash)).to.equal(sampleErc721Address);
       });
 
       it('deploy l2 equivalent on l1', async function () {
@@ -332,9 +512,45 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           v: '0x' + sig.substring(130, 132),
         } as Signature);
 
-        await expect(l1.factory.deployHolographableContract(erc721Config, signature, l2.deployer.address))
+        let payload: BytesLike =
+          functionHash('deployIn(bytes)') +
+          generateInitCode(
+            ['bytes'],
+            [
+              generateInitCode(
+                ['tuple(bytes32,uint32,bytes32,bytes,bytes)', 'tuple(bytes32,bytes32,uint8)', 'address'],
+                [
+                  [
+                    erc721Config.contractType,
+                    erc721Config.chainType,
+                    erc721Config.salt,
+                    erc721Config.byteCode,
+                    erc721Config.initCode,
+                  ],
+                  [signature.r, signature.s, signature.v],
+                  l1.deployer.address,
+                ]
+              ),
+            ]
+          ).substring(2);
+
+        await expect(l2.bridge.deployOut(l1.network.holographId, erc721Config, signature, l2.deployer.address))
+          .to.emit(l2.operator, 'LzEvent')
+          .withArgs(ChainId.hlg2lz(l1.network.holographId), l2.operator.address.toLowerCase(), payload);
+
+        await expect(
+          l1.operator
+            .connect(l1.lzEndpoint)
+            .lzReceive(ChainId.hlg2lz(l2.network.holographId), l2.operator.address, 0, payload)
+        )
+          .to.emit(l1.operator, 'AvailableJob')
+          .withArgs(payload);
+
+        await expect(l1.operator.executeJob(payload))
           .to.emit(l1.factory, 'BridgeableContractDeployed')
           .withArgs(sampleErc721Address, erc721ConfigHash);
+
+        expect(await l1.registry.getHolographedHashAddress(erc721ConfigHash)).to.equal(sampleErc721Address);
       });
     });
 
@@ -369,9 +585,45 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           v: '0x' + sig.substring(130, 132),
         } as Signature);
 
-        await expect(l2.factory.deployHolographableContract(erc721Config, signature, l1.deployer.address))
+        let payload: BytesLike =
+          functionHash('deployIn(bytes)') +
+          generateInitCode(
+            ['bytes'],
+            [
+              generateInitCode(
+                ['tuple(bytes32,uint32,bytes32,bytes,bytes)', 'tuple(bytes32,bytes32,uint8)', 'address'],
+                [
+                  [
+                    erc721Config.contractType,
+                    erc721Config.chainType,
+                    erc721Config.salt,
+                    erc721Config.byteCode,
+                    erc721Config.initCode,
+                  ],
+                  [signature.r, signature.s, signature.v],
+                  l1.deployer.address,
+                ]
+              ),
+            ]
+          ).substring(2);
+
+        await expect(l1.bridge.deployOut(l2.network.holographId, erc721Config, signature, l1.deployer.address))
+          .to.emit(l1.operator, 'LzEvent')
+          .withArgs(ChainId.hlg2lz(l2.network.holographId), l1.operator.address.toLowerCase(), payload);
+
+        await expect(
+          l2.operator
+            .connect(l2.lzEndpoint)
+            .lzReceive(ChainId.hlg2lz(l1.network.holographId), l1.operator.address, 0, payload)
+        )
+          .to.emit(l2.operator, 'AvailableJob')
+          .withArgs(payload);
+
+        await expect(l2.operator.executeJob(payload))
           .to.emit(l2.factory, 'BridgeableContractDeployed')
           .withArgs(cxipErc721Address, erc721ConfigHash);
+
+        expect(await l2.registry.getHolographedHashAddress(erc721ConfigHash)).to.equal(cxipErc721Address);
       });
 
       it('deploy l2 equivalent on l1', async function () {
@@ -404,9 +656,45 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           v: '0x' + sig.substring(130, 132),
         } as Signature);
 
-        await expect(l1.factory.deployHolographableContract(erc721Config, signature, l2.deployer.address))
+        let payload: BytesLike =
+          functionHash('deployIn(bytes)') +
+          generateInitCode(
+            ['bytes'],
+            [
+              generateInitCode(
+                ['tuple(bytes32,uint32,bytes32,bytes,bytes)', 'tuple(bytes32,bytes32,uint8)', 'address'],
+                [
+                  [
+                    erc721Config.contractType,
+                    erc721Config.chainType,
+                    erc721Config.salt,
+                    erc721Config.byteCode,
+                    erc721Config.initCode,
+                  ],
+                  [signature.r, signature.s, signature.v],
+                  l1.deployer.address,
+                ]
+              ),
+            ]
+          ).substring(2);
+
+        await expect(l2.bridge.deployOut(l1.network.holographId, erc721Config, signature, l2.deployer.address))
+          .to.emit(l2.operator, 'LzEvent')
+          .withArgs(ChainId.hlg2lz(l1.network.holographId), l2.operator.address.toLowerCase(), payload);
+
+        await expect(
+          l1.operator
+            .connect(l1.lzEndpoint)
+            .lzReceive(ChainId.hlg2lz(l2.network.holographId), l2.operator.address, 0, payload)
+        )
+          .to.emit(l1.operator, 'AvailableJob')
+          .withArgs(payload);
+
+        await expect(l1.operator.executeJob(payload))
           .to.emit(l1.factory, 'BridgeableContractDeployed')
           .withArgs(cxipErc721Address, erc721ConfigHash);
+
+        expect(await l1.registry.getHolographedHashAddress(erc721ConfigHash)).to.equal(cxipErc721Address);
       });
     });
   });

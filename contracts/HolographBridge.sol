@@ -155,7 +155,6 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
       (address, address, address, address)
     );
     assembly {
-      // sstore(0x64cf6cf9ad5921ebcb693f7949677bb85fb7da9db9bf2ca491de330b219f5e9a, 0x000000000000000000000000000000000000000000000000000000000000dead)
       sstore(0x5705f5753aa4f617eef2cae1dada3d3355e9387b04d19191f09b545e684ca50d, origin())
       sstore(0x1eee493315beeac80829afd0aaa340f3821cabe68571a2743478e81638a3d94d, holograph)
       sstore(0x460c4059d72b144253e5fc4e2aacbae2bcd6362c67862cd58ecbab0e7b10c349, registry)
@@ -295,7 +294,7 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     IHolographOperator(payable(_operator())).send{value: msg.value}(
       ChainId.hlg2lz(toChain),
       abi.encodePacked(_operator()),
-      abi.encodeWithSignature("deployIn(,bytes)", abi.encode(config, signature, signer)),
+      abi.encodeWithSignature("deployIn(bytes)", abi.encode(config, signature, signer)),
       payable(msg.sender),
       _operator(),
       bytes("")
