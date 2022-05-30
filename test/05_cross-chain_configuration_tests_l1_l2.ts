@@ -54,16 +54,11 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
   let l2: PreTest;
 
   before(async function () {
-    global.__companionNetwork = false;
     l1 = await setup();
-    global.__companionNetwork = true;
     l2 = await setup(true);
-    global.__companionNetwork = false;
   });
 
-  after(async function () {
-    global.__companionNetwork = false;
-  });
+  after(async function () {});
 
   beforeEach(async function () {});
 

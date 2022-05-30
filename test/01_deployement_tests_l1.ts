@@ -5,19 +5,12 @@ import setup from './utils';
 
 describe('Validating the Holograph Protocol deployments (L1)', async () => {
   let l1: PreTest;
-  let l2: PreTest;
 
   before(async () => {
-    global.__companionNetwork = false;
     l1 = await setup();
-    global.__companionNetwork = true;
-    l2 = await setup(true);
-    global.__companionNetwork = false;
   });
 
-  after(async () => {
-    global.__companionNetwork = false;
-  });
+  after(async () => {});
 
   beforeEach(async () => {});
 

@@ -132,6 +132,11 @@ const animatedLoader = function (text: string) {
 };
 
 export default async function (l2?: boolean): Promise<PreTest> {
+  if (l2) {
+    global.__companionNetwork = true;
+  } else {
+    global.__companionNetwork = false;
+  }
   const web3 = new Web3();
   let { hre, hre2 } = await hreSplit(hre1, l2);
   const network: Network = networks[hre.networkName];
@@ -352,6 +357,8 @@ export default async function (l2?: boolean): Promise<PreTest> {
     'CxipERC721',
     await cxipErc721Holographer.getSourceContract()
   )) as CxipERC721;
+
+  global.__companionNetwork = false;
 
   return {
     hre,

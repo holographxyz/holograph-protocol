@@ -41,7 +41,6 @@ import {
 
 describe('Testing the Holograph ERC721 Enforcer (L1)', async function () {
   let l1: PreTest;
-  let l2: PreTest;
 
   let ERC721: HolographERC721;
   let SAMPLEERC721: SampleERC721;
@@ -63,19 +62,13 @@ describe('Testing the Holograph ERC721 Enforcer (L1)', async function () {
   const thirdNFT: number = 3;
 
   before(async function () {
-    global.__companionNetwork = false;
     l1 = await setup();
-    global.__companionNetwork = true;
-    l2 = await setup(true);
-    global.__companionNetwork = false;
     contractName += '(' + l1.hre.networkName + ')';
     ERC721 = await l1.holographErc721.attach(l1.sampleErc721Holographer.address);
     SAMPLEERC721 = await l1.sampleErc721.attach(l1.sampleErc721Holographer.address);
   });
 
-  after(async function () {
-    global.__companionNetwork = false;
-  });
+  after(async function () {});
 
   beforeEach(async function () {});
 

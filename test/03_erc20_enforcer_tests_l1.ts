@@ -43,7 +43,6 @@ import {
 
 describe('Testing the Holograph ERC20 Enforcer (L1)', async function () {
   let l1: PreTest;
-  let l2: PreTest;
 
   let ERC20: HolographERC20;
   let SAMPLEERC20: SampleERC20;
@@ -59,11 +58,7 @@ describe('Testing the Holograph ERC20 Enforcer (L1)', async function () {
   let smallerAmount: string;
 
   before(async function () {
-    global.__companionNetwork = false;
     l1 = await setup();
-    global.__companionNetwork = true;
-    l2 = await setup(true);
-    global.__companionNetwork = false;
     tokenName += '(' + l1.hre.networkName + ')';
     tokensWei = l1.web3.utils.toWei(totalTokens, 'ether');
     smallerAmount = tokensWei.slice(0, -2);
@@ -71,9 +66,7 @@ describe('Testing the Holograph ERC20 Enforcer (L1)', async function () {
     SAMPLEERC20 = await l1.sampleErc20.attach(l1.sampleErc20Holographer.address);
   });
 
-  after(async function () {
-    global.__companionNetwork = false;
-  });
+  after(async function () {});
 
   beforeEach(async function () {});
 

@@ -63,12 +63,27 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
   let thirdNFTl1: BigNumber = BigNumber.from(3);
   let thirdNFTl2: BigNumber = BigNumber.from(3);
 
+  let payloadThirdNFTl1: BytesLike;
+  let payloadThirdNFTl2: BytesLike;
+
+  let contractName: string = 'Sample ERC721 Contract ';
+  let contractSymbol: string = 'SMPLR';
+  const contractBps: number = 1000;
+  const contractImage: string = '';
+  const contractExternalLink: string = '';
+  const tokenURIs: string[] = [
+    'undefined',
+    'https://holograph.xyz/sample1.json',
+    'https://holograph.xyz/sample2.json',
+    'https://holograph.xyz/sample3.json',
+  ];
+  // const totalNFTs: number = 2;
+  // let l1ContractName = contractName + '(' + l1.hre.networkName + ')';
+  // let l2ContractName = contractName + '(' + l2.hre.networkName + ')';
+
   before(async function () {
-    global.__companionNetwork = false;
     l1 = await setup();
-    global.__companionNetwork = true;
     l2 = await setup(true);
-    global.__companionNetwork = false;
 
     firstNFTl2 = BigNumber.from('0x' + l2.network.holographId.toString(16).padStart(8, '0') + '00'.repeat(28)).add(
       firstNFTl1
@@ -79,11 +94,37 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
     thirdNFTl2 = BigNumber.from('0x' + l2.network.holographId.toString(16).padStart(8, '0') + '00'.repeat(28)).add(
       thirdNFTl1
     );
+
+    payloadThirdNFTl1 =
+      functionHash('erc721in(uint32,address,address,address,uint256,bytes)') +
+      generateInitCode(
+        ['uint32', 'address', 'address', 'address', 'uint256', 'bytes'],
+        [
+          l1.network.holographId,
+          l1.sampleErc721Holographer.address,
+          l1.deployer.address,
+          l2.deployer.address,
+          thirdNFTl1.toHexString(),
+          generateInitCode(['bytes'], [hexToBytes(stringToHex(tokenURIs[3]))]),
+        ]
+      ).substring(2);
+
+    payloadThirdNFTl2 =
+      functionHash('erc721in(uint32,address,address,address,uint256,bytes)') +
+      generateInitCode(
+        ['uint32', 'address', 'address', 'address', 'uint256', 'bytes'],
+        [
+          l2.network.holographId,
+          l1.sampleErc721Holographer.address,
+          l2.deployer.address,
+          l1.deployer.address,
+          thirdNFTl2.toHexString(),
+          generateInitCode(['bytes'], [hexToBytes(stringToHex(tokenURIs[3]))]),
+        ]
+      ).substring(2);
   });
 
-  after(async function () {
-    global.__companionNetwork = false;
-  });
+  after(async function () {});
 
   beforeEach(async function () {});
 
@@ -372,21 +413,6 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
   });
 
   describe('SampleERC721', async function () {
-    let contractName: string = 'Sample ERC721 Contract ';
-    let contractSymbol: string = 'SMPLR';
-    const contractBps: number = 1000;
-    const contractImage: string = '';
-    const contractExternalLink: string = '';
-    const tokenURIs: string[] = [
-      'undefined',
-      'https://holograph.xyz/sample1.json',
-      'https://holograph.xyz/sample2.json',
-      'https://holograph.xyz/sample3.json',
-    ];
-    const totalNFTs: number = 2;
-    // let l1ContractName = contractName + '(' + l1.hre.networkName + ')';
-    // let l2ContractName = contractName + '(' + l2.hre.networkName + ')';
-
     describe('check current state', async function () {
       it('l1 should have a total supply of 0 on l1', async function () {
         expect(await l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).totalSupply()).to.equal(0);
@@ -455,19 +481,7 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
 
     describe('validate bridge functionality', async function () {
       it('token #3 bridge out on l1 should succeed', async function () {
-        let payload: BytesLike =
-          functionHash('erc721in(uint32,address,address,address,uint256,bytes)') +
-          generateInitCode(
-            ['uint32', 'address', 'address', 'address', 'uint256', 'bytes'],
-            [
-              l1.network.holographId,
-              l1.sampleErc721Holographer.address,
-              l1.deployer.address,
-              l2.deployer.address,
-              thirdNFTl1.toHexString(),
-              generateInitCode(['bytes'], [hexToBytes(stringToHex(tokenURIs[3]))]),
-            ]
-          ).substring(2);
+        let payload: BytesLike = payloadThirdNFTl1;
 
         await expect(
           l1.bridge.erc721out(
@@ -488,22 +502,12 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
         )
           .to.emit(l2.bridge, 'AvailableJob')
           .withArgs(payload);
+
+        await expect(l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).ownerOf(thirdNFTl1)).to.be.revertedWith('ERC721: token does not exist');
       });
 
       it('token #3 bridge out on l2 should succeed', async function () {
-        let payload: BytesLike =
-          functionHash('erc721in(uint32,address,address,address,uint256,bytes)') +
-          generateInitCode(
-            ['uint32', 'address', 'address', 'address', 'uint256', 'bytes'],
-            [
-              l2.network.holographId,
-              l1.sampleErc721Holographer.address,
-              l2.deployer.address,
-              l1.deployer.address,
-              thirdNFTl2.toHexString(),
-              generateInitCode(['bytes'], [hexToBytes(stringToHex(tokenURIs[3]))]),
-            ]
-          ).substring(2);
+        let payload: BytesLike = payloadThirdNFTl2;
 
         await expect(
           l2.bridge.erc721out(
@@ -524,46 +528,68 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
         )
           .to.emit(l1.bridge, 'AvailableJob')
           .withArgs(payload);
+
+        await expect(l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).ownerOf(thirdNFTl2)).to.be.revertedWith('ERC721: token does not exist');
       });
 
       it('token #3 bridge in on l2 should succeed', async function () {
-        let payload: BytesLike =
-          functionHash('erc721in(uint32,address,address,address,uint256,bytes)') +
-          generateInitCode(
-            ['uint32', 'address', 'address', 'address', 'uint256', 'bytes'],
-            [
-              l1.network.holographId,
-              l1.sampleErc721Holographer.address,
-              l1.deployer.address,
-              l2.deployer.address,
-              thirdNFTl1.toHexString(),
-              generateInitCode(['bytes'], [hexToBytes(stringToHex(tokenURIs[3]))]),
-            ]
-          ).substring(2);
+        let payload: BytesLike = payloadThirdNFTl1;
 
         await expect(l2.bridge.executeJob(payload))
           .to.emit(l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
           .withArgs(l2.bridge.address, l2.deployer.address, thirdNFTl1.toHexString());
+
+        expect(await l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).ownerOf(thirdNFTl1)).to.equal(l2.deployer.address);
       });
 
       it('token #3 bridge in on l1 should succeed', async function () {
-        let payload: BytesLike =
-          functionHash('erc721in(uint32,address,address,address,uint256,bytes)') +
-          generateInitCode(
-            ['uint32', 'address', 'address', 'address', 'uint256', 'bytes'],
-            [
-              l2.network.holographId,
-              l1.sampleErc721Holographer.address,
-              l2.deployer.address,
-              l1.deployer.address,
-              thirdNFTl2.toHexString(),
-              generateInitCode(['bytes'], [hexToBytes(stringToHex(tokenURIs[3]))]),
-            ]
-          ).substring(2);
+        let payload: BytesLike = payloadThirdNFTl2;
 
         await expect(l1.bridge.executeJob(payload))
           .to.emit(l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
           .withArgs(l1.bridge.address, l1.deployer.address, thirdNFTl2.toHexString());
+
+        expect(await l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).ownerOf(thirdNFTl2)).to.equal(l1.deployer.address);
+      });
+
+      it('bridge out token #3 bridge out on l1 should fail', async function () {
+        let payload: BytesLike = payloadThirdNFTl1;
+
+        await expect(
+          l1.bridge.erc721out(
+            l2.network.holographId,
+            l1.sampleErc721Holographer.address,
+            l1.deployer.address,
+            l2.deployer.address,
+            thirdNFTl1
+          )
+        ).to.be.revertedWith("HOLOGRAPH: token doesn't exist");
+      });
+
+      it('bridge out token #3 bridge out on l2 should fail', async function () {
+        let payload: BytesLike = payloadThirdNFTl2;
+
+        await expect(
+          l2.bridge.erc721out(
+            l1.network.holographId,
+            l1.sampleErc721Holographer.address,
+            l2.deployer.address,
+            l1.deployer.address,
+            thirdNFTl2
+          )
+        ).to.be.revertedWith("HOLOGRAPH: token doesn't exist");
+      });
+
+      it('bridged in token #3 bridge in on l2 should fail', async function () {
+        let payload: BytesLike = payloadThirdNFTl1;
+
+        await expect(l2.bridge.executeJob(payload)).to.be.revertedWith('HOLOGRAPH: invalid job');
+      });
+
+      it('bridged in token #3 bridge in on l1 should fail', async function () {
+        let payload: BytesLike = payloadThirdNFTl2;
+
+        await expect(l1.bridge.executeJob(payload)).to.be.revertedWith('HOLOGRAPH: invalid job');
       });
     });
   });
