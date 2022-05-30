@@ -4,22 +4,22 @@
 
 import "../abstract/Initializable.sol";
 
-abstract contract ERC20H is Initializable {
+abstract contract ERC1155H is Initializable {
   /**
-   * @dev Address of initial creator/owner of the token contract.
+   * @dev Address of initial creator/owner of the collection.
    */
   address internal _owner;
 
   modifier onlyHolographer() {
-    require(msg.sender == holographer(), "ERC20: holographer only");
+    require(msg.sender == holographer(), "ERC1155: holographer only");
     _;
   }
 
   modifier onlyOwner() {
     if (msg.sender == holographer()) {
-      require(msgSender() == _owner, "ERC20: owner only function");
+      require(msgSender() == _owner, "ERC1155: owner only function");
     } else {
-      require(msg.sender == _owner, "ERC20: owner only function");
+      require(msg.sender == _owner, "ERC1155: owner only function");
     }
     _;
   }
@@ -41,7 +41,7 @@ abstract contract ERC20H is Initializable {
   function _init(
     bytes memory /* data*/
   ) internal returns (bytes4) {
-    require(!_isInitialized(), "ERC20: already initialized");
+    require(!_isInitialized(), "ERC1155: already initialized");
     address _holographer = msg.sender;
     assembly {
       sstore(precomputeslot("eip1967.Holograph.Bridge.holographer"), _holographer)
@@ -60,7 +60,7 @@ abstract contract ERC20H is Initializable {
   }
 
   /**
-   * @dev Address of Holograph ERC20 standards enforcer smart contract.
+   * @dev Address of Holograph ERC1155 standards enforcer smart contract.
    */
   function holographer() internal view returns (address _holographer) {
     assembly {

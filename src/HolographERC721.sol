@@ -14,7 +14,7 @@ import "./interface/ERC721.sol";
 import "./interface/ERC721Holograph.sol";
 import "./interface/ERC721Metadata.sol";
 import "./interface/ERC721TokenReceiver.sol";
-import "./interface/StrictHolographedERC721.sol";
+import "./interface/HolographedERC721.sol";
 import "./interface/IHolograph.sol";
 import "./interface/IHolographer.sol";
 import "./interface/IHolographRegistry.sol";
@@ -808,8 +808,8 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
   /**
    * @dev Get the source smart contract as bridgeable interface.
    */
-  function SourceERC721() internal view returns (StrictHolographedERC721) {
-    return StrictHolographedERC721(source());
+  function SourceERC721() internal view returns (HolographedERC721) {
+    return HolographedERC721(source());
   }
 
   /**
@@ -846,7 +846,7 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
     return IHolographer(payable(address(this))).getSourceContract();
   }
 
-  /*
+  /**
    * @dev Purposefully left empty, to prevent running out of gas errors when receiving native token payments.
    */
   receive() external payable {}
@@ -874,7 +874,7 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
         }
       }
     } else {
-      /*
+      /**
        * @dev We forward the calldata to source contract via a call request.
        *  Since this replaces msg.sender with address(this), we inject original msg.sender into calldata.
        *  This allows us to protect this contract's storage layer from source contract's malicious actions.

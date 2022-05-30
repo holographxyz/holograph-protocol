@@ -19,7 +19,7 @@ import "./interface/ERC20Permit.sol";
 import "./interface/ERC20Receiver.sol";
 import "./interface/ERC20Safer.sol";
 import "./interface/ERC165.sol";
-import "./interface/StrictHolographedERC20.sol";
+import "./interface/HolographedERC20.sol";
 import "./interface/IHolograph.sol";
 import "./interface/IHolographer.sol";
 import "./interface/IHolographRegistry.sol";
@@ -155,11 +155,11 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
   /**
    * @dev Get the source smart contract as bridgeable interface.
    */
-  function SourceERC20() private view returns (StrictHolographedERC20) {
-    return StrictHolographedERC20(source());
+  function SourceERC20() private view returns (HolographedERC20) {
+    return HolographedERC20(source());
   }
 
-  /*
+  /**
    * @dev Purposefully left empty, to prevent running out of gas errors when receiving native token payments.
    */
   receive() external payable {}
@@ -169,7 +169,7 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
    * @dev Any function call that is not covered here, will automatically be sent over to the source contract.
    */
   fallback() external payable {
-    /*
+    /**
      * @dev We forward the calldata to source contract via a call request.
      *  Since this replaces msg.sender with address(this), we inject original msg.sender into calldata.
      *  This allows us to protect this contract's storage layer from source contract's malicious actions.

@@ -105,18 +105,11 @@ pragma solidity 0.8.13;
 
 import "../abstract/Initializable.sol";
 
-import "../interface/HolographedERC20.sol";
-
-abstract contract ERC20H is Initializable, HolographedERC20 {
-  /*
+abstract contract ERC20H is Initializable {
+  /**
    * @dev Address of initial creator/owner of the token contract.
    */
   address internal _owner;
-
-  /*
-   * @dev Dummy variable to prevent empty functions from making "switch to pure" warnings.
-   */
-  bool private _success;
 
   modifier onlyHolographer() {
     require(msg.sender == holographer(), "ERC20: holographer only");
@@ -158,7 +151,7 @@ abstract contract ERC20H is Initializable, HolographedERC20 {
     return IInitializable.init.selector;
   }
 
-  /*
+  /**
    * @dev The Holographer passes original msg.sender via calldata. This function extracts it.
    */
   function msgSender() internal pure returns (address sender) {
@@ -167,37 +160,13 @@ abstract contract ERC20H is Initializable, HolographedERC20 {
     }
   }
 
-  /*
+  /**
    * @dev Address of Holograph ERC20 standards enforcer smart contract.
    */
   function holographer() internal view returns (address _holographer) {
     assembly {
       _holographer := sload(0xe860eb97addcc8d7a4df2e57474b879e6fae678a490e3807075a99030ddd9250)
     }
-  }
-
-  function bridgeIn(
-    uint32, /* _chainId*/
-    address, /* _from*/
-    address, /* _to*/
-    uint256, /* _amount*/
-    bytes calldata /* _data*/
-  ) external virtual onlyHolographer returns (bool) {
-    _success = true;
-    return true;
-  }
-
-  function bridgeOut(
-    uint32, /* _chainId*/
-    address, /* _from*/
-    address, /* _to*/
-    uint256 /* _amount*/
-  ) external virtual onlyHolographer returns (bytes memory _data) {
-    /*
-     * @dev This is just here to suppress unused parameter warning
-     */
-    _data = abi.encodePacked(holographer());
-    _success = true;
   }
 
   function supportsInterface(bytes4) external pure returns (bool) {
@@ -220,12 +189,12 @@ abstract contract ERC20H is Initializable, HolographedERC20 {
     return wallet == _owner;
   }
 
-  /*
+  /**
    * @dev Defined here to suppress compiler warnings
    */
   receive() external payable {}
 
-  /*
+  /**
    * @dev Return true for any un-implemented event hooks
    */
   fallback() external payable {

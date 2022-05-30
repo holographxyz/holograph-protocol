@@ -13,17 +13,17 @@ import "../interface/ERC721Holograph.sol";
  * @dev The entire logic and functionality of the smart contract is self-contained.
  */
 contract SampleERC721 is StrictERC721H {
-  /*
+  /**
    * @dev Mapping of all token URIs.
    */
   mapping(uint256 => string) private _tokenURIs;
 
-  /*
+  /**
    * @dev Internal reference used for minting incremental token ids.
    */
   uint224 private _currentTokenId;
 
-  /*
+  /**
    * @dev Temporary implementation to suppress compiler state mutability warnings.
    */
   bool private _dummy;
@@ -55,7 +55,7 @@ contract SampleERC721 is StrictERC721H {
     return _tokenURIs[_tokenId];
   }
 
-  /*
+  /**
    * @dev Sample mint where anyone can mint specific token, with a custom URI
    */
   function mint(

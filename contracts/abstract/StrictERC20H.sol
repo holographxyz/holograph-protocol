@@ -104,12 +104,11 @@
 pragma solidity 0.8.13;
 
 import "../interface/HolographedERC20.sol";
-import "../interface/StrictHolographedERC20.sol";
 
 import "./ERC20H.sol";
 
-abstract contract StrictERC20H is ERC20H, StrictHolographedERC20 {
-  /*
+abstract contract StrictERC20H is ERC20H, HolographedERC20 {
+  /**
    * @dev Dummy variable to prevent empty functions from making "switch to pure" warnings.
    */
   bool private _success;
@@ -120,7 +119,7 @@ abstract contract StrictERC20H is ERC20H, StrictHolographedERC20 {
     address, /* _to*/
     uint256, /* _amount*/
     bytes calldata /* _data*/
-  ) external virtual override(ERC20H, HolographedERC20) onlyHolographer returns (bool) {
+  ) external virtual onlyHolographer returns (bool) {
     _success = true;
     return true;
   }
@@ -130,8 +129,8 @@ abstract contract StrictERC20H is ERC20H, StrictHolographedERC20 {
     address, /* _from*/
     address, /* _to*/
     uint256 /* _amount*/
-  ) external virtual override(ERC20H, HolographedERC20) onlyHolographer returns (bytes memory _data) {
-    /*
+  ) external virtual onlyHolographer returns (bytes memory _data) {
+    /**
      * @dev This is just here to suppress unused parameter warning
      */
     _data = abi.encodePacked(holographer());

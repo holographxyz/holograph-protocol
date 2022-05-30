@@ -134,7 +134,7 @@ contract Holograph is Admin, Initializable {
     return IInitializable.init.selector;
   }
 
-  /*
+  /**
    * @dev Returns an integer value of the chain type that the factory is currently on.
    * @dev For example:
    *                   1 = Ethereum mainnet
@@ -151,7 +151,7 @@ contract Holograph is Admin, Initializable {
     }
   }
 
-  /*
+  /**
    * @dev Sets the chain type that the factory is currently on.
    */
   function setChainType(uint32 chainType) public onlyAdmin {

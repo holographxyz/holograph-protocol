@@ -2,7 +2,7 @@
 
 /*SOLIDITY_COMPILER_VERSION*/
 
-import "../abstract/StrictERC721H.sol";
+import "../abstract/ERC721H.sol";
 
 import "../interface/ERC721Holograph.sol";
 
@@ -14,21 +14,16 @@ import "../struct/TokenData.sol";
  * @notice A smart contract for minting and managing Holograph Bridgeable ERC721 NFTs.
  * @dev The entire logic and functionality of the smart contract is self-contained.
  */
-contract CxipERC721 is StrictERC721H {
+contract CxipERC721 is ERC721H {
   /**
    * @dev Token data mapped by token id.
    */
   mapping(uint256 => TokenData) private _tokenData;
 
-  /*
+  /**
    * @dev Internal reference used for minting incremental token ids.
    */
   uint224 private _currentTokenId;
-
-  /*
-   * @dev Temporary implementation to suppress compiler state mutability warnings.
-   */
-  bool private _dummy;
 
   /**
    * @notice Constructor is empty and not utilised.
@@ -41,7 +36,6 @@ contract CxipERC721 is StrictERC721H {
    * @dev Special function to allow a one time initialisation on deployment. Also configures and deploys royalties.
    */
   function init(bytes memory data) external override returns (bytes4) {
-    // do your own custom logic here
     address owner = abi.decode(data, (address));
     _owner = owner;
     // run underlying initializer logic
@@ -77,7 +71,7 @@ contract CxipERC721 is StrictERC721H {
     address, /* _to*/
     uint256 _tokenId,
     bytes calldata _data
-  ) external override onlyHolographer returns (bool) {
+  ) external onlyHolographer returns (bool) {
     TokenData memory tokenData = abi.decode(_data, (TokenData));
     _tokenData[_tokenId] = tokenData;
     return true;
@@ -88,15 +82,14 @@ contract CxipERC721 is StrictERC721H {
     address, /* _from*/
     address, /* _to*/
     uint256 _tokenId
-  ) external override onlyHolographer returns (bytes memory _data) {
-    _dummy = false;
+  ) external view onlyHolographer returns (bytes memory _data) {
     _data = abi.encode(_tokenData[_tokenId]);
   }
 
   function afterBurn(
     address, /* _owner*/
     uint256 _tokenId
-  ) external override onlyHolographer returns (bool) {
+  ) external onlyHolographer returns (bool) {
     delete _tokenData[_tokenId];
     return true;
   }

@@ -110,11 +110,11 @@ import "./interface/IHolograph.sol";
 import "./interface/IHolographRegistry.sol";
 import "./interface/IInitializable.sol";
 
-/*
+/**
  * @dev This contract is a binder. It puts together all the variables to make the underlying contracts functional and be bridgeable.
  */
 contract Holographer is Admin, Initializable {
-  /*
+  /**
    * @dev Constructor is left empty and only the admin address is set.
    */
   constructor() {}
@@ -141,7 +141,7 @@ contract Holographer is Admin, Initializable {
     return IInitializable.init.selector;
   }
 
-  /*
+  /**
    * @dev Returns a hardcoded address for the custom secure storage contract deployed in parallel with this contract deployment.
    */
   function getHolograph() public view returns (address holograph) {
@@ -150,7 +150,7 @@ contract Holographer is Admin, Initializable {
     }
   }
 
-  /*
+  /**
    * @dev Returns a hardcoded address for the Holograph smart contract that controls and enforces the ERC standards.
    * @dev The choice to use this approach was taken to prevent storage slot overrides.
    */
@@ -170,7 +170,7 @@ contract Holographer is Admin, Initializable {
     return payable(IHolographRegistry(IHolograph(holograph).getRegistry()).getContractTypeAddress(contractType));
   }
 
-  /*
+  /**
    * @dev Returns the original chain that contract was deployed on.
    */
   function getOriginChain() public view returns (uint32 originChain) {
@@ -182,7 +182,7 @@ contract Holographer is Admin, Initializable {
     }
   }
 
-  /*
+  /**
    * @dev Returns a hardcoded address for the custom secure storage contract deployed in parallel with this contract deployment.
    */
   function getSecureStorage() public view returns (address secureStorage) {
@@ -194,7 +194,7 @@ contract Holographer is Admin, Initializable {
     }
   }
 
-  /*
+  /**
    * @dev Returns a hardcoded address for the custom secure storage contract deployed in parallel with this contract deployment.
    */
   function getSourceContract() public view returns (address payable sourceContract) {
@@ -206,12 +206,12 @@ contract Holographer is Admin, Initializable {
     }
   }
 
-  /*
+  /**
    * @dev Purposefully left empty, to prevent running out of gas errors when receiving native token payments.
    */
   receive() external payable {}
 
-  /*
+  /**
    * @dev Hard-coded registry address and contract type are put inside the fallback to make sure that the contract cannot be modified.
    * @dev This takes the underlying address source code, runs it, and uses current address for storage.
    */

@@ -4,18 +4,11 @@
 
 import "../abstract/Initializable.sol";
 
-import "../interface/HolographedERC721.sol";
-
-abstract contract ERC721H is Initializable, HolographedERC721 {
-  /*
+abstract contract ERC721H is Initializable {
+  /**
    * @dev Address of initial creator/owner of the collection.
    */
   address internal _owner;
-
-  /*
-   * @dev Dummy variable to prevent empty functions from making "switch to pure" warnings.
-   */
-  bool private _success;
 
   modifier onlyHolographer() {
     require(msg.sender == holographer(), "ERC721: holographer only");
@@ -51,17 +44,13 @@ abstract contract ERC721H is Initializable, HolographedERC721 {
     require(!_isInitialized(), "ERC721: already initialized");
     address _holographer = msg.sender;
     assembly {
-      sstore(
-        /* slot */
-        precomputeslot("eip1967.Holograph.Bridge.holographer"),
-        _holographer
-      )
+      sstore(precomputeslot("eip1967.Holograph.Bridge.holographer"), _holographer)
     }
     _setInitialized();
     return IInitializable.init.selector;
   }
 
-  /*
+  /**
    * @dev The Holographer passes original msg.sender via calldata. This function extracts it.
    */
   function msgSender() internal pure returns (address sender) {
@@ -70,37 +59,13 @@ abstract contract ERC721H is Initializable, HolographedERC721 {
     }
   }
 
-  /*
+  /**
    * @dev Address of Holograph ERC721 standards enforcer smart contract.
    */
   function holographer() internal view returns (address _holographer) {
     assembly {
-      _holographer := sload(
-        /* slot */
-        precomputeslot("eip1967.Holograph.Bridge.holographer")
-      )
+      _holographer := sload(precomputeslot("eip1967.Holograph.Bridge.holographer"))
     }
-  }
-
-  function bridgeIn(
-    uint32, /* _chainId*/
-    address, /* _from*/
-    address, /* _to*/
-    uint256, /* _tokenId*/
-    bytes calldata /* _data*/
-  ) external virtual onlyHolographer returns (bool) {
-    _success = true;
-    return true;
-  }
-
-  function bridgeOut(
-    uint32, /* _chainId*/
-    address, /* _from*/
-    address, /* _to*/
-    uint256 /* _tokenId*/
-  ) external virtual onlyHolographer returns (bytes memory _data) {
-    _success = true;
-    _data = abi.encode(holographer());
   }
 
   function supportsInterface(bytes4) external pure returns (bool) {
@@ -123,12 +88,12 @@ abstract contract ERC721H is Initializable, HolographedERC721 {
     return wallet == _owner;
   }
 
-  /*
+  /**
    * @dev Defined here to suppress compiler warnings
    */
   receive() external payable {}
 
-  /*
+  /**
    * @dev Return true for any un-implemented event hooks
    */
   fallback() external payable {

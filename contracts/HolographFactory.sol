@@ -117,18 +117,18 @@ import "./proxy/SecureStorageProxy.sol";
 import "./struct/DeploymentConfig.sol";
 import "./struct/Verification.sol";
 
-/*
+/**
  * @dev This smart contract demonstrates a clear and concise way that we plan to deploy smart contracts.
  * @dev With the goal of deploying replicate-able non-fungible token smart contracts through this process.
  * @dev This is just the first step. But it is fundamental for achieving cross-chain non-fungible tokens.
  */
 contract HolographFactory is Admin, Initializable {
-  /*
+  /**
    * @dev This event is fired every time that a bridgeable contract is deployed.
    */
   event BridgeableContractDeployed(address indexed contractAddress, bytes32 indexed hash);
 
-  /*
+  /**
    * @dev Constructor is left empty and only the admin address is set.
    */
   constructor() {}
@@ -146,7 +146,7 @@ contract HolographFactory is Admin, Initializable {
     return IInitializable.init.selector;
   }
 
-  /*
+  /**
    * @dev Returns the address of the bridge registry.
    * @dev More details on bridge registry and it's purpose can be found in the BridgeRegistry smart contract.
    */
@@ -158,7 +158,7 @@ contract HolographFactory is Admin, Initializable {
     }
   }
 
-  /*
+  /**
    * @dev Sets the address of the bridge registry.
    */
   function setBridgeRegistry(address bridgeRegistry) public onlyAdmin {
@@ -169,7 +169,7 @@ contract HolographFactory is Admin, Initializable {
     }
   }
 
-  /*
+  /**
    * @dev Returns the address of holograph.
    * @dev More details on bridge holograph and it's purpose can be found in the Holograph smart contract.
    */
@@ -181,7 +181,7 @@ contract HolographFactory is Admin, Initializable {
     }
   }
 
-  /*
+  /**
    * @dev Sets the address of holograph.
    */
   function setHolograph(address holograph) public onlyAdmin {
@@ -192,7 +192,7 @@ contract HolographFactory is Admin, Initializable {
     }
   }
 
-  /*
+  /**
    * @dev Returns the address of the secure storage smart contract source code.
    * @dev More details on secure storage and it's purpose can be found in the SecureStorage smart contract.
    */
@@ -204,7 +204,7 @@ contract HolographFactory is Admin, Initializable {
     }
   }
 
-  /*
+  /**
    * @dev Sets the address of the secure storage smart contract source code.
    */
   function setSecureStorage(address secureStorage) public onlyAdmin {
@@ -215,7 +215,7 @@ contract HolographFactory is Admin, Initializable {
     }
   }
 
-  /*
+  /**
    * @dev A sample function of the deployment of bridgeable smart contracts.
    * @dev The used variables and formatting is not the final or decisive version, but the general idea is directly portrayed.
    * @notice In this function we have incorporated a secure storage function/extension. Keep in mind that this is not required or needed for bridgeable deployments to work. It is just a personal development choice.

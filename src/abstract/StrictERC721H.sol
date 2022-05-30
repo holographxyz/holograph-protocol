@@ -3,12 +3,11 @@
 /*SOLIDITY_COMPILER_VERSION*/
 
 import "../interface/HolographedERC721.sol";
-import "../interface/StrictHolographedERC721.sol";
 
 import "./ERC721H.sol";
 
-abstract contract StrictERC721H is ERC721H, StrictHolographedERC721 {
-  /*
+abstract contract StrictERC721H is ERC721H, HolographedERC721 {
+  /**
    * @dev Dummy variable to prevent empty functions from making "switch to pure" warnings.
    */
   bool private _success;
@@ -19,7 +18,7 @@ abstract contract StrictERC721H is ERC721H, StrictHolographedERC721 {
     address, /* _to*/
     uint256, /* _tokenId*/
     bytes calldata /* _data*/
-  ) external virtual override(ERC721H, HolographedERC721) onlyHolographer returns (bool) {
+  ) external virtual onlyHolographer returns (bool) {
     _success = true;
     return true;
   }
@@ -29,7 +28,7 @@ abstract contract StrictERC721H is ERC721H, StrictHolographedERC721 {
     address, /* _from*/
     address, /* _to*/
     uint256 /* _tokenId*/
-  ) external virtual override(ERC721H, HolographedERC721) onlyHolographer returns (bytes memory _data) {
+  ) external virtual onlyHolographer returns (bytes memory _data) {
     _success = true;
     _data = abi.encode(holographer());
   }

@@ -103,91 +103,110 @@
 
 pragma solidity 0.8.13;
 
-import "./HolographedERC721.sol";
+import "../abstract/Initializable.sol";
 
-/// @title Holograph ERC-721 Non-Fungible Token Standard
-/// @dev See https://holograph.network/standard/ERC-721
-///  Note: the ERC-165 identifier for this interface is 0xFFFFFFFF.
-interface StrictHolographedERC721 is HolographedERC721 {
-  // event id = 3
-  function afterApprove(
-    address _owner,
-    address _to,
-    uint256 _tokenId
-  ) external returns (bool success);
+abstract contract ERC1155H is Initializable {
+  /**
+   * @dev Address of initial creator/owner of the collection.
+   */
+  address internal _owner;
 
-  // event id = 4
-  function beforeApprove(
-    address _owner,
-    address _to,
-    uint256 _tokenId
-  ) external returns (bool success);
+  modifier onlyHolographer() {
+    require(msg.sender == holographer(), "ERC1155: holographer only");
+    _;
+  }
 
-  // event id = 5
-  function afterApprovalAll(address _to, bool _approved) external returns (bool success);
+  modifier onlyOwner() {
+    if (msg.sender == holographer()) {
+      require(msgSender() == _owner, "ERC1155: owner only function");
+    } else {
+      require(msg.sender == _owner, "ERC1155: owner only function");
+    }
+    _;
+  }
 
-  // event id = 6
-  function beforeApprovalAll(address _to, bool _approved) external returns (bool success);
+  /**
+   * @notice Constructor is empty and not utilised.
+   * @dev To make exact CREATE2 deployment possible, constructor is left empty. We utilize the "init" function instead.
+   */
+  constructor() {}
 
-  // event id = 7
-  function afterBurn(address _owner, uint256 _tokenId) external returns (bool success);
+  /**
+   * @notice Initializes the collection.
+   * @dev Special function to allow a one time initialisation on deployment. Also configures and deploys royalties.
+   */
+  function init(bytes memory data) external virtual override returns (bytes4) {
+    return _init(data);
+  }
 
-  // event id = 8
-  function beforeBurn(address _owner, uint256 _tokenId) external returns (bool success);
+  function _init(
+    bytes memory /* data*/
+  ) internal returns (bytes4) {
+    require(!_isInitialized(), "ERC1155: already initialized");
+    address _holographer = msg.sender;
+    assembly {
+      sstore(0xe860eb97addcc8d7a4df2e57474b879e6fae678a490e3807075a99030ddd9250, _holographer)
+    }
+    _setInitialized();
+    return IInitializable.init.selector;
+  }
 
-  // event id = 9
-  function afterMint(address _owner, uint256 _tokenId) external returns (bool success);
+  /**
+   * @dev The Holographer passes original msg.sender via calldata. This function extracts it.
+   */
+  function msgSender() internal pure returns (address sender) {
+    assembly {
+      sender := calldataload(sub(calldatasize(), 0x20))
+    }
+  }
 
-  // event id = 10
-  function beforeMint(address _owner, uint256 _tokenId) external returns (bool success);
+  /**
+   * @dev Address of Holograph ERC1155 standards enforcer smart contract.
+   */
+  function holographer() internal view returns (address _holographer) {
+    assembly {
+      _holographer := sload(0xe860eb97addcc8d7a4df2e57474b879e6fae678a490e3807075a99030ddd9250)
+    }
+  }
 
-  // event id = 11
-  function afterSafeTransfer(
-    address _from,
-    address _to,
-    uint256 _tokenId,
-    bytes calldata _data
-  ) external returns (bool success);
+  function supportsInterface(bytes4) external pure returns (bool) {
+    return false;
+  }
 
-  // event id = 12
-  function beforeSafeTransfer(
-    address _from,
-    address _to,
-    uint256 _tokenId,
-    bytes calldata _data
-  ) external returns (bool success);
+  function owner() external view returns (address) {
+    return _owner;
+  }
 
-  // event id = 13
-  function afterTransfer(
-    address _from,
-    address _to,
-    uint256 _tokenId,
-    bytes calldata _data
-  ) external returns (bool success);
+  function isOwner() external view returns (bool) {
+    if (msg.sender == holographer()) {
+      return msgSender() == _owner;
+    } else {
+      return msg.sender == _owner;
+    }
+  }
 
-  // event id = 14
-  function beforeTransfer(
-    address _from,
-    address _to,
-    uint256 _tokenId,
-    bytes calldata _data
-  ) external returns (bool success);
+  function isOwner(address wallet) external view returns (bool) {
+    return wallet == _owner;
+  }
 
-  // event id = 15
-  function afterOnERC721Received(
-    address _operator,
-    address _from,
-    address _to,
-    uint256 _tokenId,
-    bytes calldata _data
-  ) external returns (bool success);
+  /**
+   * @dev Defined here to suppress compiler warnings
+   */
+  receive() external payable {}
 
-  // event id = 16
-  function beforeOnERC721Received(
-    address _operator,
-    address _from,
-    address _to,
-    uint256 _tokenId,
-    bytes calldata _data
-  ) external returns (bool success);
+  /**
+   * @dev Return true for any un-implemented event hooks
+   */
+  fallback() external payable {
+    assembly {
+      switch eq(sload(0xe860eb97addcc8d7a4df2e57474b879e6fae678a490e3807075a99030ddd9250), caller())
+      case 1 {
+        mstore(0x80, 0x0000000000000000000000000000000000000000000000000000000000000001)
+        return(0x80, 0x20)
+      }
+      default {
+        revert(0x00, 0x00)
+      }
+    }
+  }
 }

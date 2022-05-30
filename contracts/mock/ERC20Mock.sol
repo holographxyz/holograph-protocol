@@ -264,7 +264,7 @@ contract ERC20Mock is
     ERC20(token).transfer(to, amount);
   }
 
-  /*
+  /**
    * @dev Purposefully left empty, to prevent running out of gas errors when receiving native token payments.
    */
   receive() external payable {}

@@ -5,7 +5,7 @@
 import "../interface/ILayerZeroReceiver.sol";
 import "../interface/ILayerZeroEndpoint.sol";
 
-/*
+/**
 mocking multi endpoint connection.
 - send() will short circuit to lzReceive() directly
 - no reentrancy guard. the real LayerZero endpoint on main net has a send and receive guard, respectively.

@@ -114,12 +114,12 @@ import "../interface/ERC20Holograph.sol";
  * @dev The entire logic and functionality of the smart contract is self-contained.
  */
 contract SampleERC20 is StrictERC20H {
-  /*
+  /**
    * @dev Just a dummy value for now to test transferring of data.
    */
   mapping(address => bytes32) private _walletSalts;
 
-  /*
+  /**
    * @dev Temporary implementation to suppress compiler state mutability warnings.
    */
   bool private _dummy;
@@ -142,7 +142,7 @@ contract SampleERC20 is StrictERC20H {
     return _init(data);
   }
 
-  /*
+  /**
    * @dev Sample mint where anyone can mint any amounts of tokens.
    */
   function mint(address to, uint256 amount) external onlyHolographer onlyOwner {

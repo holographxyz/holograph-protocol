@@ -118,23 +118,23 @@ import "./library/ChainId.sol";
 import "./struct/DeploymentConfig.sol";
 import "./struct/Verification.sol";
 
-/*
+/**
  * @dev This smart contract contains the actual core bridging logic.
  */
 contract HolographBridge is Admin, Initializable {
-  /*
+  /**
    * @dev Internal mapping of hashes for valid operator jobs.
    */
   mapping(bytes32 => bool) private _availableJobs;
 
-  /*
+  /**
    * @dev Event is emitted for every time that a valid job is available.
    */
   event AvailableJob(bytes _payload);
 
   event LzEvent(uint16 _dstChainId, bytes _destination, bytes _payload);
 
-  /*
+  /**
    * @dev Constructor is left empty and only the admin address is set.
    */
   constructor() {}

@@ -105,7 +105,7 @@ pragma solidity 0.8.13;
 
 import "./interface/IInitializable.sol";
 
-/*
+/**
  * @dev In the beginning there was a smart contract...
  */
 contract HolographGenesis {

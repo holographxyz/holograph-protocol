@@ -2,11 +2,11 @@
 
 /*SOLIDITY_COMPILER_VERSION*/
 
-import "../interface/HolographedERC20.sol";
+import "../interface/HolographedERC1155.sol";
 
-import "./ERC20H.sol";
+import "./ERC1155H.sol";
 
-abstract contract StrictERC20H is ERC20H, HolographedERC20 {
+abstract contract StrictERC1155H is ERC1155H, HolographedERC1155 {
   /**
    * @dev Dummy variable to prevent empty functions from making "switch to pure" warnings.
    */
@@ -16,6 +16,7 @@ abstract contract StrictERC20H is ERC20H, HolographedERC20 {
     uint32, /* _chainId*/
     address, /* _from*/
     address, /* _to*/
+    uint256, /* _tokenId*/
     uint256, /* _amount*/
     bytes calldata /* _data*/
   ) external virtual onlyHolographer returns (bool) {
@@ -27,18 +28,17 @@ abstract contract StrictERC20H is ERC20H, HolographedERC20 {
     uint32, /* _chainId*/
     address, /* _from*/
     address, /* _to*/
+    uint256, /* _tokenId*/
     uint256 /* _amount*/
   ) external virtual onlyHolographer returns (bytes memory _data) {
-    /**
-     * @dev This is just here to suppress unused parameter warning
-     */
-    _data = abi.encodePacked(holographer());
     _success = true;
+    _data = abi.encode(holographer());
   }
 
   function afterApprove(
     address, /* _owner*/
     address, /* _to*/
+    uint256, /* _tokenId*/
     uint256 /* _amount*/
   ) external virtual onlyHolographer returns (bool success) {
     _success = true;
@@ -48,29 +48,24 @@ abstract contract StrictERC20H is ERC20H, HolographedERC20 {
   function beforeApprove(
     address, /* _owner*/
     address, /* _to*/
+    uint256, /* _tokenId*/
     uint256 /* _amount*/
   ) external virtual onlyHolographer returns (bool success) {
     _success = true;
     return _success;
   }
 
-  function afterOnERC20Received(
-    address, /* _token*/
-    address, /* _from*/
+  function afterApprovalAll(
     address, /* _to*/
-    uint256, /* _amount*/
-    bytes calldata /* _data*/
+    bool /* _approved*/
   ) external virtual onlyHolographer returns (bool success) {
     _success = true;
     return _success;
   }
 
-  function beforeOnERC20Received(
-    address, /* _token*/
-    address, /* _from*/
+  function beforeApprovalAll(
     address, /* _to*/
-    uint256, /* _amount*/
-    bytes calldata /* _data*/
+    bool /* _approved*/
   ) external virtual onlyHolographer returns (bool success) {
     _success = true;
     return _success;
@@ -78,6 +73,7 @@ abstract contract StrictERC20H is ERC20H, HolographedERC20 {
 
   function afterBurn(
     address, /* _owner*/
+    uint256, /* _tokenId*/
     uint256 /* _amount*/
   ) external virtual onlyHolographer returns (bool success) {
     _success = true;
@@ -86,6 +82,7 @@ abstract contract StrictERC20H is ERC20H, HolographedERC20 {
 
   function beforeBurn(
     address, /* _owner*/
+    uint256, /* _tokenId*/
     uint256 /* _amount*/
   ) external virtual onlyHolographer returns (bool success) {
     _success = true;
@@ -94,6 +91,7 @@ abstract contract StrictERC20H is ERC20H, HolographedERC20 {
 
   function afterMint(
     address, /* _owner*/
+    uint256, /* _tokenId*/
     uint256 /* _amount*/
   ) external virtual onlyHolographer returns (bool success) {
     _success = true;
@@ -102,6 +100,7 @@ abstract contract StrictERC20H is ERC20H, HolographedERC20 {
 
   function beforeMint(
     address, /* _owner*/
+    uint256, /* _tokenId*/
     uint256 /* _amount*/
   ) external virtual onlyHolographer returns (bool success) {
     _success = true;
@@ -111,6 +110,7 @@ abstract contract StrictERC20H is ERC20H, HolographedERC20 {
   function afterSafeTransfer(
     address, /* _from*/
     address, /* _to*/
+    uint256, /* _tokenId*/
     uint256, /* _amount*/
     bytes calldata /* _data*/
   ) external virtual onlyHolographer returns (bool success) {
@@ -121,6 +121,7 @@ abstract contract StrictERC20H is ERC20H, HolographedERC20 {
   function beforeSafeTransfer(
     address, /* _from*/
     address, /* _to*/
+    uint256, /* _tokenId*/
     uint256, /* _amount*/
     bytes calldata /* _data*/
   ) external virtual onlyHolographer returns (bool success) {
@@ -131,7 +132,9 @@ abstract contract StrictERC20H is ERC20H, HolographedERC20 {
   function afterTransfer(
     address, /* _from*/
     address, /* _to*/
-    uint256 /* _amount*/
+    uint256, /* _tokenId*/
+    uint256, /* _amount*/
+    bytes calldata /* _data*/
   ) external virtual onlyHolographer returns (bool success) {
     _success = true;
     return _success;
@@ -140,7 +143,33 @@ abstract contract StrictERC20H is ERC20H, HolographedERC20 {
   function beforeTransfer(
     address, /* _from*/
     address, /* _to*/
-    uint256 /* _amount*/
+    uint256, /* _tokenId*/
+    uint256, /* _amount*/
+    bytes calldata /* _data*/
+  ) external virtual onlyHolographer returns (bool success) {
+    _success = true;
+    return _success;
+  }
+
+  function afterOnERC1155Received(
+    address, /* _operator*/
+    address, /* _from*/
+    address, /* _to*/
+    uint256, /* _tokenId*/
+    uint256, /* _amount*/
+    bytes calldata /* _data*/
+  ) external virtual onlyHolographer returns (bool success) {
+    _success = true;
+    return _success;
+  }
+
+  function beforeOnERC1155Received(
+    address, /* _operator*/
+    address, /* _from*/
+    address, /* _to*/
+    uint256, /* _tokenId*/
+    uint256, /* _amount*/
+    bytes calldata /* _data*/
   ) external virtual onlyHolographer returns (bool success) {
     _success = true;
     return _success;

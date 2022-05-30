@@ -16,32 +16,32 @@ import "../interface/IHolographer.sol";
  * @dev The entire logic and functionality of the smart contract is self-contained.
  */
 contract hToken is ERC20H {
-  /*
+  /**
    * @dev Sample fee for unwrapping.
    */
   uint16 private _feeBp; // 100.00%
 
-  /*
+  /**
    * @dev List of supported Wrapped Tokens (equivalent), on current-chain.
    */
   mapping(address => bool) private _supportedWrappers;
 
-  /*
+  /**
    * @dev Event that is triggered when native token is converted into hToken.
    */
   event Deposit(address indexed from, uint256 amount);
 
-  /*
+  /**
    * @dev Event that is triggered when ERC20 token is converted into hToken.
    */
   event TokenDeposit(address indexed token, address indexed from, uint256 amount);
 
-  /*
+  /**
    * @dev Event that is triggered when hToken is converted into native token.
    */
   event Withdrawal(address indexed to, uint256 amount);
 
-  /*
+  /**
    * @dev Event that is triggered when hToken is converted into ERC20 token.
    */
   event TokenWithdrawal(address indexed token, address indexed to, uint256 amount);
@@ -64,7 +64,7 @@ contract hToken is ERC20H {
     return _init(data);
   }
 
-  /*
+  /**
    * @dev Send native token value, get back hToken equivalent.
    * @param recipient Address of where to send the hToken(s) to.
    */
@@ -83,7 +83,7 @@ contract hToken is ERC20H {
     emit Deposit(sender, msg.value);
   }
 
-  /*
+  /**
    * @dev Send hToken, get back native token value equivalent.
    * @param recipient Address of where to send the native token(s) to.
    */
@@ -108,7 +108,7 @@ contract hToken is ERC20H {
     emit Withdrawal(recipient, amount);
   }
 
-  /*
+  /**
    * @dev Send supported wrapped token, get back hToken equivalent.
    * @param recipient Address of where to send the hToken(s) to.
    */
@@ -138,7 +138,7 @@ contract hToken is ERC20H {
     emit TokenDeposit(token, sender, amount);
   }
 
-  /*
+  /**
    * @dev Send hToken, get back native token value equivalent.
    * @param recipient Address of where to send the native token(s) to.
    */
