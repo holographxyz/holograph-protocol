@@ -6,17 +6,14 @@ import '@nomiclabs/hardhat-waffle';
 import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-etherscan';
 import { types, task, HardhatUserConfig } from 'hardhat/config';
+import 'hardhat-holograph-contract-builder';
+import networks from './config/networks';
 import dotenv from 'dotenv';
 dotenv.config();
-
-import 'hardhat-holograph-contract-builder';
-
-const networks = JSON.parse(fs.readFileSync('./config/networks.json', 'utf8'));
 
 const SOLIDITY_VERSION = process.env.SOLIDITY_VERSION || '0.8.13';
 
 const MNEMONIC = process.env.MNEMONIC || 'test '.repeat(11) + 'junk';
-
 const DEPLOYER = process.env.DEPLOYER || '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 
 const RINKEBY_PRIVATE_KEY = process.env.RINKEBY_PRIVATE_KEY! || DEPLOYER;

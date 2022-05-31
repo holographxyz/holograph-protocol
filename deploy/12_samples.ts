@@ -21,8 +21,7 @@ import {
   ConfigureEvents,
 } from '../scripts/utils/events';
 import Web3 from 'web3';
-
-const networks = JSON.parse(fs.readFileSync('./config/networks.json', 'utf8'));
+import networks from '../config/networks';
 
 const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   let { hre, hre2 } = await hreSplit(hre1, global.__companionNetwork);

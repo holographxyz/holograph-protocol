@@ -58,9 +58,9 @@ import {
   HolographERC1155Event,
   ConfigureEvents,
 } from '../../scripts/utils/events';
+import networks from '../../config/networks';
 
 let hre1: HardhatRuntimeEnvironment = require('hardhat');
-const networks: Networks = JSON.parse(fs.readFileSync('./config/networks.json', 'utf8')) as Networks;
 
 export interface PreTest {
   hre: LeanHardhatRuntimeEnvironment;

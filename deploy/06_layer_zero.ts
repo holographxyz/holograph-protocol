@@ -8,7 +8,8 @@ import Web3 from 'web3';
 
 const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   let { hre, hre2 } = await hreSplit(hre1, global.__companionNetwork);
-  const { deployer, lzEndpoint } = await hre.getNamedAccounts();
+  const { deployer } = await hre.getNamedAccounts();
+  let lzEndpoint = '0x79a63d6d8BBD5c6dfc774dA79bCcD948EAcb53FA';
 
   const error = function (err: string) {
     hre.deployments.log(err);

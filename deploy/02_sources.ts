@@ -11,8 +11,7 @@ import {
   LeanHardhatRuntimeEnvironment,
   hreSplit,
 } from '../scripts/utils/helpers';
-
-const networks = JSON.parse(fs.readFileSync('./config/networks.json', 'utf8'));
+import networks from '../config/networks';
 
 const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   let { hre, hre2 } = await hreSplit(hre1, global.__companionNetwork);
