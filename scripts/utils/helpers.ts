@@ -45,6 +45,7 @@ export interface Network {
   holographId: number;
   tokenName: string;
   tokenSymbol: string;
+  lzEndpoint?: string;
 }
 
 export interface Networks {
@@ -159,11 +160,12 @@ const hreSplit = async function (
   hre1: HardhatRuntimeEnvironment,
   flip?: boolean
 ): Promise<{ hre: LeanHardhatRuntimeEnvironment; hre2: LeanHardhatRuntimeEnvironment }> {
-  // if (!isDefined(hre1.network.companionNetworks['l2'])) {
-  //   throw new Error(
-  //     'A companion network is required for multi-chain testing. Use "companionNetworks" inside of Hardhat networks config file.'
-  //   );
-  // }
+  let localnet: boolean = hre1.network.name == 'localhost' || hre1.network.name == 'localhost2';
+  if (localnet && !isDefined(hre1.network.companionNetworks['l2'])) {
+    throw new Error(
+      'A companion network is required for multi-chain testing. Use "companionNetworks" inside of Hardhat networks config file.'
+    );
+  }
   let hre: LeanHardhatRuntimeEnvironment;
   let hre2: LeanHardhatRuntimeEnvironment;
   let hre3: LeanHardhatRuntimeEnvironment;
@@ -182,27 +184,30 @@ const hreSplit = async function (
   } else {
     hre = global.__hreL1 as LeanHardhatRuntimeEnvironment;
   }
-  hre2 = hre;
-  // if (typeof global.__hreL2 === 'undefined') {
-  //   hre2 = {
-  //     networkName: hre1.network.companionNetworks['l2'],
-  //     deployments: hre1.companionNetworks['l2'].deployments,
-  //     getNamedAccounts: hre1.companionNetworks['l2'].getNamedAccounts,
-  //     getUnnamedAccounts: hre1.companionNetworks['l2'].getUnnamedAccounts,
-  //     getChainId: hre1.companionNetworks['l2'].getChainId,
-  //     provider: hre1.companionNetworks['l2'].provider,
-  //     ethers: l2Ethers(hre1),
-  //     artifacts: hre1.artifacts,
-  //   };
-  //   global.__hreL2 = hre2;
-  // } else {
-  //   hre2 = global.__hreL2 as LeanHardhatRuntimeEnvironment;
-  // }
-  // if (flip) {
-  //   hre3 = hre;
-  //   hre = hre2;
-  //   hre2 = hre3;
-  // }
+  if (typeof global.__hreL2 === 'undefined') {
+    if (localnet) {
+      hre2 = {
+        networkName: hre1.network.companionNetworks['l2'],
+        deployments: hre1.companionNetworks['l2'].deployments,
+        getNamedAccounts: hre1.companionNetworks['l2'].getNamedAccounts,
+        getUnnamedAccounts: hre1.companionNetworks['l2'].getUnnamedAccounts,
+        getChainId: hre1.companionNetworks['l2'].getChainId,
+        provider: hre1.companionNetworks['l2'].provider,
+        ethers: l2Ethers(hre1),
+        artifacts: hre1.artifacts,
+      };
+    } else {
+      hre2 = hre;
+    }
+    global.__hreL2 = hre2;
+  } else {
+    hre2 = global.__hreL2 as LeanHardhatRuntimeEnvironment;
+  }
+  if (flip) {
+    hre3 = hre;
+    hre = hre2;
+    hre2 = hre3;
+  }
   return {
     hre,
     hre2,

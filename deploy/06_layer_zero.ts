@@ -3,13 +3,17 @@ import fs from 'fs';
 import { BytesLike, ContractFactory, Contract } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy-holographed/types';
-import { LeanHardhatRuntimeEnvironment, hreSplit } from '../scripts/utils/helpers';
+import { LeanHardhatRuntimeEnvironment, hreSplit, zeroAddress } from '../scripts/utils/helpers';
 import Web3 from 'web3';
+import networks from '../config/networks';
 
 const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   let { hre, hre2 } = await hreSplit(hre1, global.__companionNetwork);
   const { deployer } = await hre.getNamedAccounts();
-  let lzEndpoint = '0x79a63d6d8BBD5c6dfc774dA79bCcD948EAcb53FA';
+  let lzEndpoint = networks[hre.networkName].lzEndpoint;
+  if (lzEndpoint == zeroAddress()) {
+    lzEndpoint = (await hre.getNamedAccounts()).lzEndpoint;
+  }
 
   const error = function (err: string) {
     hre.deployments.log(err);
