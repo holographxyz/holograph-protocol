@@ -9,7 +9,7 @@ const networks: Networks = {
     holographId: 4294967295,
     tokenName: 'Hardhat',
     tokenSymbol: 'HRD',
-    lzEndpoint: '0x0000000000000000000000000000000000000000',
+    lzEndpoint: '0x0000000000000000000000000000000000000000'.toLowerCase(),
   },
   localhost: {
     chain: 1338,
@@ -17,7 +17,7 @@ const networks: Networks = {
     holographId: 4294967295,
     tokenName: 'Localhost',
     tokenSymbol: 'LH',
-    lzEndpoint: '0x0000000000000000000000000000000000000000',
+    lzEndpoint: '0x0000000000000000000000000000000000000000'.toLowerCase(),
   },
   localhost2: {
     chain: 1339,
@@ -25,7 +25,7 @@ const networks: Networks = {
     holographId: 4294967294,
     tokenName: 'Localhost 2',
     tokenSymbol: 'LH2',
-    lzEndpoint: '0x0000000000000000000000000000000000000000',
+    lzEndpoint: '0x0000000000000000000000000000000000000000'.toLowerCase(),
   },
   cxip: {
     chain: 1337,
@@ -33,7 +33,7 @@ const networks: Networks = {
     holographId: 4000000000,
     tokenName: 'Cxip Token',
     tokenSymbol: 'CXIP',
-    lzEndpoint: '0x0000000000000000000000000000000000000000',
+    lzEndpoint: '0x0000000000000000000000000000000000000000'.toLowerCase(),
   },
   eth: {
     chain: 1,
@@ -41,7 +41,7 @@ const networks: Networks = {
     holographId: 1,
     tokenName: 'Ethereum',
     tokenSymbol: 'ETH',
-    lzEndpoint: '0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675',
+    lzEndpoint: '0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675'.toLowerCase(),
   },
   eth_rinkeby: {
     chain: 4,
@@ -49,7 +49,7 @@ const networks: Networks = {
     holographId: 4000000001,
     tokenName: 'Ethereum Rinkeby',
     tokenSymbol: 'RIN',
-    lzEndpoint: '0x79a63d6d8BBD5c6dfc774dA79bCcD948EAcb53FA',
+    lzEndpoint: '0x79a63d6d8BBD5c6dfc774dA79bCcD948EAcb53FA'.toLowerCase(),
   },
   bsc: {
     chain: 56,
@@ -57,7 +57,7 @@ const networks: Networks = {
     holographId: 2,
     tokenName: 'BNB',
     tokenSymbol: 'BNB',
-    lzEndpoint: '0x3c2269811836af69497E5F486A85D7316753cf62',
+    lzEndpoint: '0x3c2269811836af69497E5F486A85D7316753cf62'.toLowerCase(),
   },
   bsc_testnet: {
     chain: 97,
@@ -65,7 +65,7 @@ const networks: Networks = {
     holographId: 4000000002,
     tokenName: 'BNB Testnet',
     tokenSymbol: 'tBNB',
-    lzEndpoint: '0x6Fcb97553D41516Cb228ac03FdC8B9a0a9df04A1',
+    lzEndpoint: '0x6Fcb97553D41516Cb228ac03FdC8B9a0a9df04A1'.toLowerCase(),
   },
   avax: {
     chain: 43114,
@@ -73,7 +73,7 @@ const networks: Networks = {
     holographId: 3,
     tokenName: 'Avalanche',
     tokenSymbol: 'AVAX',
-    lzEndpoint: '0x3c2269811836af69497E5F486A85D7316753cf62',
+    lzEndpoint: '0x3c2269811836af69497E5F486A85D7316753cf62'.toLowerCase(),
   },
   fuji: {
     chain: 43113,
@@ -81,7 +81,7 @@ const networks: Networks = {
     holographId: 4000000003,
     tokenName: 'Avalanche Fuji',
     tokenSymbol: 'AVAX',
-    lzEndpoint: '0x93f54D755A063cE7bB9e6Ac47Eccc8e33411d706',
+    lzEndpoint: '0x93f54D755A063cE7bB9e6Ac47Eccc8e33411d706'.toLowerCase(),
   },
   matic: {
     chain: 137,
@@ -89,7 +89,7 @@ const networks: Networks = {
     holographId: 4,
     tokenName: 'Polygon',
     tokenSymbol: 'MATIC',
-    lzEndpoint: '0x3c2269811836af69497E5F486A85D7316753cf62',
+    lzEndpoint: '0x3c2269811836af69497E5F486A85D7316753cf62'.toLowerCase(),
   },
   mumbai: {
     chain: 80001,
@@ -97,7 +97,7 @@ const networks: Networks = {
     holographId: 4000000004,
     tokenName: 'Polygon Mumbai',
     tokenSymbol: 'MATIC',
-    lzEndpoint: '0xf69186dfBa60DdB133E91E9A4B5673624293d8F8',
+    lzEndpoint: '0xf69186dfBa60DdB133E91E9A4B5673624293d8F8'.toLowerCase(),
   },
   ftm: {
     chain: 250,
@@ -105,7 +105,7 @@ const networks: Networks = {
     holographId: 5,
     tokenName: 'Fantom',
     tokenSymbol: 'FTM',
-    lzEndpoint: '0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7',
+    lzEndpoint: '0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7'.toLowerCase(),
   },
   ftm_testnet: {
     chain: 4002,
@@ -113,7 +113,7 @@ const networks: Networks = {
     holographId: 4000000005,
     tokenName: 'Fantom Testnet',
     tokenSymbol: 'FTM',
-    lzEndpoint: '0x7dcAD72640F835B0FA36EFD3D6d3ec902C7E5acf',
+    lzEndpoint: '0x7dcAD72640F835B0FA36EFD3D6d3ec902C7E5acf'.toLowerCase(),
   },
   arbitrum: {
     chain: 42161,
@@ -121,7 +121,7 @@ const networks: Networks = {
     holographId: 6,
     tokenName: 'Arbitrum',
     tokenSymbol: 'ETH',
-    lzEndpoint: '0x3c2269811836af69497E5F486A85D7316753cf62',
+    lzEndpoint: '0x3c2269811836af69497E5F486A85D7316753cf62'.toLowerCase(),
   },
   arbitrum_rinkeby: {
     chain: 421611,
@@ -129,7 +129,7 @@ const networks: Networks = {
     holographId: 4000000006,
     tokenName: 'Arbitrum Rinkeby',
     tokenSymbol: 'ARETH',
-    lzEndpoint: '0x4D747149A57923Beb89f22E6B7B97f7D8c087A00',
+    lzEndpoint: '0x4D747149A57923Beb89f22E6B7B97f7D8c087A00'.toLowerCase(),
   },
   optimism: {
     chain: 10,
@@ -137,7 +137,7 @@ const networks: Networks = {
     holographId: 7,
     tokenName: 'Optimism',
     tokenSymbol: 'ETH',
-    lzEndpoint: '0x3c2269811836af69497E5F486A85D7316753cf62',
+    lzEndpoint: '0x3c2269811836af69497E5F486A85D7316753cf62'.toLowerCase(),
   },
   optimism_kovan: {
     chain: 69,
@@ -145,7 +145,7 @@ const networks: Networks = {
     holographId: 4000000007,
     tokenName: 'Optimism Kovan',
     tokenSymbol: 'KOR',
-    lzEndpoint: '0x72aB53a133b27Fa428ca7Dc263080807AfEc91b5',
+    lzEndpoint: '0x72aB53a133b27Fa428ca7Dc263080807AfEc91b5'.toLowerCase(),
   },
   gno: {
     chain: 100,
@@ -153,7 +153,7 @@ const networks: Networks = {
     holographId: 8,
     tokenName: 'Gnosis Chain',
     tokenSymbol: 'GNO',
-    lzEndpoint: '0x0000000000000000000000000000000000000000',
+    lzEndpoint: '0x0000000000000000000000000000000000000000'.toLowerCase(),
   },
   gno_sokol: {
     chain: 77,
@@ -161,7 +161,7 @@ const networks: Networks = {
     holographId: 4000000008,
     tokenName: 'Gnosis Chain Sokol',
     tokenSymbol: 'GNO',
-    lzEndpoint: '0x0000000000000000000000000000000000000000',
+    lzEndpoint: '0x0000000000000000000000000000000000000000'.toLowerCase(),
   },
 };
 
