@@ -18,6 +18,10 @@ const DEPLOYER = process.env.DEPLOYER || '0xac0974bec39a17e36ba4a6b4d238ff944bac
 
 const RINKEBY_PRIVATE_KEY = process.env.RINKEBY_PRIVATE_KEY! || DEPLOYER;
 const MAINNET_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY || DEPLOYER;
+
+const MATIC_PRIVATE_KEY = process.env.MATIC_PRIVATE_KEY || DEPLOYER;
+const MUMBAI_PRIVATE_KEY = process.env.MUMBAI_PRIVATE_KEY || DEPLOYER;
+
 const CXIP_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY || DEPLOYER;
 
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
@@ -112,6 +116,16 @@ const config: HardhatUserConfig = {
       url: networks.eth_rinkeby.rpc,
       chainId: networks.eth_rinkeby.chain,
       accounts: [RINKEBY_PRIVATE_KEY],
+    },
+    matic: {
+      url: networks.matic.rpc,
+      chainId: networks.matic.chain,
+      accounts: [MATIC_PRIVATE_KEY] || '',
+    },
+    mumbai: {
+      url: networks.mumbai.rpc,
+      chainId: networks.mumbai.chain,
+      accounts: [MUMBAI_PRIVATE_KEY],
     },
     cxip: {
       url: networks.cxip.rpc,
