@@ -83,7 +83,7 @@
     ],
     "name": "executeJob",
     "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -156,7 +156,7 @@
     ],
     "name": "jobEstimator",
     "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -184,7 +184,7 @@
     ],
     "name": "lzReceive",
     "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
