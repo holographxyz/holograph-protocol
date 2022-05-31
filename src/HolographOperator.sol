@@ -72,7 +72,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     bytes calldata _srcAddress,
     uint64, /* _nonce*/
     bytes calldata _payload
-  ) external onlyLZ {
+  ) external payable onlyLZ {
     assembly {
       let ptr := mload(0x40)
       calldatacopy(add(ptr, 0x0c), _srcAddress.offset, _srcAddress.length)
@@ -89,7 +89,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     emit AvailableJob(_payload);
   }
 
-  function executeJob(bytes calldata _payload) external {
+  function executeJob(bytes calldata _payload) external payable {
     // we do our operator logic here
     // we will also manage gas/value here
     bytes32 hash = keccak256(_payload);
@@ -118,7 +118,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     bytes calldata _srcAddress,
     uint64 _nonce,
     bytes calldata _payload
-  ) external {
+  ) external payable {
     assembly {
       // switch eq(sload(precomputeslot("eip1967.Holograph.Bridge.deadAddress")), caller())
       switch eq(mload(0x60), caller())
@@ -130,8 +130,8 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
         revert(0x80, 0xc4)
       }
     }
-    IHolographOperator(address(this)).lzReceive(_srcChainId, _srcAddress, _nonce, _payload);
-    IHolographOperator(address(this)).executeJob(_payload);
+    IHolographOperator(payable(address(this))).lzReceive(_srcChainId, _srcAddress, _nonce, _payload);
+    IHolographOperator(payable(address(this))).executeJob(_payload);
   }
 
   function send(

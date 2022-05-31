@@ -39,7 +39,7 @@
     "rpc": "https://eth.getblock.io/rinkeby/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de",
     "holographId": 4000000001,
     "tokenName": "Ethereum Rinkeby",
-    "tokenSymbol": "ETH"
+    "tokenSymbol": "RIN"
   },
   "bsc": {
     "chain": 56,
@@ -53,7 +53,7 @@
     "rpc": "https://bsc.getblock.io/testnet/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de",
     "holographId": 4000000002,
     "tokenName": "BNB Testnet",
-    "tokenSymbol": "BNB"
+    "tokenSymbol": "tBNB"
   },
   "avax": {
     "chain": 43114,
@@ -109,7 +109,7 @@
     "rpc": "https://rinkeby.arbitrum.io/rpc",
     "holographId": 4000000006,
     "tokenName": "Arbitrum Rinkeby",
-    "tokenSymbol": "ETH"
+    "tokenSymbol": "ARETH"
   },
   "optimism": {
     "chain": 10,
@@ -123,7 +123,7 @@
     "rpc": "https://kovan.optimism.io",
     "holographId": 4000000007,
     "tokenName": "Optimism Kovan",
-    "tokenSymbol": "ETH"
+    "tokenSymbol": "KOR"
   },
   "gno": {
     "chain": 100,
