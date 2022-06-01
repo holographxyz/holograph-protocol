@@ -25,6 +25,7 @@ import {
 } from '@nomiclabs/hardhat-ethers/internal/helpers';
 import type * as ProviderProxyT from '@nomiclabs/hardhat-ethers/internal/provider-proxy';
 import { DeploymentConfigStruct } from '../../typechain-types/HolographFactory';
+import networks from '../../config/networks';
 
 export interface LeanHardhatRuntimeEnvironment {
   networkName: string;
@@ -257,12 +258,16 @@ const generateInitCode = function (vars: string[], vals: any[]): string {
   return web3.eth.abi.encodeParameters(vars, vals);
 };
 
-const generateDeployCode = function (salt: string, byteCode: string, initCode: string): string {
+const generateDeployCode = function (chainId: string, salt: string, byteCode: string, initCode: string): string {
   return web3.eth.abi.encodeFunctionCall(
     {
       name: 'deploy',
       type: 'function',
       inputs: [
+        {
+          type: 'uint256',
+          name: 'chainId',
+        },
         {
           type: 'bytes12',
           name: 'saltHash',
@@ -278,6 +283,7 @@ const generateDeployCode = function (salt: string, byteCode: string, initCode: s
       ],
     },
     [
+      chainId, // uint256 chainId
       salt, // bytes12 sourceCode
       byteCode, // bytes memory sourceCode
       initCode, // bytes memory initCode
@@ -305,6 +311,7 @@ const genesisDeriveFutureAddress = async function (
   name: string,
   initCode: string
 ): Promise<string> {
+  const chainId: string = BigNumber.from(networks[hre.networkName].chain).toHexString();
   const { deployments, getNamedAccounts, ethers } = hre;
   const { deploy, deterministicCustom } = deployments;
   const { deployer } = await getNamedAccounts();
@@ -323,7 +330,7 @@ const genesisDeriveFutureAddress = async function (
     log: true,
     deployerAddress: holographGenesis?.address,
     saltHash: deployer + salt.substring(2),
-    deployCode: generateDeployCode(salt, contractBytecode, initCode),
+    deployCode: generateDeployCode(chainId, salt, contractBytecode, initCode),
   });
   return contractDeterministic.address;
 };
@@ -334,6 +341,7 @@ const genesisDeployHelper = async function (
   name: string,
   initCode: string
 ): Promise<Contract> {
+  const chainId: string = BigNumber.from(networks[hre.networkName].chain).toHexString();
   const { deployments, getNamedAccounts, ethers } = hre;
   const { deploy, deterministicCustom } = deployments;
   const { deployer } = await getNamedAccounts();
@@ -361,7 +369,7 @@ const genesisDeployHelper = async function (
       log: true,
       deployerAddress: holographGenesis?.address,
       saltHash: deployer + salt.substring(2),
-      deployCode: generateDeployCode(salt, contractBytecode, initCode),
+      deployCode: generateDeployCode(chainId, salt, contractBytecode, initCode),
       waitConfirmations: 1,
       nonce: await ethers.provider.getTransactionCount(deployer),
     });
