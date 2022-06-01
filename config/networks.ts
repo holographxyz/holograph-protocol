@@ -93,7 +93,7 @@ const networks: Networks = {
   },
   mumbai: {
     chain: 80001,
-    rpc: process.env.MUMBAI_RPC_URL || 'https://rpc-mumbai.maticvigil.com',
+    rpc: process.env.MUMBAI_RPC_URL || 'https://matic-mumbai.chainstacklabs.com',
     holographId: 4000000004,
     tokenName: 'Polygon Mumbai',
     tokenSymbol: 'MATIC',
