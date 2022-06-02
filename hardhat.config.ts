@@ -74,6 +74,12 @@ task('abi', 'Create standalone ABI files for all smart contracts')
  */
 const config: HardhatUserConfig = {
   defaultNetwork: 'localhost',
+  external: {
+    deployments: {
+      localhost: ['deployments/localhost'],
+      localhost2: ['deployments/localhost2'],
+    },
+  },
   networks: {
     localhost: {
       url: networks.localhost.rpc,

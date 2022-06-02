@@ -101,7 +101,9 @@ const networks: Networks = {
   },
   fuji: {
     chain: 43113,
-    rpc: process.env.FUJI_RPC_URL || 'https://avax.getblock.io/testnet/ext/bc/C/rpc?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
+    rpc:
+      process.env.FUJI_RPC_URL ||
+      'https://avax.getblock.io/testnet/ext/bc/C/rpc?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
     holographId: 4000000003,
     tokenName: 'Avalanche Fuji',
     tokenSymbol: 'AVAX',
@@ -117,7 +119,8 @@ const networks: Networks = {
   },
   mumbai: {
     chain: 80001,
-    rpc: process.env.MUMBAI_RPC_URL || 'https://matic.getblock.io/testnet/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
+    rpc:
+      process.env.MUMBAI_RPC_URL || 'https://matic.getblock.io/testnet/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
     holographId: 4000000004,
     tokenName: 'Polygon Mumbai',
     tokenSymbol: 'MATIC',
