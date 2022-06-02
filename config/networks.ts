@@ -190,6 +190,38 @@ const networks: Networks = {
     tokenSymbol: 'xDAI',
     lzEndpoint: '0x0000000000000000000000000000000000000000'.toLowerCase(),
   },
+  cronos: {
+    chain: 25,
+    rpc: 'https://evm.cronos.org',
+    holographId: 9, // need to set in chain libraries !
+    tokenName: 'Cronos',
+    tokenSymbol: 'CRO',
+    lzEndpoint: '0x0000000000000000000000000000000000000000'.toLowerCase(),
+  },
+  cronos_testnet: {
+    chain: 338,
+    rpc: 'https://evm-t3.cronos.org',
+    holographId: 4000000012, // need to set in chain libraries !
+    tokenName: 'Cronos testnet',
+    tokenSymbol: 'tCRO',
+    lzEndpoint: '0x0000000000000000000000000000000000000000'.toLowerCase(),
+  },
+  aurora: {
+    chain: 1313161554,
+    rpc: 'https://mainnet.aurora.dev',
+    holographId: 10, // need to set in chain libraries !
+    tokenName: 'Aurora ETH',
+    tokenSymbol: 'ETH',
+    lzEndpoint: '0x0000000000000000000000000000000000000000'.toLowerCase(),
+  },
+  aurora_testnet: {
+    chain: 1313161555,
+    rpc: 'https://testnet.aurora.dev',
+    holographId: 4000000013, // need to set in chain libraries !
+    tokenName: 'Aurora testnet ETH',
+    tokenSymbol: 'tETH',
+    lzEndpoint: '0x0000000000000000000000000000000000000000'.toLowerCase(),
+  },
 };
 
 export default networks;
