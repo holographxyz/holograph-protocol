@@ -54,7 +54,7 @@ const networks: Networks = {
   eth_ropsten: {
     chain: 3,
     rpc: 'https://eth.getblock.io/ropsten/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
-    holographId: 4000000001,
+    holographId: 4000000009, // need to set in chain libraries !
     tokenName: 'Ethereum Ropsten',
     tokenSymbol: 'ROP',
     lzEndpoint: '0x0000000000000000000000000000000000000000'.toLowerCase(),
@@ -62,7 +62,7 @@ const networks: Networks = {
   eth_kovan: {
     chain: 42,
     rpc: 'https://kovan.infura.io/v3/0ab4cbfce2414f41a4313644412ccf14',
-    holographId: 4000000001,
+    holographId: 4000000010, // need to set in chain libraries !
     tokenName: 'Ethereum Kovan',
     tokenSymbol: 'KOV',
     lzEndpoint: '0x0000000000000000000000000000000000000000'.toLowerCase(),
@@ -70,7 +70,7 @@ const networks: Networks = {
   eth_goerli: {
     chain: 5,
     rpc: 'https://eth.getblock.io/goerli/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
-    holographId: 4000000001,
+    holographId: 4000000011, // need to set in chain libraries !
     tokenName: 'Ethereum Goerli',
     tokenSymbol: 'ETH',
     lzEndpoint: '0x0000000000000000000000000000000000000000'.toLowerCase(),
