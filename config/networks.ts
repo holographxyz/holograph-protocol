@@ -51,6 +51,30 @@ const networks: Networks = {
     tokenSymbol: 'RIN',
     lzEndpoint: '0x79a63d6d8BBD5c6dfc774dA79bCcD948EAcb53FA'.toLowerCase(),
   },
+  eth_ropsten: {
+    chain: 3,
+    rpc: 'https://eth.getblock.io/ropsten/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
+    holographId: 4000000001,
+    tokenName: 'Ethereum Ropsten',
+    tokenSymbol: 'ROP',
+    lzEndpoint: '0x0000000000000000000000000000000000000000'.toLowerCase(),
+  },
+  eth_kovan: {
+    chain: 42,
+    rpc: 'https://kovan.infura.io/v3/0ab4cbfce2414f41a4313644412ccf14',
+    holographId: 4000000001,
+    tokenName: 'Ethereum Kovan',
+    tokenSymbol: 'KOV',
+    lzEndpoint: '0x0000000000000000000000000000000000000000'.toLowerCase(),
+  },
+  eth_goerli: {
+    chain: 5,
+    rpc: 'https://eth.getblock.io/goerli/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
+    holographId: 4000000001,
+    tokenName: 'Ethereum Goerli',
+    tokenSymbol: 'ETH',
+    lzEndpoint: '0x0000000000000000000000000000000000000000'.toLowerCase(),
+  },
   bsc: {
     chain: 56,
     rpc: 'https://bsc.getblock.io/mainnet/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
@@ -69,7 +93,7 @@ const networks: Networks = {
   },
   avax: {
     chain: 43114,
-    rpc: 'https://api.avax.network/ext/bc/C/rpc',
+    rpc: 'https://avax.getblock.io/mainnet/ext/bc/C/rpc?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
     holographId: 3,
     tokenName: 'Avalanche',
     tokenSymbol: 'AVAX',
@@ -77,7 +101,7 @@ const networks: Networks = {
   },
   fuji: {
     chain: 43113,
-    rpc: process.env.FUJI_RPC_URL || 'https://api.avax-test.network/ext/bc/C/rpc',
+    rpc: process.env.FUJI_RPC_URL || 'https://avax.getblock.io/testnet/ext/bc/C/rpc?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
     holographId: 4000000003,
     tokenName: 'Avalanche Fuji',
     tokenSymbol: 'AVAX',
@@ -85,7 +109,7 @@ const networks: Networks = {
   },
   matic: {
     chain: 137,
-    rpc: 'https://rpc-mainnet.matic.network',
+    rpc: 'https://matic.getblock.io/mainnet/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
     holographId: 4,
     tokenName: 'Polygon',
     tokenSymbol: 'MATIC',
@@ -93,7 +117,7 @@ const networks: Networks = {
   },
   mumbai: {
     chain: 80001,
-    rpc: process.env.MUMBAI_RPC_URL || 'https://matic-mumbai.chainstacklabs.com',
+    rpc: process.env.MUMBAI_RPC_URL || 'https://matic.getblock.io/testnet/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
     holographId: 4000000004,
     tokenName: 'Polygon Mumbai',
     tokenSymbol: 'MATIC',
@@ -101,7 +125,7 @@ const networks: Networks = {
   },
   ftm: {
     chain: 250,
-    rpc: 'https://rpc.fantom.network',
+    rpc: 'https://ftm.getblock.io/mainnet/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
     holographId: 5,
     tokenName: 'Fantom',
     tokenSymbol: 'FTM',
@@ -117,7 +141,7 @@ const networks: Networks = {
   },
   arbitrum: {
     chain: 42161,
-    rpc: 'https://arb1.arbitrum.io/rpc',
+    rpc: 'https://arbitrum.getblock.io/mainnet/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
     holographId: 6,
     tokenName: 'Arbitrum',
     tokenSymbol: 'ETH',
@@ -160,7 +184,7 @@ const networks: Networks = {
     rpc: 'https://sokol.poa.network',
     holographId: 4000000008,
     tokenName: 'Gnosis Chain Sokol',
-    tokenSymbol: 'GNO',
+    tokenSymbol: 'xDAI',
     lzEndpoint: '0x0000000000000000000000000000000000000000'.toLowerCase(),
   },
 };
