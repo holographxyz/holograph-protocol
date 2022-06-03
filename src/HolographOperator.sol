@@ -55,12 +55,13 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
 
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
-    (address holograph, address registry, address bridge) = abi.decode(data, (address, address, address));
+    (address bridge, address holograph, address registry) = abi.decode(data, (address, address, address));
     assembly {
       // sstore(precomputeslot("eip1967.Holograph.Bridge.deadAddress"), 0x000000000000000000000000000000000000000000000000000000000000dead)
       sstore(precomputeslot("eip1967.Holograph.Bridge.admin"), origin())
-      sstore(precomputeslot("eip1967.Holograph.Bridge.holograph"), holograph)
+
       sstore(precomputeslot("eip1967.Holograph.Bridge.bridge"), bridge)
+      sstore(precomputeslot("eip1967.Holograph.Bridge.holograph"), holograph)
       sstore(precomputeslot("eip1967.Holograph.Bridge.registry"), registry)
     }
     _setInitialized();

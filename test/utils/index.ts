@@ -12,6 +12,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
   Admin,
   CxipERC721,
+  CxipERC721Proxy,
   ERC20Mock,
   Holograph,
   HolographBridge,
@@ -26,6 +27,8 @@ import {
   HolographOperatorProxy,
   HolographRegistry,
   HolographRegistryProxy,
+  HolographTreasury,
+  HolographTreasuryProxy,
   HToken,
   Interfaces,
   MockERC721Receiver,
@@ -85,6 +88,7 @@ export interface PreTest {
   lzEndpoint: SignerWithAddress;
   admin: Admin;
   cxipErc721: CxipERC721;
+  cxipErc721Proxy: CxipERC721Proxy;
   erc20Mock: ERC20Mock;
   holograph: Holograph;
   holographBridge: HolographBridge;
@@ -99,6 +103,8 @@ export interface PreTest {
   holographOperatorProxy: HolographOperatorProxy;
   holographRegistry: HolographRegistry;
   holographRegistryProxy: HolographRegistryProxy;
+  holographTreasury: HolographTreasury;
+  holographTreasuryProxy: HolographTreasuryProxy;
   hToken: HToken;
   interfaces: Interfaces;
   mockErc721Receiver: MockERC721Receiver;
@@ -112,6 +118,7 @@ export interface PreTest {
   factory: HolographFactory;
   operator: HolographOperator;
   registry: HolographRegistry;
+  treasury: HolographTreasury;
   hTokenHolographer: Holographer;
   hTokenEnforcer: HolographERC20;
   sampleErc20Holographer: Holographer;
@@ -150,21 +157,25 @@ export default async function (l2?: boolean): Promise<PreTest> {
   const chainId2: BytesLike = '0x' + network2.holographId.toString(16).padStart(8, '0');
   const fixtures: string[] = [
     'HolographGenesis',
-    'Interfaces',
-    'HolographRegistry',
-    'HolographRegistryProxy',
-    'HolographOperator',
-    'HolographOperatorProxy',
-    'SecureStorage',
-    'SecureStorageProxy',
-    'HolographFactory',
-    'HolographFactoryProxy',
+    'Holograph',
     'HolographBridge',
     'HolographBridgeProxy',
-    'Holograph',
+    'HolographFactory',
+    'HolographFactoryProxy',
+    'HolographOperator',
+    'HolographOperatorProxy',
+    'HolographRegistry',
+    'HolographRegistryProxy',
+    'HolographTreasury',
+    'HolographTreasuryProxy',
+    'Interfaces',
     'PA1D',
+    'SecureStorage',
+    'SecureStorageProxy',
+
     'HolographERC20',
     'HolographERC721',
+    'CxipERC721',
     'LayerZero',
     'ERC20Mock',
     'MockERC721Receiver',
@@ -172,7 +183,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
     'hToken',
     'SampleERC20',
     'SampleERC721',
-    'CxipERC721',
+    'CxipERC721Proxy',
   ];
 
   let loop = animatedLoader('\x1b[2m' + ' loading/deploying relevant contracts');
@@ -198,6 +209,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
 
   let admin: Admin;
   let cxipErc721: CxipERC721;
+  let cxipErc721Proxy: CxipERC721Proxy;
   let erc20Mock: ERC20Mock;
   let holograph: Holograph;
   let holographBridge: HolographBridge;
@@ -212,6 +224,8 @@ export default async function (l2?: boolean): Promise<PreTest> {
   let holographOperatorProxy: HolographOperatorProxy;
   let holographRegistry: HolographRegistry;
   let holographRegistryProxy: HolographRegistryProxy;
+  let holographTreasury: HolographTreasury;
+  let holographTreasuryProxy: HolographTreasuryProxy;
   let hToken: HToken;
   let interfaces: Interfaces;
   let mockErc721Receiver: MockERC721Receiver;
@@ -222,6 +236,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
   let secureStorage: SecureStorage;
   let secureStorageProxy: SecureStorageProxy;
 
+  let treasury: HolographTreasury;
   let registry: HolographRegistry;
   let operator: HolographOperator;
   let factory: HolographFactory;
@@ -243,6 +258,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
 
   admin = (await hre.ethers.getContractOrNull('Admin')) as Admin;
   cxipErc721 = (await hre.ethers.getContractOrNull('CxipERC721')) as CxipERC721;
+  cxipErc721Proxy = (await hre.ethers.getContractOrNull('CxipERC721Proxy')) as CxipERC721Proxy;
   erc20Mock = (await hre.ethers.getContract('ERC20Mock')) as ERC20Mock;
   holograph = (await hre.ethers.getContract('Holograph')) as Holograph;
   holographBridge = (await hre.ethers.getContract('HolographBridge')) as HolographBridge;
@@ -257,6 +273,8 @@ export default async function (l2?: boolean): Promise<PreTest> {
   holographOperatorProxy = (await hre.ethers.getContract('HolographOperatorProxy')) as HolographOperatorProxy;
   holographRegistry = (await hre.ethers.getContract('HolographRegistry')) as HolographRegistry;
   holographRegistryProxy = (await hre.ethers.getContract('HolographRegistryProxy')) as HolographRegistryProxy;
+  holographTreasury = (await hre.ethers.getContract('HolographTreasury')) as HolographTreasury;
+  holographTreasuryProxy = (await hre.ethers.getContract('HolographTreasuryProxy')) as HolographTreasuryProxy;
   // hToken = (await hre.ethers.getContractOrNull('hToken')) as HToken;
   interfaces = (await hre.ethers.getContractOrNull('Interfaces')) as Interfaces;
   mockErc721Receiver = (await hre.ethers.getContract('MockERC721Receiver')) as MockERC721Receiver;
@@ -271,6 +289,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
   factory = holographFactory.attach(await holograph.getFactory()) as HolographFactory;
   operator = holographOperator.attach(await holograph.getOperator()) as HolographOperator;
   registry = holographRegistry.attach(await holograph.getRegistry()) as HolographRegistry;
+  treasury = holographTreasury.attach(await holograph.getTreasury()) as HolographTreasury;
 
   holographer = (await hre.ethers.getContractAt('Holographer', await registry.getHToken(chainId))) as Holographer;
 
@@ -350,12 +369,19 @@ export default async function (l2?: boolean): Promise<PreTest> {
   cxipErc721Hash = await generateErc721Config(
     network,
     deployer.address,
-    'CxipERC721',
+    'CxipERC721Proxy',
     'CXIP ERC721 Collection (' + hre.networkName + ')',
     'CXIP',
     1000,
     ConfigureEvents([HolographERC721Event.bridgeIn, HolographERC721Event.bridgeOut, HolographERC721Event.afterBurn]),
-    generateInitCode(['address'], [deployer.address]),
+    generateInitCode(
+      ['bytes32', 'address', 'bytes'],
+      [
+        '0x' + web3.utils.asciiToHex('CxipERC721').substring(2).padStart(64, '0'),
+        registry.address,
+        generateInitCode(['address'], [deployer.address]),
+      ]
+    ),
     '0x' + '00'.repeat(32)
   );
   cxipErc721Holographer = (await hre.ethers.getContractAt(
@@ -370,6 +396,10 @@ export default async function (l2?: boolean): Promise<PreTest> {
     'CxipERC721',
     await cxipErc721Holographer.getSourceContract()
   )) as CxipERC721;
+  cxipErc721Proxy = (await hre.ethers.getContractAt(
+    'CxipERC721Proxy',
+    await cxipErc721Holographer.getSourceContract()
+  )) as CxipERC721Proxy;
 
   global.__companionNetwork = false;
 
@@ -396,6 +426,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
     lzEndpoint,
     admin,
     cxipErc721,
+    cxipErc721Proxy,
     erc20Mock,
     holograph,
     holographBridge,
@@ -410,6 +441,8 @@ export default async function (l2?: boolean): Promise<PreTest> {
     holographOperatorProxy,
     holographRegistry,
     holographRegistryProxy,
+    holographTreasury,
+    holographTreasuryProxy,
     hToken,
     interfaces,
     mockErc721Receiver,
@@ -423,6 +456,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
     factory,
     operator,
     registry,
+    treasury,
     hTokenHolographer,
     hTokenEnforcer,
     sampleErc20Holographer,

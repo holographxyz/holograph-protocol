@@ -144,6 +144,19 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "getTreasury",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "treasury",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "bytes",
@@ -262,6 +275,19 @@
       }
     ],
     "name": "setSecureStorage",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "treasury",
+        "type": "address"
+      }
+    ],
+    "name": "setTreasury",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

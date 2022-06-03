@@ -136,17 +136,24 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   let cxipErc721Config = await generateErc721Config(
     network,
     deployer.address,
-    'CxipERC721',
+    'CxipERC721Proxy',
     'CXIP ERC721 Collection (' + hre.networkName + ')',
     'CXIP',
     1000,
     ConfigureEvents([HolographERC721Event.bridgeIn, HolographERC721Event.bridgeOut, HolographERC721Event.afterBurn]),
-    generateInitCode(['address'], [deployer.address]),
+    generateInitCode(
+      ['bytes32', 'address', 'bytes'],
+      [
+        '0x' + web3.utils.asciiToHex('CxipERC721').substring(2).padStart(64, '0'),
+        holographRegistry.address,
+        generateInitCode(['address'], [deployer.address]),
+      ]
+    ),
     '0x' + '00'.repeat(32)
   );
   let cxipErc721Address = await holographRegistry.getHolographedHashAddress(cxipErc721Config.erc721ConfigHash);
   if (cxipErc721Address == zeroAddress()) {
-    hre.deployments.log('need to deploy "CxipERC721" for chain:', chainId);
+    hre.deployments.log('need to deploy "CxipERC721Proxy" for chain:', chainId);
     const sig = await deployer.signMessage(cxipErc721Config.erc721ConfigHashBytes);
     const signature: Signature = StrictECDSA({
       r: '0x' + sig.substring(2, 66),
@@ -167,16 +174,16 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     }
     cxipErc721Address = deployResult.events[1].args[0];
     hre.deployments.log(
-      'deployed "CxipERC721" at:',
+      'deployed "CxipERC721Proxy" at:',
       await holographRegistry.getHolographedHashAddress(cxipErc721Config.erc721ConfigHash)
     );
   } else {
-    hre.deployments.log('reusing "CxipERC721" at:', cxipErc721Address);
+    hre.deployments.log('reusing "CxipERC721Proxy" at:', cxipErc721Address);
   }
 };
 
 export default func;
-func.tags = ['SampleERC20', 'SampleERC721', 'CxipERC721'];
+func.tags = ['SampleERC20', 'SampleERC721', 'CxipERC721Proxy'];
 func.dependencies = [
   'HolographGenesis',
   'DeploySources',

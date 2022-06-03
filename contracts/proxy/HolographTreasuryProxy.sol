@@ -103,152 +103,59 @@
 
 pragma solidity 0.8.13;
 
-import "./abstract/Admin.sol";
-import "./abstract/Initializable.sol";
+import "../abstract/Admin.sol";
+import "../abstract/Initializable.sol";
 
-import "./interface/IHolograph.sol";
-import "./interface/IInitializable.sol";
+import "../interface/IInitializable.sol";
 
-import "./library/ChainId.sol";
-
-/**
- * @dev This smart contract stores the different source codes that have been prepared and can be used for bridging.
- * @dev We will store here the layer 1 for ERC721 and ERC1155 smart contracts.
- * @dev This way it can be super easy to upgrade/update the source code once, and have all smart contracts automatically updated.
- */
-contract HolographRegistry is Admin, Initializable {
-  /**
-   * @dev A list of smart contracts that are guaranteed secure and holographable.
-   */
-  mapping(address => bool) private _holographedContracts;
-
-  /**
-   * @dev A list of hashes and the mapped out contract addresses.
-   */
-  mapping(bytes32 => address) private _holographedContractsHashMap;
-
-  /**
-   * @dev Storage slot for saving contract type to contract address references.
-   */
-  mapping(bytes32 => address) private _contractTypeAddresses;
-
-  /**
-   * @dev Reserved type addresses for Admin.
-   *  Note: this is used for defining default contracts.
-   */
-  mapping(bytes32 => bool) private _reservedTypes;
-
-  /**
-   * @dev Mapping of all hTokens available for the different EVM chains
-   */
-  mapping(uint32 => address) private _hTokens;
-
-  /**
-   * @dev Constructor is left empty and only the admin address is set.
-   */
+contract HolographTreasuryProxy is Admin, Initializable {
   constructor() {}
 
-  /**
-   * @dev An array of initially reserved contract types for admin only to set.
-   */
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
-    (address holograph, bytes32[] memory reservedTypes) = abi.decode(data, (address, bytes32[]));
+    (address treasury, bytes memory initCode) = abi.decode(data, (address, bytes));
     assembly {
+      sstore(0xc8f5846d0f0d68cef76d4d10d7d189845e41b44d1dbdc208ed0f8961f993af5f, treasury)
       sstore(0x5705f5753aa4f617eef2cae1dada3d3355e9387b04d19191f09b545e684ca50d, origin())
-
-      sstore(0x1eee493315beeac80829afd0aaa340f3821cabe68571a2743478e81638a3d94d, holograph)
     }
-    for (uint256 i = 0; i < reservedTypes.length; i++) {
-      _reservedTypes[reservedTypes[i]] = true;
-    }
+    (bool success, bytes memory returnData) = treasury.delegatecall(abi.encodeWithSignature("init(bytes)", initCode));
+    bytes4 selector = abi.decode(returnData, (bytes4));
+    require(success && selector == IInitializable.init.selector, "initialization failed");
     _setInitialized();
     return IInitializable.init.selector;
   }
 
-  /**
-   * @dev Allows to reference a deployed smart contract, and use it's code as reference inside of Holographers.
-   */
-  function referenceContractTypeAddress(address contractAddress) external returns (bytes32) {
-    bytes32 contractType;
+  function getTreasury() external view returns (address treasury) {
+    // The slot hash has been precomputed for gas optimization
+    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.treasury')) - 1);
     assembly {
-      contractType := extcodehash(contractAddress)
+      treasury := sload(0xc8f5846d0f0d68cef76d4d10d7d189845e41b44d1dbdc208ed0f8961f993af5f)
     }
-    require(
-      (contractType != 0x0 && contractType != 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470),
-      "HOLOGRAPH: empty contract"
-    );
-    require(_contractTypeAddresses[contractType] == address(0), "HOLOGRAPH: contract already set");
-    require(!_reservedTypes[contractType], "HOLOGRAPH: reserved address type");
-    _contractTypeAddresses[contractType] = contractAddress;
-    return contractType;
   }
 
-  /**
-   * @dev Allows Holograph Factory to register a deployed contract, referenced with deployment hash.
-   */
-  function factoryDeployedHash(bytes32 hash, address contractAddress) external {
-    address holograph;
+  function setTreasury(address treasury) external onlyAdmin {
+    // The slot hash has been precomputed for gas optimization
+    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.treasury')) - 1);
     assembly {
-      holograph := sload(0x1eee493315beeac80829afd0aaa340f3821cabe68571a2743478e81638a3d94d)
-    }
-    require(msg.sender == IHolograph(holograph).getFactory(), "HOLOGRAPH: factory only function");
-    _holographedContractsHashMap[hash] = contractAddress;
-    _holographedContracts[contractAddress] = true;
-  }
-
-  /**
-   * @dev Sets the contract address for a contract type.
-   */
-  function setContractTypeAddress(bytes32 contractType, address contractAddress) external onlyAdmin {
-    // For now we leave overriding as possible. need to think this through.
-    //require(_contractTypeAddresses[contractType] == address(0), "HOLOGRAPH: contract already set");
-    require(_reservedTypes[contractType], "HOLOGRAPH: not reserved type");
-    _contractTypeAddresses[contractType] = contractAddress;
-  }
-
-  /**
-   * @dev Sets the hToken address for a specific chain id.
-   */
-  function setHToken(uint32 chainId, address hToken) external onlyAdmin {
-    _hTokens[chainId] = hToken;
-  }
-
-  /**
-   * @dev Allows admin to update or toggle reserved types.
-   */
-  function updateReservedContractTypes(bytes32[] calldata hashes, bool[] calldata reserved) external onlyAdmin {
-    for (uint256 i = 0; i < hashes.length; i++) {
-      _reservedTypes[hashes[i]] = reserved[i];
+      sstore(0xc8f5846d0f0d68cef76d4d10d7d189845e41b44d1dbdc208ed0f8961f993af5f, treasury)
     }
   }
 
-  /**
-   * @dev Returns the contract address for a contract type.
-   */
-  function getContractTypeAddress(bytes32 contractType) external view returns (address) {
-    return _contractTypeAddresses[contractType];
-  }
+  receive() external payable {}
 
-  /**
-   * @dev Returns the address for a holographed hash
-   */
-  function getHolographedHashAddress(bytes32 hash) external view returns (address) {
-    return _holographedContractsHashMap[hash];
-  }
-
-  /**
-   * @dev Returns the hToken address for a given chain id.
-   */
-  function getHToken(uint32 chainId) external view returns (address) {
-    return _hTokens[chainId];
-  }
-
-  function isHolographedContract(address smartContract) external view returns (bool) {
-    return _holographedContracts[smartContract];
-  }
-
-  function isHolographedHashDeployed(bytes32 hash) external view returns (bool) {
-    return _holographedContractsHashMap[hash] != address(0);
+  fallback() external payable {
+    assembly {
+      let treasury := sload(0xc8f5846d0f0d68cef76d4d10d7d189845e41b44d1dbdc208ed0f8961f993af5f)
+      calldatacopy(0, 0, calldatasize())
+      let result := delegatecall(gas(), treasury, 0, calldatasize(), 0, 0)
+      returndatacopy(0, 0, returndatasize())
+      switch result
+      case 0 {
+        revert(0, returndatasize())
+      }
+      default {
+        return(0, returndatasize())
+      }
+    }
   }
 }

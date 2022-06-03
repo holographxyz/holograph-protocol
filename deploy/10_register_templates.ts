@@ -24,6 +24,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
 
   const erc20 = await hre.ethers.getContract('HolographERC20');
   const erc721 = await hre.ethers.getContract('HolographERC721');
+  const cxipErc721 = await hre.ethers.getContract('CxipERC721');
   const pa1d = await hre.ethers.getContract('PA1D');
 
   const erc721Hash = '0x' + web3.utils.asciiToHex('HolographERC721').substring(2).padStart(64, '0');
@@ -38,6 +39,20 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     hre.deployments.log(`Registered erc721 to: ${await holographRegistry.getContractTypeAddress(erc721Hash)}`);
   } else {
     hre.deployments.log('erc721 is already registered');
+  }
+
+  const cxipErc721Hash = '0x' + web3.utils.asciiToHex('CxipERC721').substring(2).padStart(64, '0');
+  if ((await holographRegistry.getContractTypeAddress(cxipErc721Hash)) != cxipErc721.address) {
+    const cxipErc721Tx = await holographRegistry
+      .setContractTypeAddress(cxipErc721Hash, cxipErc721.address, {
+        nonce: await hre.ethers.provider.getTransactionCount(deployer),
+      })
+      .catch(error);
+    hre.deployments.log('Transaction hash:', cxipErc721Tx.hash);
+    await cxipErc721Tx.wait();
+    hre.deployments.log(`Registered cxipErc721 to: ${await holographRegistry.getContractTypeAddress(cxipErc721Hash)}`);
+  } else {
+    hre.deployments.log('cxipErc721 is already registered');
   }
 
   const erc20Hash = '0x' + web3.utils.asciiToHex('HolographERC20').substring(2).padStart(64, '0');

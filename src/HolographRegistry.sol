@@ -55,6 +55,7 @@ contract HolographRegistry is Admin, Initializable {
     (address holograph, bytes32[] memory reservedTypes) = abi.decode(data, (address, bytes32[]));
     assembly {
       sstore(precomputeslot("eip1967.Holograph.Bridge.admin"), origin())
+
       sstore(precomputeslot("eip1967.Holograph.Bridge.holograph"), holograph)
     }
     for (uint256 i = 0; i < reservedTypes.length; i++) {

@@ -16,6 +16,7 @@ import { HolographERC721Event, ConfigureEvents } from '../scripts/utils/events';
 import {
   Admin,
   CxipERC721,
+  CxipERC721Proxy,
   ERC20Mock,
   Holograph,
   HolographBridge,

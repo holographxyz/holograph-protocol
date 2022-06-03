@@ -37,6 +37,7 @@ contract HolographFactory is Admin, Initializable {
     (address holograph, address registry, address secureStorage) = abi.decode(data, (address, address, address));
     assembly {
       sstore(precomputeslot("eip1967.Holograph.Bridge.admin"), origin())
+
       sstore(precomputeslot("eip1967.Holograph.Bridge.holograph"), holograph)
       sstore(precomputeslot("eip1967.Holograph.Bridge.registry"), registry)
       sstore(precomputeslot("eip1967.Holograph.Bridge.secureStorage"), secureStorage)

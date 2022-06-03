@@ -6,6 +6,7 @@ import {
   hreSplit,
   genesisDeployHelper,
   generateInitCode,
+  zeroAddress,
 } from '../scripts/utils/helpers';
 import { HolographERC721Event, ConfigureEvents } from '../scripts/utils/events';
 
@@ -33,8 +34,11 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       ]
     )
   );
+
+  // CxipERC721
+  let cxipErc721 = await genesisDeployHelper(hre, salt, 'CxipERC721', generateInitCode(['address'], [zeroAddress()]));
 };
 
 export default func;
-func.tags = ['HolographERC721', 'DeployERC721'];
+func.tags = ['HolographERC721', 'CxipERC721', 'DeployERC721'];
 func.dependencies = ['HolographGenesis', 'DeploySources'];

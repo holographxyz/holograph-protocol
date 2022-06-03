@@ -25,6 +25,7 @@ import {
 import {
   Admin,
   CxipERC721,
+  CxipERC721Proxy,
   ERC20Mock,
   Holograph,
   HolographBridge,
@@ -67,7 +68,7 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
   describe('Validate cross-chain data', async function () {
     describe('CxipERC721', async function () {
       it('contract addresses should not match', async function () {
-        expect(l1.cxipErc721.address).to.not.equal(l2.cxipErc721.address);
+        expect(l1.cxipErc721Proxy.address).to.not.equal(l2.cxipErc721Proxy.address);
       });
     });
 
@@ -152,6 +153,18 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
     describe('HolographRegistryProxy', async function () {
       it('contract addresses should match', async function () {
         expect(l1.holographRegistryProxy.address).to.equal(l2.holographRegistryProxy.address);
+      });
+    });
+
+    describe('HolographTreasury', async function () {
+      it('contract addresses should match', async function () {
+        expect(l1.holographTreasury.address).to.equal(l2.holographTreasury.address);
+      });
+    });
+
+    describe('HolographTreasuryProxy', async function () {
+      it('contract addresses should match', async function () {
+        expect(l1.holographTreasuryProxy.address).to.equal(l2.holographTreasuryProxy.address);
       });
     });
 
@@ -484,7 +497,7 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
         let { erc721Config, erc721ConfigHash, erc721ConfigHashBytes } = await generateErc721Config(
           l1.network,
           l1.deployer.address,
-          'CxipERC721',
+          'CxipERC721Proxy',
           'CXIP ERC721 Collection (' + l1.hre.networkName + ')',
           'CXIP',
           1000,
@@ -493,7 +506,14 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
             HolographERC721Event.bridgeOut,
             HolographERC721Event.afterBurn,
           ]),
-          generateInitCode(['address'], [l1.deployer.address /*owner*/]),
+          generateInitCode(
+            ['bytes32', 'address', 'bytes'],
+            [
+              '0x' + l1.web3.utils.asciiToHex('CxipERC721').substring(2).padStart(64, '0'),
+              l1.registry.address,
+              generateInitCode(['address'], [l1.deployer.address]),
+            ]
+          ),
           '0x' + '00'.repeat(32)
         );
 
@@ -519,7 +539,7 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
         let { erc721Config, erc721ConfigHash, erc721ConfigHashBytes } = await generateErc721Config(
           l2.network,
           l2.deployer.address,
-          'CxipERC721',
+          'CxipERC721Proxy',
           'CXIP ERC721 Collection (' + l2.hre.networkName + ')',
           'CXIP',
           1000,
@@ -528,7 +548,14 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
             HolographERC721Event.bridgeOut,
             HolographERC721Event.afterBurn,
           ]),
-          generateInitCode(['address'], [l2.deployer.address /*owner*/]),
+          generateInitCode(
+            ['bytes32', 'address', 'bytes'],
+            [
+              '0x' + l2.web3.utils.asciiToHex('CxipERC721').substring(2).padStart(64, '0'),
+              l2.registry.address,
+              generateInitCode(['address'], [l2.deployer.address]),
+            ]
+          ),
           '0x' + '00'.repeat(32)
         );
 
