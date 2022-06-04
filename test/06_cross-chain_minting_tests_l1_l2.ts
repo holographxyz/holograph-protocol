@@ -62,7 +62,7 @@ const getGasUsage = async function (
   let transaction = await hre.ethers.provider.getTransactionReceipt(transactionHash);
   let gasUsed: BigNumber = transaction.cumulativeGasUsed;
   if (verbose) {
-    process.stdout.write('\n' + '          ' + description + ' gas used: ' + gasUsed.toString() + '\n');
+    process.stdout.write('\n          ' + description + ' gas used: ' + gasUsed.toString() + '\n');
   }
   return gasUsed;
 };

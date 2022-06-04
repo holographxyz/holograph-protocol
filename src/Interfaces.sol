@@ -217,6 +217,16 @@ contract Interfaces is Admin, Initializable {
     _supportedInterfaces[interfaceType][interfaceId] = supported;
   }
 
+  function updateInterfaceBatch(
+    InterfaceType interfaceType,
+    bytes4[] calldata interfaceIds,
+    bool supported
+  ) external onlyAdmin {
+    for (uint256 i = 0; i < interfaceIds.length; i++) {
+      _supportedInterfaces[interfaceType][interfaceIds[i]] = supported;
+    }
+  }
+
   receive() external payable {
     revert();
   }
