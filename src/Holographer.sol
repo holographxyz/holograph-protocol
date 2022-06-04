@@ -57,14 +57,8 @@ contract Holographer is Admin, Initializable {
     address holograph;
     bytes32 contractType;
     assembly {
-      holograph := sload(
-        /* slot */
-        precomputeslot("eip1967.Holograph.Bridge.holograph")
-      )
-      contractType := sload(
-        /* slot */
-        precomputeslot("eip1967.Holograph.Bridge.contractType")
-      )
+      holograph := sload(precomputeslot("eip1967.Holograph.Bridge.holograph"))
+      contractType := sload(precomputeslot("eip1967.Holograph.Bridge.contractType"))
     }
     return payable(IHolographRegistry(IHolograph(holograph).getRegistry()).getContractTypeAddress(contractType));
   }
@@ -74,10 +68,7 @@ contract Holographer is Admin, Initializable {
    */
   function getOriginChain() public view returns (uint32 originChain) {
     assembly {
-      originChain := sload(
-        /* slot */
-        precomputeslot("eip1967.Holograph.Bridge.originChain")
-      )
+      originChain := sload(precomputeslot("eip1967.Holograph.Bridge.originChain"))
     }
   }
 
@@ -86,10 +77,7 @@ contract Holographer is Admin, Initializable {
    */
   function getSecureStorage() public view returns (address secureStorage) {
     assembly {
-      secureStorage := sload(
-        /* slot */
-        precomputeslot("eip1967.Holograph.Bridge.secureStorage")
-      )
+      secureStorage := sload(precomputeslot("eip1967.Holograph.Bridge.secureStorage"))
     }
   }
 
@@ -98,10 +86,7 @@ contract Holographer is Admin, Initializable {
    */
   function getSourceContract() public view returns (address payable sourceContract) {
     assembly {
-      sourceContract := sload(
-        /* slot */
-        precomputeslot("eip1967.Holograph.Bridge.sourceContract")
-      )
+      sourceContract := sload(precomputeslot("eip1967.Holograph.Bridge.sourceContract"))
     }
   }
 

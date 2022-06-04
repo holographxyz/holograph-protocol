@@ -158,14 +158,8 @@ contract Holographer is Admin, Initializable {
     address holograph;
     bytes32 contractType;
     assembly {
-      holograph := sload(
-        /* slot */
-        0x1eee493315beeac80829afd0aaa340f3821cabe68571a2743478e81638a3d94d
-      )
-      contractType := sload(
-        /* slot */
-        0x927d33f74b40d20ebbbc7fbed0f01deacf3e0b589b248a5cc2fc82aa94928913
-      )
+      holograph := sload(0x1eee493315beeac80829afd0aaa340f3821cabe68571a2743478e81638a3d94d)
+      contractType := sload(0x927d33f74b40d20ebbbc7fbed0f01deacf3e0b589b248a5cc2fc82aa94928913)
     }
     return payable(IHolographRegistry(IHolograph(holograph).getRegistry()).getContractTypeAddress(contractType));
   }
@@ -175,10 +169,7 @@ contract Holographer is Admin, Initializable {
    */
   function getOriginChain() public view returns (uint32 originChain) {
     assembly {
-      originChain := sload(
-        /* slot */
-        0x2378c1f8aa4ffd1a2b352b1ec4b9fe37cee7d2bb3fa1a7e6aeaeb422f15defdb
-      )
+      originChain := sload(0x2378c1f8aa4ffd1a2b352b1ec4b9fe37cee7d2bb3fa1a7e6aeaeb422f15defdb)
     }
   }
 
@@ -187,10 +178,7 @@ contract Holographer is Admin, Initializable {
    */
   function getSecureStorage() public view returns (address secureStorage) {
     assembly {
-      secureStorage := sload(
-        /* slot */
-        0xd26498b26a05274577b8ac2e3250418da53433f3ff82027428ee3c530702cdec
-      )
+      secureStorage := sload(0xd26498b26a05274577b8ac2e3250418da53433f3ff82027428ee3c530702cdec)
     }
   }
 
@@ -199,10 +187,7 @@ contract Holographer is Admin, Initializable {
    */
   function getSourceContract() public view returns (address payable sourceContract) {
     assembly {
-      sourceContract := sload(
-        /* slot */
-        0xee63e41dd03b4d304382a6596ec5f4a6eb601d3640835d27fca1d0be62955bb5
-      )
+      sourceContract := sload(0xee63e41dd03b4d304382a6596ec5f4a6eb601d3640835d27fca1d0be62955bb5)
     }
   }
 

@@ -16,6 +16,7 @@ import {
   generateInitCode,
   generateErc20Config,
   generateErc721Config,
+  LeanHardhatRuntimeEnvironment,
 } from '../scripts/utils/helpers';
 import {
   HolographERC20Event,
@@ -51,6 +52,21 @@ import {
 } from '../typechain-types';
 import { DeploymentConfigStruct } from '../typechain-types/HolographFactory';
 
+const getGasUsage = async function (
+  hre: LeanHardhatRuntimeEnvironment,
+  description: string = '',
+  verbose: boolean = false
+): Promise<BigNumber> {
+  let blockNumber: number = await hre.ethers.provider.getBlockNumber();
+  let transactionHash = (await hre.ethers.provider.getBlockWithTransactions(blockNumber)).transactions[0].hash;
+  let transaction = await hre.ethers.provider.getTransactionReceipt(transactionHash);
+  let gasUsed: BigNumber = transaction.cumulativeGasUsed;
+  if (verbose) {
+    process.stdout.write('\n' + '          ' + description + ' gas used: ' + gasUsed.toString() + '\n');
+  }
+  return gasUsed;
+};
+
 describe('Testing cross-chain minting (L1 & L2)', async function () {
   let l1: PreTest;
   let l2: PreTest;
@@ -79,6 +95,9 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
   ];
   // let l1ContractName = contractName + '(' + l1.hre.networkName + ')';
   // let l2ContractName = contractName + '(' + l2.hre.networkName + ')';
+  let gasUsage: {
+    [key: string]: BigNumber;
+  } = {};
 
   before(async function () {
     l1 = await setup();
@@ -93,6 +112,11 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
     thirdNFTl2 = BigNumber.from('0x' + l2.network.holographId.toString(16).padStart(8, '0') + '00'.repeat(28)).add(
       thirdNFTl1
     );
+
+    gasUsage['#3 bridge from l1'] = BigNumber.from(0);
+    gasUsage['#3 bridge from l2'] = BigNumber.from(0);
+    gasUsage['#1 mint on l1'] = BigNumber.from(0);
+    gasUsage['#1 mint on l2'] = BigNumber.from(0);
 
     payloadThirdNFTl1 =
       functionHash('erc721in(uint32,address,address,address,uint256,bytes)') +
@@ -739,6 +763,8 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
         )
           .to.emit(l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
           .withArgs(zeroAddress(), l1.deployer.address, firstNFTl1);
+
+        gasUsage['#1 mint on l1'] = gasUsage['#1 mint on l1'].add(await getGasUsage(l1.hre));
       });
 
       it('l1 should mint token #1 not as #1 on l2', async function () {
@@ -747,6 +773,8 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
         )
           .to.emit(l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
           .withArgs(zeroAddress(), l1.deployer.address, firstNFTl2);
+
+        gasUsage['#1 mint on l2'] = gasUsage['#1 mint on l2'].add(await getGasUsage(l1.hre));
       });
 
       it('mint tokens #2 and #3 on l1 and l2', async function () {
@@ -796,6 +824,8 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           .to.emit(l1.operator, 'LzEvent')
           .withArgs(ChainId.hlg2lz(l2.network.holographId), l1.operator.address.toLowerCase(), payload);
 
+        gasUsage['#3 bridge from l1'] = gasUsage['#3 bridge from l1'].add(await getGasUsage(l1.hre));
+
         await expect(
           l2.operator
             .connect(l2.lzEndpoint)
@@ -803,6 +833,8 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
         )
           .to.emit(l2.operator, 'AvailableJob')
           .withArgs(payload);
+
+        gasUsage['#3 bridge from l1'] = gasUsage['#3 bridge from l1'].add(await getGasUsage(l2.hre));
 
         await expect(
           l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).ownerOf(thirdNFTl1)
@@ -824,6 +856,8 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           .to.emit(l2.operator, 'LzEvent')
           .withArgs(ChainId.hlg2lz(l1.network.holographId), l2.operator.address.toLowerCase(), payload);
 
+        gasUsage['#3 bridge from l2'] = gasUsage['#3 bridge from l2'].add(await getGasUsage(l2.hre));
+
         await expect(
           l1.operator
             .connect(l1.lzEndpoint)
@@ -831,6 +865,8 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
         )
           .to.emit(l1.operator, 'AvailableJob')
           .withArgs(payload);
+
+        gasUsage['#3 bridge from l2'] = gasUsage['#3 bridge from l2'].add(await getGasUsage(l1.hre));
 
         await expect(
           l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).ownerOf(thirdNFTl2)
@@ -842,7 +878,9 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
 
         await expect(l2.operator.executeJob(payload))
           .to.emit(l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
-          .withArgs(l2.bridge.address, l2.deployer.address, thirdNFTl1.toHexString());
+          .withArgs(zeroAddress(), l2.deployer.address, thirdNFTl1.toHexString());
+
+        gasUsage['#3 bridge from l1'] = gasUsage['#3 bridge from l1'].add(await getGasUsage(l2.hre));
 
         expect(await l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).ownerOf(thirdNFTl1)).to.equal(
           l2.deployer.address
@@ -854,7 +892,9 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
 
         await expect(l1.operator.executeJob(payload))
           .to.emit(l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
-          .withArgs(l1.bridge.address, l1.deployer.address, thirdNFTl2.toHexString());
+          .withArgs(zeroAddress(), l1.deployer.address, thirdNFTl2.toHexString());
+
+        gasUsage['#3 bridge from l2'] = gasUsage['#3 bridge from l2'].add(await getGasUsage(l1.hre));
 
         expect(await l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).ownerOf(thirdNFTl2)).to.equal(
           l1.deployer.address
@@ -899,6 +939,52 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
         let payload: BytesLike = payloadThirdNFTl2;
 
         await expect(l1.operator.executeJob(payload)).to.be.revertedWith('HOLOGRAPH: invalid job');
+      });
+    });
+
+    describe('Get gas calculations', async function () {
+      it('SampleERC721 #1 mint on l1', async function () {
+        process.stdout.write('          #1 mint on l1 gas used: ' + gasUsage['#1 mint on l1'].toString() + '\n');
+        assert(!gasUsage['#1 mint on l1'].isZero(), 'zero sum returned');
+      });
+
+      it('SampleERC721 #1 mint on l2', async function () {
+        process.stdout.write('          #1 mint on l2 gas used: ' + gasUsage['#1 mint on l2'].toString() + '\n');
+        assert(!gasUsage['#1 mint on l2'].isZero(), 'zero sum returned');
+      });
+
+      it('SampleERC721 #1 transfer on l1', async function () {
+        await expect(
+          l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).transfer(l1.wallet1.address, firstNFTl1)
+        )
+          .to.emit(l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
+          .withArgs(l1.deployer.address, l1.wallet1.address, firstNFTl1);
+
+        process.stdout.write('          #1 transfer on l1 gas used: ' + (await getGasUsage(l1.hre)).toString() + '\n');
+      });
+
+      it('SampleERC721 #1 transfer on l2', async function () {
+        await expect(
+          l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).transfer(l2.wallet1.address, firstNFTl2)
+        )
+          .to.emit(l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
+          .withArgs(l2.deployer.address, l2.wallet1.address, firstNFTl2);
+
+        process.stdout.write('          #1 transfer on l2 gas used: ' + (await getGasUsage(l2.hre)).toString() + '\n');
+      });
+
+      it('SampleERC721 #3 bridge from l1', async function () {
+        process.stdout.write(
+          '          #3 bridge from l1 gas used: ' + gasUsage['#3 bridge from l1'].toString() + '\n'
+        );
+        assert(!gasUsage['#3 bridge from l1'].isZero(), 'zero sum returned');
+      });
+
+      it('SampleERC721 #3 bridge from l2', async function () {
+        process.stdout.write(
+          '          #3 bridge from l2 gas used: ' + gasUsage['#3 bridge from l2'].toString() + '\n'
+        );
+        assert(!gasUsage['#3 bridge from l2'].isZero(), 'zero sum returned');
       });
     });
   });

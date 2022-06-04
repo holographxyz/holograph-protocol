@@ -120,6 +120,7 @@ import "./interface/ERC721Enumerable.sol";
 import "./interface/ERC721Metadata.sol";
 import "./interface/ERC721TokenReceiver.sol";
 import "./interface/IInitializable.sol";
+import "./interface/IPA1D.sol";
 
 import "./library/Base64.sol";
 import "./library/Strings.sol";
@@ -244,6 +245,30 @@ contract Interfaces is Admin, Initializable {
 
     // CollectionURI
     _supportedInterfaces[InterfaceType.ERC721][CollectionURI.contractURI.selector] = true;
+
+    // PA1D
+
+    _supportedInterfaces[InterfaceType.PA1D][IPA1D.initPA1D.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][IPA1D.configurePayouts.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][IPA1D.getPayoutInfo.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][IPA1D.getEthPayout.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][IPA1D.getTokenPayout.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][IPA1D.getTokensPayout.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][IPA1D.supportsInterface.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][IPA1D.setRoyalties.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][IPA1D.royaltyInfo.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][IPA1D.getFeeBps.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][IPA1D.getFeeRecipients.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][IPA1D.getRoyalties.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][IPA1D.getFees.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][IPA1D.tokenCreator.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][IPA1D.calculateRoyaltyFee.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][IPA1D.marketContract.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][IPA1D.tokenCreators.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][IPA1D.bidSharesForToken.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][IPA1D.getStorageSlot.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][IPA1D.getTokenAddress.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][IPA1D.supportsFunction.selector] = true;
 
     _setInitialized();
     return IInitializable.init.selector;

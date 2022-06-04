@@ -298,11 +298,12 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
     bytes calldata data
   ) external returns (bytes4) {
     require(msg.sender == bridge(), "ERC20: only bridge can call");
-    _mint(bridge(), amount);
-    _transfer(bridge(), from, amount);
-    if (from != to) {
-      _transfer(from, to, amount);
-    }
+    _mint(to, amount);
+    //     _mint(bridge(), amount);
+    //     _transfer(bridge(), from, amount);
+    //     if (from != to) {
+    //       _transfer(from, to, amount);
+    //     }
     if (Booleans.get(_eventConfig, 1)) {
       require(SourceERC20().bridgeIn(chainType, from, to, amount, data), "HOLOGRAPH: bridge in failed");
     }
@@ -327,14 +328,15 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
         _allowances[from][operator] = currentAllowance - amount;
       }
     }
-    if (from != to) {
-      _transfer(from, to, amount);
-    }
-    _transfer(to, bridge(), amount);
+    //     if (from != to) {
+    //       _transfer(from, to, amount);
+    //     }
+    //     _transfer(to, bridge(), amount);
     if (Booleans.get(_eventConfig, 2)) {
       data = SourceERC20().bridgeOut(chainType, from, to, amount);
     }
-    _burn(bridge(), amount);
+    //     _burn(bridge(), amount);
+    _burn(from, amount);
     return (ERC20Holograph.holographBridgeOut.selector, data);
   }
 
