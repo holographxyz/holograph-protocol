@@ -297,7 +297,7 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
           18,
           ConfigureEvents([]),
           generateInitCode(['address', 'uint16'], [l1.deployer.address, 0]),
-          '0x' + '00'.repeat(32)
+          l1.salt
         );
 
         let hTokenErc20Address = await l2.registry.getHolographedHashAddress(erc20ConfigHash);
@@ -330,7 +330,7 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
           18,
           ConfigureEvents([]),
           generateInitCode(['address', 'uint16'], [l2.deployer.address, 0]),
-          '0x' + '00'.repeat(32)
+          l2.salt
         );
 
         let hTokenErc20Address = await l1.registry.getHolographedHashAddress(erc20ConfigHash);
@@ -365,7 +365,7 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
           18,
           ConfigureEvents([HolographERC20Event.bridgeIn, HolographERC20Event.bridgeOut]),
           generateInitCode(['address', 'uint16'], [l1.deployer.address, 0]),
-          '0x' + '00'.repeat(32)
+          l1.salt
         );
 
         let sampleErc20Address = await l2.registry.getHolographedHashAddress(erc20ConfigHash);
@@ -398,7 +398,7 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
           18,
           ConfigureEvents([HolographERC20Event.bridgeIn, HolographERC20Event.bridgeOut]),
           generateInitCode(['address', 'uint16'], [l1.deployer.address, 0]),
-          '0x' + '00'.repeat(32)
+          l2.salt
         );
 
         let sampleErc20Address = await l1.registry.getHolographedHashAddress(erc20ConfigHash);
@@ -435,7 +435,7 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
             HolographERC721Event.afterBurn,
           ]),
           generateInitCode(['address'], [l1.deployer.address /*owner*/]),
-          '0x' + '00'.repeat(32)
+          l1.salt
         );
 
         let sampleErc721Address = await l2.registry.getHolographedHashAddress(erc721ConfigHash);
@@ -470,7 +470,7 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
             HolographERC721Event.afterBurn,
           ]),
           generateInitCode(['address'], [l2.deployer.address /*owner*/]),
-          '0x' + '00'.repeat(32)
+          l2.salt
         );
 
         let sampleErc721Address = await l1.registry.getHolographedHashAddress(erc721ConfigHash);
@@ -514,7 +514,7 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
               generateInitCode(['address'], [l1.deployer.address]),
             ]
           ),
-          '0x' + '00'.repeat(32)
+          l1.salt
         );
 
         let cxipErc721Address = await l2.registry.getHolographedHashAddress(erc721ConfigHash);
@@ -556,7 +556,7 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
               generateInitCode(['address'], [l2.deployer.address]),
             ]
           ),
-          '0x' + '00'.repeat(32)
+          l2.salt
         );
 
         let cxipErc721Address = await l1.registry.getHolographedHashAddress(erc721ConfigHash);

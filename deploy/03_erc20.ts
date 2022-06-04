@@ -11,7 +11,7 @@ import { HolographERC20Event, ConfigureEvents } from '../scripts/utils/events';
 
 const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   let { hre, hre2 } = await hreSplit(hre1, global.__companionNetwork);
-  const salt: string = '0x' + '00'.repeat(12);
+  const salt = hre.deploymentSalt;
 
   // HolographERC20
   let holographErc20 = await genesisDeployHelper(

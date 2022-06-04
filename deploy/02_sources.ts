@@ -1,8 +1,8 @@
 declare var global: any;
 import fs from 'fs';
+import Web3 from 'web3';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy-holographed/types';
-import Web3 from 'web3';
 import {
   genesisDeriveFutureAddress,
   genesisDeployHelper,
@@ -21,7 +21,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
 
   const web3 = new Web3();
 
-  const salt: string = '0x' + '00'.repeat(12);
+  const salt = hre.deploymentSalt;
 
   const futureHolographAddress = await genesisDeriveFutureAddress(
     hre,

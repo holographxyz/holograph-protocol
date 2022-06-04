@@ -38,6 +38,7 @@ export interface LeanHardhatRuntimeEnvironment {
   provider: EthereumProvider;
   ethers: typeof ethers & HardhatEthersHelpers;
   artifacts: Artifacts;
+  deploymentSalt: string;
 }
 
 export interface Network {
@@ -170,6 +171,7 @@ const hreSplit = async function (
   let hre: LeanHardhatRuntimeEnvironment;
   let hre2: LeanHardhatRuntimeEnvironment;
   let hre3: LeanHardhatRuntimeEnvironment;
+  let salt: string = global.__DEPLOYMENT_SALT || '0x' + '00'.repeat(32);
   if (typeof global.__hreL1 === 'undefined') {
     hre = {
       networkName: hre1.network.name,
@@ -180,6 +182,7 @@ const hreSplit = async function (
       provider: hre1.network.provider,
       ethers: hre1.ethers,
       artifacts: hre1.artifacts,
+      deploymentSalt: salt,
     };
     global.__hreL1 = hre;
   } else {
@@ -196,6 +199,7 @@ const hreSplit = async function (
         provider: hre1.companionNetworks['l2'].provider,
         ethers: l2Ethers(hre1),
         artifacts: hre1.artifacts,
+        deploymentSalt: salt,
       };
     } else {
       hre2 = hre;
@@ -284,7 +288,7 @@ const generateDeployCode = function (chainId: string, salt: string, byteCode: st
     },
     [
       chainId, // uint256 chainId
-      salt, // bytes12 sourceCode
+      '0x' + salt.substring(salt.length - 24), // bytes12 sourceCode
       byteCode, // bytes memory sourceCode
       initCode, // bytes memory initCode
     ]
@@ -329,7 +333,7 @@ const genesisDeriveFutureAddress = async function (
     args: [],
     log: true,
     deployerAddress: holographGenesis?.address,
-    saltHash: deployer + salt.substring(2),
+    saltHash: deployer + salt.substring(salt.length - 24),
     deployCode: generateDeployCode(chainId, salt, contractBytecode, initCode),
   });
   return contractDeterministic.address;
@@ -368,7 +372,7 @@ const genesisDeployHelper = async function (
       args: [],
       log: true,
       deployerAddress: holographGenesis?.address,
-      saltHash: deployer + salt.substring(2),
+      saltHash: deployer + salt.substring(salt.length - 24),
       deployCode: generateDeployCode(chainId, salt, contractBytecode, initCode),
       waitConfirmations: 1,
       nonce: await ethers.provider.getTransactionCount(deployer),

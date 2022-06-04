@@ -68,6 +68,7 @@ let hre1: HardhatRuntimeEnvironment = require('hardhat');
 export interface PreTest {
   hre: LeanHardhatRuntimeEnvironment;
   hre2: LeanHardhatRuntimeEnvironment;
+  salt: string;
   networks: Networks;
   network: Network;
   network2: Network;
@@ -151,6 +152,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
   }
   const web3 = new Web3();
   let { hre, hre2 } = await hreSplit(hre1, l2);
+  const salt = hre.deploymentSalt;
   const network: Network = networks[hre.networkName];
   const network2: Network = networks[hre2.networkName];
   const chainId: BytesLike = '0x' + network.holographId.toString(16).padStart(8, '0');
@@ -304,7 +306,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
     18,
     ConfigureEvents([]),
     generateInitCode(['address', 'uint16'], [deployer.address, 0]),
-    '0x' + '00'.repeat(32)
+    salt
   );
   hTokenHolographer = (await hre.ethers.getContractAt(
     'Holographer',
@@ -327,7 +329,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
     18,
     ConfigureEvents([HolographERC20Event.bridgeIn, HolographERC20Event.bridgeOut]),
     generateInitCode(['address', 'uint16'], [deployer.address, 0]),
-    '0x' + '00'.repeat(32)
+    salt
   );
   sampleErc20Holographer = (await hre.ethers.getContractAt(
     'Holographer',
@@ -351,7 +353,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
     1000,
     ConfigureEvents([HolographERC721Event.bridgeIn, HolographERC721Event.bridgeOut, HolographERC721Event.afterBurn]),
     generateInitCode(['address'], [deployer.address]),
-    '0x' + '00'.repeat(32)
+    salt
   );
   sampleErc721Holographer = (await hre.ethers.getContractAt(
     'Holographer',
@@ -382,7 +384,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
         generateInitCode(['address'], [deployer.address]),
       ]
     ),
-    '0x' + '00'.repeat(32)
+    salt
   );
   cxipErc721Holographer = (await hre.ethers.getContractAt(
     'Holographer',
@@ -406,6 +408,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
   return {
     hre,
     hre2,
+    salt,
     networks,
     network,
     network2,

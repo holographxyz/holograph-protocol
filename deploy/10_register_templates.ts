@@ -1,21 +1,21 @@
 declare var global: any;
 import fs from 'fs';
+import Web3 from 'web3';
 import { BytesLike, ContractFactory, Contract } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy-holographed/types';
 import { LeanHardhatRuntimeEnvironment, hreSplit } from '../scripts/utils/helpers';
-import Web3 from 'web3';
 
 const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   let { hre, hre2 } = await hreSplit(hre1, global.__companionNetwork);
   const { deployer } = await hre.getNamedAccounts();
 
+  const web3 = new Web3();
+
   const error = function (err: string) {
     hre.deployments.log(err);
     process.exit();
   };
-
-  const web3 = new Web3();
 
   const holographRegistryProxy = await hre.ethers.getContract('HolographRegistryProxy');
   const holographRegistry = ((await hre.ethers.getContract('HolographRegistry')) as Contract).attach(

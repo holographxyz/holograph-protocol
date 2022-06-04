@@ -15,7 +15,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   const { getNamedAccounts } = hre;
   const { deployer } = await getNamedAccounts();
 
-  const salt: string = '0x' + '00'.repeat(12);
+  const salt = hre.deploymentSalt;
 
   // HolographERC20
   let holographErc721 = await genesisDeployHelper(

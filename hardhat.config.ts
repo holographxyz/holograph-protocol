@@ -1,3 +1,4 @@
+declare var global: any;
 import fs from 'fs';
 import '@typechain/hardhat';
 import 'hardhat-gas-reporter';
@@ -25,6 +26,10 @@ const MUMBAI_PRIVATE_KEY = process.env.MUMBAI_PRIVATE_KEY || DEPLOYER;
 const CXIP_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY || DEPLOYER;
 
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
+
+const DEPLOYMENT_SALT = parseInt(process.env.DEPLOYMENT_SALT || '0');
+
+global.__DEPLOYMENT_SALT = '0x' + DEPLOYMENT_SALT.toString(16).padStart(64, '0');
 
 task('abi', 'Create standalone ABI files for all smart contracts')
   .addOptionalParam('silent', 'Provide less details in the output', false, types.boolean)
@@ -76,8 +81,32 @@ const config: HardhatUserConfig = {
   defaultNetwork: 'localhost',
   external: {
     deployments: {
-      localhost: ['deployments/localhost'],
-      localhost2: ['deployments/localhost2'],
+      arbitrum: ['externalDeployments/arbitrum'],
+      arbitrum_rinkeby: ['externalDeployments/arbitrum_rinkeby'],
+      aurora: ['externalDeployments/aurora'],
+      aurora_testnet: ['externalDeployments/aurora_testnet'],
+      avax: ['externalDeployments/avax'],
+      bsc: ['externalDeployments/bsc'],
+      bsc_testnet: ['externalDeployments/bsc_testnet'],
+      cronos: ['externalDeployments/cronos'],
+      cronos_testnet: ['externalDeployments/cronos_testnet'],
+      cxip: ['externalDeployments/cxip'],
+      eth: ['externalDeployments/eth'],
+      eth_goerli: ['externalDeployments/eth_goerli'],
+      eth_kovan: ['externalDeployments/eth_kovan'],
+      eth_rinkeby: ['externalDeployments/eth_rinkeby'],
+      eth_ropsten: ['externalDeployments/eth_ropsten'],
+      ftm: ['externalDeployments/ftm'],
+      ftm_testnet: ['externalDeployments/ftm_testnet'],
+      fuji: ['externalDeployments/fuji'],
+      gno: ['externalDeployments/gno'],
+      gno_sokol: ['externalDeployments/gno_sokol'],
+      localhost: ['externalDeployments/localhost'],
+      localhost2: ['externalDeployments/localhost2'],
+      matic: ['externalDeployments/matic'],
+      mumbai: ['externalDeployments/mumbai'],
+      optimism: ['externalDeployments/optimism'],
+      optimism_kovan: ['externalDeployments/optimism_kovan'],
     },
   },
   networks: {
