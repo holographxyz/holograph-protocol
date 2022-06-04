@@ -171,6 +171,29 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "enum InterfaceType",
+        "name": "interfaceType",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bytes4[]",
+        "name": "interfaceIds",
+        "type": "bytes4[]"
+      },
+      {
+        "internalType": "bool",
+        "name": "supported",
+        "type": "bool"
+      }
+    ],
+    "name": "updateInterfaceBatch",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "stateMutability": "payable",
     "type": "receive"
   }
