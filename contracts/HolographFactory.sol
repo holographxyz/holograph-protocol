@@ -295,7 +295,7 @@ contract HolographFactory is Admin, Initializable {
     emit BridgeableContractDeployed(holographerAddress, hash);
   }
 
-  function _isContract(address contractAddress) internal view returns (bool) {
+  function _isContract(address contractAddress) private view returns (bool) {
     bytes32 codehash;
     assembly {
       codehash := extcodehash(contractAddress)
@@ -309,7 +309,7 @@ contract HolographFactory is Admin, Initializable {
     uint8 v,
     bytes32 hash,
     address signer
-  ) internal pure returns (bool) {
+  ) private pure returns (bool) {
     if (v < 27) {
       v += 27;
     }

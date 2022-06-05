@@ -109,8 +109,6 @@ import "./abstract/Initializable.sol";
 import "./interface/IHolograph.sol";
 import "./interface/IInitializable.sol";
 
-import "./library/ChainId.sol";
-
 /**
  * @dev This smart contract stores the different source codes that have been prepared and can be used for bridging.
  * @dev We will store here the layer 1 for ERC721 and ERC1155 smart contracts.

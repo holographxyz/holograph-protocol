@@ -155,13 +155,13 @@ contract Holographer is Admin, Initializable {
    * @dev The choice to use this approach was taken to prevent storage slot overrides.
    */
   function getHolographEnforcer() public view returns (address payable) {
-    address holograph;
+    IHolograph holograph;
     bytes32 contractType;
     assembly {
       holograph := sload(0x1eee493315beeac80829afd0aaa340f3821cabe68571a2743478e81638a3d94d)
       contractType := sload(0x927d33f74b40d20ebbbc7fbed0f01deacf3e0b589b248a5cc2fc82aa94928913)
     }
-    return payable(IHolographRegistry(IHolograph(holograph).getRegistry()).getContractTypeAddress(contractType));
+    return payable(IHolographRegistry(holograph.getRegistry()).getContractTypeAddress(contractType));
   }
 
   /**

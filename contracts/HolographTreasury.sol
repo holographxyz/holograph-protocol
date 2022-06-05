@@ -115,8 +115,6 @@ import "./interface/IHolographOperator.sol";
 import "./interface/IHolographRegistry.sol";
 import "./interface/IInitializable.sol";
 
-import "./library/ChainId.sol";
-
 import "./struct/DeploymentConfig.sol";
 import "./struct/Verification.sol";
 
@@ -147,25 +145,25 @@ contract HolographTreasury is Admin, Initializable, IHolographTreasury {
     return IInitializable.init.selector;
   }
 
-  function _bridge() internal view returns (address bridge) {
+  function _bridge() private view returns (address bridge) {
     assembly {
       bridge := sload(0x03be85923973d3197c19b1ad1f9b28c331dd9229cd80cbf84926b2286fc4563f)
     }
   }
 
-  function _holograph() internal view returns (address holograph) {
+  function _holograph() private view returns (address holograph) {
     assembly {
       holograph := sload(0x1eee493315beeac80829afd0aaa340f3821cabe68571a2743478e81638a3d94d)
     }
   }
 
-  function _operator() internal view returns (address operator) {
+  function _operator() private view returns (address operator) {
     assembly {
       operator := sload(0x7bef7d8d97f57f9aa64de319c8598b5cdc7c3d2715fc02428415a98281ca6bdc)
     }
   }
 
-  function _registry() internal view returns (address registry) {
+  function _registry() private view returns (address registry) {
     assembly {
       registry := sload(0x460c4059d72b144253e5fc4e2aacbae2bcd6362c67862cd58ecbab0e7b10c349)
     }

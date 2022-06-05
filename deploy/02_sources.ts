@@ -52,8 +52,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       [
         zeroAddress(),
         generateInitCode(
-          ['address', 'address', 'address', 'address'],
-          [zeroAddress(), zeroAddress(), zeroAddress(), zeroAddress()]
+          ['address', 'address', 'address', 'address', 'address'],
+          [zeroAddress(), zeroAddress(), zeroAddress(), zeroAddress(), zeroAddress()]
         ),
       ]
     )
@@ -166,8 +166,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     salt,
     'HolographBridge',
     generateInitCode(
-      ['address', 'address', 'address', 'address'],
-      [zeroAddress(), zeroAddress(), zeroAddress(), zeroAddress()]
+      ['address', 'address', 'address', 'address', 'address'],
+      [zeroAddress(), zeroAddress(), zeroAddress(), zeroAddress(), zeroAddress()]
     )
   );
 
@@ -181,8 +181,14 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       [
         holographBridge.address,
         generateInitCode(
-          ['address', 'address', 'address', 'address'],
-          [futureFactoryProxyAddress, futureHolographAddress, futureOperatorProxyAddress, futureRegistryProxyAddress]
+          ['address', 'address', 'address', 'address', 'address'],
+          [
+            futureFactoryProxyAddress,
+            futureHolographAddress,
+            futureInterfacesAddress,
+            futureOperatorProxyAddress,
+            futureRegistryProxyAddress,
+          ]
         ),
       ]
     )

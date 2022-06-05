@@ -14,8 +14,6 @@ import "./interface/IHolographOperator.sol";
 import "./interface/IHolographRegistry.sol";
 import "./interface/IInitializable.sol";
 
-import "./library/ChainId.sol";
-
 import "./struct/DeploymentConfig.sol";
 import "./struct/Verification.sol";
 
@@ -46,25 +44,25 @@ contract HolographTreasury is Admin, Initializable, IHolographTreasury {
     return IInitializable.init.selector;
   }
 
-  function _bridge() internal view returns (address bridge) {
+  function _bridge() private view returns (address bridge) {
     assembly {
       bridge := sload(precomputeslot("eip1967.Holograph.Bridge.bridge"))
     }
   }
 
-  function _holograph() internal view returns (address holograph) {
+  function _holograph() private view returns (address holograph) {
     assembly {
       holograph := sload(precomputeslot("eip1967.Holograph.Bridge.holograph"))
     }
   }
 
-  function _operator() internal view returns (address operator) {
+  function _operator() private view returns (address operator) {
     assembly {
       operator := sload(precomputeslot("eip1967.Holograph.Bridge.operator"))
     }
   }
 
-  function _registry() internal view returns (address registry) {
+  function _registry() private view returns (address registry) {
     assembly {
       registry := sload(precomputeslot("eip1967.Holograph.Bridge.registry"))
     }

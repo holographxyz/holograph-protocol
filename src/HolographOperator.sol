@@ -11,8 +11,6 @@ import "./interface/IHolographOperator.sol";
 import "./interface/IHolographRegistry.sol";
 import "./interface/IInitializable.sol";
 
-import "./library/ChainId.sol";
-
 /**
  * @dev This smart contract contains the actual core operator logic.
  */
@@ -147,19 +145,19 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     emit LzEvent(_dstChainId, _destination, _payload);
   }
 
-  function _bridge() internal view returns (address bridge) {
+  function _bridge() private view returns (address bridge) {
     assembly {
       bridge := sload(precomputeslot("eip1967.Holograph.Bridge.bridge"))
     }
   }
 
-  function _holograph() internal view returns (address holograph) {
+  function _holograph() private view returns (address holograph) {
     assembly {
       holograph := sload(precomputeslot("eip1967.Holograph.Bridge.holograph"))
     }
   }
 
-  function _registry() internal view returns (address registry) {
+  function _registry() private view returns (address registry) {
     assembly {
       registry := sload(precomputeslot("eip1967.Holograph.Bridge.registry"))
     }

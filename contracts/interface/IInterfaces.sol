@@ -103,6 +103,7 @@
 
 pragma solidity 0.8.13;
 
+import "../enum/ChainIdType.sol";
 import "../enum/InterfaceType.sol";
 
 interface IInterfaces {
@@ -120,5 +121,18 @@ interface IInterfaces {
     InterfaceType interfaceType,
     bytes4 interfaceId,
     bool supported
+  ) external;
+
+  function getChainId(
+    ChainIdType fromChainType,
+    uint256 fromChainId,
+    ChainIdType toChainType
+  ) external view returns (uint256 toChainId);
+
+  function updateChainIdMap(
+    ChainIdType fromChainType,
+    uint256 fromChainId,
+    ChainIdType toChainType,
+    uint256 toChainId
   ) external;
 }

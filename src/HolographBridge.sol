@@ -5,6 +5,8 @@
 import "./abstract/Admin.sol";
 import "./abstract/Initializable.sol";
 
+import "./enum/ChainIdType.sol";
+
 import "./interface/ERC20Holograph.sol";
 import "./interface/ERC721Holograph.sol";
 import "./interface/IHolograph.sol";
@@ -13,8 +15,7 @@ import "./interface/IHolographFactory.sol";
 import "./interface/IHolographOperator.sol";
 import "./interface/IHolographRegistry.sol";
 import "./interface/IInitializable.sol";
-
-import "./library/ChainId.sol";
+import "./interface/IInterfaces.sol";
 
 import "./struct/DeploymentConfig.sol";
 import "./struct/Verification.sol";
@@ -49,15 +50,16 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
 
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
-    (address factory, address holograph, address operator, address registry) = abi.decode(
+    (address factory, address holograph, address interfaces, address operator, address registry) = abi.decode(
       data,
-      (address, address, address, address)
+      (address, address, address, address, address)
     );
     assembly {
       sstore(precomputeslot("eip1967.Holograph.Bridge.admin"), origin())
 
       sstore(precomputeslot("eip1967.Holograph.Bridge.factory"), factory)
       sstore(precomputeslot("eip1967.Holograph.Bridge.holograph"), holograph)
+      sstore(precomputeslot("eip1967.Holograph.Bridge.interfaces"), interfaces)
       sstore(precomputeslot("eip1967.Holograph.Bridge.operator"), operator)
       sstore(precomputeslot("eip1967.Holograph.Bridge.registry"), registry)
     }
@@ -84,7 +86,7 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     uint256 tokenId,
     bytes calldata data
   ) external onlyBridge {
-    require(IHolographRegistry(_registry()).isHolographedContract(collection), "HOLOGRAPH: not holographed");
+    require(_registry().isHolographedContract(collection), "HOLOGRAPH: not holographed");
     require(
       ERC721Holograph(collection).holographBridgeIn(fromChain, from, to, tokenId, data) ==
         ERC721Holograph.holographBridgeIn.selector,
@@ -99,7 +101,7 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     address to,
     uint256 tokenId
   ) external payable {
-    require(IHolographRegistry(_registry()).isHolographedContract(collection), "HOLOGRAPH: not holographed");
+    require(_registry().isHolographedContract(collection), "HOLOGRAPH: not holographed");
     ERC721Holograph erc721 = ERC721Holograph(collection);
     require(erc721.exists(tokenId), "HOLOGRAPH: token doesn't exist");
     address tokenOwner = erc721.ownerOf(tokenId);
@@ -112,12 +114,12 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     require(to != address(0), "HOLOGRAPH: zero address");
     (bytes4 selector, bytes memory data) = erc721.holographBridgeOut(toChain, from, to, tokenId);
     require(selector == ERC721Holograph.holographBridgeOut.selector, "HOLOGRAPH: bridge out failed");
-    IHolographOperator(payable(_operator())).send{value: msg.value}(
-      ChainId.hlg2lz(toChain),
+    _operator().send{value: msg.value}(
+      uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
       abi.encodePacked(_operator()),
       abi.encodeWithSignature(
         "erc721in(uint32,address,address,address,uint256,bytes)",
-        IHolograph(_holograph()).getChainType(),
+        _holograph().getChainType(),
         collection,
         from,
         to,
@@ -125,7 +127,7 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
         data
       ),
       payable(msg.sender),
-      _operator(),
+      address(_operator()),
       bytes("")
     );
   }
@@ -138,7 +140,7 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     uint256 amount,
     bytes calldata data
   ) external onlyBridge {
-    require(IHolographRegistry(_registry()).isHolographedContract(token), "HOLOGRAPH: not holographed");
+    require(_registry().isHolographedContract(token), "HOLOGRAPH: not holographed");
     require(
       ERC20Holograph(token).holographBridgeIn(fromChain, from, to, amount, data) ==
         ERC20Holograph.holographBridgeIn.selector,
@@ -153,17 +155,17 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     address to,
     uint256 amount
   ) external payable {
-    require(IHolographRegistry(_registry()).isHolographedContract(token), "HOLOGRAPH: not holographed");
+    require(_registry().isHolographedContract(token), "HOLOGRAPH: not holographed");
     ERC20Holograph erc20 = ERC20Holograph(token);
     require(erc20.balanceOf(from) >= amount, "HOLOGRAPH: not enough tokens");
     (bytes4 selector, bytes memory data) = erc20.holographBridgeOut(toChain, msg.sender, from, to, amount);
     require(selector == ERC20Holograph.holographBridgeOut.selector, "HOLOGRAPH: bridge out failed");
-    IHolographOperator(payable(_operator())).send{value: msg.value}(
-      ChainId.hlg2lz(toChain),
+    _operator().send{value: msg.value}(
+      uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
       abi.encodePacked(_operator()),
       abi.encodeWithSignature(
         "erc20in(uint32,address,address,address,uint256,bytes)",
-        IHolograph(_holograph()).getChainType(),
+        _holograph().getChainType(),
         token,
         from,
         to,
@@ -171,7 +173,7 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
         data
       ),
       payable(msg.sender),
-      _operator(),
+      address(_operator()),
       bytes("")
     );
   }
@@ -181,7 +183,7 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
       data,
       (DeploymentConfig, Verification, address)
     );
-    IHolographFactory(_factory()).deployHolographableContract(config, signature, signer);
+    _factory().deployHolographableContract(config, signature, signer);
   }
 
   function deployOut(
@@ -190,35 +192,41 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     Verification calldata signature,
     address signer
   ) external payable {
-    IHolographOperator(payable(_operator())).send{value: msg.value}(
-      ChainId.hlg2lz(toChain),
+    _operator().send{value: msg.value}(
+      uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
       abi.encodePacked(_operator()),
       abi.encodeWithSignature("deployIn(bytes)", abi.encode(config, signature, signer)),
       payable(msg.sender),
-      _operator(),
+      address(_operator()),
       bytes("")
     );
   }
 
-  function _holograph() internal view returns (address holograph) {
-    assembly {
-      holograph := sload(precomputeslot("eip1967.Holograph.Bridge.holograph"))
-    }
-  }
-
-  function _factory() internal view returns (address factory) {
+  function _factory() private view returns (IHolographFactory factory) {
     assembly {
       factory := sload(precomputeslot("eip1967.Holograph.Bridge.factory"))
     }
   }
 
-  function _operator() internal view returns (address operator) {
+  function _holograph() private view returns (IHolograph holograph) {
+    assembly {
+      holograph := sload(precomputeslot("eip1967.Holograph.Bridge.holograph"))
+    }
+  }
+
+  function _interfaces() private view returns (IInterfaces interfaces) {
+    assembly {
+      interfaces := sload(precomputeslot("eip1967.Holograph.Bridge.interfaces"))
+    }
+  }
+
+  function _operator() private view returns (IHolographOperator operator) {
     assembly {
       operator := sload(precomputeslot("eip1967.Holograph.Bridge.operator"))
     }
   }
 
-  function _registry() internal view returns (address registry) {
+  function _registry() private view returns (IHolographRegistry registry) {
     assembly {
       registry := sload(precomputeslot("eip1967.Holograph.Bridge.registry"))
     }
