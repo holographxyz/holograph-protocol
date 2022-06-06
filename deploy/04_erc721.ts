@@ -6,6 +6,7 @@ import {
   hreSplit,
   genesisDeployHelper,
   generateInitCode,
+  genesisDeriveFutureAddress,
   zeroAddress,
 } from '../scripts/utils/helpers';
 import { HolographERC721Event, ConfigureEvents } from '../scripts/utils/events';
@@ -17,8 +18,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
 
   const salt = hre.deploymentSalt;
 
-  // HolographERC20
-  let holographErc721 = await genesisDeployHelper(
+  const futureErc721Address = await genesisDeriveFutureAddress(
     hre,
     salt,
     'HolographERC721',
@@ -34,9 +34,46 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       ]
     )
   );
+  hre.deployments.log('the future "HolographERC721" address is', futureErc721Address);
+
+  // HolographERC721
+  let erc721DeployedCode: string = await hre.provider.send('eth_getCode', [futureErc721Address]);
+  if (erc721DeployedCode == '0x' || erc721DeployedCode == '') {
+    let holographErc721 = await genesisDeployHelper(
+      hre,
+      salt,
+      'HolographERC721',
+      generateInitCode(
+        ['string', 'string', 'uint16', 'uint256', 'bool', 'bytes'],
+        [
+          'Holograph ERC721 Collection', // contractName
+          'hNFT', // contractSymbol
+          1000, // contractBps == 0%
+          ConfigureEvents([]), // eventConfig
+          true, // skipInit
+          generateInitCode(['address'], [deployer]), // initCode
+        ]
+      )
+    );
+  } else {
+    hre.deployments.log('"HolographERC721" is already deployed.');
+  }
+
+  const futureCxipErc721Address = await genesisDeriveFutureAddress(
+    hre,
+    salt,
+    'CxipERC721',
+    generateInitCode(['address'], [zeroAddress()])
+  );
+  hre.deployments.log('the future "CxipERC721" address is', futureCxipErc721Address);
 
   // CxipERC721
-  let cxipErc721 = await genesisDeployHelper(hre, salt, 'CxipERC721', generateInitCode(['address'], [zeroAddress()]));
+  let cxipErc721DeployedCode: string = await hre.provider.send('eth_getCode', [futureCxipErc721Address]);
+  if (cxipErc721DeployedCode == '0x' || cxipErc721DeployedCode == '') {
+    let cxipErc721 = await genesisDeployHelper(hre, salt, 'CxipERC721', generateInitCode(['address'], [zeroAddress()]));
+  } else {
+    hre.deployments.log('"CxipERC721" is already deployed.');
+  }
 };
 
 export default func;

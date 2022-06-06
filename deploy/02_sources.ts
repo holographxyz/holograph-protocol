@@ -199,6 +199,14 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   );
   hre.deployments.log('the future "Interfaces" address is', futureInterfacesAddress);
 
+  const futureRoyaltiesAddress = await genesisDeriveFutureAddress(
+    hre,
+    salt,
+    'PA1D',
+    generateInitCode(['address', 'uint256'], [zeroAddress(), '0x' + '00'.repeat(32)])
+  );
+  hre.deployments.log('the future "PA1D" address is', futureRoyaltiesAddress);
+
   // Holograph
   let holographDeployedCode: string = await hre.provider.send('eth_getCode', [futureHolographAddress]);
   if (holographDeployedCode == '0x' || holographDeployedCode == '') {
@@ -279,7 +287,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       )
     );
   } else {
-    hre.deployments.log('"HolographBridgeProxy" is already deployed.');
+    hre.deployments.log('"HolographBridge" is already deployed.');
   }
 
   // HolographBridgeProxy
@@ -369,6 +377,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       'HolographFactory',
       generateInitCode(['address', 'address', 'address'], [zeroAddress(), zeroAddress(), zeroAddress()])
     );
+  } else {
+    hre.deployments.log('"HolographFactory" is already deployed.');
   }
 
   // HolographFactoryProxy
@@ -437,6 +447,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
         [zeroAddress(), zeroAddress(), zeroAddress(), zeroAddress()]
       )
     );
+  } else {
+    hre.deployments.log('"HolographOperator" is already deployed.');
   }
 
   // HolographOperatorProxy
@@ -513,6 +525,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       'HolographRegistry',
       generateInitCode(['address', 'bytes32[]'], [zeroAddress(), []])
     );
+  } else {
+    hre.deployments.log('"HolographRegistry" is already deployed.');
   }
 
   // HolographRegistryProxy
@@ -581,6 +595,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
         [zeroAddress(), zeroAddress(), zeroAddress(), zeroAddress()]
       )
     );
+  } else {
+    hre.deployments.log('"HolographTreasury" is already deployed.');
   }
 
   // HolographTreasuryProxy
@@ -642,15 +658,25 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   }
 
   // Interfaces
-  let interfaces = await genesisDeployHelper(hre, salt, 'Interfaces', generateInitCode(['address'], [deployer]));
+  let interfacesDeployedCode: string = await hre.provider.send('eth_getCode', [futureInterfacesAddress]);
+  if (interfacesDeployedCode == '0x' || interfacesDeployedCode == '') {
+    let interfaces = await genesisDeployHelper(hre, salt, 'Interfaces', generateInitCode(['address'], [deployer]));
+  } else {
+    hre.deployments.log('"Interfaces" is already deployed.');
+  }
 
   // PA1D
-  let royalties = await genesisDeployHelper(
-    hre,
-    salt,
-    'PA1D',
-    generateInitCode(['address', 'uint256'], [deployer, '0x' + '00'.repeat(32)])
-  );
+  let royaltiesDeployedCode: string = await hre.provider.send('eth_getCode', [futureRoyaltiesAddress]);
+  if (royaltiesDeployedCode == '0x' || royaltiesDeployedCode == '') {
+    let royalties = await genesisDeployHelper(
+      hre,
+      salt,
+      'PA1D',
+      generateInitCode(['address', 'uint256'], [deployer, '0x' + '00'.repeat(32)])
+    );
+  } else {
+    hre.deployments.log('"PA1D" is already deployed..');
+  }
 };
 
 export default func;
