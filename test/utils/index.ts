@@ -37,8 +37,6 @@ import {
   PA1D,
   SampleERC20,
   SampleERC721,
-  SecureStorage,
-  SecureStorageProxy,
 } from '../../typechain-types';
 import {
   Erc20Config,
@@ -115,8 +113,6 @@ export interface PreTest {
   pa1d: PA1D;
   sampleErc20: SampleERC20;
   sampleErc721: SampleERC721;
-  secureStorage: SecureStorage;
-  secureStorageProxy: SecureStorageProxy;
   bridge: HolographBridge;
   factory: HolographFactory;
   operator: HolographOperator;
@@ -174,8 +170,6 @@ export default async function (l2?: boolean): Promise<PreTest> {
     'HolographTreasuryProxy',
     'Interfaces',
     'PA1D',
-    'SecureStorage',
-    'SecureStorageProxy',
 
     'HolographERC20',
     'HolographERC721',
@@ -239,8 +233,6 @@ export default async function (l2?: boolean): Promise<PreTest> {
   let pa1d: PA1D;
   let sampleErc20: SampleERC20;
   let sampleErc721: SampleERC721;
-  let secureStorage: SecureStorage;
-  let secureStorageProxy: SecureStorageProxy;
 
   let treasury: HolographTreasury;
   let registry: HolographRegistry;
@@ -289,8 +281,6 @@ export default async function (l2?: boolean): Promise<PreTest> {
   pa1d = (await hre.ethers.getContract('PA1D')) as PA1D;
   // sampleErc20 = (await hre.ethers.getContractOrNull('SampleERC20')) as SampleERC20;
   // sampleErc721 = (await hre.ethers.getContractOrNull('SampleERC721')) as SampleERC721;
-  secureStorage = (await hre.ethers.getContract('SecureStorage')) as SecureStorage;
-  secureStorageProxy = (await hre.ethers.getContract('SecureStorageProxy')) as SecureStorageProxy;
 
   bridge = holographBridge.attach(await holograph.getBridge()) as HolographBridge;
   factory = holographFactory.attach(await holograph.getFactory()) as HolographFactory;
@@ -459,8 +449,6 @@ export default async function (l2?: boolean): Promise<PreTest> {
     pa1d,
     sampleErc20,
     sampleErc721,
-    secureStorage,
-    secureStorageProxy,
     bridge,
     factory,
     operator,

@@ -11,8 +11,6 @@ import "./interface/IHolograph.sol";
 import "./interface/IHolographRegistry.sol";
 import "./interface/IInitializable.sol";
 
-import "./proxy/SecureStorageProxy.sol";
-
 import "./struct/DeploymentConfig.sol";
 import "./struct/Verification.sol";
 
@@ -34,13 +32,12 @@ contract HolographFactory is Admin, Initializable {
 
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
-    (address holograph, address registry, address secureStorage) = abi.decode(data, (address, address, address));
+    (address holograph, address registry) = abi.decode(data, (address, address));
     assembly {
       sstore(precomputeslot("eip1967.Holograph.Bridge.admin"), origin())
 
       sstore(precomputeslot("eip1967.Holograph.Bridge.holograph"), holograph)
       sstore(precomputeslot("eip1967.Holograph.Bridge.registry"), registry)
-      sstore(precomputeslot("eip1967.Holograph.Bridge.secureStorage"), secureStorage)
     }
     _setInitialized();
     return IInitializable.init.selector;
@@ -93,29 +90,6 @@ contract HolographFactory is Admin, Initializable {
   }
 
   /**
-   * @dev Returns the address of the secure storage smart contract source code.
-   * @dev More details on secure storage and it's purpose can be found in the SecureStorage smart contract.
-   */
-  function getSecureStorage() public view returns (address secureStorage) {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.secureStorage')) - 1);
-    assembly {
-      secureStorage := sload(precomputeslot("eip1967.Holograph.Bridge.secureStorage"))
-    }
-  }
-
-  /**
-   * @dev Sets the address of the secure storage smart contract source code.
-   */
-  function setSecureStorage(address secureStorage) public onlyAdmin {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.secureStorage')) - 1);
-    assembly {
-      sstore(precomputeslot("eip1967.Holograph.Bridge.secureStorage"), secureStorage)
-    }
-  }
-
-  /**
    * @dev A sample function of the deployment of bridgeable smart contracts.
    * @dev The used variables and formatting is not the final or decisive version, but the general idea is directly portrayed.
    * @notice In this function we have incorporated a secure storage function/extension. Keep in mind that this is not required or needed for bridgeable deployments to work. It is just a personal development choice.
@@ -141,13 +115,6 @@ contract HolographFactory is Admin, Initializable {
     require(!IHolographRegistry(getBridgeRegistry()).isHolographedHashDeployed(hash), "HOLOGRAPH: already deployed");
     // hash is converted to an integer, in preparation for the create2 function
     uint256 saltInt = uint256(hash);
-    address secureStorageAddress;
-    // we combine the secure storage proxy bytecode parts, with the bridge registry address included
-    bytes memory secureStorageBytecode = type(SecureStorageProxy).creationCode;
-    // the combined bytecode is then deployed
-    assembly {
-      secureStorageAddress := create2(0, add(secureStorageBytecode, 0x20), mload(secureStorageBytecode), saltInt)
-    }
     //
     address sourceContractAddress = address(
       uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), address(this), saltInt, keccak256(config.byteCode)))))
@@ -171,17 +138,12 @@ contract HolographFactory is Admin, Initializable {
       holographerAddress := create2(0, add(holographerBytecode, 0x20), mload(holographerBytecode), saltInt)
     }
     require(_isContract(holographerAddress), "Holographer deployment failed");
-    require(
-      IInitializable(secureStorageAddress).init(abi.encode(getSecureStorage(), abi.encode(holographerAddress))) ==
-        IInitializable.init.selector,
-      "initialization failed"
-    );
     address holograph;
     assembly {
       holograph := sload(precomputeslot("eip1967.Holograph.Bridge.holograph"))
     }
     bytes memory encodedInit = abi.encode(
-      abi.encode(config.chainType, holograph, secureStorageAddress, config.contractType, sourceContractAddress),
+      abi.encode(config.chainType, holograph, config.contractType, sourceContractAddress),
       config.initCode
     );
     require(

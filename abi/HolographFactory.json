@@ -161,19 +161,6 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "getSecureStorage",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "secureStorage",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "bytes",
@@ -227,19 +214,6 @@
       }
     ],
     "name": "setHolograph",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "secureStorage",
-        "type": "address"
-      }
-    ],
-    "name": "setSecureStorage",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

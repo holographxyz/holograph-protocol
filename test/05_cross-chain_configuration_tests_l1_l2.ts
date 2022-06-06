@@ -46,8 +46,6 @@ import {
   PA1D,
   SampleERC20,
   SampleERC721,
-  SecureStorage,
-  SecureStorageProxy,
 } from '../typechain-types';
 import { DeploymentConfigStruct } from '../typechain-types/HolographFactory';
 
@@ -215,18 +213,6 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
     describe('SampleERC721', async function () {
       it('contract addresses should not match', async function () {
         expect(l1.sampleErc721.address).to.not.equal(l2.sampleErc721.address);
-      });
-    });
-
-    describe('SecureStorage', async function () {
-      it('contract addresses should match', async function () {
-        expect(l1.secureStorage.address).to.equal(l2.secureStorage.address);
-      });
-    });
-
-    describe('SecureStorageProxy', async function () {
-      it('contract addresses should match', async function () {
-        expect(l1.secureStorageProxy.address).to.equal(l2.secureStorageProxy.address);
       });
     });
 

@@ -280,21 +280,5 @@ describe('Validating the Holograph Protocol deployments (L1)', async () => {
         );
       });
     });
-
-    describe('SecureStorage:', async function () {
-      it('should return correct bytecode', async function () {
-        expect(await l1.hre.provider.send('eth_getCode', [l1.secureStorage.address])).to.equal(
-          (await l1.hre.artifacts.readArtifact('SecureStorage')).deployedBytecode
-        );
-      });
-    });
-
-    describe('SecureStorageProxy:', async function () {
-      it('should return correct bytecode', async function () {
-        expect(await l1.hre.provider.send('eth_getCode', [l1.secureStorageProxy.address])).to.equal(
-          (await l1.hre.artifacts.readArtifact('SecureStorageProxy')).deployedBytecode
-        );
-      });
-    });
   });
 });

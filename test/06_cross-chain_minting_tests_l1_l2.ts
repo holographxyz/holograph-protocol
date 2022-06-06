@@ -50,12 +50,10 @@ import {
   PA1D,
   SampleERC20,
   SampleERC721,
-  SecureStorage,
-  SecureStorageProxy,
 } from '../typechain-types';
 import { DeploymentConfigStruct } from '../typechain-types/HolographFactory';
 
-describe.only('Testing cross-chain minting (L1 & L2)', async function () {
+describe('Testing cross-chain minting (L1 & L2)', async function () {
   const lzReceiveABI = {
     inputs: [
       {

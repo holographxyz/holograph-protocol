@@ -20,9 +20,8 @@ contract Holograph is Admin, Initializable, IHolograph {
       address interfaces,
       address operator,
       address registry,
-      address secureStorage,
       address treasury
-    ) = abi.decode(data, (uint32, address, address, address, address, address, address, address));
+    ) = abi.decode(data, (uint32, address, address, address, address, address, address));
     assembly {
       sstore(precomputeslot("eip1967.Holograph.Bridge.admin"), origin())
 
@@ -33,7 +32,6 @@ contract Holograph is Admin, Initializable, IHolograph {
       sstore(precomputeslot("eip1967.Holograph.Bridge.interfaces"), interfaces)
       sstore(precomputeslot("eip1967.Holograph.Bridge.operator"), operator)
       sstore(precomputeslot("eip1967.Holograph.Bridge.registry"), registry)
-      sstore(precomputeslot("eip1967.Holograph.Bridge.secureStorage"), secureStorage)
       sstore(precomputeslot("eip1967.Holograph.Bridge.treasury"), treasury)
     }
     _setInitialized();
@@ -145,22 +143,6 @@ contract Holograph is Admin, Initializable, IHolograph {
     // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.registry')) - 1);
     assembly {
       sstore(precomputeslot("eip1967.Holograph.Bridge.registry"), registry)
-    }
-  }
-
-  function getSecureStorage() external view returns (address secureStorage) {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.secureStorage')) - 1);
-    assembly {
-      secureStorage := sload(precomputeslot("eip1967.Holograph.Bridge.secureStorage"))
-    }
-  }
-
-  function setSecureStorage(address secureStorage) external onlyAdmin {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.secureStorage')) - 1);
-    assembly {
-      sstore(precomputeslot("eip1967.Holograph.Bridge.secureStorage"), secureStorage)
     }
   }
 

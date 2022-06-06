@@ -121,9 +121,8 @@ contract Holograph is Admin, Initializable, IHolograph {
       address interfaces,
       address operator,
       address registry,
-      address secureStorage,
       address treasury
-    ) = abi.decode(data, (uint32, address, address, address, address, address, address, address));
+    ) = abi.decode(data, (uint32, address, address, address, address, address, address));
     assembly {
       sstore(0x5705f5753aa4f617eef2cae1dada3d3355e9387b04d19191f09b545e684ca50d, origin())
 
@@ -134,7 +133,6 @@ contract Holograph is Admin, Initializable, IHolograph {
       sstore(0x23e584d4fb363739321c1e56c9bcdc29517a4c57065f8502226c995fd15b2472, interfaces)
       sstore(0x7bef7d8d97f57f9aa64de319c8598b5cdc7c3d2715fc02428415a98281ca6bdc, operator)
       sstore(0x460c4059d72b144253e5fc4e2aacbae2bcd6362c67862cd58ecbab0e7b10c349, registry)
-      sstore(0xd26498b26a05274577b8ac2e3250418da53433f3ff82027428ee3c530702cdec, secureStorage)
       sstore(0xc8f5846d0f0d68cef76d4d10d7d189845e41b44d1dbdc208ed0f8961f993af5f, treasury)
     }
     _setInitialized();
@@ -246,22 +244,6 @@ contract Holograph is Admin, Initializable, IHolograph {
     // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.registry')) - 1);
     assembly {
       sstore(0x460c4059d72b144253e5fc4e2aacbae2bcd6362c67862cd58ecbab0e7b10c349, registry)
-    }
-  }
-
-  function getSecureStorage() external view returns (address secureStorage) {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.secureStorage')) - 1);
-    assembly {
-      secureStorage := sload(0xd26498b26a05274577b8ac2e3250418da53433f3ff82027428ee3c530702cdec)
-    }
-  }
-
-  function setSecureStorage(address secureStorage) external onlyAdmin {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.secureStorage')) - 1);
-    assembly {
-      sstore(0xd26498b26a05274577b8ac2e3250418da53433f3ff82027428ee3c530702cdec, secureStorage)
     }
   }
 
