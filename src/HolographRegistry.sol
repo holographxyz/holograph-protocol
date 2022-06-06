@@ -148,4 +148,20 @@ contract HolographRegistry is Admin, Initializable {
   function isHolographedHashDeployed(bytes32 hash) external view returns (bool) {
     return _holographedContractsHashMap[hash] != address(0);
   }
+
+  function getHolograph() external view returns (address holograph) {
+    // The slot hash has been precomputed for gas optimizaion
+    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.holograph')) - 1);
+    assembly {
+      holograph := sload(precomputeslot("eip1967.Holograph.Bridge.holograph"))
+    }
+  }
+
+  function setHolograph(address holograph) external onlyAdmin {
+    // The slot hash has been precomputed for gas optimizaion
+    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.holograph')) - 1);
+    assembly {
+      sstore(precomputeslot("eip1967.Holograph.Bridge.factory"), holograph)
+    }
+  }
 }

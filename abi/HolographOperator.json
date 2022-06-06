@@ -76,11 +76,63 @@
   },
   {
     "inputs": [],
+    "name": "getBridge",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "bridge",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getHolograph",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "holograph",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getInterfaces",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "interfaces",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "getLZEndpoint",
     "outputs": [
       {
         "internalType": "address",
         "name": "lZEndpoint",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getRegistry",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "registry",
         "type": "address"
       }
     ],
@@ -202,11 +254,63 @@
     "inputs": [
       {
         "internalType": "address",
+        "name": "bridge",
+        "type": "address"
+      }
+    ],
+    "name": "setBridge",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "holograph",
+        "type": "address"
+      }
+    ],
+    "name": "setHolograph",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "interfaces",
+        "type": "address"
+      }
+    ],
+    "name": "setInterfaces",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
         "name": "lZEndpoint",
         "type": "address"
       }
     ],
     "name": "setLZEndpoint",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "registry",
+        "type": "address"
+      }
+    ],
+    "name": "setRegistry",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

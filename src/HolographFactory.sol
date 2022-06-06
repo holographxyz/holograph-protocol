@@ -44,52 +44,6 @@ contract HolographFactory is Admin, Initializable {
   }
 
   /**
-   * @dev Returns the address of the bridge registry.
-   * @dev More details on bridge registry and it's purpose can be found in the BridgeRegistry smart contract.
-   */
-  function getBridgeRegistry() public view returns (address bridgeRegistry) {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.registry')) - 1);
-    assembly {
-      bridgeRegistry := sload(precomputeslot("eip1967.Holograph.Bridge.registry"))
-    }
-  }
-
-  /**
-   * @dev Sets the address of the bridge registry.
-   */
-  function setBridgeRegistry(address bridgeRegistry) public onlyAdmin {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.registry')) - 1);
-    assembly {
-      sstore(precomputeslot("eip1967.Holograph.Bridge.registry"), bridgeRegistry)
-    }
-  }
-
-  /**
-   * @dev Returns the address of holograph.
-   * @dev More details on bridge holograph and it's purpose can be found in the Holograph smart contract.
-   */
-  function getHolograph() public view returns (address holograph) {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.holograph')) - 1);
-    assembly {
-      holograph := sload(precomputeslot("eip1967.Holograph.Bridge.holograph"))
-    }
-  }
-
-  /**
-   * @dev Sets the address of holograph.
-   */
-  function setHolograph(address holograph) public onlyAdmin {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.holograph')) - 1);
-    assembly {
-      sstore(precomputeslot("eip1967.Holograph.Bridge.holograph"), holograph)
-    }
-  }
-
-  /**
    * @dev A sample function of the deployment of bridgeable smart contracts.
    * @dev The used variables and formatting is not the final or decisive version, but the general idea is directly portrayed.
    * @notice In this function we have incorporated a secure storage function/extension. Keep in mind that this is not required or needed for bridgeable deployments to work. It is just a personal development choice.
@@ -112,7 +66,7 @@ contract HolographFactory is Admin, Initializable {
     );
     require(_verifySigner(signature.r, signature.s, signature.v, hash, signer), "HOLOGRAPH: invalid signature");
     // we check that a smart contract for this hash has not been deployed yet
-    require(!IHolographRegistry(getBridgeRegistry()).isHolographedHashDeployed(hash), "HOLOGRAPH: already deployed");
+    require(!IHolographRegistry(getRegistry()).isHolographedHashDeployed(hash), "HOLOGRAPH: already deployed");
     // hash is converted to an integer, in preparation for the create2 function
     uint256 saltInt = uint256(hash);
     //
@@ -151,7 +105,7 @@ contract HolographFactory is Admin, Initializable {
       "initialization failed"
     );
     //
-    IHolographRegistry(getBridgeRegistry()).factoryDeployedHash(hash, holographerAddress);
+    IHolographRegistry(getRegistry()).factoryDeployedHash(hash, holographerAddress);
     // we emit the event to indicate to anyone listening to the blockchain that a bridgeable smart contract has been deployed
     emit BridgeableContractDeployed(holographerAddress, hash);
   }
@@ -176,5 +130,37 @@ contract HolographFactory is Admin, Initializable {
     }
     return (ecrecover(hash, v, r, s) == signer ||
       ecrecover(keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)), v, r, s) == signer);
+  }
+
+  function getHolograph() external view returns (address holograph) {
+    // The slot hash has been precomputed for gas optimizaion
+    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.holograph')) - 1);
+    assembly {
+      holograph := sload(precomputeslot("eip1967.Holograph.Bridge.holograph"))
+    }
+  }
+
+  function setHolograph(address holograph) external onlyAdmin {
+    // The slot hash has been precomputed for gas optimizaion
+    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.holograph')) - 1);
+    assembly {
+      sstore(precomputeslot("eip1967.Holograph.Bridge.factory"), holograph)
+    }
+  }
+
+  function getRegistry() public view returns (address registry) {
+    // The slot hash has been precomputed for gas optimizaion
+    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.registry')) - 1);
+    assembly {
+      registry := sload(precomputeslot("eip1967.Holograph.Bridge.registry"))
+    }
+  }
+
+  function setRegistry(address registry) external onlyAdmin {
+    // The slot hash has been precomputed for gas optimizaion
+    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.registry')) - 1);
+    assembly {
+      sstore(precomputeslot("eip1967.Holograph.Bridge.registry"), registry)
+    }
   }
 }

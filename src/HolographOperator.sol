@@ -199,4 +199,68 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
       sstore(precomputeslot("eip1967.Holograph.Bridge.lZEndpoint"), lZEndpoint)
     }
   }
+
+  function getBridge() external view returns (address bridge) {
+    // The slot hash has been precomputed for gas optimizaion
+    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.bridge')) - 1);
+    assembly {
+      bridge := sload(precomputeslot("eip1967.Holograph.Bridge.bridge"))
+    }
+  }
+
+  function setBridge(address bridge) external onlyAdmin {
+    // The slot hash has been precomputed for gas optimizaion
+    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.bridge')) - 1);
+    assembly {
+      sstore(precomputeslot("eip1967.Holograph.Bridge.bridge"), bridge)
+    }
+  }
+
+  function getHolograph() external view returns (address holograph) {
+    // The slot hash has been precomputed for gas optimizaion
+    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.holograph')) - 1);
+    assembly {
+      holograph := sload(precomputeslot("eip1967.Holograph.Bridge.holograph"))
+    }
+  }
+
+  function setHolograph(address holograph) external onlyAdmin {
+    // The slot hash has been precomputed for gas optimizaion
+    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.holograph')) - 1);
+    assembly {
+      sstore(precomputeslot("eip1967.Holograph.Bridge.factory"), holograph)
+    }
+  }
+
+  function getInterfaces() external view returns (address interfaces) {
+    // The slot hash has been precomputed for gas optimizaion
+    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.interfaces')) - 1);
+    assembly {
+      interfaces := sload(precomputeslot("eip1967.Holograph.Bridge.interfaces"))
+    }
+  }
+
+  function setInterfaces(address interfaces) external onlyAdmin {
+    // The slot hash has been precomputed for gas optimizaion
+    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.interfaces')) - 1);
+    assembly {
+      sstore(precomputeslot("eip1967.Holograph.Bridge.interfaces"), interfaces)
+    }
+  }
+
+  function getRegistry() external view returns (address registry) {
+    // The slot hash has been precomputed for gas optimizaion
+    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.registry')) - 1);
+    assembly {
+      registry := sload(precomputeslot("eip1967.Holograph.Bridge.registry"))
+    }
+  }
+
+  function setRegistry(address registry) external onlyAdmin {
+    // The slot hash has been precomputed for gas optimizaion
+    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.registry')) - 1);
+    assembly {
+      sstore(precomputeslot("eip1967.Holograph.Bridge.registry"), registry)
+    }
+  }
 }
