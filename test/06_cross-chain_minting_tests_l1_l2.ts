@@ -1,4 +1,6 @@
 declare var global: any;
+import Web3 from 'web3';
+import { AbiItem } from 'web3-utils';
 import { expect, assert } from 'chai';
 import { PreTest } from './utils';
 import setup from './utils';
@@ -17,6 +19,7 @@ import {
   generateErc20Config,
   generateErc721Config,
   LeanHardhatRuntimeEnvironment,
+  getGasUsage,
 } from '../scripts/utils/helpers';
 import {
   HolographERC20Event,
@@ -52,22 +55,39 @@ import {
 } from '../typechain-types';
 import { DeploymentConfigStruct } from '../typechain-types/HolographFactory';
 
-const getGasUsage = async function (
-  hre: LeanHardhatRuntimeEnvironment,
-  description: string = '',
-  verbose: boolean = false
-): Promise<BigNumber> {
-  let blockNumber: number = await hre.ethers.provider.getBlockNumber();
-  let transactionHash = (await hre.ethers.provider.getBlockWithTransactions(blockNumber)).transactions[0].hash;
-  let transaction = await hre.ethers.provider.getTransactionReceipt(transactionHash);
-  let gasUsed: BigNumber = transaction.cumulativeGasUsed;
-  if (verbose) {
-    process.stdout.write('\n          ' + description + ' gas used: ' + gasUsed.toString() + '\n');
-  }
-  return gasUsed;
-};
+describe.only('Testing cross-chain minting (L1 & L2)', async function () {
+  const lzReceiveABI = {
+    inputs: [
+      {
+        internalType: 'uint16',
+        name: '',
+        type: 'uint16',
+      },
+      {
+        internalType: 'bytes',
+        name: '_srcAddress',
+        type: 'bytes',
+      },
+      {
+        internalType: 'uint64',
+        name: '',
+        type: 'uint64',
+      },
+      {
+        internalType: 'bytes',
+        name: '_payload',
+        type: 'bytes',
+      },
+    ],
+    name: 'lzReceive',
+    outputs: [],
+    stateMutability: 'payable',
+    type: 'function',
+  } as AbiItem;
+  const lzReceive = function (web3: Web3, params: any[]): BytesLike {
+    return l1.web3.eth.abi.encodeFunctionCall(lzReceiveABI, params);
+  };
 
-describe('Testing cross-chain minting (L1 & L2)', async function () {
   let l1: PreTest;
   let l2: PreTest;
 
@@ -206,13 +226,16 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           ).substring(2);
 
         await expect(l1.bridge.deployOut(l2.network.holographId, erc20Config, signature, l1.deployer.address))
-          .to.emit(l1.operator, 'LzEvent')
+          .to.emit(l1.mockLZEndpoint, 'LzEvent')
           .withArgs(ChainId.hlg2lz(l2.network.holographId), l1.operator.address.toLowerCase(), payload);
 
         await expect(
-          l2.operator
+          l2.mockLZEndpoint
             .connect(l2.lzEndpoint)
-            .lzReceive(ChainId.hlg2lz(l1.network.holographId), l1.operator.address, 0, payload)
+            .adminCall(
+              l2.operator.address,
+              lzReceive(l2.web3, [ChainId.hlg2lz(l1.network.holographId), l1.operator.address, 0, payload])
+            )
         )
           .to.emit(l2.operator, 'AvailableJob')
           .withArgs(payload);
@@ -275,13 +298,16 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           ).substring(2);
 
         await expect(l2.bridge.deployOut(l1.network.holographId, erc20Config, signature, l2.deployer.address))
-          .to.emit(l2.operator, 'LzEvent')
+          .to.emit(l2.mockLZEndpoint, 'LzEvent')
           .withArgs(ChainId.hlg2lz(l1.network.holographId), l2.operator.address.toLowerCase(), payload);
 
         await expect(
-          l1.operator
+          l1.mockLZEndpoint
             .connect(l1.lzEndpoint)
-            .lzReceive(ChainId.hlg2lz(l2.network.holographId), l2.operator.address, 0, payload)
+            .adminCall(
+              l1.operator.address,
+              lzReceive(l1.web3, [ChainId.hlg2lz(l2.network.holographId), l2.operator.address, 0, payload])
+            )
         )
           .to.emit(l1.operator, 'AvailableJob')
           .withArgs(payload);
@@ -346,13 +372,16 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           ).substring(2);
 
         await expect(l1.bridge.deployOut(l2.network.holographId, erc20Config, signature, l1.deployer.address))
-          .to.emit(l1.operator, 'LzEvent')
+          .to.emit(l1.mockLZEndpoint, 'LzEvent')
           .withArgs(ChainId.hlg2lz(l2.network.holographId), l1.operator.address.toLowerCase(), payload);
 
         await expect(
-          l2.operator
+          l2.mockLZEndpoint
             .connect(l2.lzEndpoint)
-            .lzReceive(ChainId.hlg2lz(l1.network.holographId), l1.operator.address, 0, payload)
+            .adminCall(
+              l2.operator.address,
+              lzReceive(l2.web3, [ChainId.hlg2lz(l1.network.holographId), l1.operator.address, 0, payload])
+            )
         )
           .to.emit(l2.operator, 'AvailableJob')
           .withArgs(payload);
@@ -415,13 +444,16 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           ).substring(2);
 
         await expect(l2.bridge.deployOut(l1.network.holographId, erc20Config, signature, l2.deployer.address))
-          .to.emit(l2.operator, 'LzEvent')
+          .to.emit(l2.mockLZEndpoint, 'LzEvent')
           .withArgs(ChainId.hlg2lz(l1.network.holographId), l2.operator.address.toLowerCase(), payload);
 
         await expect(
-          l1.operator
+          l1.mockLZEndpoint
             .connect(l1.lzEndpoint)
-            .lzReceive(ChainId.hlg2lz(l2.network.holographId), l2.operator.address, 0, payload)
+            .adminCall(
+              l1.operator.address,
+              lzReceive(l1.web3, [ChainId.hlg2lz(l2.network.holographId), l2.operator.address, 0, payload])
+            )
         )
           .to.emit(l1.operator, 'AvailableJob')
           .withArgs(payload);
@@ -488,13 +520,16 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           ).substring(2);
 
         await expect(l1.bridge.deployOut(l2.network.holographId, erc721Config, signature, l1.deployer.address))
-          .to.emit(l1.operator, 'LzEvent')
+          .to.emit(l1.mockLZEndpoint, 'LzEvent')
           .withArgs(ChainId.hlg2lz(l2.network.holographId), l1.operator.address.toLowerCase(), payload);
 
         await expect(
-          l2.operator
+          l2.mockLZEndpoint
             .connect(l2.lzEndpoint)
-            .lzReceive(ChainId.hlg2lz(l1.network.holographId), l1.operator.address, 0, payload)
+            .adminCall(
+              l2.operator.address,
+              lzReceive(l2.web3, [ChainId.hlg2lz(l1.network.holographId), l1.operator.address, 0, payload])
+            )
         )
           .to.emit(l2.operator, 'AvailableJob')
           .withArgs(payload);
@@ -559,13 +594,16 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           ).substring(2);
 
         await expect(l2.bridge.deployOut(l1.network.holographId, erc721Config, signature, l2.deployer.address))
-          .to.emit(l2.operator, 'LzEvent')
+          .to.emit(l2.mockLZEndpoint, 'LzEvent')
           .withArgs(ChainId.hlg2lz(l1.network.holographId), l2.operator.address.toLowerCase(), payload);
 
         await expect(
-          l1.operator
+          l1.mockLZEndpoint
             .connect(l1.lzEndpoint)
-            .lzReceive(ChainId.hlg2lz(l2.network.holographId), l2.operator.address, 0, payload)
+            .adminCall(
+              l1.operator.address,
+              lzReceive(l1.web3, [ChainId.hlg2lz(l2.network.holographId), l2.operator.address, 0, payload])
+            )
         )
           .to.emit(l1.operator, 'AvailableJob')
           .withArgs(payload);
@@ -639,13 +677,16 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           ).substring(2);
 
         await expect(l1.bridge.deployOut(l2.network.holographId, erc721Config, signature, l1.deployer.address))
-          .to.emit(l1.operator, 'LzEvent')
+          .to.emit(l1.mockLZEndpoint, 'LzEvent')
           .withArgs(ChainId.hlg2lz(l2.network.holographId), l1.operator.address.toLowerCase(), payload);
 
         await expect(
-          l2.operator
+          l2.mockLZEndpoint
             .connect(l2.lzEndpoint)
-            .lzReceive(ChainId.hlg2lz(l1.network.holographId), l1.operator.address, 0, payload)
+            .adminCall(
+              l2.operator.address,
+              lzReceive(l2.web3, [ChainId.hlg2lz(l1.network.holographId), l1.operator.address, 0, payload])
+            )
         )
           .to.emit(l2.operator, 'AvailableJob')
           .withArgs(payload);
@@ -717,13 +758,16 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           ).substring(2);
 
         await expect(l2.bridge.deployOut(l1.network.holographId, erc721Config, signature, l2.deployer.address))
-          .to.emit(l2.operator, 'LzEvent')
+          .to.emit(l2.mockLZEndpoint, 'LzEvent')
           .withArgs(ChainId.hlg2lz(l1.network.holographId), l2.operator.address.toLowerCase(), payload);
 
         await expect(
-          l1.operator
+          l1.mockLZEndpoint
             .connect(l1.lzEndpoint)
-            .lzReceive(ChainId.hlg2lz(l2.network.holographId), l2.operator.address, 0, payload)
+            .adminCall(
+              l1.operator.address,
+              lzReceive(l1.web3, [ChainId.hlg2lz(l2.network.holographId), l2.operator.address, 0, payload])
+            )
         )
           .to.emit(l1.operator, 'AvailableJob')
           .withArgs(payload);
@@ -821,15 +865,18 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
             thirdNFTl1
           )
         )
-          .to.emit(l1.operator, 'LzEvent')
+          .to.emit(l1.mockLZEndpoint, 'LzEvent')
           .withArgs(ChainId.hlg2lz(l2.network.holographId), l1.operator.address.toLowerCase(), payload);
 
         gasUsage['#3 bridge from l1'] = gasUsage['#3 bridge from l1'].add(await getGasUsage(l1.hre));
 
         await expect(
-          l2.operator
+          l2.mockLZEndpoint
             .connect(l2.lzEndpoint)
-            .lzReceive(ChainId.hlg2lz(l1.network.holographId), l1.operator.address, 0, payload)
+            .adminCall(
+              l2.operator.address,
+              lzReceive(l2.web3, [ChainId.hlg2lz(l1.network.holographId), l1.operator.address, 0, payload])
+            )
         )
           .to.emit(l2.operator, 'AvailableJob')
           .withArgs(payload);
@@ -853,15 +900,18 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
             thirdNFTl2
           )
         )
-          .to.emit(l2.operator, 'LzEvent')
+          .to.emit(l2.mockLZEndpoint, 'LzEvent')
           .withArgs(ChainId.hlg2lz(l1.network.holographId), l2.operator.address.toLowerCase(), payload);
 
         gasUsage['#3 bridge from l2'] = gasUsage['#3 bridge from l2'].add(await getGasUsage(l2.hre));
 
         await expect(
-          l1.operator
+          l1.mockLZEndpoint
             .connect(l1.lzEndpoint)
-            .lzReceive(ChainId.hlg2lz(l2.network.holographId), l2.operator.address, 0, payload)
+            .adminCall(
+              l1.operator.address,
+              lzReceive(l1.web3, [ChainId.hlg2lz(l2.network.holographId), l2.operator.address, 0, payload])
+            )
         )
           .to.emit(l1.operator, 'AvailableJob')
           .withArgs(payload);

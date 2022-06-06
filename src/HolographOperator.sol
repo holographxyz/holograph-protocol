@@ -5,11 +5,15 @@
 import "./abstract/Admin.sol";
 import "./abstract/Initializable.sol";
 
+import "./enum/ChainIdType.sol";
+
 import "./interface/IHolograph.sol";
 import "./interface/IHolographBridge.sol";
 import "./interface/IHolographOperator.sol";
 import "./interface/IHolographRegistry.sol";
 import "./interface/IInitializable.sol";
+import "./interface/IInterfaces.sol";
+import "./interface/ILayerZeroEndpoint.sol";
 
 /**
  * @dev This smart contract contains the actual core operator logic.
@@ -25,8 +29,6 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
    */
   event AvailableJob(bytes _payload);
 
-  event LzEvent(uint16 _dstChainId, bytes _destination, bytes _payload);
-
   modifier onlyBridge() {
     require(msg.sender == _bridge(), "HOLOGRAPH: bridge only call");
     _;
@@ -34,13 +36,18 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
 
   modifier onlyLZ() {
     assembly {
+      // check if lzEndpoint
       switch eq(sload(precomputeslot("eip1967.Holograph.Bridge.lZEndpoint")), caller())
       case 0 {
-        mstore(0x80, 0x08c379a000000000000000000000000000000000000000000000000000000000)
-        mstore(0xa0, 0x0000002000000000000000000000000000000000000000000000000000000000)
-        mstore(0xc0, 0x0000001b484f4c4f47524150483a204c5a206f6e6c7920656e64706f696e7400)
-        mstore(0xe0, 0x0000000000000000000000000000000000000000000000000000000000000000)
-        revert(0x80, 0xc4)
+        // check if operator is calling self, used for job estimations
+        switch eq(address(), caller())
+        case 0 {
+          mstore(0x80, 0x08c379a000000000000000000000000000000000000000000000000000000000)
+          mstore(0xa0, 0x0000002000000000000000000000000000000000000000000000000000000000)
+          mstore(0xc0, 0x0000001b484f4c4f47524150483a204c5a206f6e6c7920656e64706f696e7400)
+          mstore(0xe0, 0x0000000000000000000000000000000000000000000000000000000000000000)
+          revert(0x80, 0xc4)
+        }
       }
     }
     _;
@@ -53,13 +60,17 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
 
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
-    (address bridge, address holograph, address registry) = abi.decode(data, (address, address, address));
+    (address bridge, address holograph, address interfaces, address registry) = abi.decode(
+      data,
+      (address, address, address, address)
+    );
     assembly {
       // sstore(precomputeslot("eip1967.Holograph.Bridge.deadAddress"), 0x000000000000000000000000000000000000000000000000000000000000dead)
       sstore(precomputeslot("eip1967.Holograph.Bridge.admin"), origin())
 
       sstore(precomputeslot("eip1967.Holograph.Bridge.bridge"), bridge)
       sstore(precomputeslot("eip1967.Holograph.Bridge.holograph"), holograph)
+      sstore(precomputeslot("eip1967.Holograph.Bridge.interfaces"), interfaces)
       sstore(precomputeslot("eip1967.Holograph.Bridge.registry"), registry)
     }
     _setInitialized();
@@ -120,6 +131,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
   ) external payable {
     assembly {
       // switch eq(sload(precomputeslot("eip1967.Holograph.Bridge.deadAddress")), caller())
+      // allow only address(0) so that function succeeds only on estimate gas calls
       switch eq(mload(0x60), caller())
       case 0 {
         mstore(0x80, 0x08c379a000000000000000000000000000000000000000000000000000000000)
@@ -134,15 +146,22 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
   }
 
   function send(
-    uint16 _dstChainId,
-    bytes calldata _destination,
-    bytes calldata _payload,
-    address payable, /* _refundAddress*/
-    address, /* _zroPaymentAddress*/
-    bytes calldata /* _adapterParams*/
+    uint32 toChain,
+    address msgSender,
+    bytes calldata _payload
   ) external payable onlyBridge {
-    // we really don't care about anything and just emit an event that we can leverage for multichain replication
-    emit LzEvent(_dstChainId, _destination, _payload);
+    ILayerZeroEndpoint lZEndpoint;
+    assembly {
+      lZEndpoint := sload(precomputeslot("eip1967.Holograph.Bridge.lZEndpoint"))
+    }
+    lZEndpoint.send{value: msg.value}(
+      uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
+      abi.encodePacked(address(this)),
+      _payload,
+      payable(msgSender),
+      address(this),
+      bytes("")
+    );
   }
 
   function _bridge() private view returns (address bridge) {
@@ -154,6 +173,12 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
   function _holograph() private view returns (address holograph) {
     assembly {
       holograph := sload(precomputeslot("eip1967.Holograph.Bridge.holograph"))
+    }
+  }
+
+  function _interfaces() private view returns (IInterfaces interfaces) {
+    assembly {
+      interfaces := sload(precomputeslot("eip1967.Holograph.Bridge.interfaces"))
     }
   }
 

@@ -574,6 +574,21 @@ const sleep = async function (ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 };
 
+const getGasUsage = async function (
+  hre: LeanHardhatRuntimeEnvironment,
+  description: string = '',
+  verbose: boolean = false
+): Promise<BigNumber> {
+  let blockNumber: number = await hre.ethers.provider.getBlockNumber();
+  let transactionHash = (await hre.ethers.provider.getBlockWithTransactions(blockNumber)).transactions[0].hash;
+  let transaction = await hre.ethers.provider.getTransactionReceipt(transactionHash);
+  let gasUsed: BigNumber = transaction.cumulativeGasUsed;
+  if (verbose) {
+    process.stdout.write('\n          ' + description + ' gas used: ' + gasUsed.toString() + '\n');
+  }
+  return gasUsed;
+};
+
 export {
   isDefined,
   bytesToHex,
@@ -600,4 +615,5 @@ export {
   generateErc20Config,
   getHolographedContractHash,
   sleep,
+  getGasUsage,
 };

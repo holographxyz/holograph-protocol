@@ -34,4 +34,11 @@ interface IInterfaces {
     ChainIdType toChainType,
     uint256 toChainId
   ) external;
+
+  function updateChainIdMaps(
+    ChainIdType[] calldata fromChainType,
+    uint256[] calldata fromChainId,
+    ChainIdType[] calldata toChainType,
+    uint256[] calldata toChainId
+  ) external;
 }

@@ -115,8 +115,8 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     (bytes4 selector, bytes memory data) = erc721.holographBridgeOut(toChain, from, to, tokenId);
     require(selector == ERC721Holograph.holographBridgeOut.selector, "HOLOGRAPH: bridge out failed");
     _operator().send{value: msg.value}(
-      uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
-      abi.encodePacked(_operator()),
+      toChain,
+      msg.sender,
       abi.encodeWithSignature(
         "erc721in(uint32,address,address,address,uint256,bytes)",
         _holograph().getChainType(),
@@ -125,10 +125,7 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
         to,
         tokenId,
         data
-      ),
-      payable(msg.sender),
-      address(_operator()),
-      bytes("")
+      )
     );
   }
 
@@ -161,8 +158,8 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     (bytes4 selector, bytes memory data) = erc20.holographBridgeOut(toChain, msg.sender, from, to, amount);
     require(selector == ERC20Holograph.holographBridgeOut.selector, "HOLOGRAPH: bridge out failed");
     _operator().send{value: msg.value}(
-      uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
-      abi.encodePacked(_operator()),
+      toChain,
+      msg.sender,
       abi.encodeWithSignature(
         "erc20in(uint32,address,address,address,uint256,bytes)",
         _holograph().getChainType(),
@@ -171,10 +168,7 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
         to,
         amount,
         data
-      ),
-      payable(msg.sender),
-      address(_operator()),
-      bytes("")
+      )
     );
   }
 
@@ -193,12 +187,9 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     address signer
   ) external payable {
     _operator().send{value: msg.value}(
-      uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
-      abi.encodePacked(_operator()),
-      abi.encodeWithSignature("deployIn(bytes)", abi.encode(config, signature, signer)),
-      payable(msg.sender),
-      address(_operator()),
-      bytes("")
+      toChain,
+      msg.sender,
+      abi.encodeWithSignature("deployIn(bytes)", abi.encode(config, signature, signer))
     );
   }
 

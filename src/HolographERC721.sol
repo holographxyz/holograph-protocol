@@ -237,11 +237,6 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
     require(!_exists(tokenId), "ERC721: token already exists");
     delete _burnedTokens[tokenId];
     _mint(to, tokenId);
-    //     _mint(_bridge(), tokenId);
-    //     _transferFrom(_bridge(), from, tokenId);
-    //     if (from != to) {
-    //       _transferFrom(from, to, tokenId);
-    //     }
     if (_isEventRegistered(HolographERC721Event.bridgeIn)) {
       require(SourceERC721().bridgeIn(chainType, from, to, tokenId, data), "HOLOGRAPH: bridge in failed");
     }
@@ -259,14 +254,9 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
     uint256 tokenId
   ) external returns (bytes4 selector, bytes memory data) {
     require(msg.sender == _bridge(), "ERC721: only bridge can call");
-    //     if (from != to) {
-    //       _transferFrom(from, to, tokenId);
-    //     }
-    //     _transferFrom(to, _bridge(), tokenId);
     if (_isEventRegistered(HolographERC721Event.bridgeOut)) {
       data = SourceERC721().bridgeOut(chainType, from, to, tokenId);
     }
-    //     _burn(_bridge(), tokenId);
     _burn(from, tokenId);
     return (ERC721Holograph.holographBridgeOut.selector, data);
   }
@@ -293,14 +283,10 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
     _bps = contractBps;
     _eventConfig = eventConfig;
     if (!skipInit) {
-      try IHolographer(payable(address(this))).getSourceContract() returns (address payable sourceAddress) {
-        require(
-          IInitializable(sourceAddress).init(initCode) == IInitializable.init.selector,
-          "ERC721: could not init source"
-        );
-      } catch {
-        revert("ERC721: could not init source");
-      }
+      require(
+        IInitializable(_source()).init(initCode) == IInitializable.init.selector,
+        "ERC721: could not init source"
+      );
       (bool success, bytes memory returnData) = _royalties().delegatecall(
         abi.encodeWithSignature("initPA1D(bytes)", abi.encode(address(this), uint256(contractBps)))
       );

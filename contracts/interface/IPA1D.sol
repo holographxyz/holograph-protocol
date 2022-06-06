@@ -156,6 +156,4 @@ interface IPA1D {
   function getStorageSlot(string calldata slot) external pure returns (bytes32);
 
   function getTokenAddress(string memory tokenName) external view returns (address);
-
-  function supportsFunction(bytes4 selector) external pure returns (bool);
 }

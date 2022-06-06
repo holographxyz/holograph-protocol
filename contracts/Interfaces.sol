@@ -285,6 +285,18 @@ contract Interfaces is Admin, Initializable {
     _chainIdMap[fromChainType][fromChainId][toChainType] = toChainId;
   }
 
+  function updateChainIdMaps(
+    ChainIdType[] calldata fromChainType,
+    uint256[] calldata fromChainId,
+    ChainIdType[] calldata toChainType,
+    uint256[] calldata toChainId
+  ) external onlyAdmin {
+    uint256 length = fromChainType.length;
+    for (uint256 i = 0; i < length; i++) {
+      _chainIdMap[fromChainType[i]][fromChainId[i]][toChainType[i]] = toChainId[i];
+    }
+  }
+
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
     address contractAdmin = abi.decode(data, (address));
@@ -423,7 +435,6 @@ contract Interfaces is Admin, Initializable {
     _supportedInterfaces[InterfaceType.PA1D][IPA1D.bidSharesForToken.selector] = true;
     _supportedInterfaces[InterfaceType.PA1D][IPA1D.getStorageSlot.selector] = true;
     _supportedInterfaces[InterfaceType.PA1D][IPA1D.getTokenAddress.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][IPA1D.supportsFunction.selector] = true;
 
     _setInitialized();
     return IInitializable.init.selector;

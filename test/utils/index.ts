@@ -32,6 +32,7 @@ import {
   HToken,
   Interfaces,
   MockERC721Receiver,
+  MockLZEndpoint,
   Owner,
   PA1D,
   SampleERC20,
@@ -88,6 +89,7 @@ export interface PreTest {
   wallet10: SignerWithAddress;
   lzEndpoint: SignerWithAddress;
   admin: Admin;
+  mockLZEndpoint: MockLZEndpoint;
   cxipErc721: CxipERC721;
   cxipErc721Proxy: CxipERC721Proxy;
   erc20Mock: ERC20Mock;
@@ -178,6 +180,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
     'HolographERC20',
     'HolographERC721',
     'CxipERC721',
+    'MockLZEndpoint',
     'LayerZero',
     'ERC20Mock',
     'MockERC721Receiver',
@@ -210,6 +213,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
   const lzEndpoint: SignerWithAddress = accounts[10];
 
   let admin: Admin;
+  let mockLZEndpoint: MockLZEndpoint;
   let cxipErc721: CxipERC721;
   let cxipErc721Proxy: CxipERC721Proxy;
   let erc20Mock: ERC20Mock;
@@ -259,6 +263,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
   let cxipErc721Hash: Erc721Config;
 
   admin = (await hre.ethers.getContractOrNull('Admin')) as Admin;
+  mockLZEndpoint = (await hre.ethers.getContractOrNull('MockLZEndpoint')) as MockLZEndpoint;
   cxipErc721 = (await hre.ethers.getContractOrNull('CxipERC721')) as CxipERC721;
   cxipErc721Proxy = (await hre.ethers.getContractOrNull('CxipERC721Proxy')) as CxipERC721Proxy;
   erc20Mock = (await hre.ethers.getContract('ERC20Mock')) as ERC20Mock;
@@ -428,6 +433,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
     wallet10,
     lzEndpoint,
     admin,
+    mockLZEndpoint,
     cxipErc721,
     cxipErc721Proxy,
     erc20Mock,

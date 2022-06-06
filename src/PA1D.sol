@@ -631,26 +631,4 @@ contract PA1D is Admin, Owner, Initializable {
   function getTokenAddress(string memory tokenName) public view returns (address) {
     return _getTokenAddress(tokenName);
   }
-
-  function supportsFunction(bytes4 selector) public pure returns (bool) {
-    return (selector == IPA1D.configurePayouts.selector ||
-      selector == IPA1D.getPayoutInfo.selector ||
-      selector == IPA1D.getEthPayout.selector ||
-      selector == IPA1D.getTokenPayout.selector ||
-      selector == IPA1D.getTokensPayout.selector ||
-      selector == IPA1D.supportsInterface.selector ||
-      selector == IPA1D.setRoyalties.selector ||
-      selector == IPA1D.royaltyInfo.selector ||
-      selector == IPA1D.getFeeBps.selector ||
-      selector == IPA1D.getFeeRecipients.selector ||
-      selector == IPA1D.getRoyalties.selector ||
-      selector == IPA1D.getFees.selector ||
-      selector == IPA1D.tokenCreator.selector ||
-      selector == IPA1D.calculateRoyaltyFee.selector ||
-      selector == IPA1D.marketContract.selector ||
-      selector == IPA1D.tokenCreators.selector ||
-      selector == IPA1D.bidSharesForToken.selector ||
-      selector == IPA1D.getStorageSlot.selector ||
-      selector == IPA1D.getTokenAddress.selector);
-  }
 }

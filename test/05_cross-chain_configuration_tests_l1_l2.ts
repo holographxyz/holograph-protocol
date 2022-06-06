@@ -14,6 +14,7 @@ import {
   generateInitCode,
   generateErc20Config,
   generateErc721Config,
+  getGasUsage,
 } from '../scripts/utils/helpers';
 import {
   HolographERC20Event,
@@ -54,9 +55,22 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
   let l1: PreTest;
   let l2: PreTest;
 
+  let gasUsage: {
+    [key: string]: BigNumber;
+  } = {};
+
   before(async function () {
     l1 = await setup();
     l2 = await setup(true);
+
+    gasUsage['hToken deploy l1 on l2'] = BigNumber.from(0);
+    gasUsage['hToken deploy l2 on l1'] = BigNumber.from(0);
+    gasUsage['SampleERC20 deploy l1 on l2'] = BigNumber.from(0);
+    gasUsage['SampleERC20 deploy l2 on l1'] = BigNumber.from(0);
+    gasUsage['SampleERC721 deploy l1 on l2'] = BigNumber.from(0);
+    gasUsage['SampleERC721 deploy l2 on l1'] = BigNumber.from(0);
+    gasUsage['CxipERC721 deploy l1 on l2'] = BigNumber.from(0);
+    gasUsage['CxipERC721 deploy l2 on l1'] = BigNumber.from(0);
   });
 
   after(async function () {});
@@ -316,6 +330,8 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
         await expect(l2.factory.deployHolographableContract(erc20Config, signature, l1.deployer.address))
           .to.emit(l2.factory, 'BridgeableContractDeployed')
           .withArgs(hTokenErc20Address, erc20ConfigHash);
+
+        gasUsage['hToken deploy l1 on l2'] = gasUsage['hToken deploy l1 on l2'].add(await getGasUsage(l2.hre));
       });
 
       it('deploy l2 equivalent on l1', async function () {
@@ -349,6 +365,8 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
         await expect(l1.factory.deployHolographableContract(erc20Config, signature, l2.deployer.address))
           .to.emit(l1.factory, 'BridgeableContractDeployed')
           .withArgs(hTokenErc20Address, erc20ConfigHash);
+
+        gasUsage['hToken deploy l2 on l1'] = gasUsage['hToken deploy l2 on l1'].add(await getGasUsage(l1.hre));
       });
     });
 
@@ -384,6 +402,10 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
         await expect(l2.factory.deployHolographableContract(erc20Config, signature, l1.deployer.address))
           .to.emit(l2.factory, 'BridgeableContractDeployed')
           .withArgs(sampleErc20Address, erc20ConfigHash);
+
+        gasUsage['SampleERC20 deploy l1 on l2'] = gasUsage['SampleERC20 deploy l1 on l2'].add(
+          await getGasUsage(l2.hre)
+        );
       });
 
       it('deploy l2 equivalent on l1', async function () {
@@ -417,6 +439,10 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
         await expect(l1.factory.deployHolographableContract(erc20Config, signature, l2.deployer.address))
           .to.emit(l1.factory, 'BridgeableContractDeployed')
           .withArgs(sampleErc20Address, erc20ConfigHash);
+
+        gasUsage['SampleERC20 deploy l2 on l1'] = gasUsage['SampleERC20 deploy l2 on l1'].add(
+          await getGasUsage(l1.hre)
+        );
       });
     });
 
@@ -454,6 +480,10 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
         await expect(l2.factory.deployHolographableContract(erc721Config, signature, l1.deployer.address))
           .to.emit(l2.factory, 'BridgeableContractDeployed')
           .withArgs(sampleErc721Address, erc721ConfigHash);
+
+        gasUsage['SampleERC721 deploy l1 on l2'] = gasUsage['SampleERC721 deploy l1 on l2'].add(
+          await getGasUsage(l2.hre)
+        );
       });
 
       it('deploy l2 equivalent on l1', async function () {
@@ -489,6 +519,10 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
         await expect(l1.factory.deployHolographableContract(erc721Config, signature, l2.deployer.address))
           .to.emit(l1.factory, 'BridgeableContractDeployed')
           .withArgs(sampleErc721Address, erc721ConfigHash);
+
+        gasUsage['SampleERC721 deploy l2 on l1'] = gasUsage['SampleERC721 deploy l2 on l1'].add(
+          await getGasUsage(l1.hre)
+        );
       });
     });
 
@@ -533,6 +567,8 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
         await expect(l2.factory.deployHolographableContract(erc721Config, signature, l1.deployer.address))
           .to.emit(l2.factory, 'BridgeableContractDeployed')
           .withArgs(cxipErc721Address, erc721ConfigHash);
+
+        gasUsage['CxipERC721 deploy l1 on l2'] = gasUsage['CxipERC721 deploy l1 on l2'].add(await getGasUsage(l2.hre));
       });
 
       it('deploy l2 equivalent on l1', async function () {
@@ -575,6 +611,8 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
         await expect(l1.factory.deployHolographableContract(erc721Config, signature, l2.deployer.address))
           .to.emit(l1.factory, 'BridgeableContractDeployed')
           .withArgs(cxipErc721Address, erc721ConfigHash);
+
+        gasUsage['CxipERC721 deploy l2 on l1'] = gasUsage['CxipERC721 deploy l2 on l1'].add(await getGasUsage(l1.hre));
       });
     });
   });
@@ -599,6 +637,56 @@ describe('Testing cross-chain configurations (L1 & L2)', async function () {
       it('l2 chain id should be correct', async function () {
         expect(await l2.holograph.getChainType()).to.equal(l2.network.holographId);
       });
+    });
+  });
+
+  describe('Get gas calculations', async function () {
+    it('hToken deploy l1 on l2', async function () {
+      let name: string = 'hToken deploy l1 on l2';
+      process.stdout.write('          ' + name + ': ' + gasUsage[name].toString() + '\n');
+      assert(!gasUsage[name].isZero(), 'zero sum returned');
+    });
+
+    it('hToken deploy l2 on l1', async function () {
+      let name: string = 'hToken deploy l2 on l1';
+      process.stdout.write('          ' + name + ': ' + gasUsage[name].toString() + '\n');
+      assert(!gasUsage[name].isZero(), 'zero sum returned');
+    });
+
+    it('SampleERC20 deploy l1 on l2', async function () {
+      let name: string = 'SampleERC20 deploy l1 on l2';
+      process.stdout.write('          ' + name + ': ' + gasUsage[name].toString() + '\n');
+      assert(!gasUsage[name].isZero(), 'zero sum returned');
+    });
+
+    it('SampleERC20 deploy l2 on l1', async function () {
+      let name: string = 'SampleERC20 deploy l2 on l1';
+      process.stdout.write('          ' + name + ': ' + gasUsage[name].toString() + '\n');
+      assert(!gasUsage[name].isZero(), 'zero sum returned');
+    });
+
+    it('SampleERC721 deploy l1 on l2', async function () {
+      let name: string = 'SampleERC721 deploy l1 on l2';
+      process.stdout.write('          ' + name + ': ' + gasUsage[name].toString() + '\n');
+      assert(!gasUsage[name].isZero(), 'zero sum returned');
+    });
+
+    it('SampleERC721 deploy l2 on l1', async function () {
+      let name: string = 'SampleERC721 deploy l2 on l1';
+      process.stdout.write('          ' + name + ': ' + gasUsage[name].toString() + '\n');
+      assert(!gasUsage[name].isZero(), 'zero sum returned');
+    });
+
+    it('CxipERC721 deploy l1 on l2', async function () {
+      let name: string = 'CxipERC721 deploy l1 on l2';
+      process.stdout.write('          ' + name + ': ' + gasUsage[name].toString() + '\n');
+      assert(!gasUsage[name].isZero(), 'zero sum returned');
+    });
+
+    it('CxipERC721 deploy l2 on l1', async function () {
+      let name: string = 'CxipERC721 deploy l2 on l1';
+      process.stdout.write('          ' + name + ': ' + gasUsage[name].toString() + '\n');
+      assert(!gasUsage[name].isZero(), 'zero sum returned');
     });
   });
 });

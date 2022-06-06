@@ -122,6 +122,34 @@
   {
     "inputs": [
       {
+        "internalType": "enum ChainIdType[]",
+        "name": "fromChainType",
+        "type": "uint8[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "fromChainId",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "enum ChainIdType[]",
+        "name": "toChainType",
+        "type": "uint8[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "toChainId",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "updateChainIdMaps",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "enum InterfaceType",
         "name": "interfaceType",
         "type": "uint8"

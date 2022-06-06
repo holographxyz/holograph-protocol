@@ -8,13 +8,23 @@ import networks from '../config/networks';
 
 const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   let { hre, hre2 } = await hreSplit(hre1, global.__companionNetwork);
-  const { deployer } = await hre.getNamedAccounts();
+  const { deployments, getNamedAccounts } = hre;
+  const { deploy } = deployments;
+  const { deployer } = await getNamedAccounts();
 
   const salt = hre.deploymentSalt;
 
   let lzEndpoint = networks[hre.networkName].lzEndpoint;
   if (lzEndpoint == zeroAddress()) {
     lzEndpoint = (await hre.getNamedAccounts()).lzEndpoint;
+    const mockLZEndpoint = await deploy('MockLZEndpoint', {
+      from: lzEndpoint,
+      args: [],
+      log: true,
+      waitConfirmations: 1,
+      nonce: await hre.ethers.provider.getTransactionCount(lzEndpoint),
+    });
+    lzEndpoint = mockLZEndpoint.address;
   }
 
   const error = function (err: string) {
@@ -40,5 +50,5 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
 };
 
 export default func;
-func.tags = ['LayerZero'];
+func.tags = ['MockLZEndpoint', 'LayerZero'];
 func.dependencies = ['HolographGenesis', 'DeploySources'];

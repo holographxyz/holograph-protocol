@@ -103,43 +103,26 @@
 
 pragma solidity 0.8.13;
 
-import "../enum/ChainIdType.sol";
-import "../enum/InterfaceType.sol";
+import "../abstract/Admin.sol";
 
-interface IInterfaces {
-  function contractURI(
-    string calldata name,
-    string calldata imageURL,
-    string calldata externalLink,
-    uint16 bps,
-    address contractAddress
-  ) external pure returns (string memory);
+contract MockLZEndpoint is Admin {
+  event LzEvent(uint16 _dstChainId, bytes _destination, bytes _payload);
 
-  function supportsInterface(InterfaceType interfaceType, bytes4 interfaceId) external view returns (bool);
+  constructor() {
+    assembly {
+      sstore(0x5705f5753aa4f617eef2cae1dada3d3355e9387b04d19191f09b545e684ca50d, origin())
+    }
+  }
 
-  function updateInterface(
-    InterfaceType interfaceType,
-    bytes4 interfaceId,
-    bool supported
-  ) external;
-
-  function getChainId(
-    ChainIdType fromChainType,
-    uint256 fromChainId,
-    ChainIdType toChainType
-  ) external view returns (uint256 toChainId);
-
-  function updateChainIdMap(
-    ChainIdType fromChainType,
-    uint256 fromChainId,
-    ChainIdType toChainType,
-    uint256 toChainId
-  ) external;
-
-  function updateChainIdMaps(
-    ChainIdType[] calldata fromChainType,
-    uint256[] calldata fromChainId,
-    ChainIdType[] calldata toChainType,
-    uint256[] calldata toChainId
-  ) external;
+  function send(
+    uint16 _dstChainId,
+    bytes calldata _destination,
+    bytes calldata _payload,
+    address payable, /* _refundAddress*/
+    address, /* _zroPaymentAddress*/
+    bytes calldata /* _adapterParams*/
+  ) external payable {
+    // we really don't care about anything and just emit an event that we can leverage for multichain replication
+    emit LzEvent(_dstChainId, _destination, _payload);
+  }
 }

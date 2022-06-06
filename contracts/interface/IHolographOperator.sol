@@ -121,12 +121,9 @@ interface IHolographOperator {
   ) external payable;
 
   function send(
-    uint16 _dstChainId,
-    bytes calldata _destination,
-    bytes calldata _payload,
-    address payable _refundAddress,
-    address _zroPaymentAddress,
-    bytes calldata _adapterParams
+    uint32 toChain,
+    address msgSender,
+    bytes calldata _payload
   ) external payable;
 
   function getLZEndpoint() external view returns (address lZEndpoint);

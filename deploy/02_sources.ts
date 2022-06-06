@@ -228,7 +228,10 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     hre,
     salt,
     'HolographOperator',
-    generateInitCode(['address', 'address', 'address'], [zeroAddress(), zeroAddress(), zeroAddress()])
+    generateInitCode(
+      ['address', 'address', 'address', 'address'],
+      [zeroAddress(), zeroAddress(), zeroAddress(), zeroAddress()]
+    )
   );
 
   // HolographOperatorProxy
@@ -241,8 +244,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       [
         holographOperator.address,
         generateInitCode(
-          ['address', 'address', 'address'],
-          [futureBridgeProxyAddress, futureHolographAddress, futureRegistryProxyAddress]
+          ['address', 'address', 'address', 'address'],
+          [futureBridgeProxyAddress, futureHolographAddress, futureInterfacesAddress, futureRegistryProxyAddress]
         ),
       ]
     )

@@ -217,6 +217,14 @@ describe('Validating the Holograph Protocol deployments (L1)', async () => {
       });
     });
 
+    describe('MockLZEndpoint:', async function () {
+      it('should return correct bytecode', async function () {
+        expect(await l1.hre.provider.send('eth_getCode', [l1.mockLZEndpoint.address])).to.equal(
+          (await l1.hre.artifacts.readArtifact('MockLZEndpoint')).deployedBytecode
+        );
+      });
+    });
+
     describe('PA1D:', async function () {
       it('should return correct bytecode', async function () {
         expect(await l1.hre.provider.send('eth_getCode', [l1.pa1d.address])).to.equal(
