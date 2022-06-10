@@ -108,72 +108,19 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "_tokenId",
-        "type": "uint256"
-      }
-    ],
-    "name": "creator",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "uint224",
         "name": "tokenId",
         "type": "uint224"
       },
       {
-        "components": [
-          {
-            "internalType": "bytes32",
-            "name": "payloadHash",
-            "type": "bytes32"
-          },
-          {
-            "components": [
-              {
-                "internalType": "bytes32",
-                "name": "r",
-                "type": "bytes32"
-              },
-              {
-                "internalType": "bytes32",
-                "name": "s",
-                "type": "bytes32"
-              },
-              {
-                "internalType": "uint8",
-                "name": "v",
-                "type": "uint8"
-              }
-            ],
-            "internalType": "struct Verification",
-            "name": "payloadSignature",
-            "type": "tuple"
-          },
-          {
-            "internalType": "address",
-            "name": "creator",
-            "type": "address"
-          },
-          {
-            "internalType": "string",
-            "name": "URI",
-            "type": "string"
-          }
-        ],
-        "internalType": "struct TokenData",
-        "name": "tokenData",
-        "type": "tuple"
+        "internalType": "enum TokenUriType",
+        "name": "uriType",
+        "type": "uint8"
+      },
+      {
+        "internalType": "string",
+        "name": "tokenUri",
+        "type": "string"
       }
     ],
     "name": "cxipMint",
@@ -240,52 +187,6 @@
         "internalType": "address",
         "name": "",
         "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_tokenId",
-        "type": "uint256"
-      }
-    ],
-    "name": "payloadVerification",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "URI",
-        "type": "string"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "payloadHash",
-        "type": "bytes32"
-      },
-      {
-        "components": [
-          {
-            "internalType": "bytes32",
-            "name": "r",
-            "type": "bytes32"
-          },
-          {
-            "internalType": "bytes32",
-            "name": "s",
-            "type": "bytes32"
-          },
-          {
-            "internalType": "uint8",
-            "name": "v",
-            "type": "uint8"
-          }
-        ],
-        "internalType": "struct Verification",
-        "name": "payloadSignature",
-        "type": "tuple"
       }
     ],
     "stateMutability": "view",

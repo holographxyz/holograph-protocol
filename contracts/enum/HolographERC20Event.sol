@@ -104,6 +104,7 @@
 pragma solidity 0.8.13;
 
 enum HolographERC20Event {
+  UNDEFINED, // 0
   bridgeIn, //  1
   bridgeOut, //  2
   afterApprove, //  3

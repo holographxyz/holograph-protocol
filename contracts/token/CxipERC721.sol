@@ -105,9 +105,9 @@ pragma solidity 0.8.13;
 
 import "../abstract/ERC721H.sol";
 
-import "../interface/ERC721Holograph.sol";
+import "../enum/TokenUriType.sol";
 
-import "../struct/TokenData.sol";
+import "../interface/ERC721Holograph.sol";
 
 /**
  * @title CXIP ERC-721 Collection that is bridgeable via Holograph
@@ -117,14 +117,29 @@ import "../struct/TokenData.sol";
  */
 contract CxipERC721 is ERC721H {
   /**
-   * @dev Token data mapped by token id.
-   */
-  mapping(uint256 => TokenData) private _tokenData;
-
-  /**
    * @dev Internal reference used for minting incremental token ids.
    */
   uint224 private _currentTokenId;
+
+  /**
+   * @dev Enum of type of token URI to use globally for the entire contract.
+   */
+  TokenUriType private _uriType;
+
+  /**
+   * @dev Enum mapping of type of token URI to use for specific tokenId.
+   */
+  mapping(uint256 => TokenUriType) private _tokenUriType;
+
+  /**
+   * @dev Mapping of URI prepends.
+   */
+  mapping(TokenUriType => string) private _prependURI;
+
+  /**
+   * @dev Mapping of IPFS URIs for tokenIds.
+   */
+  mapping(uint256 => mapping(TokenUriType => string)) private _tokenURIs;
 
   /**
    * @notice Constructor is empty and not utilised.
@@ -137,6 +152,11 @@ contract CxipERC721 is ERC721H {
    * @dev Special function to allow a one time initialisation on deployment. Also configures and deploys royalties.
    */
   function init(bytes memory data) external override returns (bytes4) {
+    // we set this as default type since that's what Mint is currently using
+    _uriType = TokenUriType.IPFS;
+    _prependURI[TokenUriType.IPFS] = "ipfs://";
+    _prependURI[TokenUriType.HTTPS] = "https://";
+    _prependURI[TokenUriType.ARWEAVE] = "ar://";
     address owner = abi.decode(data, (address));
     _owner = owner;
     // run underlying initializer logic
@@ -148,10 +168,18 @@ contract CxipERC721 is ERC721H {
    * @return string The URI.
    */
   function tokenURI(uint256 _tokenId) external view onlyHolographer returns (string memory) {
-    return _tokenData[_tokenId].URI;
+    TokenUriType uriType = _tokenUriType[_tokenId];
+    if (uriType == TokenUriType.UNDEFINED) {
+      uriType = _uriType;
+    }
+    return string(abi.encodePacked(_prependURI[uriType], _tokenURIs[_tokenId][uriType]));
   }
 
-  function cxipMint(uint224 tokenId, TokenData calldata tokenData) external onlyHolographer onlyOwner {
+  function cxipMint(
+    uint224 tokenId,
+    TokenUriType uriType,
+    string calldata tokenUri
+  ) external onlyHolographer onlyOwner {
     ERC721Holograph H721 = ERC721Holograph(holographer());
     if (tokenId == 0) {
       _currentTokenId += 1;
@@ -160,27 +188,13 @@ contract CxipERC721 is ERC721H {
       }
       tokenId = _currentTokenId;
     }
-    H721.sourceMint(tokenData.creator, tokenId);
+    H721.sourceMint(msgSender(), tokenId);
     uint256 id = H721.sourceGetChainPrepend() + uint256(tokenId);
-    _tokenData[id] = tokenData;
-  }
-
-  function creator(uint256 _tokenId) external view returns (address) {
-    return _tokenData[_tokenId].creator;
-  }
-
-  function payloadVerification(uint256 _tokenId)
-    external
-    view
-    returns (
-      string memory URI,
-      bytes32 payloadHash,
-      Verification memory payloadSignature
-    )
-  {
-    URI = _tokenData[_tokenId].URI;
-    payloadHash = _tokenData[_tokenId].payloadHash;
-    payloadSignature = _tokenData[_tokenId].payloadSignature;
+    if (uriType == TokenUriType.UNDEFINED) {
+      uriType = _uriType;
+    }
+    _tokenUriType[id] = uriType;
+    _tokenURIs[id][uriType] = tokenUri;
   }
 
   function bridgeIn(
@@ -190,8 +204,9 @@ contract CxipERC721 is ERC721H {
     uint256 _tokenId,
     bytes calldata _data
   ) external onlyHolographer returns (bool) {
-    TokenData memory tokenData = abi.decode(_data, (TokenData));
-    _tokenData[_tokenId] = tokenData;
+    (TokenUriType uriType, string memory tokenUri) = abi.decode(_data, (TokenUriType, string));
+    _tokenUriType[_tokenId] = uriType;
+    _tokenURIs[_tokenId][uriType] = tokenUri;
     return true;
   }
 
@@ -201,14 +216,22 @@ contract CxipERC721 is ERC721H {
     address, /* _to*/
     uint256 _tokenId
   ) external view onlyHolographer returns (bytes memory _data) {
-    _data = abi.encode(_tokenData[_tokenId]);
+    TokenUriType uriType = _tokenUriType[_tokenId];
+    if (uriType == TokenUriType.UNDEFINED) {
+      uriType = _uriType;
+    }
+    _data = abi.encode(uriType, _tokenURIs[_tokenId][uriType]);
   }
 
   function afterBurn(
     address, /* _owner*/
     uint256 _tokenId
   ) external onlyHolographer returns (bool) {
-    delete _tokenData[_tokenId];
+    TokenUriType uriType = _tokenUriType[_tokenId];
+    if (uriType == TokenUriType.UNDEFINED) {
+      uriType = _uriType;
+    }
+    delete _tokenURIs[_tokenId][uriType];
     return true;
   }
 }

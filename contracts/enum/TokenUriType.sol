@@ -103,11 +103,9 @@
 
 pragma solidity 0.8.13;
 
-import "./Verification.sol";
-
-struct TokenData {
-  bytes32 payloadHash;
-  Verification payloadSignature;
-  address creator;
-  string URI;
+enum TokenUriType {
+  UNDEFINED, //   0
+  IPFS, //        1
+  HTTPS, //       2
+  ARWEAVE //      3
 }
