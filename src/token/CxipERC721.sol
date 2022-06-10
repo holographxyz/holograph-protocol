@@ -55,6 +55,7 @@ contract CxipERC721 is ERC721H {
   function cxipMint(uint224 tokenId, TokenData calldata tokenData) external onlyHolographer onlyOwner {
     ERC721Holograph H721 = ERC721Holograph(holographer());
     if (tokenId == 0) {
+      _currentTokenId += 1;
       while (H721.exists(uint256(_currentTokenId)) || H721.burned(uint256(_currentTokenId))) {
         _currentTokenId += 1;
       }

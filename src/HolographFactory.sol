@@ -53,7 +53,6 @@ contract HolographFactory is Admin, Initializable {
     Verification calldata signature,
     address signer
   ) external {
-    // all of the necessary data is packed and hashed
     bytes32 hash = keccak256(
       abi.encodePacked(
         config.contractType,
@@ -65,48 +64,30 @@ contract HolographFactory is Admin, Initializable {
       )
     );
     require(_verifySigner(signature.r, signature.s, signature.v, hash, signer), "HOLOGRAPH: invalid signature");
-    // we check that a smart contract for this hash has not been deployed yet
     require(!IHolographRegistry(getRegistry()).isHolographedHashDeployed(hash), "HOLOGRAPH: already deployed");
-    // hash is converted to an integer, in preparation for the create2 function
     uint256 saltInt = uint256(hash);
-    //
-    address sourceContractAddress = address(
-      uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), address(this), saltInt, keccak256(config.byteCode)))))
-    );
+    address sourceContractAddress;
     bytes memory sourceByteCode = config.byteCode;
-    if (!_isContract(sourceContractAddress)) {
-      assembly {
-        sourceContractAddress := create2(0, add(sourceByteCode, 0x20), mload(sourceByteCode), saltInt)
-      }
-      require(_isContract(sourceContractAddress), "source contract create failed");
+    assembly {
+      sourceContractAddress := create2(0, add(sourceByteCode, 0x20), mload(sourceByteCode), saltInt)
     }
     bytes memory holographerBytecode = type(Holographer).creationCode;
-    address holographerAddress = address(
-      uint160(
-        uint256(keccak256(abi.encodePacked(bytes1(0xff), address(this), saltInt, keccak256(holographerBytecode))))
-      )
-    );
-    require(!_isContract(holographerAddress), "HOLOGRAPH: already deployed");
-    // the combined bytecode is then deployed
+    address holographerAddress;
     assembly {
       holographerAddress := create2(0, add(holographerBytecode, 0x20), mload(holographerBytecode), saltInt)
     }
-    require(_isContract(holographerAddress), "Holographer deployment failed");
     address holograph;
     assembly {
       holograph := sload(precomputeslot("eip1967.Holograph.Bridge.holograph"))
     }
-    bytes memory encodedInit = abi.encode(
+    require(
+      IInitializable(holographerAddress).init(abi.encode(
       abi.encode(config.chainType, holograph, config.contractType, sourceContractAddress),
       config.initCode
-    );
-    require(
-      IInitializable(holographerAddress).init(encodedInit) == IInitializable.init.selector,
+    )) == IInitializable.init.selector,
       "initialization failed"
     );
-    //
     IHolographRegistry(getRegistry()).factoryDeployedHash(hash, holographerAddress);
-    // we emit the event to indicate to anyone listening to the blockchain that a bridgeable smart contract has been deployed
     emit BridgeableContractDeployed(holographerAddress, hash);
   }
 

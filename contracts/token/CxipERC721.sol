@@ -145,17 +145,16 @@ contract CxipERC721 is ERC721H {
 
   /**
    * @notice Get's the URI of the token.
-   * @dev Defaults the the Arweave URI
    * @return string The URI.
    */
   function tokenURI(uint256 _tokenId) external view onlyHolographer returns (string memory) {
-    return
-      string(abi.encodePacked("https://arweave.net/", _tokenData[_tokenId].arweave, _tokenData[_tokenId].arweave2));
+    return _tokenData[_tokenId].URI;
   }
 
   function cxipMint(uint224 tokenId, TokenData calldata tokenData) external onlyHolographer onlyOwner {
     ERC721Holograph H721 = ERC721Holograph(holographer());
     if (tokenId == 0) {
+      _currentTokenId += 1;
       while (H721.exists(uint256(_currentTokenId)) || H721.burned(uint256(_currentTokenId))) {
         _currentTokenId += 1;
       }
@@ -164,6 +163,16 @@ contract CxipERC721 is ERC721H {
     H721.sourceMint(tokenData.creator, tokenId);
     uint256 id = H721.sourceGetChainPrepend() + uint256(tokenId);
     _tokenData[id] = tokenData;
+  }
+
+  function creator(uint256 _tokenId) external view returns (address) {
+    return _tokenData[_tokenId].creator;
+  }
+
+  function payloadVerification(uint256 _tokenId) external view returns (string memory URI, bytes32 payloadHash, Verification memory payloadSignature) {
+    URI = _tokenData[_tokenId].URI;
+    payloadHash = _tokenData[_tokenId].payloadHash;
+    payloadSignature = _tokenData[_tokenId].payloadSignature;
   }
 
   function bridgeIn(
