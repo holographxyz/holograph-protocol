@@ -7,6 +7,7 @@ import "./abstract/Initializable.sol";
 
 import "./enum/ChainIdType.sol";
 import "./enum/InterfaceType.sol";
+import "./enum/TokenUriType.sol";
 
 import "./interface/CollectionURI.sol";
 import "./interface/ERC20.sol";
@@ -28,8 +29,13 @@ import "./library/Strings.sol";
 contract Interfaces is Admin, Initializable {
   mapping(InterfaceType => mapping(bytes4 => bool)) private _supportedInterfaces;
   mapping(ChainIdType => mapping(uint256 => mapping(ChainIdType => uint256))) private _chainIdMap;
+  mapping(TokenUriType => string) private _prependURI;
 
   constructor() {
+    _prependURI[TokenUriType.IPFS] = "ipfs://";
+    _prependURI[TokenUriType.HTTPS] = "https://";
+    _prependURI[TokenUriType.ARWEAVE] = "ar://";
+
     // EVM -> HOLOGRAPH
     // eth
     _chainIdMap[ChainIdType.EVM][1][ChainIdType.HOLOGRAPH] = 1;
@@ -173,6 +179,10 @@ contract Interfaces is Admin, Initializable {
     ChainIdType toChainType
   ) external view returns (uint256 toChainId) {
     return _chainIdMap[fromChainType][fromChainId][toChainType];
+  }
+
+  function getUriPrepend(TokenUriType uriType) external view returns (string memory prepend) {
+    prepend = _prependURI[uriType];
   }
 
   function updateChainIdMap(

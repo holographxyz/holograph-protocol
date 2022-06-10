@@ -4,6 +4,7 @@
 
 import "../enum/ChainIdType.sol";
 import "../enum/InterfaceType.sol";
+import "../enum/TokenUriType.sol";
 
 interface IInterfaces {
   function contractURI(
@@ -27,6 +28,8 @@ interface IInterfaces {
     uint256 fromChainId,
     ChainIdType toChainType
   ) external view returns (uint256 toChainId);
+
+  function getUriPrepend(TokenUriType uriType) external view returns (string memory prepend);
 
   function updateChainIdMap(
     ChainIdType fromChainType,

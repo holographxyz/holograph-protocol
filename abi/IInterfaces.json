@@ -70,6 +70,25 @@
   {
     "inputs": [
       {
+        "internalType": "enum TokenUriType",
+        "name": "uriType",
+        "type": "uint8"
+      }
+    ],
+    "name": "getUriPrepend",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "prepend",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "enum InterfaceType",
         "name": "interfaceType",
         "type": "uint8"

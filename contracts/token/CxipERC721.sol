@@ -108,6 +108,9 @@ import "../abstract/ERC721H.sol";
 import "../enum/TokenUriType.sol";
 
 import "../interface/ERC721Holograph.sol";
+import "../interface/IInterfaces.sol";
+import "../interface/IHolograph.sol";
+import "../interface/IHolographer.sol";
 
 /**
  * @title CXIP ERC-721 Collection that is bridgeable via Holograph
@@ -132,11 +135,6 @@ contract CxipERC721 is ERC721H {
   mapping(uint256 => TokenUriType) private _tokenUriType;
 
   /**
-   * @dev Mapping of URI prepends.
-   */
-  mapping(TokenUriType => string) private _prependURI;
-
-  /**
    * @dev Mapping of IPFS URIs for tokenIds.
    */
   mapping(uint256 => mapping(TokenUriType => string)) private _tokenURIs;
@@ -154,9 +152,6 @@ contract CxipERC721 is ERC721H {
   function init(bytes memory data) external override returns (bytes4) {
     // we set this as default type since that's what Mint is currently using
     _uriType = TokenUriType.IPFS;
-    _prependURI[TokenUriType.IPFS] = "ipfs://";
-    _prependURI[TokenUriType.HTTPS] = "https://";
-    _prependURI[TokenUriType.ARWEAVE] = "ar://";
     address owner = abi.decode(data, (address));
     _owner = owner;
     // run underlying initializer logic
@@ -172,7 +167,13 @@ contract CxipERC721 is ERC721H {
     if (uriType == TokenUriType.UNDEFINED) {
       uriType = _uriType;
     }
-    return string(abi.encodePacked(_prependURI[uriType], _tokenURIs[_tokenId][uriType]));
+    return
+      string(
+        abi.encodePacked(
+          IInterfaces(IHolograph(IHolographer(holographer()).getHolograph()).getInterfaces()).getUriPrepend(uriType),
+          _tokenURIs[_tokenId][uriType]
+        )
+      );
   }
 
   function cxipMint(
