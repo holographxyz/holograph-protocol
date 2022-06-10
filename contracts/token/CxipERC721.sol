@@ -169,7 +169,15 @@ contract CxipERC721 is ERC721H {
     return _tokenData[_tokenId].creator;
   }
 
-  function payloadVerification(uint256 _tokenId) external view returns (string memory URI, bytes32 payloadHash, Verification memory payloadSignature) {
+  function payloadVerification(uint256 _tokenId)
+    external
+    view
+    returns (
+      string memory URI,
+      bytes32 payloadHash,
+      Verification memory payloadSignature
+    )
+  {
     URI = _tokenData[_tokenId].URI;
     payloadHash = _tokenData[_tokenId].payloadHash;
     payloadSignature = _tokenData[_tokenId].payloadSignature;

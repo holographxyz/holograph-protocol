@@ -81,10 +81,9 @@ contract HolographFactory is Admin, Initializable {
       holograph := sload(precomputeslot("eip1967.Holograph.Bridge.holograph"))
     }
     require(
-      IInitializable(holographerAddress).init(abi.encode(
-      abi.encode(config.chainType, holograph, config.contractType, sourceContractAddress),
-      config.initCode
-    )) == IInitializable.init.selector,
+      IInitializable(holographerAddress).init(
+        abi.encode(abi.encode(config.chainType, holograph, config.contractType, sourceContractAddress), config.initCode)
+      ) == IInitializable.init.selector,
       "initialization failed"
     );
     IHolographRegistry(getRegistry()).factoryDeployedHash(hash, holographerAddress);
