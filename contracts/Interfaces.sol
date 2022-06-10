@@ -274,16 +274,20 @@ contract Interfaces is Admin, Initializable {
     _chainIdMap[ChainIdType.HOLOGRAPH][4294967295][ChainIdType.LAYERZERO] = 65535;
   }
 
+  function getUriPrepend(TokenUriType uriType) external view returns (string memory prepend) {
+    prepend = _prependURI[uriType];
+  }
+
+  function updateUriPrepend(TokenUriType uriType, string calldata prepend) external onlyAdmin {
+    _prependURI[uriType] = prepend;
+  }
+
   function getChainId(
     ChainIdType fromChainType,
     uint256 fromChainId,
     ChainIdType toChainType
   ) external view returns (uint256 toChainId) {
     return _chainIdMap[fromChainType][fromChainId][toChainType];
-  }
-
-  function getUriPrepend(TokenUriType uriType) external view returns (string memory prepend) {
-    prepend = _prependURI[uriType];
   }
 
   function updateChainIdMap(
