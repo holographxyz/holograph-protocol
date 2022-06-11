@@ -343,7 +343,8 @@ const genesisDeployHelper = async function (
   hre: LeanHardhatRuntimeEnvironment,
   salt: string,
   name: string,
-  initCode: string
+  initCode: string,
+  contractAddress: string = zeroAddress()
 ): Promise<Contract> {
   const chainId: string = BigNumber.from(networks[hre.networkName].chain).toHexString();
   const { deployments, getNamedAccounts, ethers } = hre;
@@ -365,7 +366,10 @@ const genesisDeployHelper = async function (
       // we do nothing
     }
   }
-  if (!isContractDeployed(contract)) {
+  if (
+    !isContractDeployed(contract) ||
+    (contract != null && (contract.address as string).toLowerCase() != contractAddress.toLowerCase())
+  ) {
     const contractBytecode: BytesLike = ((await ethers.getContractFactory(name)) as ContractFactory).bytecode;
     const contractDeterministic = await deterministicCustom(name, {
       from: deployer,

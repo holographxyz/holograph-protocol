@@ -226,7 +226,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
           futureRegistryProxyAddress,
           futureTreasuryProxyAddress,
         ]
-      )
+      ),
+      futureHolographAddress
     );
   } else {
     hre.deployments.log('"Holograph" is already deployed. Checking configs.');
@@ -286,7 +287,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       generateInitCode(
         ['address', 'address', 'address', 'address', 'address'],
         [zeroAddress(), zeroAddress(), zeroAddress(), zeroAddress(), zeroAddress()]
-      )
+      ),
+      futureBridgeAddress
     );
   } else {
     hre.deployments.log('"HolographBridge" is already deployed.');
@@ -315,7 +317,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
             ]
           ),
         ]
-      )
+      ),
+      futureBridgeProxyAddress
     );
   } else {
     hre.deployments.log('"HolographBridgeProxy" is already deployed. Checking configs.');
@@ -379,7 +382,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       hre,
       salt,
       'HolographFactory',
-      generateInitCode(['address', 'address', 'address'], [zeroAddress(), zeroAddress(), zeroAddress()])
+      generateInitCode(['address', 'address', 'address'], [zeroAddress(), zeroAddress(), zeroAddress()]),
+      futureFactoryAddress
     );
   } else {
     hre.deployments.log('"HolographFactory" is already deployed.');
@@ -405,7 +409,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
             ]
           ),
         ]
-      )
+      ),
+      futureFactoryProxyAddress
     );
   } else {
     hre.deployments.log('"HolographFactoryProxy" is already deployed. Checking configs.');
@@ -451,7 +456,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       generateInitCode(
         ['address', 'address', 'address', 'address'],
         [zeroAddress(), zeroAddress(), zeroAddress(), zeroAddress()]
-      )
+      ),
+      futureOperatorAddress
     );
   } else {
     hre.deployments.log('"HolographOperator" is already deployed.');
@@ -474,7 +480,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
             [futureBridgeProxyAddress, futureHolographAddress, futureInterfacesAddress, futureRegistryProxyAddress]
           ),
         ]
-      )
+      ),
+      futureOperatorProxyAddress
     );
   } else {
     hre.deployments.log('"HolographOperatorProxy" is already deployed. Checking configs.');
@@ -531,7 +538,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       hre,
       salt,
       'HolographRegistry',
-      generateInitCode(['address', 'bytes32[]'], [zeroAddress(), []])
+      generateInitCode(['address', 'bytes32[]'], [zeroAddress(), []]),
+      futureRegistryAddress
     );
   } else {
     hre.deployments.log('"HolographRegistry" is already deployed.');
@@ -564,7 +572,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
             ]
           ),
         ]
-      )
+      ),
+      futureRegistryProxyAddress
     );
   } else {
     hre.deployments.log('"HolographRegistryProxy" is already deployed. Checking configs.');
@@ -603,7 +612,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       generateInitCode(
         ['address', 'address', 'address', 'address'],
         [zeroAddress(), zeroAddress(), zeroAddress(), zeroAddress()]
-      )
+      ),
+      futureTreasuryAddress
     );
   } else {
     hre.deployments.log('"HolographTreasury" is already deployed.');
@@ -626,7 +636,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
             [futureBridgeProxyAddress, futureHolographAddress, futureOperatorProxyAddress, futureRegistryProxyAddress]
           ),
         ]
-      )
+      ),
+      futureTreasuryProxyAddress
     );
   } else {
     hre.deployments.log('"HolographTreasuryProxy" is already deployed. Checking configs.');
@@ -672,7 +683,13 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   let interfacesDeployedCode: string = await hre.provider.send('eth_getCode', [futureInterfacesAddress]);
   if (interfacesDeployedCode == '0x' || interfacesDeployedCode == '') {
     hre.deployments.log('"Interfaces" bytecode not found, need to deploy"');
-    let interfaces = await genesisDeployHelper(hre, salt, 'Interfaces', generateInitCode(['address'], [deployer]));
+    let interfaces = await genesisDeployHelper(
+      hre,
+      salt,
+      'Interfaces',
+      generateInitCode(['address'], [deployer]),
+      futureInterfacesAddress
+    );
   } else {
     hre.deployments.log('"Interfaces" is already deployed.');
   }
@@ -685,7 +702,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       hre,
       salt,
       'PA1D',
-      generateInitCode(['address', 'uint256'], [deployer, '0x' + '00'.repeat(32)])
+      generateInitCode(['address', 'uint256'], [deployer, '0x' + '00'.repeat(32)]),
+      futureRoyaltiesAddress
     );
   } else {
     hre.deployments.log('"PA1D" is already deployed..');
