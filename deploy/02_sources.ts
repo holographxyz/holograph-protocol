@@ -210,6 +210,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   // Holograph
   let holographDeployedCode: string = await hre.provider.send('eth_getCode', [futureHolographAddress]);
   if (holographDeployedCode == '0x' || holographDeployedCode == '') {
+    hre.deployments.log('"Holograph" bytecode not found, need to deploy"');
     let holograph = await genesisDeployHelper(
       hre,
       salt,
@@ -277,6 +278,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   // HolographBridge
   let bridgeDeployedCode: string = await hre.provider.send('eth_getCode', [futureBridgeAddress]);
   if (bridgeDeployedCode == '0x' || bridgeDeployedCode == '') {
+    hre.deployments.log('"HolographBridge" bytecode not found, need to deploy"');
     let holographBridge = await genesisDeployHelper(
       hre,
       salt,
@@ -293,6 +295,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   // HolographBridgeProxy
   let bridgeProxyDeployedCode: string = await hre.provider.send('eth_getCode', [futureBridgeProxyAddress]);
   if (bridgeProxyDeployedCode == '0x' || bridgeProxyDeployedCode == '') {
+    hre.deployments.log('"HolographBridgeProxy" bytecode not found, need to deploy"');
     let holographBridgeProxy = await genesisDeployHelper(
       hre,
       salt,
@@ -371,6 +374,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   // HolographFactory
   let factoryDeployedCode: string = await hre.provider.send('eth_getCode', [futureFactoryAddress]);
   if (factoryDeployedCode == '0x' || factoryDeployedCode == '') {
+    hre.deployments.log('"HolographFactory" bytecode not found, need to deploy"');
     let holographFactory = await genesisDeployHelper(
       hre,
       salt,
@@ -384,6 +388,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   // HolographFactoryProxy
   let factoryProxyDeployedCode: string = await hre.provider.send('eth_getCode', [futureFactoryProxyAddress]);
   if (factoryProxyDeployedCode == '0x' || factoryProxyDeployedCode == '') {
+    hre.deployments.log('"HolographFactoryProxy" bytecode not found, need to deploy"');
     let holographFactoryProxy = await genesisDeployHelper(
       hre,
       salt,
@@ -438,6 +443,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   // HolographOperator
   let operatorDeployedCode: string = await hre.provider.send('eth_getCode', [futureOperatorAddress]);
   if (operatorDeployedCode == '0x' || operatorDeployedCode == '') {
+    hre.deployments.log('"HolographOperator" bytecode not found, need to deploy"');
     let holographOperator = await genesisDeployHelper(
       hre,
       salt,
@@ -454,6 +460,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   // HolographOperatorProxy
   let operatorProxyDeployedCode: string = await hre.provider.send('eth_getCode', [futureOperatorProxyAddress]);
   if (operatorProxyDeployedCode == '0x' || operatorProxyDeployedCode == '') {
+    hre.deployments.log('"HolographOperatorProxy" bytecode not found, need to deploy"');
     let holographOperatorProxy = await genesisDeployHelper(
       hre,
       salt,
@@ -519,6 +526,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   // HolographRegistry
   let registryDeployedCode: string = await hre.provider.send('eth_getCode', [futureRegistryAddress]);
   if (registryDeployedCode == '0x' || registryDeployedCode == '') {
+    hre.deployments.log('"HolographRegistry" bytecode not found, need to deploy"');
     let holographRegistry = await genesisDeployHelper(
       hre,
       salt,
@@ -532,6 +540,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   // HolographRegistryProxy
   let registryProxyDeployedCode: string = await hre.provider.send('eth_getCode', [futureRegistryProxyAddress]);
   if (registryProxyDeployedCode == '0x' || registryProxyDeployedCode == '') {
+    hre.deployments.log('"HolographRegistryProxy" bytecode not found, need to deploy"');
     let holographRegistryProxy = await genesisDeployHelper(
       hre,
       salt,
@@ -586,6 +595,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   // HolographTreasury
   let treasuryDeployedCode: string = await hre.provider.send('eth_getCode', [futureTreasuryAddress]);
   if (treasuryDeployedCode == '0x' || treasuryDeployedCode == '') {
+    hre.deployments.log('"HolographTreasury" bytecode not found, need to deploy"');
     let holographTreasury = await genesisDeployHelper(
       hre,
       salt,
@@ -602,6 +612,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   // HolographTreasuryProxy
   let treasuryProxyDeployedCode: string = await hre.provider.send('eth_getCode', [futureTreasuryProxyAddress]);
   if (treasuryProxyDeployedCode == '0x' || treasuryProxyDeployedCode == '') {
+    hre.deployments.log('"HolographTreasuryProxy" bytecode not found, need to deploy"');
     let holographTreasuryProxy = await genesisDeployHelper(
       hre,
       salt,
@@ -660,6 +671,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   // Interfaces
   let interfacesDeployedCode: string = await hre.provider.send('eth_getCode', [futureInterfacesAddress]);
   if (interfacesDeployedCode == '0x' || interfacesDeployedCode == '') {
+    hre.deployments.log('"Interfaces" bytecode not found, need to deploy"');
     let interfaces = await genesisDeployHelper(hre, salt, 'Interfaces', generateInitCode(['address'], [deployer]));
   } else {
     hre.deployments.log('"Interfaces" is already deployed.');
@@ -668,6 +680,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   // PA1D
   let royaltiesDeployedCode: string = await hre.provider.send('eth_getCode', [futureRoyaltiesAddress]);
   if (royaltiesDeployedCode == '0x' || royaltiesDeployedCode == '') {
+    hre.deployments.log('"PA1D" bytecode not found, need to deploy"');
     let royalties = await genesisDeployHelper(
       hre,
       salt,
