@@ -522,6 +522,15 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
     return _burnedTokens[tokenId];
   }
 
+  /**
+   * @notice Decimal places to have for totalSupply.
+   * @dev Since ERC721s are single, we use 0 as the decimal places to make sure a round number for totalSupply.
+   * @return uint256 Returns the number of decimal places to have for totalSupply.
+   */
+  function decimals() external pure returns (uint256) {
+    return 0;
+  }
+
   function exists(uint256 tokenId) public view returns (bool) {
     return _tokenOwner[tokenId] != address(0);
   }
@@ -605,11 +614,7 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
    * @return uint256 Returns the total number of active (not burned) tokens.
    */
   function totalSupply() external view returns (uint256) {
-    return _allTokens.length * 1000000000000000000;
-  }
-
-  function decimals() external view returns (uint256) {
-    return 18;
+    return _allTokens.length;
   }
 
   /**

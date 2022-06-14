@@ -158,6 +158,8 @@ interface ERC721Holograph is ERC165, ERC721, ERC721Enumerable, ERC721Metadata, E
 
   function burned(uint256 tokenId) external view returns (bool);
 
+  function decimals() external pure returns (uint256);
+
   function exists(uint256 tokenId) external view returns (bool);
 
   function ownerOf(uint256 tokenId) external view returns (address);
