@@ -421,6 +421,12 @@ contract Interfaces is Admin, Initializable {
       ERC721Metadata.name.selector ^ ERC721Metadata.symbol.selector ^ ERC721Metadata.tokenURI.selector
     ] = true;
 
+    // adding ERC20-like-Metadata support for Etherscan totalSupply fix
+    _supportedInterfaces[InterfaceType.ERC721][ERC20Metadata.decimals.selector] = true;
+    _supportedInterfaces[InterfaceType.ERC721][
+      ERC721Metadata.name.selector ^ ERC721Metadata.symbol.selector ^ ERC20Metadata.decimals.selector
+    ] = true;
+
     // ERC721TokenReceiver
     _supportedInterfaces[InterfaceType.ERC721][ERC721TokenReceiver.onERC721Received.selector] = true;
 
