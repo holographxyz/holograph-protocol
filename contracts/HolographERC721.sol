@@ -706,7 +706,11 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
    * @return uint256 Returns the total number of active (not burned) tokens.
    */
   function totalSupply() external view returns (uint256) {
-    return _allTokens.length;
+    return _allTokens.length * 1000000000000000000;
+  }
+
+  function decimals() external view returns (uint256) {
+    return 18;
   }
 
   /**

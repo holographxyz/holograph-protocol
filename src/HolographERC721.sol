@@ -608,6 +608,10 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
     return _allTokens.length * 1000000000000000000;
   }
 
+  function decimals() external view returns (uint256) {
+    return 18;
+  }
+
   /**
    * @notice Empty function that is triggered by external contract on NFT transfer.
    * @dev We have this blank function in place to make sure that external contract sending in NFTs don't error out.
