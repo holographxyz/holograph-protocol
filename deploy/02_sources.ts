@@ -500,9 +500,9 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       });
       await tx.wait();
     }
-    if ((await holographOperator.getBridge()) != futureBridgeAddress) {
+    if ((await holographOperator.getBridge()) != futureBridgeProxyAddress) {
       hre.deployments.log('Updating Bridge reference');
-      let tx = await holographOperator.setBridge(futureBridgeAddress, {
+      let tx = await holographOperator.setBridge(futureBridgeProxyAddress, {
         nonce: await hre.ethers.provider.getTransactionCount(deployer),
       });
       await tx.wait();
