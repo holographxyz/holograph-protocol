@@ -25,8 +25,8 @@ const MUMBAI_PRIVATE_KEY = process.env.MUMBAI_PRIVATE_KEY || DEPLOYER;
 
 const CXIP_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY || DEPLOYER;
 
-const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
-const POLYGONSCAN_API_KEY = process.env.POLYGONSCAN_API_KEY;
+const ETHERSCAN_API_KEY: string = process.env.ETHERSCAN_API_KEY || '';
+const POLYGONSCAN_API_KEY: string = process.env.POLYGONSCAN_API_KEY || '';
 
 const DEPLOYMENT_SALT = parseInt(process.env.DEPLOYMENT_SALT || '0');
 
@@ -203,6 +203,7 @@ const config: HardhatUserConfig = {
       rinkeby: ETHERSCAN_API_KEY,
       polygon: POLYGONSCAN_API_KEY,
       polygonMumbai: POLYGONSCAN_API_KEY,
+    }
   },
   hardhatHolographContractBuilder: {
     runOnCompile: true,
