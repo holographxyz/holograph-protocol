@@ -203,7 +203,7 @@ const config: HardhatUserConfig = {
       rinkeby: ETHERSCAN_API_KEY,
       polygon: POLYGONSCAN_API_KEY,
       polygonMumbai: POLYGONSCAN_API_KEY,
-    }
+    },
   },
   hardhatHolographContractBuilder: {
     runOnCompile: true,
