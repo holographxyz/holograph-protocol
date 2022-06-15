@@ -21,7 +21,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
           constructorArguments: [],
         });
       } catch (error) {
-        hre.deployments.log(`Failed to verify $contract ${error}`);
+        hre.deployments.log(`Failed to verify ${contract} ${error}`);
       }
     }
   } else {
