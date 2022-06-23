@@ -259,7 +259,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
       _payload,
       payable(msgSender),
       address(this),
-      bytes("")
+      abi.encodePacked(uint16(1), uint256(52000 + (_payload.length * 25)))
     );
   }
 

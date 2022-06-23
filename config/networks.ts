@@ -38,6 +38,7 @@ const networks: Networks = {
   eth: {
     chain: 1,
     rpc: 'https://eth.getblock.io/mainnet/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
+    webSocket: 'wss://eth.getblock.io/mainnet/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
     holographId: 1,
     tokenName: 'Ethereum',
     tokenSymbol: 'ETH',
@@ -46,6 +47,7 @@ const networks: Networks = {
   eth_rinkeby: {
     chain: 4,
     rpc: process.env.RINKEBY_RPC_URL || 'https://eth.getblock.io/rinkeby/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
+    webSocket: 'wss://eth.getblock.io/rinkeby/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
     holographId: 4000000001,
     tokenName: 'Ethereum Rinkeby',
     tokenSymbol: 'RIN',
@@ -54,6 +56,7 @@ const networks: Networks = {
   eth_ropsten: {
     chain: 3,
     rpc: 'https://eth.getblock.io/ropsten/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
+    webSocket: 'wss://eth.getblock.io/ropsten/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
     holographId: 4000000009, // need to set in chain libraries !
     tokenName: 'Ethereum Ropsten',
     tokenSymbol: 'ROP',
@@ -70,6 +73,7 @@ const networks: Networks = {
   eth_goerli: {
     chain: 5,
     rpc: 'https://eth.getblock.io/goerli/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
+    webSocket: 'wss://eth.getblock.io/goerli/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
     holographId: 4000000011, // need to set in chain libraries !
     tokenName: 'Ethereum Goerli',
     tokenSymbol: 'ETH',
@@ -78,6 +82,7 @@ const networks: Networks = {
   bsc: {
     chain: 56,
     rpc: 'https://bsc.getblock.io/mainnet/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
+    webSocket: 'wss://bsc.getblock.io/mainnet/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
     holographId: 2,
     tokenName: 'BNB',
     tokenSymbol: 'BNB',
@@ -86,6 +91,7 @@ const networks: Networks = {
   bsc_testnet: {
     chain: 97,
     rpc: 'https://bsc.getblock.io/testnet/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
+    webSocket: 'wss://bsc.getblock.io/testnet/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
     holographId: 4000000002,
     tokenName: 'BNB Testnet',
     tokenSymbol: 'tBNB',
@@ -94,6 +100,7 @@ const networks: Networks = {
   avax: {
     chain: 43114,
     rpc: 'https://avax.getblock.io/mainnet/ext/bc/C/rpc?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
+    webSocket: 'wss://avax.getblock.io/mainnet/ext/bc/C/rpc?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
     holographId: 3,
     tokenName: 'Avalanche',
     tokenSymbol: 'AVAX',
@@ -112,6 +119,7 @@ const networks: Networks = {
   matic: {
     chain: 137,
     rpc: 'https://matic.getblock.io/mainnet/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
+    webSocket: 'wss://matic.getblock.io/mainnet/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
     holographId: 4,
     tokenName: 'Polygon',
     tokenSymbol: 'MATIC',
@@ -121,6 +129,7 @@ const networks: Networks = {
     chain: 80001,
     rpc:
       process.env.MUMBAI_RPC_URL || 'https://matic.getblock.io/testnet/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
+    webSocket: 'wss://matic.getblock.io/testnet/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
     holographId: 4000000004,
     tokenName: 'Polygon Mumbai',
     tokenSymbol: 'MATIC',
@@ -129,6 +138,7 @@ const networks: Networks = {
   ftm: {
     chain: 250,
     rpc: 'https://ftm.getblock.io/mainnet/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
+    webSocket: 'wss://ftm.getblock.io/mainnet/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
     holographId: 5,
     tokenName: 'Fantom',
     tokenSymbol: 'FTM',
@@ -145,6 +155,7 @@ const networks: Networks = {
   arbitrum: {
     chain: 42161,
     rpc: 'https://arbitrum.getblock.io/mainnet/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
+    webSocket: 'wss://arbitrum.getblock.io/mainnet/?api_key=7bf62a30-d403-4afc-99dc-462dfbfb10de',
     holographId: 6,
     tokenName: 'Arbitrum',
     tokenSymbol: 'ETH',

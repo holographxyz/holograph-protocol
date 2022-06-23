@@ -48,6 +48,7 @@ export interface Network {
   tokenName: string;
   tokenSymbol: string;
   lzEndpoint?: string;
+  webSocket?: string;
 }
 
 export interface Networks {
@@ -78,14 +79,14 @@ const stringToHex = function (str: string): string {
   return web3.utils.utf8ToHex(str) as string;
 };
 
-const randomHex = function (bytes: number): string {
+const randomHex = function (bytes: number, prepend: boolean = true): string {
   let text: string = '';
   for (let i: number = 0; i < bytes; i++) {
     text += Math.floor(Math.random() * 255)
       .toString(16)
       .padStart(2, '0');
   }
-  return '0x' + text;
+  return (prepend ? '0x' : '') + text;
 };
 
 const StrictECDSA = function (signature: Signature): Signature {

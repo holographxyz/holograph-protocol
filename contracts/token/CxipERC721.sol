@@ -180,15 +180,18 @@ contract CxipERC721 is ERC721H {
     string calldata tokenUri
   ) external onlyHolographer onlyOwner {
     ERC721Holograph H721 = ERC721Holograph(holographer());
+    uint256 chainPrepend = H721.sourceGetChainPrepend();
     if (tokenId == 0) {
       _currentTokenId += 1;
-      while (H721.exists(uint256(_currentTokenId)) || H721.burned(uint256(_currentTokenId))) {
+      while (
+        H721.exists(chainPrepend + uint256(_currentTokenId)) || H721.burned(chainPrepend + uint256(_currentTokenId))
+      ) {
         _currentTokenId += 1;
       }
       tokenId = _currentTokenId;
     }
     H721.sourceMint(msgSender(), tokenId);
-    uint256 id = H721.sourceGetChainPrepend() + uint256(tokenId);
+    uint256 id = chainPrepend + uint256(tokenId);
     if (uriType == TokenUriType.UNDEFINED) {
       uriType = _uriType;
     }
