@@ -101,13 +101,9 @@
 
 pragma solidity 0.8.13;
 
-<<<<<<< HEAD:contracts/enum/TokenUriType.sol
 enum TokenUriType {
   UNDEFINED, //   0
   IPFS, //        1
   HTTPS, //       2
   ARWEAVE //      3
 }
-=======
-interface IHolographTreasury {}
->>>>>>> main:contracts/interface/IHolographTreasury.sol

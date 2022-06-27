@@ -250,13 +250,19 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
       // pop operator to ensure that they cannot be selected for any other job until this one completes
       // decrease pod size to accomodate popped operator
       podSize--;
-      _operatorJobs[jobHash] = OperatorJob(pod, _blockTime, _operatorPods[pod][operatorIndex], block.number, [
-        (random + uint256(blockhash(block.number - 1))) % podSize,
-        (random + uint256(blockhash(block.number - 2))) % podSize,
-        (random + uint256(blockhash(block.number - 3))) % podSize,
-        (random + uint256(blockhash(block.number - 4))) % podSize,
-        (random + uint256(blockhash(block.number - 5))) % podSize
-      ]);
+      _operatorJobs[jobHash] = OperatorJob(
+        pod,
+        _blockTime,
+        _operatorPods[pod][operatorIndex],
+        block.number,
+        [
+          (random + uint256(blockhash(block.number - 1))) % podSize,
+          (random + uint256(blockhash(block.number - 2))) % podSize,
+          (random + uint256(blockhash(block.number - 3))) % podSize,
+          (random + uint256(blockhash(block.number - 4))) % podSize,
+          (random + uint256(blockhash(block.number - 5))) % podSize
+        ]
+      );
       _popOperator(pod, operatorIndex);
       emit AvailableOperatorJob(jobHash, _payload);
     }
@@ -283,7 +289,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
         revert(0, returndatasize())
       }
     }
-     delete _operatorJobs[hash];
+    delete _operatorJobs[hash];
   }
 
   function jobEstimator(
@@ -447,13 +453,17 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
   }
 
   function getPodBondAmount(uint256 pod) external view returns (uint256) {
-    return (_podMultiplier ** pod) * _baseBondAmount;
+    return (_podMultiplier**pod) * _baseBondAmount;
   }
 
-  function bondUtilityToken(address operator, uint256 amount, uint256 pod) external {
+  function bondUtilityToken(
+    address operator,
+    uint256 amount,
+    uint256 pod
+  ) external {
     require(!_bondedOperators[operator], "HOLOGRAPH: operator is bonded");
     unchecked {
-      require(((_podMultiplier ** pod) * _baseBondAmount) <= amount, "HOLOGRAPH: bond amount too small");
+      require(((_podMultiplier**pod) * _baseBondAmount) <= amount, "HOLOGRAPH: bond amount too small");
       // subtract difference and only keep bond amount
       if (_operatorPods.length < pod + 1) {
         for (uint256 i = _operatorPods.length; i < pod + 1; i++) {
