@@ -1,0 +1,649 @@
+bridge on  main [!] is 📦 v1.0.2 via ⬢ v16.14.2 took 3s
+➜ yarn test
+yarn run v1.22.18
+$ hardhat test
+No need to generate any newer typings.
+
+
+  Validating the Holograph Protocol deployments (L1)
+
+    ███ relevant contracts loaded
+
+    Check that contract addresses are properly deployed
+      Interfaces:
+        ✔ should return correct bytecode
+      CxipERC721 Holographer:
+        ✔ should return correct bytecode
+      CxipERC721 Enforcer:
+        ✔ should return correct bytecode
+      CxipERC721:
+        ✔ should return correct bytecode
+      CxipERC721Proxy:
+        ✔ should return correct bytecode
+      ERC20Mock:
+        ✔ should return correct bytecode
+      Holograph:
+        ✔ should return correct bytecode
+      HolographBridge:
+        ✔ should return correct bytecode
+      HolographBridgeProxy:
+        ✔ should return correct bytecode
+      Holographer:
+        ✔ should return correct bytecode
+      HolographERC20:
+        ✔ should return correct bytecode
+      HolographERC721:
+        ✔ should return correct bytecode
+      HolographFactory:
+        ✔ should return correct bytecode
+      HolographFactoryProxy:
+        ✔ should return correct bytecode
+      HolographGenesis:
+        ✔ should return correct bytecode
+      HolographOperator:
+        ✔ should return correct bytecode
+      HolographOperatorProxy:
+        ✔ should return correct bytecode
+      HolographRegistry:
+        ✔ should return correct bytecode
+      HolographRegistryProxy:
+        ✔ should return correct bytecode
+      HolographTreasury:
+        ✔ should return correct bytecode
+      HolographTreasuryProxy:
+        ✔ should return correct bytecode
+      hToken Holographer:
+        ✔ should return correct bytecode
+      hToken Enforcer:
+        ✔ should return correct bytecode
+      hToken:
+        ✔ should return correct bytecode
+      MockERC721Receiver:
+        ✔ should return correct bytecode
+      MockLZEndpoint:
+        ✔ should return correct bytecode
+      PA1D:
+        ✔ should return correct bytecode
+      SampleERC20 Holographer:
+        ✔ should return correct bytecode
+      SampleERC20 Enforcer:
+        ✔ should return correct bytecode
+      SampleERC20:
+        ✔ should return correct bytecode
+      SampleERC721 Holographer:
+        ✔ should return correct bytecode
+      SampleERC721 Enforcer:
+        ✔ should return correct bytecode
+      SampleERC721:
+        ✔ should return correct bytecode
+
+  Validating the Holograph Protocol deployments (L2)
+
+    ███ relevant contracts loaded
+
+    Check that contract addresses are properly deployed
+      Interfaces:
+        ✔ should return correct bytecode
+      CxipERC721 Holographer:
+        ✔ should return correct bytecode
+      CxipERC721 Enforcer:
+        ✔ should return correct bytecode
+      CxipERC721:
+        ✔ should return correct bytecode
+      CxipERC721Proxy:
+        ✔ should return correct bytecode
+      ERC20Mock:
+        ✔ should return correct bytecode
+      Holograph:
+        ✔ should return correct bytecode
+      HolographBridge:
+        ✔ should return correct bytecode
+      HolographBridgeProxy:
+        ✔ should return correct bytecode
+      Holographer:
+        ✔ should return correct bytecode
+      HolographERC20:
+        ✔ should return correct bytecode
+      HolographERC721:
+        ✔ should return correct bytecode
+      HolographFactory:
+        ✔ should return correct bytecode
+      HolographFactoryProxy:
+        ✔ should return correct bytecode
+      HolographGenesis:
+        ✔ should return correct bytecode
+      HolographOperator:
+        ✔ should return correct bytecode
+      HolographOperatorProxy:
+        ✔ should return correct bytecode
+      HolographRegistry:
+        ✔ should return correct bytecode
+      HolographRegistryProxy:
+        ✔ should return correct bytecode
+      HolographTreasury:
+        ✔ should return correct bytecode
+      HolographTreasuryProxy:
+        ✔ should return correct bytecode
+      hToken Holographer:
+        ✔ should return correct bytecode
+      hToken Enforcer:
+        ✔ should return correct bytecode
+      hToken:
+        ✔ should return correct bytecode
+      MockERC721Receiver:
+        ✔ should return correct bytecode
+      MockLZEndpoint:
+        ✔ should return correct bytecode
+      PA1D:
+        ✔ should return correct bytecode
+      SampleERC20 Holographer:
+        ✔ should return correct bytecode
+      SampleERC20 Enforcer:
+        ✔ should return correct bytecode
+      SampleERC20:
+        ✔ should return correct bytecode
+      SampleERC721 Holographer:
+        ✔ should return correct bytecode
+      SampleERC721 Enforcer:
+        ✔ should return correct bytecode
+      SampleERC721:
+        ✔ should return correct bytecode
+
+  Testing the Holograph ERC20 Enforcer (L1)
+
+    ███ relevant contracts loaded
+
+    Check interfaces
+      ERC165
+        ✔ supportsInterface supported
+        ✔ ERC165 interface supported
+      ERC20
+        ✔ allowance supported
+        ✔ approve supported
+        ✔ balanceOf supported
+        ✔ totalSupply supported
+        ✔ transfer supported
+        ✔ transferFrom supported
+        ✔ ERC20 interface supported
+      ERC20Metadata
+        ✔ name supported
+        ✔ symbol supported
+        ✔ decimals supported
+        ✔ ERC20Metadata interface supported
+      ERC20Burnable
+        ✔ burn supported
+        ✔ burnFrom supported
+        ✔ ERC20Burnable interface supported
+      ERC20Safer
+        ✔ safeTransfer supported
+        ✔ safeTransfer (with bytes) supported
+        ✔ safeTransferFrom supported
+        ✔ safeTransferFrom (with bytes) supported
+        ✔ ERC20Safer interface supported
+      ERC20Permit
+        ✔ permit supported
+        ✔ nonces supported
+        ✔ DOMAIN_SEPARATOR supported
+        ✔ ERC20Permit interface supported
+    Test Initializer
+      ✔ should fail initializing already initialized Holographer
+      ✔ should fail initializing already initialized ERC721 Enforcer
+    Test ERC20Metadata
+      token name:
+        ✔ should return "Sample ERC20 Token " for token name
+      token symbol:
+        ✔ should return "SMPL" for token symbol
+      token decimals:
+        ✔ should return "18" for token decimals
+    Mint ERC20 tokens
+      try to mint 12.34 SMPL tokens
+        ✔ should have a total supply of 0 SMPL tokens
+        ✔ should emit Transfer event for 12.34 SMPL tokens (69ms)
+        ✔ should have a total supply of 12.34 SMPL tokens
+        ✔ deployer wallet should show a balance of 12.34 SMPL tokens
+    Test ERC20
+      token approvals
+        ✔ should fail when approving a zero address
+        ✔ should succeed when approving valid address (59ms)
+        ✔ should succeed decreasing allowance above zero (57ms)
+        ✔ should fail decreasing allowance below zero
+        ✔ should succeed increasing allowance below max value (51ms)
+        ✔ should fail increasing allowance above max value
+        ✔ should succeed decreasing allowance to zero (49ms)
+        ✔ should succeed increasing allowance to max value (51ms)
+      failed transfer
+        ✔ should fail if sender doesn't have enough tokens
+        ✔ should fail if sending to zero address
+        ✔ should fail if sending from zero address
+        ✔ should fail if sending from not approved address
+        ✔ should fail if allowance is smaller than transfer amount (109ms)
+        ✔ should fail for non-contract onERC20Received call
+        ✔ should fail for fake onERC20Received
+        ✔ should fail safe transfer for broken "ERC20Receiver" (80ms)
+        ✔ should fail safe transfer (with bytes) for broken "ERC20Receiver" (82ms)
+        ✔ should fail safe transfer from for broken "ERC20Receiver" (177ms)
+        ✔ should fail safe transfer from (with bytes) for broken "ERC20Receiver" (175ms)
+      successful transfer
+        ✔ should succeed when transferring available tokens (61ms)
+        ✔ deployer should have a balance of 0 SMPL tokens
+        ✔ wallet1 should have a balance of 12.34 SMPL tokens
+        ✔ should succeed when safely transferring available tokens (134ms)
+        ✔ should succeed when safely transferring from available tokens (238ms)
+        ✔ wallet1 should have a balance of 0 SMPL tokens
+        ✔ deployer should have a balance of 12.34 SMPL tokens
+        ✔ should succeed when transferring using an approved spender (164ms)
+        ✔ should succeed safe transfer to "ERC20Receiver" (319ms)
+        ✔ should succeed safe transfer (with bytes) to "ERC20Receiver" (333ms)
+        ✔ should succeed safe transfer from to "ERC20Receiver" (460ms)
+        ✔ should succeed safe transfer (with bytes) to "ERC20Receiver" (443ms)
+    Test ERC20Burnable
+      ✔ should fail burning more tokens than current balance
+      ✔ should succeed burning current balance (59ms)
+      ✔ should fail burning via not approved spender (84ms)
+      ✔ should succeed burning via approved spender (106ms)
+    Test ERC20Permit
+      Check domain seperator
+        ✔ should return correct domain seperator
+      Check EIP712 permit functionality
+        ✔ should return 0 nonce
+        ✔ should fail for expired deadline
+        ✔ should fail for empty signature
+        ✔ should fail for zero address signature
+        ✔ should fail for invalid signature v value
+        ✔ should fail for invalid signature
+        ✔ should succeed for valid signature (72ms)
+    Ownership tests
+      Owner
+        ✔ should return deployer address
+        ✔ deployer should return true for isOwner
+        ✔ deployer should return true for isOwner (msgSender)
+        ✔ wallet1 should return false for isOwner
+        ✔ should return "HolographFactoryProxy" address
+        ✔ deployer should fail transferring ownership
+        ✔ deployer should set owner to deployer (69ms)
+        ✔ deployer should transfer ownership to "HolographFactoryProxy" (46ms)
+      Admin
+        ✔ admin() should return "HolographFactoryProxy" address
+        ✔ getAdmin() should return "HolographFactoryProxy" address
+        ✔ wallet1 should fail setting admin
+        ✔ deployer should succeed setting admin via "HolographFactoryProxy" (80ms)
+
+  Testing the Holograph ERC721 Enforcer (L1)
+
+    ███ relevant contracts loaded
+
+    Check interfaces
+      ERC165
+        ✔ supportsInterface supported
+        ✔ ERC165 interface supported
+      ERC721
+        ✔ balanceOf supported
+        ✔ ownerOf supported
+        ✔ safeTransferFrom supported
+        ✔ safeTransferFrom (with bytes) supported
+        ✔ transferFrom supported
+        ✔ approve supported
+        ✔ setApprovalForAll supported
+        ✔ getApproved supported
+        ✔ isApprovedForAll supported
+        ✔ ERC721 interface supported
+      ERC721Enumerable
+        ✔ totalSupply supported
+        ✔ tokenByIndex supported
+        ✔ tokenOfOwnerByIndex supported
+        ✔ ERC721Enumerable interface supported
+      ERC721Metadata
+        ✔ name supported
+        ✔ symbol supported
+        ✔ tokenURI supported
+        ✔ ERC721Metadata interface supported
+      ERC721TokenReceiver
+        ✔ onERC721Received supported
+        ✔ ERC721TokenReceiver interface supported
+      CollectionURI
+        ✔ contractURI supported
+        ✔ CollectionURI interface supported
+    Test Initializer
+      ✔ should fail initializing already initialized Holographer
+      ✔ should fail initializing already initialized ERC721 Enforcer
+    Test ERC721Metadata
+      collection name:
+        ✔ should return "Sample ERC721 Contract " for collection name
+      collection symbol:
+        ✔ should return "SMPLR" for collection symbol
+      contract URI:
+        ✔ should return correct base64 encoded JSON string for contract URI (99ms)
+    Mint ERC721 NFTs
+      try to mint SMPLR NFTs
+        ✔ should have a total supply of 0 SMPLR NFTs
+        ✔ should not exist #1 SMPLR NFT
+        ✔ NFT index 0 should fail
+        ✔ NFT owner index 0 should fail
+        ✔ should emit Transfer event for #1 SMPLR NFT (92ms)
+        ✔ should exist #1 SMPLR NFT
+        ✔ should not mark as burned #1 SMPLR NFT
+        ✔ should specify deployer as owner of #1 SMPLR NFT
+        ✔ NFT index 0 should return #1 SMPLR NFT
+        ✔ NFT owner index 0 should return #1 SMPLR NFT
+        ✔ should emit Transfer event for #2 SMPLR NFT (96ms)
+        ✔ should fail minting to zero address
+        ✔ should fail minting existing #1 SMPLR NFT
+        ✔ should fail minting burned #3 SMPLR NFT (195ms)
+        ✔ should mark as burned #3 SMPLR NFT
+        ✔ should have a total supply of 2 SMPLR NFTs
+        ✔ deployer wallet should show a balance of 2 SMPLR NFTs
+        ✔ should return an array of token ids
+        ✔ should return an array of token ids
+        ✔ should return an array of owner token ids
+        ✔ should return an array of owner token ids
+    Check NFT data
+      ✔ should return correct tokenURI for #1 SMPLR NFT
+      ✔ should return correct tokenURI for #2 SMPLR NFT
+      ✔ should fail returning tokenURI for #3 SMPLR NFT
+    Test ERC721
+      approvals
+        ✔ should return no approval for #1 SMPLR NFT
+        ✔ should succeed when approving wallet1 for #1 SMPLR NFT (47ms)
+        ✔ should return approved wallet1 for #1 SMPLR NFT
+        ✔ should succeed when unsetting approved address for #1 SMPLR NFT (48ms)
+        ✔ should return no approval for #1 SMPLR NFT
+        ✔ should clear approval on transfer for #1 SMPLR NFT (628ms)
+        ✔ wallet1 should not be approved operator for deployer
+        ✔ should succeed setting wallet1 as operator for deployer (47ms)
+        ✔ should return wallet1 as approved operator for deployer
+        ✔ should succeed unsetting wallet1 as operator for deployer (51ms)
+        ✔ wallet1 should not be approved operator for deployer
+      failed transfer
+        ✔ should fail if sender doesn't own #1 SMPLR NFT
+        ✔ should fail if transferring to zero address
+        ✔ should fail if transferring from zero address
+        ✔ should fail if transferring not owned NFT
+        ✔ should fail if transferring non-existant #3 SMPLR NFT
+        ✔ operator should fail if NFT is not the approved one (109ms)
+        ✔ should fail safe transfer for broken "ERC721TokenReceiver" (79ms)
+        ✔ should fail for non-contract onERC721Received call
+        ✔ should fail for non-existant NFT onERC721Received call (49ms)
+        ✔ should fail for fake onERC721Received call
+      successful transfer
+        ✔ deployer should succeed transferring #1 SMPLR NFT (275ms)
+        ✔ wallet1 should succeed safely transferring #1 SMPLR NFT to deployer (86ms)
+        ✔ should succeed safe transfer #1 SMPLR NFT to "ERC721TokenReceiver" (181ms)
+        ✔ approved should succeed transferring #1 SMPLR NFT (606ms)
+        ✔ approved operator should succeed transferring #1 and #2 SMPLR NFT (1086ms)
+    Burn ERC721 NFTs
+      Mint NFTs for burning
+        ✔ should mint sample NFTs for burn tests (351ms)
+      Burn NFTs
+        ✔ should fail burning non-existant #7 SMPLR NFT
+        ✔ should fail burning not owned #4 SMPLR NFT
+        ✔ should succeed burning owned #4 SMPLR NFT (295ms)
+        ✔ should succeed burning approved #5 SMPLR NFT (161ms)
+        ✔ operator should succeed burning #6 SMPLR NFT (199ms)
+    Ownership tests
+      Owner
+        ✔ should return deployer address
+        ✔ deployer should return true for isOwner
+        ✔ deployer should return true for isOwner (msgSender)
+        ✔ wallet1 should return false for isOwner
+        ✔ should return "HolographFactoryProxy" address
+        ✔ deployer should fail transferring ownership
+        ✔ deployer should set owner to deployer (67ms)
+        ✔ deployer should transfer ownership to "HolographFactoryProxy" (47ms)
+      Admin
+        ✔ admin() should return "HolographFactoryProxy" address
+        ✔ getAdmin() should return "HolographFactoryProxy" address
+        ✔ wallet1 should fail setting admin
+        ✔ deployer should succeed setting admin via "HolographFactoryProxy" (78ms)
+
+  Testing cross-chain configurations (L1 & L2)
+
+    ███ relevant contracts loaded
+
+
+    ███ relevant contracts loaded
+
+    Validate cross-chain data
+      CxipERC721
+        ✔ contract addresses should not match
+      ERC20Mock
+        ✔ contract addresses should match
+      Holograph
+        ✔ contract addresses should match
+      HolographBridge
+        ✔ contract addresses should match
+      HolographBridgeProxy
+        ✔ contract addresses should match
+      Holographer
+        ✔ contract addresses should not match
+      HolographERC20
+        ✔ contract addresses should match
+      HolographERC721
+        ✔ contract addresses should match
+      HolographFactory
+        ✔ contract addresses should match
+      HolographFactoryProxy
+        ✔ contract addresses should match
+      HolographGenesis
+        ✔ contract addresses should match
+      HolographOperator
+        ✔ contract addresses should match
+      HolographOperatorProxy
+        ✔ contract addresses should match
+      HolographRegistry
+        ✔ contract addresses should match
+      HolographRegistryProxy
+        ✔ contract addresses should match
+      HolographTreasury
+        ✔ contract addresses should match
+      HolographTreasuryProxy
+        ✔ contract addresses should match
+      hToken
+        ✔ contract addresses should not match
+      Interfaces
+        ✔ contract addresses should match
+      MockERC721Receiver
+        ✔ contract addresses should match
+      PA1D
+        ✔ contract addresses should match
+      SampleERC20
+        ✔ contract addresses should not match
+      SampleERC721
+        ✔ contract addresses should not match
+      HolographRegistry
+        ✔ contract addresses should match
+      HolographFactory
+        ✔ contract addresses should match
+      HolographBridge
+        ✔ contract addresses should match
+      hToken Holographer
+        ✔ contract addresses should not match
+      hToken HolographERC20 Enforcer
+        ✔ contract addresses should match
+      SampleERC20 Holographer
+        ✔ contract addresses should not match
+      SampleERC20 HolographERC20 Enforcer
+        ✔ contract addresses should match
+      SampleERC721 Holographer
+        ✔ contract addresses should not match
+      SampleERC721 HolographERC721 Enforcer
+        ✔ contract addresses should match
+      CxipERC721 Holographer
+        ✔ contract addresses should not match
+      CxipERC721 HolographERC721 Enforcer
+        ✔ contract addresses should match
+    Deploy cross-chain contracts
+      hToken
+        ✔ deploy l1 equivalent on l2 (241ms)
+        ✔ deploy l2 equivalent on l1 (198ms)
+      SampleERC20
+        ✔ deploy l1 equivalent on l2 (199ms)
+        ✔ deploy l2 equivalent on l1 (188ms)
+      SampleERC721
+        ✔ deploy l1 equivalent on l2 (221ms)
+        ✔ deploy l2 equivalent on l1 (192ms)
+      CxipERC721
+        ✔ deploy l1 equivalent on l2 (200ms)
+        ✔ deploy l2 equivalent on l1 (202ms)
+    Verify chain configs
+      LayerZero endpoints
+        ✔ should not be empty
+        ✔ should be same address on both chains
+      Chain IDs
+        ✔ l1 chain id should be correct
+        ✔ l2 chain id should be correct
+    Get gas calculations
+          hToken deploy l1 on l2: 3415587
+      ✔ hToken deploy l1 on l2
+          hToken deploy l2 on l1: 3415647
+      ✔ hToken deploy l2 on l1
+          SampleERC20 deploy l1 on l2: 2452036
+      ✔ SampleERC20 deploy l1 on l2
+          SampleERC20 deploy l2 on l1: 2452048
+      ✔ SampleERC20 deploy l2 on l1
+          SampleERC721 deploy l1 on l2: 2938167
+      ✔ SampleERC721 deploy l1 on l2
+          SampleERC721 deploy l2 on l1: 2938179
+      ✔ SampleERC721 deploy l2 on l1
+          CxipERC721 deploy l1 on l2: 1969205
+      ✔ CxipERC721 deploy l1 on l2
+          CxipERC721 deploy l2 on l1: 1969217
+      ✔ CxipERC721 deploy l2 on l1
+
+  Testing cross-chain minting (L1 & L2)
+
+    ███ relevant contracts loaded
+
+
+    ███ relevant contracts loaded
+
+    Deploy cross-chain contracts via bridge deploy
+      hToken
+        ✔ deploy l1 equivalent on l2 (649ms)
+        ✔ deploy l2 equivalent on l1 (607ms)
+      SampleERC20
+        ✔ deploy l1 equivalent on l2 (474ms)
+        ✔ deploy l2 equivalent on l1 (470ms)
+      SampleERC721
+        ✔ deploy l1 equivalent on l2 (597ms)
+        ✔ deploy l2 equivalent on l1 (476ms)
+      CxipERC721
+        ✔ deploy l1 equivalent on l2 (370ms)
+        ✔ deploy l2 equivalent on l1 (366ms)
+    SampleERC721
+      check current state
+        ✔ l1 should have a total supply of 0 on l1
+        ✔ l1 should have a total supply of 0 on l2
+        ✔ l2 should have a total supply of 0 on l2
+        ✔ l2 should have a total supply of 0 on l1
+      validate mint functionality
+        ✔ l1 should mint token #1 as #1 on l1 (110ms)
+        ✔ l1 should mint token #1 not as #1 on l2 (112ms)
+        ✔ mint tokens #2 and #3 on l1 and l2 (390ms)
+      validate bridge functionality
+        ✔ token #3 bridge out on l1 should succeed (213ms)
+        ✔ token #3 bridge out on l2 should succeed (218ms)
+        ✔ token #3 bridge in on l2 should succeed (127ms)
+        ✔ token #3 bridge in on l1 should succeed (128ms)
+        ✔ bridge out token #3 bridge out on l1 should fail
+        ✔ bridge out token #3 bridge out on l2 should fail
+        ✔ bridged in token #3 bridge in on l2 should fail
+        ✔ bridged in token #3 bridge in on l1 should fail
+      Get gas calculations
+          #1 mint on l1 gas used: 269221
+        ✔ SampleERC721 #1 mint on l1
+          #1 mint on l2 gas used: 269221
+        ✔ SampleERC721 #1 mint on l2
+          #1 transfer on l1 gas used: 142330
+        ✔ SampleERC721 #1 transfer on l1 (333ms)
+          #1 transfer on l2 gas used: 142378
+        ✔ SampleERC721 #1 transfer on l2 (326ms)
+          #3 bridge from l1 gas used: 411030
+        ✔ SampleERC721 #3 bridge from l1
+          #3 bridge from l2 gas used: 411174
+        ✔ SampleERC721 #3 bridge from l2
+
+  Testing LZ Endpoint costs (L1 & L2)
+
+    ███ relevant contracts loaded
+
+
+    ███ relevant contracts loaded
+
+    Deploy cross-chain contracts via bridge deploy
+      CxipERC721
+        ✔ deploy l1 equivalent on l2 (384ms)
+        ✔ deploy l2 equivalent on l1 (377ms)
+    CxipERC721
+      check current state
+        ✔ l1 should have a total supply of 0 on l1
+        ✔ l1 should have a total supply of 0 on l2
+        ✔ l2 should have a total supply of 0 on l2
+        ✔ l2 should have a total supply of 0 on l1
+      validate mint functionality
+        ✔ l1 should mint token #1 as #1 on l1 (115ms)
+        ✔ l1 should mint token #1 not as #1 on l2 (113ms)
+        ✔ mint tokens #2 and #3 on l1 and l2 (417ms)
+      validate bridge functionality
+        ✔ token #3 bridge out on l1 should succeed (220ms)
+        ✔ token #3 bridge out on l2 should succeed (251ms)
+        ✔ token #3 bridge in on l2 should succeed (154ms)
+        ✔ token #3 bridge in on l1 should succeed (132ms)
+      Get gas calculations
+          #1 mint on l1 gas used: 297028
+        ✔ SampleERC721 #1 mint on l1
+          #1 mint on l2 gas used: 297028
+        ✔ SampleERC721 #1 mint on l2
+          #1 transfer on l1 gas used: 142330
+        ✔ SampleERC721 #1 transfer on l1 (350ms)
+          #1 transfer on l2 gas used: 142378
+        ✔ SampleERC721 #1 transfer on l2 (404ms)
+          #3 bridge from l1 gas used: 446988
+        ✔ SampleERC721 #3 bridge from l1
+          #3 bridge from l2 gas used: 447132
+        ✔ SampleERC721 #3 bridge from l2
+      Calculate LayerZero gas usage
+
+          erc721in available job gas used: 58217
+        ✔ l1 erc721in cost 1 (66ms)
+
+          erc721in available job gas used: 58217
+        ✔ l1 erc721in cost 2 (56ms)
+
+          erc721in available job gas used: 58217
+        ✔ l1 erc721in cost 3 (60ms)
+
+          erc721in available job gas used: 58217
+        ✔ l1 erc721in cost 4 (61ms)
+
+          erc721in available job gas used: 58217
+        ✔ l1 erc721in cost 5 (61ms)
+
+Expecting 52900 of gas to be used
+
+          erc721in available job gas used: 52508
+        ✔ l2 erc721in cost 1 (58ms)
+
+Expecting 53700 of gas to be used
+
+          erc721in available job gas used: 53303
+        ✔ l2 erc721in cost 2 (58ms)
+
+Expecting 55300 of gas to be used
+
+          erc721in available job gas used: 54893
+        ✔ l2 erc721in cost 3 (59ms)
+
+Expecting 58500 of gas to be used
+
+          erc721in available job gas used: 58085
+        ✔ l2 erc721in cost 4 (61ms)
+
+Expecting 77700 of gas to be used
+
+          erc721in available job gas used: 77162
+        ✔ l2 erc721in cost 5 (59ms)
+
+
+  364 passing (36s)
+
+✨  Done in 39.84s.

@@ -1,0 +1,5043 @@
+yarn run v1.22.18
+$ source .env ; rm -fr ./ganache/db ; rm -fr ./ganache/db2 ; mkdir -p ./ganache/db ; mkdir -p ./ganache/db2 ; rm ./ganache/keys.json ; rm ./ganache/keys2.json ; ganache-cli --accounts=11 --defaultBalanceEther=100 --deterministic --mnemonic="$MNEMONIC" --port=8545 --hostname=0.0.0.0 --gasPrice=0 --gasLimit=10000000 --networkId=1338 --chainId=1338 --db=./ganache/db --acctKeys=./ganache/keys.json & ganache-cli --accounts=11 --defaultBalanceEther=100 --deterministic --mnemonic="$MNEMONIC" --port=9545 --hostname=0.0.0.0 --gasPrice=0 --gasLimit=10000000 --networkId=1339 --chainId=1339 --db=./ganache/db2 --acctKeys=./ganache/keys2.json
+Ganache CLI v6.12.2 (ganache-core: 2.13.2)
+Ganache CLI v6.12.2 (ganache-core: 2.13.2)
+
+Available Accounts
+==================
+(0) 0xdf5295149F367b1FBFD595bdA578BAd22e59f504 (100 ETH)
+(1) 0x17175d67E2fCCB97588eD06E512Cbe36EbF52326 (100 ETH)
+(2) 0x2F13d416dA85F8D39271d15E6570792DEe6709Db (100 ETH)
+(3) 0x9cAdcFAd4Ab5Ea3282c252bf0305d4CB19eeEf89 (100 ETH)
+(4) 0x8B9857c024438d6a238dB48968910b02f5B3e189 (100 ETH)
+(5) 0x629817EdCAa3EAD781c50c89D72e63E36985e6ae (100 ETH)
+(6) 0x8a61148b360f298c6F348DC4402aD4f67c16C64C (100 ETH)
+(7) 0xe8b4b81c978569Bd241BF9b6bd45e7aE9EC561D0 (100 ETH)
+(8) 0x04AecB8f81871E33eA38A644af0F6eca766E5Af7 (100 ETH)
+(9) 0x95f331F4704C1894C7c0E37219655A329ccBf85c (100 ETH)
+(10) 0x830e22aa238b6aeD78087FaCea8Bb95c6b7A7E2a (100 ETH)
+
+Private Keys
+==================
+(0) 0xff22437ccbedfffafa93a9f1da2e8c19c1711052799acf3b58ae5bebb5c6bd7b
+(1) 0x2315c2a66e6b3af2dca804fe89ce6b51fc6041f5486d9f4acd43921112c18891
+(2) 0x0223ee02bf483df57329ea337954be6bf39c107fd2e1f40c2a5059d3ed197f96
+(3) 0x09af83e24107abcca31a24e7a03cf5f1fff0d444daeba974c6a11ebe3ba0be7b
+(4) 0x1b11555d659e330348acd090afe0d4e0eb57e9851dbf5437e93adbe361ee2e00
+(5) 0x4f425fc22dfcc29d62b056093c26451571eacac6a0ab746f80563cbfb6de9bdc
+(6) 0x2f3dbcec2305b5e9efad9bafecc11b31eeed4e65b77dd8d24c80f6dcaeb69995
+(7) 0x1aff1e3dd07afc55c8f625c4dee9c9bad6ecd8e812107615314a747ccae5ac62
+(8) 0xac1a6186c33724495348678281d5334420936471448c04e9d7e40e5c2fceeae6
+(9) 0x994e0336ffe5f97efdf97165d51aaa28020fd4ecb7240786b0b0c610bc83446a
+(10) 0x13f46463f9079380515b26f04e42069760b34989cc23c5f082e7d3ed3757bb4a
+
+Accounts and keys saved to ganache/keys2.json
+
+HD Wallet
+==================
+Mnemonic:      deputy annual debris outer baby prefer mammal scene insect obtain parrot length zero detail average nation address depart stem tuition fork rocket topple kidney
+Base HD Path:  m/44'/60'/0'/0/{account_index}
+
+Gas Limit
+==================
+10000000
+
+Call Gas Limit
+==================
+9007199254740991
+
+Listening on 0.0.0.0:9545
+
+Available Accounts
+==================
+(0) 0xdf5295149F367b1FBFD595bdA578BAd22e59f504 (100 ETH)
+(1) 0x17175d67E2fCCB97588eD06E512Cbe36EbF52326 (100 ETH)
+(2) 0x2F13d416dA85F8D39271d15E6570792DEe6709Db (100 ETH)
+(3) 0x9cAdcFAd4Ab5Ea3282c252bf0305d4CB19eeEf89 (100 ETH)
+(4) 0x8B9857c024438d6a238dB48968910b02f5B3e189 (100 ETH)
+(5) 0x629817EdCAa3EAD781c50c89D72e63E36985e6ae (100 ETH)
+(6) 0x8a61148b360f298c6F348DC4402aD4f67c16C64C (100 ETH)
+(7) 0xe8b4b81c978569Bd241BF9b6bd45e7aE9EC561D0 (100 ETH)
+(8) 0x04AecB8f81871E33eA38A644af0F6eca766E5Af7 (100 ETH)
+(9) 0x95f331F4704C1894C7c0E37219655A329ccBf85c (100 ETH)
+(10) 0x830e22aa238b6aeD78087FaCea8Bb95c6b7A7E2a (100 ETH)
+
+Private Keys
+==================
+(0) 0xff22437ccbedfffafa93a9f1da2e8c19c1711052799acf3b58ae5bebb5c6bd7b
+(1) 0x2315c2a66e6b3af2dca804fe89ce6b51fc6041f5486d9f4acd43921112c18891
+(2) 0x0223ee02bf483df57329ea337954be6bf39c107fd2e1f40c2a5059d3ed197f96
+(3) 0x09af83e24107abcca31a24e7a03cf5f1fff0d444daeba974c6a11ebe3ba0be7b
+(4) 0x1b11555d659e330348acd090afe0d4e0eb57e9851dbf5437e93adbe361ee2e00
+(5) 0x4f425fc22dfcc29d62b056093c26451571eacac6a0ab746f80563cbfb6de9bdc
+(6) 0x2f3dbcec2305b5e9efad9bafecc11b31eeed4e65b77dd8d24c80f6dcaeb69995
+(7) 0x1aff1e3dd07afc55c8f625c4dee9c9bad6ecd8e812107615314a747ccae5ac62
+(8) 0xac1a6186c33724495348678281d5334420936471448c04e9d7e40e5c2fceeae6
+(9) 0x994e0336ffe5f97efdf97165d51aaa28020fd4ecb7240786b0b0c610bc83446a
+(10) 0x13f46463f9079380515b26f04e42069760b34989cc23c5f082e7d3ed3757bb4a
+
+Accounts and keys saved to ganache/keys.json
+
+HD Wallet
+==================
+Mnemonic:      deputy annual debris outer baby prefer mammal scene insect obtain parrot length zero detail average nation address depart stem tuition fork rocket topple kidney
+Base HD Path:  m/44'/60'/0'/0/{account_index}
+
+Gas Limit
+==================
+10000000
+
+Call Gas Limit
+==================
+9007199254740991
+
+Listening on 0.0.0.0:8545
+web3_clientVersion
+eth_chainId
+eth_chainId
+web3_clientVersion
+eth_chainId
+eth_chainId
+eth_chainId
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_chainId
+eth_estimateGas
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionCount
+eth_blockNumber
+eth_chainId
+eth_getBlockByNumber
+eth_gasPrice
+eth_chainId
+eth_sendRawTransaction
+
+  Transaction: 0x6fefcb51f63bfb5ea2d2ceadd4dedbc7c85c803a37538abdcff563ffd2491393
+  Contract created: 0x4c3ba951a7ea09b5bb57230f63a89d36a07b2992
+  Gas usage: 556365
+  Block Number: 1
+  Block Time: Tue Jul 05 2022 13:17:49 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x49f8122a6e455ebe8cea25123e45001f68cafcd927bde5ed35cbe8c52be3cf01
+  Gas usage: 1202392
+  Block Number: 2
+  Block Time: Tue Jul 05 2022 13:17:49 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x185afaa429c143f0df4e44c9a8e91d68065411a3706b25429b6e6a4471897ad4
+  Gas usage: 2460345
+  Block Number: 3
+  Block Time: Tue Jul 05 2022 13:17:49 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x67a04c4ed65b70ba986ea3a1c221e09cfccd2e6428a2382878c6c8f1e3b693c4
+  Gas usage: 856951
+  Block Number: 4
+  Block Time: Tue Jul 05 2022 13:17:50 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0xc40dbad2e86634c8fb77ddd0376510a720991ae9653cd497e0cc6b672487b826
+  Gas usage: 1966464
+  Block Number: 5
+  Block Time: Tue Jul 05 2022 13:17:50 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x29b1ff473955b4309e58e45ce93f59d79a443381f3e1f94054c0a4b70166ec49
+  Gas usage: 794477
+  Block Number: 6
+  Block Time: Tue Jul 05 2022 13:17:50 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0xa30c4666ba83584044808c7cf6dff7fda82fe20560c9a74fe62a7609ef8c13f1
+  Gas usage: 1492427
+  Block Number: 7
+  Block Time: Tue Jul 05 2022 13:17:50 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x28dcb4394c56cc8cc1480d5a7b526b6a57f867dd3019a06f1bd9c2cfd35a0196
+  Gas usage: 836053
+  Block Number: 8
+  Block Time: Tue Jul 05 2022 13:17:50 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0xe6a842013e9b94b935221208168668c4044f2d2b744ba6272dd8fd1466571dc7
+  Gas usage: 1278292
+  Block Number: 9
+  Block Time: Tue Jul 05 2022 13:17:51 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x10b446cede4d073f9a20045932964d48fd6692f8483235f489d739802b8ff83f
+  Gas usage: 905708
+  Block Number: 10
+  Block Time: Tue Jul 05 2022 13:17:51 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x21339c99138090402112f43baa7a855f5425b5117c7e93aa72ee23f4ab11af4f
+  Gas usage: 787548
+  Block Number: 11
+  Block Time: Tue Jul 05 2022 13:17:51 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0xbd6fb2f9e07f8b39d5096330300df0fe2ed5a48de31fbf79b818c1236ffa6c80
+  Gas usage: 836052
+  Block Number: 12
+  Block Time: Tue Jul 05 2022 13:17:51 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x9d255628ee909c4ea341ca0b5a3a122a42ad36d1be940202594e72fe1a736cf4
+  Gas usage: 5540478
+  Block Number: 13
+  Block Time: Tue Jul 05 2022 13:17:51 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x148b8fc85179938187a49f80ade143427f5958ebddacae5f83db5d8fafab6d7a
+  Gas usage: 2838251
+  Block Number: 14
+  Block Time: Tue Jul 05 2022 13:17:52 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x7ec30c72168dfa4fa8e363ecfeeafac5a7c25071df6ef70fc26167ae5f4c3d22
+  Gas usage: 4829278
+  Block Number: 15
+  Block Time: Tue Jul 05 2022 13:17:52 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x5f22405fbeabf123babf31225b3e1d83977848605ccdc8e840fdce38815a11db
+  Gas usage: 5379390
+  Block Number: 16
+  Block Time: Tue Jul 05 2022 13:17:52 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0xfa74f0f6b6ed92a5b0455fda11366e9d241dfd2de03711c496b8cf77f001b70f
+  Gas usage: 1774839
+  Block Number: 17
+  Block Time: Tue Jul 05 2022 13:17:52 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_getTransactionCount
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x84fa034dd253a8f7c1cf4e2bc2c0040c9a9cf19c91b83fea0ed77fe4144da84b
+  Contract created: 0xcfc1db32b6ca530c509482683c03bd589b395545
+  Gas usage: 386576
+  Block Number: 18
+  Block Time: Tue Jul 05 2022 13:17:52 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_getTransactionCount
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0xf47a13bce65c39db39525c3363cbab6090d09731110d251dbb347174cd083a7e
+  Gas usage: 44355
+  Block Number: 19
+  Block Time: Tue Jul 05 2022 13:17:52 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x361b56c8428bda00ea2c6301cb91d911c8d22ded16507e37971d1c6f4324f830
+  Contract created: 0x0e555be5e2c6bf4fa1713e4c3487bac3a3ad83a8
+  Gas usage: 2996752
+  Block Number: 20
+  Block Time: Tue Jul 05 2022 13:17:52 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0xd93f0d4b300774441c2ef13dc59e3ee5d3efa0739cd8b8a46297a85e4f199d7c
+  Contract created: 0xc58670fd5978e2d0c407430edb60bf3d3e168653
+  Gas usage: 294791
+  Block Number: 21
+  Block Time: Tue Jul 05 2022 13:17:52 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x9e526ce1caef85c17ffabb3ddfc566d86a38f1d5a1c2d2199a72bffae6e49ed8
+  Gas usage: 46490
+  Block Number: 22
+  Block Time: Tue Jul 05 2022 13:17:52 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x2cf1fec0985da81697a96e5fe4c969b7df2bc13ee98233071304580470842698
+  Gas usage: 46430
+  Block Number: 23
+  Block Time: Tue Jul 05 2022 13:17:52 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x9464252002ac9eb2f4696143dfbe246de43aae5cc0ddab631d929bf538fb053b
+  Gas usage: 46478
+  Block Number: 24
+  Block Time: Tue Jul 05 2022 13:17:53 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x7faa2016b98fc5839f81f84c904fcccbfe31c76681bf9645551326746dad1323
+  Gas usage: 46358
+  Block Number: 25
+  Block Time: Tue Jul 05 2022 13:17:53 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x7aa8cc067eb3c0607a76e9ee42499eb5a65dfd10a8447954b9caa36ab1c62c09
+  Gas usage: 3415587
+  Block Number: 26
+  Block Time: Tue Jul 05 2022 13:17:53 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x2ba013e51ce5a91621403613cf00d711b3eee1acf6916cf5efbbd00d0da72923
+  Gas usage: 45546
+  Block Number: 27
+  Block Time: Tue Jul 05 2022 13:17:53 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x9ce0223eb21447315609a3a755c6813feaaebfb9910e2e419c7abc2df356c250
+  Gas usage: 2452036
+  Block Number: 28
+  Block Time: Tue Jul 05 2022 13:17:53 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x457c853b441d758924f21a48b75b34e956e4e80d2bb49b8d93b723301cb03f7b
+  Gas usage: 2938167
+  Block Number: 29
+  Block Time: Tue Jul 05 2022 13:17:53 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x4c93fa6fd97418aacc62da2d3342377ec501e8db12325dc0a8877f985029f145
+  Gas usage: 1969205
+  Block Number: 30
+  Block Time: Tue Jul 05 2022 13:17:53 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_getBlockByNumber
+evm_snapshot
+Saved snapshot #1
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_chainId
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_chainId
+eth_estimateGas
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionCount
+eth_blockNumber
+eth_chainId
+eth_getBlockByNumber
+eth_gasPrice
+eth_chainId
+eth_sendRawTransaction
+
+  Transaction: 0x4d0a15ee2b76e281545cd0a1a455e6932ba3a7a8a50e9ae387ea2af7213b22ec
+  Contract created: 0x4c3ba951a7ea09b5bb57230f63a89d36a07b2992
+  Gas usage: 556365
+  Block Number: 1
+  Block Time: Tue Jul 05 2022 13:17:54 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0xda0b5e3a90414ea7c40bf4d0ca4c6e05bb9dd3b008fb1a1bbdfd61aa569a4888
+  Gas usage: 1202392
+  Block Number: 2
+  Block Time: Tue Jul 05 2022 13:17:55 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x2369746e633e27968e055536659a0af23d931cbc872d4e9096b1cf49294ceff5
+  Gas usage: 2460345
+  Block Number: 3
+  Block Time: Tue Jul 05 2022 13:17:55 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x7953afb1ad2b8c846f2b31beb1d04b03f286ea161cf1a0ebf8198a296df4314c
+  Gas usage: 856951
+  Block Number: 4
+  Block Time: Tue Jul 05 2022 13:17:55 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0xbd7edfd44835f7c3c52d75374a2c400067dcf6299cc8a0d95f64461098e759b0
+  Gas usage: 1966464
+  Block Number: 5
+  Block Time: Tue Jul 05 2022 13:17:55 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x344a6dfbf3f391fd5ab2dfc68287b93d00b2650ee1b1c15d7eff30e5b51a60db
+  Gas usage: 794477
+  Block Number: 6
+  Block Time: Tue Jul 05 2022 13:17:56 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x54faae4f50f0705cf2e64c2309e21977507d0ab7eadf138a7d718cbde9ad1888
+  Gas usage: 1492427
+  Block Number: 7
+  Block Time: Tue Jul 05 2022 13:17:56 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x7dbc966c92bb2fe42584b1313669ecc5cdb296075ee80b5bb33593b7d08f309b
+  Gas usage: 836053
+  Block Number: 8
+  Block Time: Tue Jul 05 2022 13:17:56 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0xc310322d06b6cb9b8711868bfedd5e40e6173e1546f31cee308d948e7f75b65a
+  Gas usage: 1278292
+  Block Number: 9
+  Block Time: Tue Jul 05 2022 13:17:56 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0xb462f5ebd7e372837137b06085604818694bebdfe8ac3849bce156ed386392ee
+  Gas usage: 905708
+  Block Number: 10
+  Block Time: Tue Jul 05 2022 13:17:56 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x3e93edb0494c798da2860df00987228faea2f616b060d6659c9479c87496cb4f
+  Gas usage: 787548
+  Block Number: 11
+  Block Time: Tue Jul 05 2022 13:17:56 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0xabcff60d455255794efea41dc7d3e8f7c842abaa08d8394888c2423434e4f834
+  Gas usage: 836052
+  Block Number: 12
+  Block Time: Tue Jul 05 2022 13:17:57 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x5b3ace26568c855c55498e72d66d7b37971f10376885235e24c9bbe3edda4338
+  Gas usage: 5540478
+  Block Number: 13
+  Block Time: Tue Jul 05 2022 13:17:57 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x5ccabfcd0b481e88a1693a441fc1b0edc8628cf1d98797e9a4a1f718cb2fd50c
+  Gas usage: 2838251
+  Block Number: 14
+  Block Time: Tue Jul 05 2022 13:17:57 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x49ad9949468a4b42449408a9420ac8f7a51b0d0a54ccf390ca50129a14380db9
+  Gas usage: 4829278
+  Block Number: 15
+  Block Time: Tue Jul 05 2022 13:17:57 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0xa6c8dfebf45fef2279a6e666e86fb79359da9526d47eab3f263c18226b1cf42f
+  Gas usage: 5379390
+  Block Number: 16
+  Block Time: Tue Jul 05 2022 13:17:58 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_getCode
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_getCode
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0xd5a3386d12dec00ec183760aa5d129a802187a3ad6976131c747eb1151959718
+  Gas usage: 1774839
+  Block Number: 17
+  Block Time: Tue Jul 05 2022 13:17:58 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_getTransactionCount
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x300f20f7ed487fe7202785963dd2d0058e0e45b5b723092a58a9ee5421f20f1d
+  Contract created: 0xcfc1db32b6ca530c509482683c03bd589b395545
+  Gas usage: 386576
+  Block Number: 18
+  Block Time: Tue Jul 05 2022 13:17:58 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_getTransactionCount
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0xe2497f58efb26e6e14fc404dab790a15018d9635524309ec2d23dd02ac122c93
+  Gas usage: 44355
+  Block Number: 19
+  Block Time: Tue Jul 05 2022 13:17:58 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x400331355adffcc544f05c1244fa5954ffa410afe566252ae92eec172645da3d
+  Contract created: 0x0e555be5e2c6bf4fa1713e4c3487bac3a3ad83a8
+  Gas usage: 2996752
+  Block Number: 20
+  Block Time: Tue Jul 05 2022 13:17:58 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0xbe54423cc35b931436851b2421615f4a615a622a9809a0722b8a833b3b6456e7
+  Contract created: 0xc58670fd5978e2d0c407430edb60bf3d3e168653
+  Gas usage: 294791
+  Block Number: 21
+  Block Time: Tue Jul 05 2022 13:17:58 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0xa258c846d76600b9a525855403c7f976976d2b4adeaf4ef2a14bd4551a4a8876
+  Gas usage: 46490
+  Block Number: 22
+  Block Time: Tue Jul 05 2022 13:17:58 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x5bd3af67fcc7fc312cad8d53c405d8ad0a050cbb8308bf946869b8b0e56dde96
+  Gas usage: 46430
+  Block Number: 23
+  Block Time: Tue Jul 05 2022 13:17:58 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x7dce25c115ad0bd74c651b47f9e7a8782e9ada8b2629d620ee528970ab7afaf9
+  Gas usage: 46478
+  Block Number: 24
+  Block Time: Tue Jul 05 2022 13:17:58 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x8ab039a59c9950d44096b6a51be5e1ab0c223530915dd5711d1cd0a3a52b6148
+  Gas usage: 46358
+  Block Number: 25
+  Block Time: Tue Jul 05 2022 13:17:58 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x1ad3dcb08cc54174ec9294abc8a00e77fbbecb3c7765c5eac6d43a1d353c5cae
+  Gas usage: 3415647
+  Block Number: 26
+  Block Time: Tue Jul 05 2022 13:17:58 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x414b412f631e00e1abaf7f1a440542142689a4a7ff4fc73b09b421fa0eff7d16
+  Gas usage: 45546
+  Block Number: 27
+  Block Time: Tue Jul 05 2022 13:17:59 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0xd168b6230ee0293807e7134a19c6e625dca0e71b582535b9ebdae38467a1cb88
+  Gas usage: 2452048
+  Block Number: 28
+  Block Time: Tue Jul 05 2022 13:17:59 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0xf6dee7620a15f5891896d687c238e5c4ce69d13afec3b9fe87ecc34831eb5e31
+  Gas usage: 2938179
+  Block Number: 29
+  Block Time: Tue Jul 05 2022 13:17:59 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_getTransactionCount
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_sendRawTransaction
+
+  Transaction: 0x75b819e1040bcaeb3e24d857d5bef10ebcbd8527eef2cb5a44fd352ceaa103a6
+  Gas usage: 1969217
+  Block Number: 30
+  Block Time: Tue Jul 05 2022 13:17:59 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_getBlockByNumber
+evm_snapshot
+Saved snapshot #1
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+eth_getCode
+evm_revert
+Reverting to snapshot #1
+eth_getBlockByHash
+eth_chainId
+evm_snapshot
+Saved snapshot #1
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xee20870f6b34f1e534bf8672359990ddb360fdd47023df8ba63f61daa551a51e
+  Gas usage: 114962
+  Block Number: 31
+  Block Time: Tue Jul 05 2022 13:18:01 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xd41fc21a5a31d8b36d88bb99cdb444bd65eb8dfc6fa92ff2fdc8b5ff0cc667a8
+  Gas usage: 55025
+  Block Number: 32
+  Block Time: Tue Jul 05 2022 13:18:01 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x518a2d5c275d8ab774359e1cacb345dfb8d0e650b9c56392d964d0b79dc8ddf3
+  Gas usage: 40816
+  Block Number: 33
+  Block Time: Tue Jul 05 2022 13:18:01 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xd967a2eede6dff4f61ba34c0852023e03f227d2054a87e61bfb715787cdafd25
+  Gas usage: 40795
+  Block Number: 34
+  Block Time: Tue Jul 05 2022 13:18:01 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xbbf913837a130d153d112763241de71eee302e6ea1c8dd0567482dc512bc256e
+  Gas usage: 26008
+  Block Number: 35
+  Block Time: Tue Jul 05 2022 13:18:01 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x805cbfe541420c37e85e51a6188ed698b0cf0cd42420a8b0f311a056274c2cbe
+  Gas usage: 55987
+  Block Number: 36
+  Block Time: Tue Jul 05 2022 13:18:01 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xe2a0d30297b7863f11123e4b6dcd34bc1d526e400fff5a1b5d0be6b798003eee
+  Gas usage: 39725
+  Block Number: 37
+  Block Time: Tue Jul 05 2022 13:18:01 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x85caaa528646e102d5c3a23e1022841b235f69a34aeae09fca2fbea42e12673a
+  Gas usage: 24641
+  Block Number: 38
+  Block Time: Tue Jul 05 2022 13:18:02 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xf433295740667c93461d802467032927d65448ef7460d902178a5609f1dc2904
+  Gas usage: 13684
+  Block Number: 39
+  Block Time: Tue Jul 05 2022 13:18:02 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xda03eeb4d16e1434881d1d5f59e1b546de350b863370429741df5f3030ff8d46
+  Gas usage: 42379
+  Block Number: 40
+  Block Time: Tue Jul 05 2022 13:18:02 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x9f0d3627edafdcb631397c17ed553eb39bd0f8d00c1d23e92285b2740dbbb91a
+  Gas usage: 13684
+  Block Number: 41
+  Block Time: Tue Jul 05 2022 13:18:02 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x99f9a955e5c74153546babe36f435eb7b55a090aaa6b62d4d49ee9eba626f962
+  Gas usage: 42379
+  Block Number: 42
+  Block Time: Tue Jul 05 2022 13:18:02 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x79402c7af15c4cd3516931ede9537e27b46270a9e29d2c9034b46d1222190587
+  Gas usage: 13684
+  Block Number: 43
+  Block Time: Tue Jul 05 2022 13:18:02 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xbd848c4ed5afc86c7f659f3bf8857162984a400127754fe5a424dd6a7d80ba0f
+  Gas usage: 55025
+  Block Number: 44
+  Block Time: Tue Jul 05 2022 13:18:02 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x51b4048376d7db02cdfbee320b0439940d10b9379a8f6b1c5a1bc3dd865eeded
+  Gas usage: 24641
+  Block Number: 45
+  Block Time: Tue Jul 05 2022 13:18:02 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x988ac4cafd855ec831e4fa9aa1eea64b807333223a80b26813a3ab4d50898c55
+  Gas usage: 42379
+  Block Number: 46
+  Block Time: Tue Jul 05 2022 13:18:02 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xff7d75ee3a796299cf9721c648fd738409cc4c23a14502a03efb333fd486b916
+  Gas usage: 13684
+  Block Number: 47
+  Block Time: Tue Jul 05 2022 13:18:02 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x0ad4eab8286ea45c018169fbe7684e694e1fc6334d2fc2ac83a62a2c8280c1cc
+  Gas usage: 55025
+  Block Number: 48
+  Block Time: Tue Jul 05 2022 13:18:02 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x67409f08b408b1a1fcdfec6b31a11a0fd706970f16d59ff80c7671f79139f914
+  Gas usage: 24641
+  Block Number: 49
+  Block Time: Tue Jul 05 2022 13:18:02 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x9d18add2424674d4144e57c81a400843d832d61f7b0e1bfd3ddc78bf7e9a9535
+  Gas usage: 42379
+  Block Number: 50
+  Block Time: Tue Jul 05 2022 13:18:02 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xe4fa667175059efc09e37491e62d28212cded89fe35af6742c2221846cec124e
+  Gas usage: 46516
+  Block Number: 51
+  Block Time: Tue Jul 05 2022 13:18:02 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x7dd399401ed399a28b6859abd910efd78558e95f32ecf7ef3b49ff8f00f89680
+  Gas usage: 49968
+  Block Number: 52
+  Block Time: Tue Jul 05 2022 13:18:02 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xb96572d6faa4487c97a80a8d96c0efc287fdb4546b3ec56c6b4a96a99fb32bdb
+  Gas usage: 55025
+  Block Number: 53
+  Block Time: Tue Jul 05 2022 13:18:02 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xe961928f59818522038b505d8f7875ddd2a86c64712e6f950851b5a303d33f61
+  Gas usage: 56624
+  Block Number: 54
+  Block Time: Tue Jul 05 2022 13:18:03 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xa43a637272a6d7817a319de105ef366c8615787198e44807f5d826818bc2fa9f
+  Gas usage: 46516
+  Block Number: 55
+  Block Time: Tue Jul 05 2022 13:18:03 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x50f8a53062b35904681dfe88cb0839bdde4815adae030cf9b0d4989a13feef84
+  Gas usage: 54713
+  Block Number: 56
+  Block Time: Tue Jul 05 2022 13:18:03 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x05e135ff89b75432cbc241a6031d57f5c97c99856eccffec39197ea42fe65cc5
+  Gas usage: 38188
+  Block Number: 57
+  Block Time: Tue Jul 05 2022 13:18:03 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xb6259f01bacfdfd4f936db8145ba95fc0f614ae2a2c09c2f5060e428e1348078
+  Gas usage: 46516
+  Block Number: 58
+  Block Time: Tue Jul 05 2022 13:18:03 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x11071a46d4e4a635d290cff59c311d3d888f9d5ccc5fe1b01834e01afa061a9f
+  Gas usage: 23179
+  Block Number: 59
+  Block Time: Tue Jul 05 2022 13:18:03 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x5af77dff9226090541fe6d210090a5974fc2fdf21542ffa35b000fa4cf9b8c2c
+  Gas usage: 89229
+  Block Number: 60
+  Block Time: Tue Jul 05 2022 13:18:03 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xbfe5e16c5d3ef6d071cb831e5e25e94c6386a816659bb28e124a824c646bc71a
+  Gas usage: 48394
+  Block Number: 61
+  Block Time: Tue Jul 05 2022 13:18:03 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xdf62a2733a6df93271d89df849bc562bd62b508b7ffc3b23d5149594fe649ecd
+  Gas usage: 23179
+  Block Number: 62
+  Block Time: Tue Jul 05 2022 13:18:03 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x1c78e8a3c7ede706686ab929aeb56ac0a6c95eaa396726e084e385cffdad2424
+  Gas usage: 70620
+  Block Number: 63
+  Block Time: Tue Jul 05 2022 13:18:04 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xc3ad080bdbc6e7c976ca27226682af10b2d266d4d245eef56d2d3352f455cf9b
+  Gas usage: 48394
+  Block Number: 64
+  Block Time: Tue Jul 05 2022 13:18:04 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x963bba79ab316f0ef4f7833da09733eaabc474fec99cb4e9247b8e818b64c309
+  Gas usage: 23179
+  Block Number: 65
+  Block Time: Tue Jul 05 2022 13:18:04 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xcaf39973bf89c0e34718de0ef3904f118b5e1052a00d1ba21dde5b47fef24e87
+  Gas usage: 54713
+  Block Number: 66
+  Block Time: Tue Jul 05 2022 13:18:04 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x0703caa70f0e7527c18cd8c1e74251117622bb6786a1856fd3c3af64b3f08fa5
+  Gas usage: 61685
+  Block Number: 67
+  Block Time: Tue Jul 05 2022 13:18:04 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x114af03a982a17a16160b7bfbe6d6fab58e221e96a02465092d4fd2f7014a47c
+  Gas usage: 48394
+  Block Number: 68
+  Block Time: Tue Jul 05 2022 13:18:04 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x43138d06873393768877a9edc169be5ce756b53b99f558dcad17c216504fe75f
+  Gas usage: 35441
+  Block Number: 69
+  Block Time: Tue Jul 05 2022 13:18:04 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xf92d461fa5024b53dd47900507819de5214358b161728cb07695c3cd1416018a
+  Gas usage: 23179
+  Block Number: 70
+  Block Time: Tue Jul 05 2022 13:18:04 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x9b09ce5b2fe69e793fcb3ce73ea25d74e585ed6bea38161f66636ee23a2325cc
+  Gas usage: 54713
+  Block Number: 71
+  Block Time: Tue Jul 05 2022 13:18:04 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x378dbdff322703d1560975c0c583cf61ca858f6084db3ca54fa2149773e2df2e
+  Gas usage: 62226
+  Block Number: 72
+  Block Time: Tue Jul 05 2022 13:18:05 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x4d05ae1c51687d815e839d7585f565b90f2c3cf2ab8a5fe4f4ac62b50a2d8529
+  Gas usage: 48394
+  Block Number: 73
+  Block Time: Tue Jul 05 2022 13:18:05 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xd4dde6e900e37c779a9076bfeaab1be70357c3bfbdbaf38be6b0175150e964a4
+  Gas usage: 35441
+  Block Number: 74
+  Block Time: Tue Jul 05 2022 13:18:05 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x504dd19f1fd73af3fc34bda72f781563d413f22da5ef7fd9c69c9388fe706c03
+  Gas usage: 22946
+  Block Number: 75
+  Block Time: Tue Jul 05 2022 13:18:05 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x8142a7e4e25c2fe805c8f8511eb97ed291f5b2e2371f81abb5c587478e36e323
+  Gas usage: 94550
+  Block Number: 76
+  Block Time: Tue Jul 05 2022 13:18:05 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x55038c600faccdaf368ee4f80307e0fb716ff7fd1ee77c0b7ea0d8ecb446f761
+  Gas usage: 54713
+  Block Number: 77
+  Block Time: Tue Jul 05 2022 13:18:05 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xec6ed0b60c769f7a9f947d456524c74ecf6e81540ce6ba95b9c2cf850a08089d
+  Gas usage: 26275
+  Block Number: 78
+  Block Time: Tue Jul 05 2022 13:18:05 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x96806d028352597618316ef794a5f97965743eb1c9b84f5d7fcd4cc8c89e0451
+  Gas usage: 85258
+  Block Number: 79
+  Block Time: Tue Jul 05 2022 13:18:05 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x376ccebbaf5b6f07486cd0dceaac0c17945e80b3e2c3854a30536039ddf92e9e
+  Gas usage: 41626
+  Block Number: 80
+  Block Time: Tue Jul 05 2022 13:18:05 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xbb8e453bada199c518d674413db597c46a0538636fb6d125bc3a4581c090e589
+  Gas usage: 38692
+  Block Number: 81
+  Block Time: Tue Jul 05 2022 13:18:05 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xa3bc11e1df3421c7917d4d758a7cfb2a54c3d4e742077ed996927a0f5eb389b3
+  Gas usage: 30498
+  Block Number: 82
+  Block Time: Tue Jul 05 2022 13:18:06 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x20c81f177dccd8f2eb7e80bcd873daa0dd9a0c6d9a39b4c0d8d9820da1a0d264
+  Gas usage: 27564
+  Block Number: 83
+  Block Time: Tue Jul 05 2022 13:18:06 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_call
+evm_revert
+Reverting to snapshot #1
+eth_getBlockByHash
+evm_snapshot
+Saved snapshot #1
+eth_chainId
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x0fc87ce49fb9b567f884b95a42ec25c062084bcc224c858eae3499f004d4a799
+  Gas usage: 269221
+  Block Number: 31
+  Block Time: Tue Jul 05 2022 13:18:07 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x449c5dd176635416a4bf69e3a51e5cf3014dc7b0bba58c8f904684a8716c3890
+  Gas usage: 262621
+  Block Number: 32
+  Block Time: Tue Jul 05 2022 13:18:07 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x42062cc3023b4a69fcb0ba8ecde10a5aea40b2dbe5662733467a2b9688712b3f
+  Gas usage: 262621
+  Block Number: 33
+  Block Time: Tue Jul 05 2022 13:18:07 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x88a4e0d20071be41f6e589bfec32606ba5f8e5282e4ebb0e25701abede44c1dd
+  Gas usage: 64474
+  Block Number: 34
+  Block Time: Tue Jul 05 2022 13:18:07 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xd25017e7ede6f6ebe0cf89b9ea4d253ec5b5a9895eb1e8d586fbd25141350050
+  Gas usage: 58107
+  Block Number: 35
+  Block Time: Tue Jul 05 2022 13:18:07 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x9507c773dcee252700417f016a7cf8b854de54195bb40db67c0154501d6ee084
+  Gas usage: 27867
+  Block Number: 36
+  Block Time: Tue Jul 05 2022 13:18:07 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x545a2e11d2b25dfd5163fbe8f45e1a8cbfe0a3a97d3b5ef22b5de2b5e3e6449d
+  Gas usage: 58107
+  Block Number: 37
+  Block Time: Tue Jul 05 2022 13:18:07 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x789e31d1387063e678b9761393ec872d0724ce31b5d2430b6f88a0a5e712fe99
+  Gas usage: 131530
+  Block Number: 38
+  Block Time: Tue Jul 05 2022 13:18:08 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x0ac20a9c995953d60d78fb32c92cfa37e52094eadc9e542ff8cc337bd368a1a0
+  Gas usage: 85249
+  Block Number: 39
+  Block Time: Tue Jul 05 2022 13:18:08 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xc7c461ccec51f4ccd7b4b7636d1bd60a382dde5cb5077836e210c490d4fd49dc
+  Gas usage: 55426
+  Block Number: 40
+  Block Time: Tue Jul 05 2022 13:18:08 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x55f47ec1654a7ed88030904039128a7b6aa18ad813ec72dfab6a1448e94ffd62
+  Gas usage: 25414
+  Block Number: 41
+  Block Time: Tue Jul 05 2022 13:18:08 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x59194f313343ebb942363e1c25dce2dd6dd0a6da50d92b40ac75b602ca45bb17
+  Gas usage: 58107
+  Block Number: 42
+  Block Time: Tue Jul 05 2022 13:18:08 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xe778211e5cfa9c233d5af26c66bc6e129858a716572dc29855a40ab9cea504ce
+  Gas usage: 27867
+  Block Number: 43
+  Block Time: Tue Jul 05 2022 13:18:08 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xbefa46b83d1954a5e17695ec7f1fc7237143a328026e5f45e1f492fc7a5c937b
+  Gas usage: 13647
+  Block Number: 44
+  Block Time: Tue Jul 05 2022 13:18:08 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x26d9759dfd103e0ecfaa938859ec350961b9467fa6bffb51ab602106d9d47adf
+  Gas usage: 42305
+  Block Number: 45
+  Block Time: Tue Jul 05 2022 13:18:08 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xe799870ff171df3caa1c910338a133633819f156d291c9c92ce7b141ede41d0d
+  Gas usage: 116895
+  Block Number: 46
+  Block Time: Tue Jul 05 2022 13:18:09 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x012aec42949164a6944dbc78ea7833c2f75ceb9dace1c58d45a03be062ff51f4
+  Gas usage: 86527
+  Block Number: 47
+  Block Time: Tue Jul 05 2022 13:18:09 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xf954485bc9cc0b626834278c5b008e49421e4e734b7d4a192322be444c03d8c1
+  Gas usage: 123833
+  Block Number: 48
+  Block Time: Tue Jul 05 2022 13:18:09 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x687c7bef99fc5a231a249802966833b17a8fc4545a3520b63035f88f1c0b4545
+  Gas usage: 88553
+  Block Number: 49
+  Block Time: Tue Jul 05 2022 13:18:09 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x8cc32eb28be8f5fec38efea2b3f275a36d26a3a26667693188c8e98acf60e8d5
+  Gas usage: 58107
+  Block Number: 50
+  Block Time: Tue Jul 05 2022 13:18:09 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x3e1429641f6a12725f5bd7d588dcf243ab90ff0673dca08253aea9acd51df172
+  Gas usage: 107482
+  Block Number: 51
+  Block Time: Tue Jul 05 2022 13:18:09 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xfa8e84dff35c65fafe2e269c8bd3f45bee0a1bf9fee94d2cfbb836c2ef4ff3cc
+  Gas usage: 85249
+  Block Number: 52
+  Block Time: Tue Jul 05 2022 13:18:10 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xc413e9af5c3d2fa7370cb846bacefcc348452675c5d141303c0e83e0be93a2c4
+  Gas usage: 55426
+  Block Number: 53
+  Block Time: Tue Jul 05 2022 13:18:10 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x7e15b62815542e91a560d2511eec6a7c45118da23be7b0c4a6a3a461dcf21fe8
+  Gas usage: 119246
+  Block Number: 54
+  Block Time: Tue Jul 05 2022 13:18:10 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xc2b973d635d7c8bd5dbfa33b82dfc539f48d9ef9eb67de0abe1c6830e6e1fd36
+  Gas usage: 105183
+  Block Number: 55
+  Block Time: Tue Jul 05 2022 13:18:10 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xf73e54ba442982d20edbe1bdecf1e4db63e2f5ac21f89f1e9cffcde37eaf7e6c
+  Gas usage: 25414
+  Block Number: 56
+  Block Time: Tue Jul 05 2022 13:18:10 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x19aff061c75babf21d167fd6385767f164e7cceecdb49c66eaac31ab908f2bb0
+  Gas usage: 142330
+  Block Number: 57
+  Block Time: Tue Jul 05 2022 13:18:10 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x750e155648dc15bad2e864a6f685bc515681b5122f133099c3b069066d61721c
+  Gas usage: 102049
+  Block Number: 58
+  Block Time: Tue Jul 05 2022 13:18:11 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x28004ade5da1d5a50c973cb1c1f31c153df7d9d8f72ed0a8ff10239280d44317
+  Gas usage: 303362
+  Block Number: 59
+  Block Time: Tue Jul 05 2022 13:18:11 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x46a85253c1e8664bcd6ee2cc4222498844d8d1f2e3a026a3a7c4887ae3282072
+  Gas usage: 233576
+  Block Number: 60
+  Block Time: Tue Jul 05 2022 13:18:11 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xf38b07625e0abbf0f3e661e81f6acf02a8cf47d636c7ac0d57c726323d6b7465
+  Gas usage: 233576
+  Block Number: 61
+  Block Time: Tue Jul 05 2022 13:18:11 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x0d47ad1be13981e72d49d3fdf325317dac8bf4fe1e8d5dae07db96f59592b433
+  Gas usage: 75757
+  Block Number: 62
+  Block Time: Tue Jul 05 2022 13:18:11 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x36ece4cd7fdda7a795c886a889da52227b12812199d231110f6dc9da97820aba
+  Gas usage: 58107
+  Block Number: 63
+  Block Time: Tue Jul 05 2022 13:18:12 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x4ed2d7e5f04fd80ac8d490bc54e2405004aa2c0a5c6cddbec28da180b4245607
+  Gas usage: 59807
+  Block Number: 64
+  Block Time: Tue Jul 05 2022 13:18:12 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xe9152bc111eb33cf3ba9bfe492bcea7797cb2252279214a77206b0b073ef76ff
+  Gas usage: 55426
+  Block Number: 65
+  Block Time: Tue Jul 05 2022 13:18:12 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x45e01459efc6f2852bab126651c2d995726e863e06881ada2b9e4cfcc854f3f2
+  Gas usage: 58189
+  Block Number: 66
+  Block Time: Tue Jul 05 2022 13:18:12 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x4a914fc96ff05918bf4275b71721fdfba9a9e5a060d7ad55360fc3bc68964fee
+  Gas usage: 41636
+  Block Number: 67
+  Block Time: Tue Jul 05 2022 13:18:12 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x2a6ae24e7db9db1c430a12da70fe969901d962556315a0ebb75b4a1fc38186a4
+  Gas usage: 38714
+  Block Number: 68
+  Block Time: Tue Jul 05 2022 13:18:12 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x7331d9a8753ae5b35bb53c63a0c6d8f1cd5d07b19d9baa6cd124aca11deefd89
+  Gas usage: 30486
+  Block Number: 69
+  Block Time: Tue Jul 05 2022 13:18:12 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x991468bd8b8102dd7c7c20853d4ccadc64b4867cc97ee4603a90987f6a291f2f
+  Gas usage: 27564
+  Block Number: 70
+  Block Time: Tue Jul 05 2022 13:18:12 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_call
+evm_revert
+Reverting to snapshot #1
+eth_getBlockByHash
+evm_snapshot
+Saved snapshot #1
+eth_chainId
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+evm_revert
+Reverting to snapshot #1
+eth_getBlockByHash
+evm_snapshot
+Saved snapshot #1
+eth_chainId
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x35683e906f3d664b5b85ac8c2d24e4938a119bd473255936389e92f2a4b8ca63
+  Gas usage: 3415587
+  Block Number: 31
+  Block Time: Tue Jul 05 2022 13:18:13 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x22ab4a898fe1467238386d229e60ecf26192e68955615929a0a9bc1eeb248820
+  Gas usage: 3415647
+  Block Number: 31
+  Block Time: Tue Jul 05 2022 13:18:13 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x3d218923270a7666de0df222dbec34b2571405fc2df8ccfc7d95da0443b7d1d3
+  Gas usage: 2452036
+  Block Number: 32
+  Block Time: Tue Jul 05 2022 13:18:14 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x1cd0fa1a40929c04a2e2484c4aa63d91fe4199fa65d7a88119f86834f0cb3cb3
+  Gas usage: 2452048
+  Block Number: 32
+  Block Time: Tue Jul 05 2022 13:18:14 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xecc1681407f7379ecfd6d0e10fb4151cc93cf9463b6abb6cd53a4b8954e065ad
+  Gas usage: 2938167
+  Block Number: 33
+  Block Time: Tue Jul 05 2022 13:18:14 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x7ade9a037214d64602ba067ebebc105c219a777420d7ef892b9162b2cbf6a91c
+  Gas usage: 2938179
+  Block Number: 33
+  Block Time: Tue Jul 05 2022 13:18:14 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x3a3542ae84ab08a527600faf4d3971f58088b2af3abea9042c58f2aa04b507aa
+  Gas usage: 1969205
+  Block Number: 34
+  Block Time: Tue Jul 05 2022 13:18:14 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x9d07b3425cb4d2beae92fc16cb938e144c0e677dda12ee1576737b5babd19958
+  Gas usage: 1969217
+  Block Number: 34
+  Block Time: Tue Jul 05 2022 13:18:15 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+evm_revert
+Reverting to snapshot #1
+eth_getBlockByHash
+evm_snapshot
+Saved snapshot #1
+eth_chainId
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+evm_revert
+Reverting to snapshot #1
+eth_getBlockByHash
+evm_snapshot
+eth_chainId
+Saved snapshot #1
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x5e795821677c2379ad1589d8618339bef4fdc308b49235e9dff949fb3742a5cf
+  Gas usage: 337354
+  Block Number: 31
+  Block Time: Tue Jul 05 2022 13:18:16 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x3a7376ced58f4a3672a3412234b86d0bdae61fe4d7a3e3fef36a93be1805c185
+  Gas usage: 295710
+  Block Number: 31
+  Block Time: Tue Jul 05 2022 13:18:16 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x2d7a40e13ada8305f09215c4ec9b7bf6235dfb77f223dc1b95c1647f4544bcd5
+  Gas usage: 3463443
+  Block Number: 32
+  Block Time: Tue Jul 05 2022 13:18:16 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xd47b1f2242d0822454fd3eacffa86f83c103230adf0d6c11e17537f157ac6237
+  Gas usage: 337414
+  Block Number: 33
+  Block Time: Tue Jul 05 2022 13:18:16 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x84a5d4e81e35d6bbf019157abdb7ad316f8829a76fe622af1e89ffa16b30eb79
+  Gas usage: 295770
+  Block Number: 32
+  Block Time: Tue Jul 05 2022 13:18:17 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xb39203959bcf837fcc9ca43a3562fd2c814742080092bd4b317d79de9aea0d6e
+  Gas usage: 3463503
+  Block Number: 33
+  Block Time: Tue Jul 05 2022 13:18:17 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x1a7c904cec0613032b6294deae68e2b202dee91924c5d4a1c85e4555a4c67800
+  Gas usage: 211241
+  Block Number: 34
+  Block Time: Tue Jul 05 2022 13:18:17 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xabc303f4d6e3d843cdf631b925db3a0cc5e7aa54574e971f54bda0f95f9e0c26
+  Gas usage: 191587
+  Block Number: 34
+  Block Time: Tue Jul 05 2022 13:18:17 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xfaf1dda4feb9fb96665e4aaa614b78b17ebcb6421fcf55ce4124919d6e3ce942
+  Gas usage: 2482072
+  Block Number: 35
+  Block Time: Tue Jul 05 2022 13:18:17 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xc72f78e4214e432b410b9ecce43239d7bb89e7212322ec8b17775fc4fb32e3e1
+  Gas usage: 211253
+  Block Number: 36
+  Block Time: Tue Jul 05 2022 13:18:17 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xdbafcf3b6d43afab1c63e8e2e8e568cc88895e7968a3bd4dea9f86d29338f875
+  Gas usage: 191599
+  Block Number: 35
+  Block Time: Tue Jul 05 2022 13:18:18 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x55786d879c88e0644a23d115ad071441f58ce11fab511af8d62e40451e1c304f
+  Gas usage: 2482084
+  Block Number: 36
+  Block Time: Tue Jul 05 2022 13:18:18 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x23a591f4495bc34313cc1bf3cec4461085f86a0a68858982cc91067861713e90
+  Gas usage: 276252
+  Block Number: 37
+  Block Time: Tue Jul 05 2022 13:18:18 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x70b8b45534a01b307eaa917269818ffc0b6cf0e41324381e6a82936c7e8e2b97
+  Gas usage: 246085
+  Block Number: 37
+  Block Time: Tue Jul 05 2022 13:18:18 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x300e5d4997ac8a439c0adb484a852acf343279b48b3ec074e8d658524abee276
+  Gas usage: 2976712
+  Block Number: 38
+  Block Time: Tue Jul 05 2022 13:18:18 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x0ad9393eab057cf8282296fb5fb1fef233b145f3fbea9b417296935c73887522
+  Gas usage: 276264
+  Block Number: 39
+  Block Time: Tue Jul 05 2022 13:18:19 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x6072652701ead6a857c61fd8819e129235c95c234085a7fe3e30db3dfdc5e2cb
+  Gas usage: 246097
+  Block Number: 38
+  Block Time: Tue Jul 05 2022 13:18:19 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x452703ce32f527d34a59a48e77c9b735cc1e2a677eb57133c27650850b60502b
+  Gas usage: 2976724
+  Block Number: 39
+  Block Time: Tue Jul 05 2022 13:18:19 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xfedd68e9b8aa517fd20dfd84576ff5750ca06524ae7a368c6e37938dd8a96be7
+  Gas usage: 141992
+  Block Number: 40
+  Block Time: Tue Jul 05 2022 13:18:19 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x397d1cf65a707a01198e45f3655521966243707a400b9e593337700e4d3b8380
+  Gas usage: 133982
+  Block Number: 40
+  Block Time: Tue Jul 05 2022 13:18:19 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xd11ac48ce43a99c19440aef4495512c29195080018214e2f255f320f2903416d
+  Gas usage: 1989816
+  Block Number: 41
+  Block Time: Tue Jul 05 2022 13:18:19 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x0f1205d49d7d7445c8f7b395e704c7267ac740884663d5e1f7b3d4e79bffc1b3
+  Gas usage: 142004
+  Block Number: 42
+  Block Time: Tue Jul 05 2022 13:18:20 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x1a08d02eba06269ffaecf957d69dc7f55f4a15e3982150ef4d5897c61a57d59c
+  Gas usage: 133994
+  Block Number: 41
+  Block Time: Tue Jul 05 2022 13:18:20 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x62b5429b547a9c9493c7766438fd9a7105ccf0e45cca73badba357365bf9b72f
+  Gas usage: 1989828
+  Block Number: 42
+  Block Time: Tue Jul 05 2022 13:18:20 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xd2e9fcf8570e6c435a67c7538473080604a8c13f286fbb4a1c2e17c601214584
+  Gas usage: 269221
+  Block Number: 43
+  Block Time: Tue Jul 05 2022 13:18:20 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xef9197b36cab3b771ec5c4e3181c8052f09f00b8012ba283e91cdc83bf6a05ba
+  Gas usage: 269209
+  Block Number: 43
+  Block Time: Tue Jul 05 2022 13:18:20 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x381e6ff8edbc7365e45543c655160511fca920c9aeea70dfe00e3772ea5fd030
+  Gas usage: 262621
+  Block Number: 44
+  Block Time: Tue Jul 05 2022 13:18:20 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xe9fc00baac531e0df62418ed5b152f964ef30fca0d279d4251054dcec91a4c3b
+  Gas usage: 262609
+  Block Number: 44
+  Block Time: Tue Jul 05 2022 13:18:20 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x5c710e6acf585ffc4d8bab7959bc6a31fefa68c5a234c6296a984bd07e4591c2
+  Gas usage: 262621
+  Block Number: 45
+  Block Time: Tue Jul 05 2022 13:18:21 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xd9e7612a38b4e8ff91403d2bac4b26fc05cfa5d062f40550ae7070fc612ea0f4
+  Gas usage: 262609
+  Block Number: 45
+  Block Time: Tue Jul 05 2022 13:18:21 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x292b1af5bd8e915c53607e8b6eea83d8b5921744835bb6cae21ce1d9b4d77b36
+  Gas usage: 116088
+  Block Number: 46
+  Block Time: Tue Jul 05 2022 13:18:21 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x8a0c6f4335469c9168a3b7b7891d536ec3a1189d566e97cb99ac7939facbeed3
+  Gas usage: 57470
+  Block Number: 46
+  Block Time: Tue Jul 05 2022 13:18:21 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xc6c24d961f29d97c4b2d2243283b6bec43dbd956909d89c50185d6ca8045f96e
+  Gas usage: 116136
+  Block Number: 47
+  Block Time: Tue Jul 05 2022 13:18:21 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x4a06586e088b2f6d711f21f5bddf82269ec2345043478409ae26636e6cfa2735
+  Gas usage: 57518
+  Block Number: 47
+  Block Time: Tue Jul 05 2022 13:18:21 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x5667645eb93d6f5a248bceb5af9ed54336c5ab4a17af5658ed8acb491d0ce567
+  Gas usage: 237472
+  Block Number: 48
+  Block Time: Tue Jul 05 2022 13:18:21 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x387529b8db23090a0824e87943c0cba0c52f3d95beb3e7a2f5436460b7a0dfe9
+  Gas usage: 237520
+  Block Number: 48
+  Block Time: Tue Jul 05 2022 13:18:21 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x559f97371b9e1b5127a8a2f652fe4abf827bfd7d8e3b8ad72cf6452af240c61d
+  Gas usage: 142330
+  Block Number: 49
+  Block Time: Tue Jul 05 2022 13:18:22 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x0d4997c6efb8a1404ee2fed58f17b5b94ce8d026fcfb695127b202a0b9a3d8cc
+  Gas usage: 142378
+  Block Number: 49
+  Block Time: Tue Jul 05 2022 13:18:22 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+evm_revert
+Reverting to snapshot #1
+eth_getBlockByHash
+evm_snapshot
+eth_chainId
+Saved snapshot #1
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+evm_revert
+Reverting to snapshot #1
+eth_getBlockByHash
+eth_chainId
+evm_snapshot
+Saved snapshot #1
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xa4c141a5849dd4ff7bf0b984bd09f65f4edeaf6c02bd3fb3f17e30848481694d
+  Gas usage: 141992
+  Block Number: 31
+  Block Time: Tue Jul 05 2022 13:18:23 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x956904bd32401c8f596613607fe36c086bba7679f86157f406cce53ae6b83be3
+  Gas usage: 133982
+  Block Number: 31
+  Block Time: Tue Jul 05 2022 13:18:23 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xd510d3ccbc4a057c6a4487e6937ad4ef07c9271b731506981076f22edb871244
+  Gas usage: 1989816
+  Block Number: 32
+  Block Time: Tue Jul 05 2022 13:18:23 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xe548dfe60c3c9fd680cb5d951282cf2c694b8698b96caa8947557ca0a7a3b929
+  Gas usage: 142004
+  Block Number: 33
+  Block Time: Tue Jul 05 2022 13:18:24 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x3d78b39da4825d871a7660b5be78c3bbf492f511a8b1da791e2508fe4148a778
+  Gas usage: 133994
+  Block Number: 32
+  Block Time: Tue Jul 05 2022 13:18:24 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xa9f00ef441b9de37835d988f2823481b8085ff4eb46570299a199c8d6e584254
+  Gas usage: 1989828
+  Block Number: 33
+  Block Time: Tue Jul 05 2022 13:18:24 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x9ff50b1a46819a336136ee3fd71e5fe0350dff148bf9220b310192790a47e2ad
+  Gas usage: 297028
+  Block Number: 34
+  Block Time: Tue Jul 05 2022 13:18:24 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x73acb5b0d164460d8fa5cbcbe599b484511a2d17b1bd8b0b011a908f21991e42
+  Gas usage: 297016
+  Block Number: 34
+  Block Time: Tue Jul 05 2022 13:18:24 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x0f4c47d20c647b9e2813c1bf8575d81be5350139f3263229053c7eda91fecf4d
+  Gas usage: 290428
+  Block Number: 35
+  Block Time: Tue Jul 05 2022 13:18:24 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xfc795c2365ff73eb70e5c11eb62cde80d92ff33a8d59720ed7e902296cbcefda
+  Gas usage: 290416
+  Block Number: 35
+  Block Time: Tue Jul 05 2022 13:18:24 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xd444335f583a2525b59093dc49ecf8272aac1d1e50f25c2b79edb2cde59bb29d
+  Gas usage: 290428
+  Block Number: 36
+  Block Time: Tue Jul 05 2022 13:18:25 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x2210fe350be1d0f68f3771728dd0d0761c6d9e76f7e7834b03238eb8c5f3fea1
+  Gas usage: 290416
+  Block Number: 36
+  Block Time: Tue Jul 05 2022 13:18:25 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x90472ca076158be4da27e583a0f935da8bb5a7ee89ffbc1a216badff63239cf2
+  Gas usage: 122973
+  Block Number: 37
+  Block Time: Tue Jul 05 2022 13:18:25 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xd2dcc849458752bb31956b719d137e685f83b62da0013086c541e441cac6c83c
+  Gas usage: 58217
+  Block Number: 37
+  Block Time: Tue Jul 05 2022 13:18:25 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xf2ab572f87537c2cb9d8ad8a8dafa6380c4567ed8e2407f321d09fdb39257d24
+  Gas usage: 123021
+  Block Number: 38
+  Block Time: Tue Jul 05 2022 13:18:25 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x33676c4b37e3bbed67065d862fddea9093643103796b43c041411138f1a80457
+  Gas usage: 58265
+  Block Number: 38
+  Block Time: Tue Jul 05 2022 13:18:25 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x087478b4227054bf7d52c063521e384896dc1e441ed826515ac14ddc714e11b6
+  Gas usage: 265798
+  Block Number: 39
+  Block Time: Tue Jul 05 2022 13:18:25 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x6b2bd8b1d0903296827df66385a4e232cc034e2b559b8d8e278651057b026604
+  Gas usage: 265846
+  Block Number: 39
+  Block Time: Tue Jul 05 2022 13:18:25 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_call
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x30e5e96e735663d1a0449e2292b64c49a21c0036eb46d3b49efa8572053a5ec5
+  Gas usage: 142330
+  Block Number: 40
+  Block Time: Tue Jul 05 2022 13:18:26 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x7d6f4450e7e6402432420db361a74e19b171807985bdf0ff90ee15220719f18f
+  Gas usage: 142378
+  Block Number: 40
+  Block Time: Tue Jul 05 2022 13:18:26 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xa30c7ca9923928d339fe58dd3aaaa269ee5def26df332126ceaac235c37a007a
+  Gas usage: 58217
+  Block Number: 41
+  Block Time: Tue Jul 05 2022 13:18:26 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x98b289991f789ee2985399655625a52c8c95ffd86955c2a348f4bdd009395762
+  Gas usage: 58217
+  Block Number: 42
+  Block Time: Tue Jul 05 2022 13:18:26 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xfa3882b1a9808b5e1159e6848212d952d7bbf493f4235b658dd8b73b40b85053
+  Gas usage: 58217
+  Block Number: 43
+  Block Time: Tue Jul 05 2022 13:18:26 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x6b3a7d9139da02598f310a0ee7e5b2c3c70c4f9b3e4afb45b00057a1ff7cdf74
+  Gas usage: 58217
+  Block Number: 44
+  Block Time: Tue Jul 05 2022 13:18:26 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x424a1f16c7e21108493cf70dbc19e811ebbaa6a5695362e6e9fa16ed2f77269c
+  Gas usage: 58217
+  Block Number: 45
+  Block Time: Tue Jul 05 2022 13:18:27 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x97fb008cdad6f59f99855639332c6df4ca1769f0f935cb84af58928b32ffb8dc
+  Gas usage: 52508
+  Block Number: 46
+  Block Time: Tue Jul 05 2022 13:18:27 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xb49ce6d318ccfb6fdaa363c54f28c1f0ae4166fb8909d2370ce9b5d0b9e09b96
+  Gas usage: 53291
+  Block Number: 47
+  Block Time: Tue Jul 05 2022 13:18:27 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0x459923bacf21a14e2f6bf549828b833e9ef3737706d5a1a066ece4b1cc864150
+  Gas usage: 54893
+  Block Number: 48
+  Block Time: Tue Jul 05 2022 13:18:27 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xf56fddcccbdd1cb6367690f02d8dcb613bb0f6e3bd8eb933e006840ca4efe9ba
+  Gas usage: 58085
+  Block Number: 49
+  Block Time: Tue Jul 05 2022 13:18:27 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getTransactionCount
+eth_sendRawTransaction
+
+  Transaction: 0xf1da948c3b2b015a618af9db118d01458012eed1e220061e49e5ca38e9f6524e
+  Gas usage: 77138
+  Block Number: 50
+  Block Time: Tue Jul 05 2022 13:18:27 GMT-0700 (Pacific Daylight Time)
+
+eth_chainId
+eth_getTransactionByHash
+eth_chainId
+eth_getTransactionReceipt
+eth_blockNumber
+eth_chainId
+eth_chainId
+eth_getBlockByNumber
+eth_chainId
+eth_getTransactionReceipt
