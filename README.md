@@ -1,44 +1,24 @@
-# Holograph Bridge Protocol
+![Holograph - Render 15](https://user-images.githubusercontent.com/21043504/177644049-293e719e-9adc-4525-aefa-305da5229e46.jpg)
 
-```
-                         ┌───────────┐
-                         │ HOLOGRAPH │
-                         └───────────┘
-╔═════════════════════════════════════════════════════════════╗
-║                                                             ║
-║                            / ^ \                            ║
-║                            ~~*~~            ¸               ║
-║                         [ '<>:<>' ]         │░░░            ║
-║               ╔╗           _/"\_           ╔╣               ║
-║             ┌─╬╬─┐          """          ┌─╬╬─┐             ║
-║          ┌─┬┘ ╠╣ └┬─┐       \_/       ┌─┬┘ ╠╣ └┬─┐          ║
-║       ┌─┬┘ │  ╠╣  │ └┬─┐           ┌─┬┘ │  ╠╣  │ └┬─┐       ║
-║    ┌─┬┘ │  │  ╠╣  │  │ └┬─┐     ┌─┬┘ │  │  ╠╣  │  │ └┬─┐    ║
-║ ┌─┬┘ │  │  │  ╠╣  │  │  │ └┬┐ ┌┬┘ │  │  │  ╠╣  │  │  │ └┬─┐ ║
-╠┬┘ │  │  │  │  ╠╣  │  │  │  │└¤┘│  │  │  │  ╠╣  │  │  │  │ └┬╣
-║│  │  │  │  │  ╠╣  │  │  │  │   │  │  │  │  ╠╣  │  │  │  │  │║
-╠╩══╩══╩══╩══╩══╬╬══╩══╩══╩══╩═══╩══╩══╩══╩══╬╬══╩══╩══╩══╩══╩╣
-╠┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴╬╬┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴╬╬┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴╣
-║               ╠╣                           ╠╣               ║
-║               ╠╣                           ╠╣               ║
-║    ,          ╠╣     ,        ,'      *    ╠╣               ║
-║~~~~~^~~~~~~~~┌╬╬┐~~~^~~~~~~~~^^~~~~~~~~^~~┌╬╬┐~~~~~~~^~~~~~~║
-╚══════════════╩╩╩╩═════════════════════════╩╩╩╩══════════════╝
-     - one protocol, one bridge = infinite possibilities -
-```
+# Holograph Protocol
+
 ## Purpose
 
-To be shared with Coinfund as a preliminary technical review. Internal scripts have been removed.
+To provide a technical understanding of Holograph Protocol.
+
+## Notes
+
+Internal scripts have been purposefully removed.
 
 ## Codebase
 
-This archive contains a stripped down version of our repo with the following contents.
+This archive contains a reduced version of our repo with the following contents:
 
 1. `contracts`: Solidity contracts
-2. `deployments`: references to our rinkeby and mumbai deployed contracts
-3. `test`: test suit
-4. `test_results.txt`: output from `yarn test`
-5. `test_results_transactions.txt`: output from running two `ganache` instances.
+2. `deployments`: References to our Rinkeby and Mumbai deployed contracts
+3. `test`: Test suite
+4. `test_results.txt`: Output from `yarn test`
+5. `test_results_transactions.txt`: Output from running two `ganache` instances
 
 
 ## Main Contracts
