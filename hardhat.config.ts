@@ -6,6 +6,7 @@ import 'hardhat-deploy-holographed';
 import '@nomiclabs/hardhat-waffle';
 import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-etherscan';
+import { EtherscanConfig } from '@nomiclabs/hardhat-etherscan/src/types';
 import { types, task, HardhatUserConfig } from 'hardhat/config';
 import 'hardhat-holograph-contract-builder';
 import networks from './config/networks';
@@ -210,12 +211,17 @@ const config: HardhatUserConfig = {
       rinkeby: ETHERSCAN_API_KEY,
       polygon: POLYGONSCAN_API_KEY,
       polygonMumbai: POLYGONSCAN_API_KEY,
-    } as unknown as string, // TODO: fix type
-  },
+    },
+  } as EtherscanConfigs,
   hardhatHolographContractBuilder: {
     runOnCompile: true,
     verbose: false,
   },
 };
+
+// Holograph needs to use different API keys for the various block explorers on each network
+interface EtherscanConfigs extends EtherscanConfig {
+  apiKey: any;
+}
 
 export default config;
