@@ -31,6 +31,7 @@ contract Holographer is Admin, Initializable {
       sstore(precomputeslot("eip1967.Holograph.Bridge.holograph"), holograph)
       sstore(precomputeslot("eip1967.Holograph.Bridge.contractType"), contractType)
       sstore(precomputeslot("eip1967.Holograph.Bridge.sourceContract"), sourceContract)
+      sstore(precomputeslot("eip1967.Holograph.Bridge.blockHeight"), number())
     }
     (bool success, bytes memory returnData) = getHolographEnforcer().delegatecall(
       abi.encodeWithSignature("init(bytes)", initCode)
@@ -42,7 +43,16 @@ contract Holographer is Admin, Initializable {
   }
 
   /**
-   * @dev Returns a hardcoded address for the custom secure storage contract deployed in parallel with this contract deployment.
+   * @dev Returns the block height of when the smart contract was deployed. Useful for retrieving deployment config for re-deployment on other EVM-compatible chains.
+   */
+  function getDeploymentBlock() public view returns (address holograph) {
+    assembly {
+      holograph := sload(precomputeslot("eip1967.Holograph.Bridge.blockHeight"))
+    }
+  }
+
+  /**
+   * @dev Returns a hardcoded address for the Holograph smart contract.
    */
   function getHolograph() public view returns (address holograph) {
     assembly {
@@ -52,7 +62,6 @@ contract Holographer is Admin, Initializable {
 
   /**
    * @dev Returns a hardcoded address for the Holograph smart contract that controls and enforces the ERC standards.
-   * @dev The choice to use this approach was taken to prevent storage slot overrides.
    */
   function getHolographEnforcer() public view returns (address payable) {
     IHolograph holograph;
@@ -88,8 +97,7 @@ contract Holographer is Admin, Initializable {
   receive() external payable {}
 
   /**
-   * @dev Hard-coded registry address and contract type are put inside the fallback to make sure that the contract cannot be modified.
-   * @dev This takes the underlying address source code, runs it, and uses current address for storage.
+   * @dev This takes the Enforcer's source code, runs it, and uses current address for storage slots.
    */
   fallback() external payable {
     address holographEnforcer = getHolographEnforcer();

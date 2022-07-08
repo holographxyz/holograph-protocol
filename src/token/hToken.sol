@@ -19,7 +19,7 @@ contract hToken is ERC20H {
   /**
    * @dev Sample fee for unwrapping.
    */
-  uint16 private _feeBp; // 100.00%
+  uint16 private _feeBp; // 10000 == 100.00%
 
   /**
    * @dev List of supported Wrapped Tokens (equivalent), on current-chain.

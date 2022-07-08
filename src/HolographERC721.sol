@@ -402,6 +402,7 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
    */
   function sourceMintBatch(address to, uint224[] calldata tokenIds) external {
     require(msg.sender == _source(), "ERC721: only source can mint");
+    require(tokenIds.length < 1000, "ERC721: max batch size is 1000");
     uint32 chain = _chain();
     uint256 token;
     for (uint256 i = 0; i < tokenIds.length; i++) {
@@ -417,6 +418,8 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
    */
   function sourceMintBatch(address[] calldata wallets, uint224[] calldata tokenIds) external {
     require(msg.sender == _source(), "ERC721: only source can mint");
+    require(wallets.length == tokenIds.length, "ERC721: array length missmatch");
+    require(tokenIds.length < 1000, "ERC721: max batch size is 1000");
     uint32 chain = _chain();
     uint256 token;
     for (uint256 i = 0; i < tokenIds.length; i++) {

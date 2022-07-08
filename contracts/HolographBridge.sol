@@ -183,7 +183,9 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     address from,
     address to,
     uint256 tokenId,
-    bytes calldata data
+    bytes calldata data,
+    address hTokenRecipient,
+    uint256 hTokenValue
   ) external onlyBridge {
     require(_registry().isHolographedContract(collection), "HOLOGRAPH: not holographed");
     require(
@@ -191,6 +193,8 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
         ERC721Holograph.holographBridgeIn.selector,
       "HOLOGRAPH: bridge in failed"
     );
+    // provide operator with hToken value for executing bridge job
+    require(ERC20Holograph(_registry().getHToken(fromChain)).holographBridgeMint(hTokenRecipient, hTokenValue) == ERC20Holograph.holographBridgeMint.selector, "HOLOGRAPH: hToken mint failed");
   }
 
   function erc721out(
@@ -234,7 +238,9 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     address from,
     address to,
     uint256 amount,
-    bytes calldata data
+    bytes calldata data,
+    address hTokenRecipient,
+    uint256 hTokenValue
   ) external onlyBridge {
     require(_registry().isHolographedContract(token), "HOLOGRAPH: not holographed");
     require(
@@ -242,6 +248,8 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
         ERC20Holograph.holographBridgeIn.selector,
       "HOLOGRAPH: bridge in failed"
     );
+    // provide operator with hToken value for executing bridge job
+    require(ERC20Holograph(_registry().getHToken(fromChain)).holographBridgeMint(hTokenRecipient, hTokenValue) == ERC20Holograph.holographBridgeMint.selector, "HOLOGRAPH: hToken mint failed");
   }
 
   function erc20out(
@@ -271,12 +279,14 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     );
   }
 
-  function deployIn(bytes calldata data) external onlyBridge {
+  function deployIn(uint32 fromChain, bytes calldata data, address hTokenRecipient, uint256 hTokenValue) external onlyBridge {
     (DeploymentConfig memory config, Verification memory signature, address signer) = abi.decode(
       data,
       (DeploymentConfig, Verification, address)
     );
     _factory().deployHolographableContract(config, signature, signer);
+    // provide operator with hToken value for executing bridge job
+    require(ERC20Holograph(_registry().getHToken(fromChain)).holographBridgeMint(hTokenRecipient, hTokenValue) == ERC20Holograph.holographBridgeMint.selector, "HOLOGRAPH: hToken mint failed");
   }
 
   function deployOut(
@@ -288,7 +298,7 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     _operator().send{value: msg.value}(
       toChain,
       msg.sender,
-      abi.encodeWithSignature("deployIn(bytes)", abi.encode(config, signature, signer))
+      abi.encodeWithSignature("deployIn(uint32,bytes)", _holograph().getChainType(), abi.encode(config, signature, signer))
     );
   }
 

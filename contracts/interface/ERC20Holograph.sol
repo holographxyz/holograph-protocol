@@ -118,6 +118,8 @@ interface ERC20Holograph is ERC165, ERC20, ERC20Burnable, ERC20Metadata, ERC20Re
     bytes calldata data
   ) external returns (bytes4);
 
+  function holographBridgeMint(address to, uint256 amount) external returns (bytes4);
+
   function holographBridgeOut(
     uint32 chainType,
     address operator,

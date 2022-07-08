@@ -54,7 +54,7 @@ import {
 } from '../typechain-types';
 import { DeploymentConfigStruct } from '../typechain-types/HolographFactory';
 
-describe('Testing Operator functionality (L1)', async function () {
+describe.only('Testing Operator functionality (L1)', async function () {
   const lzReceiveABI = {
     inputs: [
       {
@@ -144,8 +144,13 @@ describe('Testing Operator functionality (L1)', async function () {
         .reverted;
       await expect(l1.operator.bondUtilityToken(l1.wallet10.address, BigNumber.from('1000000000000000000'), 0)).to.not
         .be.reverted;
+      let pod = 0;
       for (let i = 0, l = 100; i < l; i++) {
-        await l1.operator.bondUtilityToken(randomHex(20), BigNumber.from('1000000000000000000'), 0);
+        await l1.operator.bondUtilityToken(randomHex(20), BigNumber.from('64000000000000000000'), pod);
+        pod++;
+        if (pod == 4) {
+          pod = 0;
+        }
       }
       /*
       await expect(l1.operator.bondUtilityToken(l1.wallet1.address, BigNumber.from('1000000000000000000'), 0)).to.not.be.reverted;
@@ -185,7 +190,7 @@ describe('Testing Operator functionality (L1)', async function () {
         let blockNumber: number = await l1.hre.ethers.provider.getBlockNumber();
         let transactionHash = (await l1.hre.ethers.provider.getBlockWithTransactions(blockNumber)).transactions[0].hash;
         let transaction = await l1.hre.ethers.provider.getTransactionReceipt(transactionHash);
-        let hash = transaction.logs[1].data.substring(0, 66);
+        let hash = transaction.logs[0].data.substring(0, 66);
         let jobArray = await l1.operator.getJobDetails(hash);
         let job = {
           pod: jobArray[0],

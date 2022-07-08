@@ -153,7 +153,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
   /**
    * @dev Internal mapping of bonded operators, to prevent double bonding.
    */
-  mapping(address => bool) private _bondedOperators;
+  mapping(address => uint256) private _bondedOperators;
 
   /**
    * @dev Event is emitted for every time that a valid job is available.
@@ -212,7 +212,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     // set first operator for each pod as zero address
     _operatorPods = [[address(0)]];
     // mark zero address as bonded operator, to prevent abuse
-    _bondedOperators[address(0)] = true;
+    _bondedOperators[address(0)] = 1;
     _setInitialized();
     return IInitializable.init.selector;
   }
@@ -461,7 +461,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     uint256 amount,
     uint256 pod
   ) external {
-    require(!_bondedOperators[operator], "HOLOGRAPH: operator is bonded");
+    require(_bondedOperators[operator] == 0, "HOLOGRAPH: operator is bonded");
     unchecked {
       require(((_podMultiplier**pod) * _baseBondAmount) <= amount, "HOLOGRAPH: bond amount too small");
       // subtract difference and only keep bond amount
@@ -471,7 +471,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
         }
       }
       _operatorPods[pod].push(operator);
-      _bondedOperators[operator] = true;
+      _bondedOperators[operator] = pod + 1;
     }
   }
 }

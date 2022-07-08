@@ -113,7 +113,9 @@ interface IHolographBridge {
     address from,
     address to,
     uint256 tokenId,
-    bytes calldata data
+    bytes calldata data,
+    address hTokenRecipient,
+    uint256 hTokenValue
   ) external;
 
   function erc721out(
@@ -130,7 +132,9 @@ interface IHolographBridge {
     address from,
     address to,
     uint256 amount,
-    bytes calldata data
+    bytes calldata data,
+    address hTokenRecipient,
+    uint256 hTokenValue
   ) external;
 
   function erc20out(
@@ -141,7 +145,7 @@ interface IHolographBridge {
     uint256 amount
   ) external payable;
 
-  function deployIn(bytes calldata data) external;
+  function deployIn(uint32 fromChain, bytes calldata data, address hTokenRecipient, uint256 hTokenValue) external;
 
   function deployOut(
     uint32 toChain,
