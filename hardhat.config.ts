@@ -170,7 +170,6 @@ const config: HardhatUserConfig = {
       url: networks.fuji.rpc,
       chainId: networks.fuji.chain,
       accounts: [FUJI_PRIVATE_KEY],
-      httpHeaders: { 'x-api-key': '7bf62a30-d403-4afc-99dc-462dfbfb10de' },
     },
     cxip: {
       url: networks.cxip.rpc,
@@ -213,16 +212,11 @@ const config: HardhatUserConfig = {
       polygon: POLYGONSCAN_API_KEY,
       polygonMumbai: POLYGONSCAN_API_KEY,
     },
-  } as EtherscanConfigs,
+  },
   hardhatHolographContractBuilder: {
     runOnCompile: true,
     verbose: false,
   },
 };
-
-// Holograph needs to use different API keys for the various block explorers on each network
-interface EtherscanConfigs extends EtherscanConfig {
-  apiKey: any;
-}
 
 export default config;
