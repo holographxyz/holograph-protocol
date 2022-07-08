@@ -6,6 +6,7 @@ import 'hardhat-deploy-holographed';
 import '@nomiclabs/hardhat-waffle';
 import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-etherscan';
+import { EtherscanConfig } from '@nomiclabs/hardhat-etherscan/src/types';
 import { types, task, HardhatUserConfig } from 'hardhat/config';
 import 'hardhat-holograph-contract-builder';
 import networks from './config/networks';
@@ -22,6 +23,8 @@ const MAINNET_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY || DEPLOYER;
 
 const MATIC_PRIVATE_KEY = process.env.MATIC_PRIVATE_KEY || DEPLOYER;
 const MUMBAI_PRIVATE_KEY = process.env.MUMBAI_PRIVATE_KEY || DEPLOYER;
+
+const FUJI_PRIVATE_KEY = process.env.FUJI_PRIVATE_KEY || DEPLOYER;
 
 const CXIP_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY || DEPLOYER;
 
@@ -163,6 +166,11 @@ const config: HardhatUserConfig = {
       chainId: networks.mumbai.chain,
       accounts: [MUMBAI_PRIVATE_KEY],
     },
+    fuji: {
+      url: networks.fuji.rpc,
+      chainId: networks.fuji.chain,
+      accounts: [FUJI_PRIVATE_KEY],
+    },
     cxip: {
       url: networks.cxip.rpc,
       chainId: networks.cxip.chain,
@@ -204,11 +212,16 @@ const config: HardhatUserConfig = {
       polygon: POLYGONSCAN_API_KEY,
       polygonMumbai: POLYGONSCAN_API_KEY,
     },
-  },
+  } as EtherscanConfigs,
   hardhatHolographContractBuilder: {
     runOnCompile: true,
     verbose: false,
   },
 };
+
+// Holograph needs to use different API keys for the various block explorers on each network
+interface EtherscanConfigs extends EtherscanConfig {
+  apiKey: any;
+}
 
 export default config;
