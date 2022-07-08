@@ -30,6 +30,7 @@ const CXIP_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY || DEPLOYER;
 
 const ETHERSCAN_API_KEY: string = process.env.ETHERSCAN_API_KEY || '';
 const POLYGONSCAN_API_KEY: string = process.env.POLYGONSCAN_API_KEY || '';
+const AVALANCHE_API_KEY: string = process.env.AVALANCHE_API_KEY || '';
 
 const DEPLOYMENT_SALT = parseInt(process.env.DEPLOYMENT_SALT || '0');
 
@@ -211,6 +212,8 @@ const config: HardhatUserConfig = {
       rinkeby: ETHERSCAN_API_KEY,
       polygon: POLYGONSCAN_API_KEY,
       polygonMumbai: POLYGONSCAN_API_KEY,
+      avalanche: AVALANCHE_API_KEY,
+      avalancheFujiTestnet: AVALANCHE_API_KEY,
     },
   },
   hardhatHolographContractBuilder: {
