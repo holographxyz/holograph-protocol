@@ -170,6 +170,7 @@ const config: HardhatUserConfig = {
       url: networks.fuji.rpc,
       chainId: networks.fuji.chain,
       accounts: [FUJI_PRIVATE_KEY],
+      httpHeaders: { 'x-api-key': '7bf62a30-d403-4afc-99dc-462dfbfb10de' },
     },
     cxip: {
       url: networks.cxip.rpc,
