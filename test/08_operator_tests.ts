@@ -146,7 +146,9 @@ describe.only('Testing Operator functionality (L1)', async function () {
         .be.reverted;
       let pod = 0;
       for (let i = 0, l = 100; i < l; i++) {
-        await l1.operator.bondUtilityToken(randomHex(20), BigNumber.from('64000000000000000000'), pod);
+        let randWallet: BytesLike = randomHex(20);
+        process.stdout.write('\n' + randWallet);
+        await l1.operator.bondUtilityToken(randWallet, BigNumber.from('64000000000000000000'), pod);
         pod++;
         if (pod == 4) {
           pod = 0;
@@ -190,12 +192,8 @@ describe.only('Testing Operator functionality (L1)', async function () {
         let blockNumber: number = await l1.hre.ethers.provider.getBlockNumber();
         let transactionHash = (await l1.hre.ethers.provider.getBlockWithTransactions(blockNumber)).transactions[0].hash;
         let transaction = await l1.hre.ethers.provider.getTransactionReceipt(transactionHash);
-        process.stdout.write('\n\n' + JSON.stringify(transaction.logs[0].data, undefined, 2) + '\n\n');
         let hash = transaction.logs[0].data.substring(0, 66);
-        process.stdout.write('\n\n' + JSON.stringify(hash, undefined, 2) + '\n\n');
         let jobArray = await l1.operator.getJobDetails(hash);
-        let jobArray2 = await l1.operator.getJobDetails2(hash);
-        process.stdout.write('\n\n' + JSON.stringify(jobArray2, undefined, 2) + '\n\n');
         let job = {
           pod: jobArray[0],
           blockTimes: jobArray[1],

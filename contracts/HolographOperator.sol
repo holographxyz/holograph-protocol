@@ -263,15 +263,15 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
       _popOperator(pod, operatorIndex);
       podSize--;
       _operatorJobs[jobHash] = uint256(
-        pod << 248 |
-        uint256(_operatorTempStorageCounter) << 216 |
-        block.number << 176 |
-        _RBH(random, podSize, 1) << 160 |
-        _RBH(random, podSize, 2) << 144 |
-        _RBH(random, podSize, 3) << 128 |
-        _RBH(random, podSize, 4) << 112 |
-        _RBH(random, podSize, 5) << 96 |
-        0
+        (pod << 248) |
+          (uint256(_operatorTempStorageCounter) << 216) |
+          (block.number << 176) |
+          (_RBH(random, podSize, 1) << 160) |
+          (_RBH(random, podSize, 2) << 144) |
+          (_RBH(random, podSize, 3) << 128) |
+          (_RBH(random, podSize, 4) << 112) |
+          (_RBH(random, podSize, 5) << 96) |
+          0
       ); // 80 next available bit position && so far 176 bits used with only 128 left
       _operatorTempStorageCounter++;
       emit AvailableOperatorJob(jobHash, _payload);
@@ -480,10 +480,6 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
           uint16(packed >> 96)
         ]
       );
-  }
-
-  function getJobDetails2(bytes32 jobHash) external view returns (uint256) {
-    return _operatorJobs[jobHash];
   }
 
   function getPodOperators(uint256 pod) external view returns (address[] memory) {
