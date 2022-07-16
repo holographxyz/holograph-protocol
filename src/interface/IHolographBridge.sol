@@ -46,7 +46,12 @@ interface IHolographBridge {
     uint256 amount
   ) external payable;
 
-  function deployIn(uint32 fromChain, bytes calldata data, address hTokenRecipient, uint256 hTokenValue) external;
+  function deployIn(
+    uint32 fromChain,
+    bytes calldata data,
+    address hTokenRecipient,
+    uint256 hTokenValue
+  ) external;
 
   function deployOut(
     uint32 toChain,

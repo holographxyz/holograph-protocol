@@ -408,10 +408,7 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
   /**
    * @dev Allows the bridge to mint tokens (used for hTokens only).
    */
-  function holographBridgeMint(
-    address to,
-    uint256 amount
-  ) external returns (bytes4) {
+  function holographBridgeMint(address to, uint256 amount) external returns (bytes4) {
     require(msg.sender == bridge(), "ERC20: only bridge can call");
     _mint(to, amount);
     return ERC20Holograph.holographBridgeIn.selector;

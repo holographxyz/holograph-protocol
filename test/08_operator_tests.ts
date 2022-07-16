@@ -190,22 +190,17 @@ describe.only('Testing Operator functionality (L1)', async function () {
         let blockNumber: number = await l1.hre.ethers.provider.getBlockNumber();
         let transactionHash = (await l1.hre.ethers.provider.getBlockWithTransactions(blockNumber)).transactions[0].hash;
         let transaction = await l1.hre.ethers.provider.getTransactionReceipt(transactionHash);
+        process.stdout.write('\n\n' + JSON.stringify(transaction.logs, undefined, 2) + '\n\n');
         let hash = transaction.logs[0].data.substring(0, 66);
         let jobArray = await l1.operator.getJobDetails(hash);
         let job = {
           pod: jobArray[0],
           blockTimes: jobArray[1],
           operator: jobArray[2],
-          startBlock: jobArray[3].toNumber(),
-          fallbackOperators: [
-            jobArray[4][0].toNumber(),
-            jobArray[4][1].toNumber(),
-            jobArray[4][2].toNumber(),
-            jobArray[4][3].toNumber(),
-            jobArray[4][4].toNumber(),
-          ],
+          startBlock: jobArray[3],
+          fallbackOperators: [jobArray[4][0], jobArray[4][1], jobArray[4][2], jobArray[4][3], jobArray[4][4]],
         };
-        process.stdout.write('\n\n' + JSON.stringify(job, undefined, 2) + '\n\n');
+        process.stdout.write('\n\n' + JSON.stringify(jobArray, undefined, 2) + '\n\n');
       }
     });
   });

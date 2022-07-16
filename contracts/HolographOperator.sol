@@ -126,7 +126,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
   uint256 private _jobNonce;
 
   /**
-   * @dev Internal number used for defining a window for operator to execute the job.
+   * @dev Internal number (in seconds), used for defining a window for operator to execute the job.
    */
   uint16 private _blockTime;
 
@@ -143,7 +143,17 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
   /**
    * @dev Internal mapping of operator job details for a specific job hash.
    */
-  mapping(bytes32 => OperatorJob) private _operatorJobs;
+  mapping(bytes32 => uint256) private _operatorJobs;
+
+  /**
+   * @dev Internal mapping of operator addresses, used for temp storage when defining an operator job.
+   */
+  mapping(uint32 => address) private _operatorTempStorage;
+
+  /**
+   * @dev Internal index used for storing/referencing operator temp storage.
+   */
+  uint32 private _operatorTempStorageCounter;
 
   /**
    * @dev Multi-dimensional array of available operators.
@@ -249,21 +259,21 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
       // If operator index is 0, then it's open season! Anyone can execute this job. First come first serve.
       // pop operator to ensure that they cannot be selected for any other job until this one completes
       // decrease pod size to accomodate popped operator
-      podSize--;
-      _operatorJobs[jobHash] = OperatorJob(
-        pod,
-        _blockTime,
-        _operatorPods[pod][operatorIndex],
-        block.number,
-        [
-          (random + uint256(blockhash(block.number - 1))) % podSize,
-          (random + uint256(blockhash(block.number - 2))) % podSize,
-          (random + uint256(blockhash(block.number - 3))) % podSize,
-          (random + uint256(blockhash(block.number - 4))) % podSize,
-          (random + uint256(blockhash(block.number - 5))) % podSize
-        ]
-      );
+      _operatorTempStorage[_operatorTempStorageCounter] = _operatorPods[pod][operatorIndex];
       _popOperator(pod, operatorIndex);
+      podSize--;
+      _operatorJobs[jobHash] = uint256(
+        (pod << 248) |
+          (_operatorTempStorageCounter << 216) |
+          (uint40(block.number) << 176) |
+          (_RBH(random, podSize, 1) << 160) |
+          (_RBH(random, podSize, 2) << 144) |
+          (_RBH(random, podSize, 3) << 128) |
+          (_RBH(random, podSize, 4) << 112) |
+          (_RBH(random, podSize, 5) << 96) |
+          uint80(0)
+      ); // 80 next available bit position && so far 176 bits used with only 128 left
+      _operatorTempStorageCounter++;
       emit AvailableOperatorJob(jobHash, _payload);
     }
   }
@@ -272,7 +282,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     // we do our operator logic here
     // we will also manage gas/value here
     bytes32 hash = keccak256(_payload);
-    require(_operatorJobs[hash].startBlock > 0, "HOLOGRAPH: invalid job");
+    require(_operatorJobs[hash] > 0, "HOLOGRAPH: invalid job");
     assembly {
       calldatacopy(0, 0, calldatasize())
       let result := call(
@@ -368,6 +378,14 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     }
   }
 
+  function _RBH(
+    uint256 random,
+    uint256 podSize,
+    uint256 n
+  ) internal view returns (uint16) {
+    return uint16((random + uint256(blockhash(block.number - n))) % podSize);
+  }
+
   function getLZEndpoint() external view returns (address lZEndpoint) {
     assembly {
       lZEndpoint := sload(0x2944abfef32f38db0df81ab8a585718b1584ffa240274312f8a85cb682b6b688)
@@ -445,7 +463,21 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
   }
 
   function getJobDetails(bytes32 jobHash) external view returns (OperatorJob memory) {
-    return _operatorJobs[jobHash];
+    uint256 packed = _operatorJobs[jobHash];
+    return
+      OperatorJob(
+        uint8(packed >> 248),
+        _blockTime,
+        _operatorTempStorage[uint32(packed >> 216)],
+        uint40(packed >> 176),
+        [
+          uint16(packed >> 160),
+          uint16(packed >> 144),
+          uint16(packed >> 128),
+          uint16(packed >> 112),
+          uint16(packed >> 96)
+        ]
+      );
   }
 
   function getPodOperators(uint256 pod) external view returns (address[] memory) {
@@ -470,6 +502,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
           _operatorPods.push([address(0)]);
         }
       }
+      require(_operatorPods[pod].length < type(uint16).max, "HOLOGRAPH: too many operators");
       _operatorPods[pod].push(operator);
       _bondedOperators[operator] = pod + 1;
     }

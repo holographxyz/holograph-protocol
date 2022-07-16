@@ -105,8 +105,8 @@ struct OperatorJob {
   uint8 pod;
   uint16 blockTimes;
   address operator;
-  uint256 startBlock;
-  uint256[5] fallbackOperators;
+  uint40 startBlock;
+  uint16[5] fallbackOperators;
 }
 
 /*
