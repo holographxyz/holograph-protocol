@@ -190,9 +190,12 @@ describe.only('Testing Operator functionality (L1)', async function () {
         let blockNumber: number = await l1.hre.ethers.provider.getBlockNumber();
         let transactionHash = (await l1.hre.ethers.provider.getBlockWithTransactions(blockNumber)).transactions[0].hash;
         let transaction = await l1.hre.ethers.provider.getTransactionReceipt(transactionHash);
-        process.stdout.write('\n\n' + JSON.stringify(transaction.logs, undefined, 2) + '\n\n');
+        process.stdout.write('\n\n' + JSON.stringify(transaction.logs[0].data, undefined, 2) + '\n\n');
         let hash = transaction.logs[0].data.substring(0, 66);
+        process.stdout.write('\n\n' + JSON.stringify(hash, undefined, 2) + '\n\n');
         let jobArray = await l1.operator.getJobDetails(hash);
+        let jobArray2 = await l1.operator.getJobDetails2(hash);
+        process.stdout.write('\n\n' + JSON.stringify(jobArray2, undefined, 2) + '\n\n');
         let job = {
           pod: jobArray[0],
           blockTimes: jobArray[1],
@@ -200,7 +203,7 @@ describe.only('Testing Operator functionality (L1)', async function () {
           startBlock: jobArray[3],
           fallbackOperators: [jobArray[4][0], jobArray[4][1], jobArray[4][2], jobArray[4][3], jobArray[4][4]],
         };
-        process.stdout.write('\n\n' + JSON.stringify(jobArray, undefined, 2) + '\n\n');
+        process.stdout.write('\n\n' + JSON.stringify(job, undefined, 2) + '\n\n');
       }
     });
   });

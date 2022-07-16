@@ -251,7 +251,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
       // use job hash, job nonce, block number, and block timestamp for generating a random number
       uint256 random = uint256(keccak256(abi.encodePacked(jobHash, _jobNonce, block.number, block.timestamp)));
       // divide by total number of pods, use modulus/remainder
-      uint8 pod = uint8(random % _operatorPods.length);
+      uint256 pod = random % _operatorPods.length;
       // identify the total number of available operators in pod
       uint256 podSize = _operatorPods[pod].length;
       // select a primary operator
@@ -263,15 +263,15 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
       _popOperator(pod, operatorIndex);
       podSize--;
       _operatorJobs[jobHash] = uint256(
-        (pod << 248) |
-          (_operatorTempStorageCounter << 216) |
-          (uint40(block.number) << 176) |
-          (_RBH(random, podSize, 1) << 160) |
-          (_RBH(random, podSize, 2) << 144) |
-          (_RBH(random, podSize, 3) << 128) |
-          (_RBH(random, podSize, 4) << 112) |
-          (_RBH(random, podSize, 5) << 96) |
-          uint80(0)
+        pod << 248 |
+        uint256(_operatorTempStorageCounter) << 216 |
+        block.number << 176 |
+        _RBH(random, podSize, 1) << 160 |
+        _RBH(random, podSize, 2) << 144 |
+        _RBH(random, podSize, 3) << 128 |
+        _RBH(random, podSize, 4) << 112 |
+        _RBH(random, podSize, 5) << 96 |
+        0
       ); // 80 next available bit position && so far 176 bits used with only 128 left
       _operatorTempStorageCounter++;
       emit AvailableOperatorJob(jobHash, _payload);
@@ -343,7 +343,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     );
   }
 
-  function _popOperator(uint8 pod, uint256 operatorIndex) private {
+  function _popOperator(uint256 pod, uint256 operatorIndex) private {
     unchecked {
       uint256 lastIndex = _operatorPods[pod].length - 1;
       if (lastIndex != operatorIndex) {
@@ -382,8 +382,10 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     uint256 random,
     uint256 podSize,
     uint256 n
-  ) internal view returns (uint16) {
-    return uint16((random + uint256(blockhash(block.number - n))) % podSize);
+  ) internal view returns (uint256) {
+    unchecked {
+      return (random + uint256(blockhash(block.number - n))) % podSize;
+    }
   }
 
   function getLZEndpoint() external view returns (address lZEndpoint) {
@@ -478,6 +480,10 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
           uint16(packed >> 96)
         ]
       );
+  }
+
+  function getJobDetails2(bytes32 jobHash) external view returns (uint256) {
+    return _operatorJobs[jobHash];
   }
 
   function getPodOperators(uint256 pod) external view returns (address[] memory) {
