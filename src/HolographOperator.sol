@@ -29,7 +29,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
   /**
    * @dev Internal number (in seconds), used for defining a window for operator to execute the job.
    */
-  uint16 private _blockTime;
+  uint256 private _blockTime;
 
   /**
    * @dev Minimum amount of tokens needed for bonding.
@@ -49,7 +49,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
   /**
    * @dev Internal mapping of operator addresses, used for temp storage when defining an operator job.
    */
-  mapping(uint32 => address) private _operatorTempStorage;
+  mapping(uint256 => address) private _operatorTempStorage;
 
   /**
    * @dev Internal index used for storing/referencing operator temp storage.
@@ -148,7 +148,8 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     }
     unchecked {
       bytes32 jobHash = keccak256(_payload);
-      _jobNonce++;
+      ++_jobNonce;
+      ++_operatorTempStorageCounter;
       // use job hash, job nonce, block number, and block timestamp for generating a random number
       uint256 random = uint256(keccak256(abi.encodePacked(jobHash, _jobNonce, block.number, block.timestamp)));
       // divide by total number of pods, use modulus/remainder
@@ -174,7 +175,6 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
           (_RBH(random, podSize, 5) << 96) |
           0
       ); // 80 next available bit position && so far 176 bits used with only 128 left
-      _operatorTempStorageCounter++;
       emit AvailableOperatorJob(jobHash, _payload);
     }
   }
@@ -370,7 +370,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     return
       OperatorJob(
         uint8(packed >> 248),
-        _blockTime,
+        uint16(_blockTime),
         _operatorTempStorage[uint32(packed >> 216)],
         uint40(packed >> 176),
         [
