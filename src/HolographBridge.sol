@@ -83,6 +83,49 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     }
   }
 
+  /* !!! PROVIDING SUPPORT FOR OLD VERSION !!! */
+  function erc721in(
+    uint32 fromChain,
+    address collection,
+    address from,
+    address to,
+    uint256 tokenId,
+    bytes calldata data
+  ) external onlyBridge {
+    require(_registry().isHolographedContract(collection), "HOLOGRAPH: not holographed");
+    require(
+      ERC721Holograph(collection).holographBridgeIn(fromChain, from, to, tokenId, data) ==
+        ERC721Holograph.holographBridgeIn.selector,
+      "HOLOGRAPH: bridge in failed"
+    );
+  }
+
+  /* !!! PROVIDING SUPPORT FOR OLD VERSION !!! */
+  function erc20in(
+    uint32 fromChain,
+    address token,
+    address from,
+    address to,
+    uint256 amount,
+    bytes calldata data
+  ) external onlyBridge {
+    require(_registry().isHolographedContract(token), "HOLOGRAPH: not holographed");
+    require(
+      ERC20Holograph(token).holographBridgeIn(fromChain, from, to, amount, data) ==
+        ERC20Holograph.holographBridgeIn.selector,
+      "HOLOGRAPH: bridge in failed"
+    );
+  }
+
+  /* !!! PROVIDING SUPPORT FOR OLD VERSION !!! */
+  function deployIn(bytes calldata data) external onlyBridge {
+    (DeploymentConfig memory config, Verification memory signature, address signer) = abi.decode(
+      data,
+      (DeploymentConfig, Verification, address)
+    );
+    _factory().deployHolographableContract(config, signature, signer);
+  }
+
   function erc721in(
     uint256 nonce,
     uint32 fromChain,
