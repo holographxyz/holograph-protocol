@@ -20,6 +20,9 @@ import "./struct/Verification.sol";
  * @dev This is just the first step. But it is fundamental for achieving cross-chain non-fungible tokens.
  */
 contract HolographFactory is Admin, Initializable {
+  bytes32 constant _holographSlot = precomputeslot("eip1967.Holograph.holograph");
+  bytes32 constant _registrySlot = precomputeslot("eip1967.Holograph.registry");
+
   /**
    * @dev This event is fired every time that a bridgeable contract is deployed.
    */
@@ -34,10 +37,9 @@ contract HolographFactory is Admin, Initializable {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
     (address holograph, address registry) = abi.decode(data, (address, address));
     assembly {
-      sstore(precomputeslot("eip1967.Holograph.Bridge.admin"), origin())
-
-      sstore(precomputeslot("eip1967.Holograph.Bridge.holograph"), holograph)
-      sstore(precomputeslot("eip1967.Holograph.Bridge.registry"), registry)
+      sstore(_adminSlot, origin())
+      sstore(_holographSlot, holograph)
+      sstore(_registrySlot, registry)
     }
     _setInitialized();
     return IInitializable.init.selector;
@@ -78,7 +80,7 @@ contract HolographFactory is Admin, Initializable {
     }
     address holograph;
     assembly {
-      holograph := sload(precomputeslot("eip1967.Holograph.Bridge.holograph"))
+      holograph := sload(_holographSlot)
     }
     require(
       IInitializable(holographerAddress).init(
@@ -95,7 +97,7 @@ contract HolographFactory is Admin, Initializable {
     assembly {
       codehash := extcodehash(contractAddress)
     }
-    return (codehash != 0x0 && codehash != 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470);
+    return (codehash != 0x0 && codehash != precomputekeccak256(""));
   }
 
   function _verifySigner(
@@ -113,34 +115,26 @@ contract HolographFactory is Admin, Initializable {
   }
 
   function getHolograph() external view returns (address holograph) {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.holograph')) - 1);
     assembly {
-      holograph := sload(precomputeslot("eip1967.Holograph.Bridge.holograph"))
+      holograph := sload(_holographSlot)
     }
   }
 
   function setHolograph(address holograph) external onlyAdmin {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.holograph')) - 1);
     assembly {
-      sstore(precomputeslot("eip1967.Holograph.Bridge.factory"), holograph)
+      sstore(_holographSlot, holograph)
     }
   }
 
   function getRegistry() public view returns (address registry) {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.registry')) - 1);
     assembly {
-      registry := sload(precomputeslot("eip1967.Holograph.Bridge.registry"))
+      registry := sload(_registrySlot)
     }
   }
 
   function setRegistry(address registry) external onlyAdmin {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.registry')) - 1);
     assembly {
-      sstore(precomputeslot("eip1967.Holograph.Bridge.registry"), registry)
+      sstore(_registrySlot, registry)
     }
   }
 }

@@ -190,8 +190,8 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "ERC20: already initialized");
     assembly {
-      sstore(0x5bf044ad06f1ee9ee2fcd7caf4e944279b877408c76c4515cca6b4e937b01334, 1)
-      sstore(0x89b583059fdb0b2e807359b64eba1a8a1e6d099210701fafe6dad5dd2cd64fb8, caller())
+      sstore(_reentrantSlot, 0x0000000000000000000000000000000000000000000000000000000000000001)
+      sstore(_ownerSlot, caller())
     }
     (
       string memory contractName,
@@ -494,8 +494,6 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
     bytes32 s
   ) public {
     require(block.timestamp <= deadline, "ERC20: expired deadline");
-    // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)")
-    //  == 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9
     bytes32 structHash = keccak256(
       abi.encode(
         0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9,
@@ -670,7 +668,7 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
     bytes memory data
   ) private nonReentrant returns (bool) {
     if (_isContract(recipient)) {
-      try ERC165(recipient).supportsInterface(0x01ffc9a7) returns (bool erc165support) {
+      try ERC165(recipient).supportsInterface(ERC165.supportsInterface.selector) returns (bool erc165support) {
         require(erc165support, "ERC20: no ERC165 support");
         // we have erc165 support
         if (ERC165(recipient).supportsInterface(0x534f5876)) {

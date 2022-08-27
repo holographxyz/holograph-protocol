@@ -113,6 +113,8 @@ import "./interface/IInitializable.sol";
  * @dev This way it can be super easy to upgrade/update the source code once, and have all smart contracts automatically updated.
  */
 contract HolographRegistry is Admin, Initializable {
+  bytes32 constant _holographSlot = 0xb4107f746e9496e8452accc7de63d1c5e14c19f510932daa04077cd49e8bd77a;
+
   /**
    * @dev A list of smart contracts that are guaranteed secure and holographable.
    */
@@ -140,6 +142,11 @@ contract HolographRegistry is Admin, Initializable {
   mapping(uint32 => address) private _hTokens;
 
   /**
+   * @dev Array of all Holographable contracts that were ever deployed on this EVM chain
+   */
+  address[] private _holographableContracts;
+
+  /**
    * @dev Constructor is left empty and only the admin address is set.
    */
   constructor() {}
@@ -151,9 +158,8 @@ contract HolographRegistry is Admin, Initializable {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
     (address holograph, bytes32[] memory reservedTypes) = abi.decode(data, (address, bytes32[]));
     assembly {
-      sstore(0x5705f5753aa4f617eef2cae1dada3d3355e9387b04d19191f09b545e684ca50d, origin())
-
-      sstore(0x1eee493315beeac80829afd0aaa340f3821cabe68571a2743478e81638a3d94d, holograph)
+      sstore(_adminSlot, origin())
+      sstore(_holographSlot, holograph)
     }
     for (uint256 i = 0; i < reservedTypes.length; i++) {
       _reservedTypes[reservedTypes[i]] = true;
@@ -186,11 +192,12 @@ contract HolographRegistry is Admin, Initializable {
   function factoryDeployedHash(bytes32 hash, address contractAddress) external {
     address holograph;
     assembly {
-      holograph := sload(0x1eee493315beeac80829afd0aaa340f3821cabe68571a2743478e81638a3d94d)
+      holograph := sload(_holographSlot)
     }
     require(msg.sender == IHolograph(holograph).getFactory(), "HOLOGRAPH: factory only function");
     _holographedContractsHashMap[hash] = contractAddress;
     _holographedContracts[contractAddress] = true;
+    _holographableContracts.push(contractAddress);
   }
 
   /**
@@ -249,18 +256,38 @@ contract HolographRegistry is Admin, Initializable {
   }
 
   function getHolograph() external view returns (address holograph) {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.holograph')) - 1);
     assembly {
-      holograph := sload(0x1eee493315beeac80829afd0aaa340f3821cabe68571a2743478e81638a3d94d)
+      holograph := sload(_holographSlot)
     }
   }
 
   function setHolograph(address holograph) external onlyAdmin {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.holograph')) - 1);
     assembly {
-      sstore(0x7eefc8e705e14d34b5d1d6c3ea7f4e20cecb5956b182bac952a455d9372b87e2, holograph)
+      sstore(_holographSlot, holograph)
+    }
+  }
+
+  /**
+   * @notice Get total number of deployed holographable contracts.
+   */
+  function getHolographableContractsLength() external view returns (uint256) {
+    return _holographableContracts.length;
+  }
+
+  /**
+   * @notice Get set length list, starting from index, for all holographable contracts.
+   * @param index The index to start enumeration from.
+   * @param length The length of returned results.
+   * @return contracts address[] Returns a set length array of holographable contracts deployed.
+   */
+  function holographableContracts(uint256 index, uint256 length) external view returns (address[] memory contracts) {
+    uint256 supply = _holographableContracts.length;
+    if (index + length > supply) {
+      length = supply - index;
+    }
+    contracts = new address[](length);
+    for (uint256 i = 0; i < length; i++) {
+      contracts[i] = _holographableContracts[index + i];
     }
   }
 }

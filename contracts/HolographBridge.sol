@@ -123,6 +123,13 @@ import "./struct/Verification.sol";
  * @dev This smart contract contains the actual core bridging logic.
  */
 contract HolographBridge is Admin, Initializable, IHolographBridge {
+  bytes32 constant _factorySlot = 0xa49f20855ba576e09d13c8041c8039fa655356ea27f6c40f1ec46a4301cd5b23;
+  bytes32 constant _holographSlot = 0xb4107f746e9496e8452accc7de63d1c5e14c19f510932daa04077cd49e8bd77a;
+  bytes32 constant _interfacesSlot = 0xbd3084b8c09da87ad159c247a60e209784196be2530cecbbd8f337fdd1848827;
+  bytes32 constant _jobNonceSlot = 0x1cda64803f3b43503042e00863791e8d996666552d5855a78d53ee1dd4b3286d;
+  bytes32 constant _operatorSlot = 0x7caba557ad34138fa3b7e43fb574e0e6cc10481c3073e0dffbc560db81b5c60f;
+  bytes32 constant _registrySlot = 0xce8e75d5c5227ce29a4ee170160bb296e5dea6934b80a9bd723f7ef1e7c850e7;
+
   /**
    * @dev Constructor is left empty and only the admin address is set.
    */
@@ -135,7 +142,7 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
 
   modifier onlyOperator() {
     assembly {
-      switch eq(sload(0x7bef7d8d97f57f9aa64de319c8598b5cdc7c3d2715fc02428415a98281ca6bdc), caller())
+      switch eq(sload(_operatorSlot), caller())
       case 0 {
         mstore(0x80, 0x08c379a000000000000000000000000000000000000000000000000000000000)
         mstore(0xa0, 0x0000002000000000000000000000000000000000000000000000000000000000)
@@ -154,13 +161,13 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
       (address, address, address, address, address)
     );
     assembly {
-      sstore(0x5705f5753aa4f617eef2cae1dada3d3355e9387b04d19191f09b545e684ca50d, origin())
+      sstore(_adminSlot, origin())
 
-      sstore(0x7eefc8e705e14d34b5d1d6c3ea7f4e20cecb5956b182bac952a455d9372b87e2, factory)
-      sstore(0x1eee493315beeac80829afd0aaa340f3821cabe68571a2743478e81638a3d94d, holograph)
-      sstore(0x23e584d4fb363739321c1e56c9bcdc29517a4c57065f8502226c995fd15b2472, interfaces)
-      sstore(0x7bef7d8d97f57f9aa64de319c8598b5cdc7c3d2715fc02428415a98281ca6bdc, operator)
-      sstore(0x460c4059d72b144253e5fc4e2aacbae2bcd6362c67862cd58ecbab0e7b10c349, registry)
+      sstore(_factorySlot, factory)
+      sstore(_holographSlot, holograph)
+      sstore(_interfacesSlot, interfaces)
+      sstore(_operatorSlot, operator)
+      sstore(_registrySlot, registry)
     }
     _setInitialized();
     return IInitializable.init.selector;
@@ -178,6 +185,7 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
   }
 
   function erc721in(
+    uint256, /* nonce*/
     uint32 fromChain,
     address collection,
     address from,
@@ -193,12 +201,14 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
         ERC721Holograph.holographBridgeIn.selector,
       "HOLOGRAPH: bridge in failed"
     );
-    // provide operator with hToken value for executing bridge job
-    require(
-      ERC20Holograph(_registry().getHToken(fromChain)).holographBridgeMint(hTokenRecipient, hTokenValue) ==
-        ERC20Holograph.holographBridgeMint.selector,
-      "HOLOGRAPH: hToken mint failed"
-    );
+    if (hTokenValue > 0) {
+      // provide operator with hToken value for executing bridge job
+      require(
+        ERC20Holograph(_registry().getHToken(fromChain)).holographBridgeMint(hTokenRecipient, hTokenValue) ==
+          ERC20Holograph.holographBridgeMint.selector,
+        "HOLOGRAPH: hToken mint failed"
+      );
+    }
   }
 
   function erc721out(
@@ -225,18 +235,22 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
       toChain,
       msg.sender,
       abi.encodeWithSignature(
-        "erc721in(uint32,address,address,address,uint256,bytes)",
+        "erc721in(uint256,uint32,address,address,address,uint256,bytes,address,uint256)",
+        _jobNonce(),
         _holograph().getChainType(),
         collection,
         from,
         to,
         tokenId,
-        data
+        data,
+        address(0),
+        0
       )
     );
   }
 
   function erc20in(
+    uint256, /* nonce*/
     uint32 fromChain,
     address token,
     address from,
@@ -252,12 +266,14 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
         ERC20Holograph.holographBridgeIn.selector,
       "HOLOGRAPH: bridge in failed"
     );
-    // provide operator with hToken value for executing bridge job
-    require(
-      ERC20Holograph(_registry().getHToken(fromChain)).holographBridgeMint(hTokenRecipient, hTokenValue) ==
-        ERC20Holograph.holographBridgeMint.selector,
-      "HOLOGRAPH: hToken mint failed"
-    );
+    if (hTokenValue > 0) {
+      // provide operator with hToken value for executing bridge job
+      require(
+        ERC20Holograph(_registry().getHToken(fromChain)).holographBridgeMint(hTokenRecipient, hTokenValue) ==
+          ERC20Holograph.holographBridgeMint.selector,
+        "HOLOGRAPH: hToken mint failed"
+      );
+    }
   }
 
   function erc20out(
@@ -276,18 +292,22 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
       toChain,
       msg.sender,
       abi.encodeWithSignature(
-        "erc20in(uint32,address,address,address,uint256,bytes)",
+        "erc20in(uint256,uint32,address,address,address,uint256,bytes,address,uint256)",
+        _jobNonce(),
         _holograph().getChainType(),
         token,
         from,
         to,
         amount,
-        data
+        data,
+        address(0),
+        0
       )
     );
   }
 
   function deployIn(
+    uint256, /* nonce*/
     uint32 fromChain,
     bytes calldata data,
     address hTokenRecipient,
@@ -298,12 +318,14 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
       (DeploymentConfig, Verification, address)
     );
     _factory().deployHolographableContract(config, signature, signer);
-    // provide operator with hToken value for executing bridge job
-    require(
-      ERC20Holograph(_registry().getHToken(fromChain)).holographBridgeMint(hTokenRecipient, hTokenValue) ==
-        ERC20Holograph.holographBridgeMint.selector,
-      "HOLOGRAPH: hToken mint failed"
-    );
+    if (hTokenValue > 0) {
+      // provide operator with hToken value for executing bridge job
+      require(
+        ERC20Holograph(_registry().getHToken(fromChain)).holographBridgeMint(hTokenRecipient, hTokenValue) ==
+          ERC20Holograph.holographBridgeMint.selector,
+        "HOLOGRAPH: hToken mint failed"
+      );
+    }
   }
 
   function deployOut(
@@ -316,120 +338,120 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
       toChain,
       msg.sender,
       abi.encodeWithSignature(
-        "deployIn(uint32,bytes)",
+        "deployIn(uint256,uint32,bytes,address,uint256)",
+        _jobNonce(),
         _holograph().getChainType(),
-        abi.encode(config, signature, signer)
+        abi.encode(config, signature, signer),
+        address(0),
+        0
       )
     );
   }
 
+  /**
+   * @dev Internal nonce used for randomness.
+   *      We increment it on each return.
+   */
+  function _jobNonce() private returns (uint256 jobNonce) {
+    assembly {
+      jobNonce := add(sload(_jobNonceSlot), 0x0000000000000000000000000000000000000000000000000000000000000001)
+      sstore(_jobNonceSlot, jobNonce)
+    }
+  }
+
   function _factory() private view returns (IHolographFactory factory) {
     assembly {
-      factory := sload(0x7eefc8e705e14d34b5d1d6c3ea7f4e20cecb5956b182bac952a455d9372b87e2)
+      factory := sload(_factorySlot)
     }
   }
 
   function _holograph() private view returns (IHolograph holograph) {
     assembly {
-      holograph := sload(0x1eee493315beeac80829afd0aaa340f3821cabe68571a2743478e81638a3d94d)
+      holograph := sload(_holographSlot)
     }
   }
 
   function _interfaces() private view returns (IInterfaces interfaces) {
     assembly {
-      interfaces := sload(0x23e584d4fb363739321c1e56c9bcdc29517a4c57065f8502226c995fd15b2472)
+      interfaces := sload(_interfacesSlot)
     }
   }
 
   function _operator() private view returns (IHolographOperator operator) {
     assembly {
-      operator := sload(0x7bef7d8d97f57f9aa64de319c8598b5cdc7c3d2715fc02428415a98281ca6bdc)
+      operator := sload(_operatorSlot)
     }
   }
 
   function _registry() private view returns (IHolographRegistry registry) {
     assembly {
-      registry := sload(0x460c4059d72b144253e5fc4e2aacbae2bcd6362c67862cd58ecbab0e7b10c349)
+      registry := sload(_registrySlot)
+    }
+  }
+
+  function getJobNonce() external view returns (uint256 jobNonce) {
+    assembly {
+      jobNonce := sload(_jobNonceSlot)
     }
   }
 
   function getFactory() external view returns (address factory) {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.factory')) - 1);
     assembly {
-      factory := sload(0x7eefc8e705e14d34b5d1d6c3ea7f4e20cecb5956b182bac952a455d9372b87e2)
+      factory := sload(_factorySlot)
     }
   }
 
   function setFactory(address factory) external onlyAdmin {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.factory')) - 1);
     assembly {
-      sstore(0x7eefc8e705e14d34b5d1d6c3ea7f4e20cecb5956b182bac952a455d9372b87e2, factory)
+      sstore(_factorySlot, factory)
     }
   }
 
   function getHolograph() external view returns (address holograph) {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.holograph')) - 1);
     assembly {
-      holograph := sload(0x1eee493315beeac80829afd0aaa340f3821cabe68571a2743478e81638a3d94d)
+      holograph := sload(_holographSlot)
     }
   }
 
   function setHolograph(address holograph) external onlyAdmin {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.holograph')) - 1);
     assembly {
-      sstore(0x7eefc8e705e14d34b5d1d6c3ea7f4e20cecb5956b182bac952a455d9372b87e2, holograph)
+      sstore(_holographSlot, holograph)
     }
   }
 
   function getInterfaces() external view returns (address interfaces) {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.interfaces')) - 1);
     assembly {
-      interfaces := sload(0x23e584d4fb363739321c1e56c9bcdc29517a4c57065f8502226c995fd15b2472)
+      interfaces := sload(_interfacesSlot)
     }
   }
 
   function setInterfaces(address interfaces) external onlyAdmin {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.interfaces')) - 1);
     assembly {
-      sstore(0x23e584d4fb363739321c1e56c9bcdc29517a4c57065f8502226c995fd15b2472, interfaces)
+      sstore(_interfacesSlot, interfaces)
     }
   }
 
   function getOperator() external view returns (address operator) {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.operator')) - 1);
     assembly {
-      operator := sload(0x7bef7d8d97f57f9aa64de319c8598b5cdc7c3d2715fc02428415a98281ca6bdc)
+      operator := sload(_operatorSlot)
     }
   }
 
   function setOperator(address operator) external onlyAdmin {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.operator')) - 1);
     assembly {
-      sstore(0x7bef7d8d97f57f9aa64de319c8598b5cdc7c3d2715fc02428415a98281ca6bdc, operator)
+      sstore(_operatorSlot, operator)
     }
   }
 
   function getRegistry() external view returns (address registry) {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.registry')) - 1);
     assembly {
-      registry := sload(0x460c4059d72b144253e5fc4e2aacbae2bcd6362c67862cd58ecbab0e7b10c349)
+      registry := sload(_registrySlot)
     }
   }
 
   function setRegistry(address registry) external onlyAdmin {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.registry')) - 1);
     assembly {
-      sstore(0x460c4059d72b144253e5fc4e2aacbae2bcd6362c67862cd58ecbab0e7b10c349, registry)
+      sstore(_registrySlot, registry)
     }
   }
 }

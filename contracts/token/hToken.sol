@@ -157,7 +157,7 @@ contract hToken is ERC20H {
    */
   function init(bytes memory data) external override returns (bytes4) {
     (address contractOwner, uint16 fee) = abi.decode(data, (address, uint16));
-    _owner = contractOwner;
+    _setOwner(contractOwner);
     _feeBp = fee;
     // run underlying initializer logic
     return _init(data);

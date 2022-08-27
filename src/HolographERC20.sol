@@ -91,8 +91,8 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "ERC20: already initialized");
     assembly {
-      sstore(precomputeslot("eip1967.Holograph.Bridge.reentrant"), 1)
-      sstore(precomputeslot("eip1967.Holograph.Bridge.owner"), caller())
+      sstore(_reentrantSlot, 0x0000000000000000000000000000000000000000000000000000000000000001)
+      sstore(_ownerSlot, caller())
     }
     (
       string memory contractName,
@@ -395,11 +395,9 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
     bytes32 s
   ) public {
     require(block.timestamp <= deadline, "ERC20: expired deadline");
-    // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)")
-    //  == 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9
     bytes32 structHash = keccak256(
       abi.encode(
-        0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9,
+        precomputekeccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"),
         account,
         spender,
         amount,
@@ -571,7 +569,7 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
     bytes memory data
   ) private nonReentrant returns (bool) {
     if (_isContract(recipient)) {
-      try ERC165(recipient).supportsInterface(0x01ffc9a7) returns (bool erc165support) {
+      try ERC165(recipient).supportsInterface(ERC165.supportsInterface.selector) returns (bool erc165support) {
         require(erc165support, "ERC20: no ERC165 support");
         // we have erc165 support
         if (ERC165(recipient).supportsInterface(0x534f5876)) {
@@ -649,7 +647,7 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
     assembly {
       codehash := extcodehash(contractAddress)
     }
-    return (codehash != 0x0 && codehash != 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470);
+    return (codehash != 0x0 && codehash != precomputekeccak256(""));
   }
 
   function _isEventRegistered(HolographERC20Event _eventName) private view returns (bool) {

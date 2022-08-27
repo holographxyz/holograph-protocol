@@ -53,7 +53,7 @@ import {
 } from '../typechain-types';
 import { DeploymentConfigStruct } from '../typechain-types/HolographFactory';
 
-describe('Testing cross-chain minting (L1 & L2)', async function () {
+describe.only('Testing cross-chain minting (L1 & L2)', async function () {
   const lzReceiveABI = {
     inputs: [
       {
@@ -163,6 +163,19 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           generateInitCode(['bytes'], [hexToBytes(stringToHex(tokenURIs[3]))]),
         ]
       ).substring(2);
+
+    // we need to balance wallets from l1 and l2
+    let noncel1 = await l1.deployer.getTransactionCount();
+    let noncel2 = await l2.deployer.getTransactionCount();
+    let target = Math.max(noncel1, noncel2) - Math.min(noncel1, noncel2);
+    let balancer = noncel1 > noncel2 ? l2.deployer : l1.deployer;
+    for (let i = 0; i < target; i++) {
+      let tx = await balancer.sendTransaction({
+        to: balancer.address,
+        value: '0x0000000000000000000000000000000000000000000000000000000000000000'
+      });
+      await tx.wait();
+    }
   });
 
   after(async function () {});
@@ -170,6 +183,19 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
   beforeEach(async function () {});
 
   afterEach(async function () {});
+
+  describe('Enable operators for l1 and l2', async function () {
+    it('should add 100 operator wallets for each chain', async function () {
+      for (let i = 0, l = 10; i < l; i++) {
+        await l1.operator.bondUtilityToken(randomHex(20), BigNumber.from('1000000000000000000'), 0);
+        await l2.operator.bondUtilityToken(randomHex(20), BigNumber.from('1000000000000000000'), 0);
+      }
+      await expect(l1.operator.bondUtilityToken(randomHex(20), BigNumber.from('1000000000000000000'), 0)).to.not.be
+        .reverted;
+      await expect(l2.operator.bondUtilityToken(randomHex(20), BigNumber.from('1000000000000000000'), 0)).to.not.be
+        .reverted;
+    });
+  });
 
   describe('Deploy cross-chain contracts via bridge deploy', async function () {
     describe('hToken', async function () {
@@ -201,11 +227,15 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           v: '0x' + sig.substring(130, 132),
         } as Signature);
 
+        let jobNonce = (await l1.bridge.getJobNonce()).add(BigNumber.from(1));
+
         let payload: BytesLike =
-          functionHash('deployIn(bytes)') +
+          functionHash('deployIn(uint256,uint32,bytes,address,uint256)') +
           generateInitCode(
-            ['bytes'],
+            ['uint256','uint32','bytes','address','uint256'],
             [
+              jobNonce.toHexString(),
+              l1.network.holographId,
               generateInitCode(
                 ['tuple(bytes32,uint32,bytes32,bytes,bytes)', 'tuple(bytes32,bytes32,uint8)', 'address'],
                 [
@@ -220,6 +250,8 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
                   l1.deployer.address,
                 ]
               ),
+              zeroAddress(),
+              0
             ]
           ).substring(2);
 
@@ -235,8 +267,8 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
               lzReceive(l2.web3, [ChainId.hlg2lz(l1.network.holographId), l1.operator.address, 0, payload])
             )
         )
-          .to.emit(l2.operator, 'AvailableJob')
-          .withArgs(payload);
+          .to.emit(l2.operator, 'AvailableOperatorJob')
+          .withArgs(l2.web3.utils.keccak256(payload), payload);
 
         await expect(l2.operator.executeJob(payload))
           .to.emit(l2.factory, 'BridgeableContractDeployed')
@@ -273,11 +305,15 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           v: '0x' + sig.substring(130, 132),
         } as Signature);
 
+        let jobNonce = (await l2.bridge.getJobNonce()).add(BigNumber.from(1));
+
         let payload: BytesLike =
-          functionHash('deployIn(bytes)') +
+          functionHash('deployIn(uint256,uint32,bytes,address,uint256)') +
           generateInitCode(
-            ['bytes'],
+            ['uint256','uint32','bytes','address','uint256'],
             [
+              jobNonce.toHexString(),
+              l2.network.holographId,
               generateInitCode(
                 ['tuple(bytes32,uint32,bytes32,bytes,bytes)', 'tuple(bytes32,bytes32,uint8)', 'address'],
                 [
@@ -292,6 +328,8 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
                   l1.deployer.address,
                 ]
               ),
+              zeroAddress(),
+              0
             ]
           ).substring(2);
 
@@ -307,8 +345,8 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
               lzReceive(l1.web3, [ChainId.hlg2lz(l2.network.holographId), l2.operator.address, 0, payload])
             )
         )
-          .to.emit(l1.operator, 'AvailableJob')
-          .withArgs(payload);
+          .to.emit(l1.operator, 'AvailableOperatorJob')
+          .withArgs(l1.web3.utils.keccak256(payload), payload);
 
         await expect(l1.operator.executeJob(payload))
           .to.emit(l1.factory, 'BridgeableContractDeployed')

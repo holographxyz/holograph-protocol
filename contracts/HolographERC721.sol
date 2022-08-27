@@ -129,6 +129,9 @@ import "./interface/Ownable.sol";
  * @dev The entire logic and functionality of the smart contract is self-contained.
  */
 contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
+  bytes32 constant _holographSlot = 0xb4107f746e9496e8452accc7de63d1c5e14c19f510932daa04077cd49e8bd77a;
+  bytes32 constant _sourceContractSlot = 0x27d542086d1e831d40b749e7f5509a626c3047a36d160781c40d5acc83e5b074;
+
   /**
    * @dev Configuration for events to trigger for source smart contract.
    */
@@ -224,9 +227,10 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
    * @return bool True if supported.
    */
   function supportsInterface(bytes4 interfaceId) external view returns (bool) {
+    IInterfaces interfaces = IInterfaces(_interfaces());
     if (
-      IInterfaces(_interfaces()).supportsInterface(InterfaceType.ERC721, interfaceId) || // check global interfaces
-      ERC165(_royalties()).supportsInterface(interfaceId) || // check if royalties supports interface
+      interfaces.supportsInterface(InterfaceType.ERC721, interfaceId) || // check global interfaces
+      interfaces.supportsInterface(InterfaceType.PA1D, interfaceId) || // check if royalties supports interface
       ERC165(_source()).supportsInterface(interfaceId) // check if source supports interface
     ) {
       return true;
@@ -367,7 +371,7 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "ERC721: already initialized");
     assembly {
-      sstore(0x89b583059fdb0b2e807359b64eba1a8a1e6d099210701fafe6dad5dd2cd64fb8, caller())
+      sstore(_ownerSlot, caller())
     }
     (
       string memory contractName,
@@ -922,7 +926,7 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
 
   function _holograph() private view returns (IHolograph holograph) {
     assembly {
-      holograph := sload(0x1eee493315beeac80829afd0aaa340f3821cabe68571a2743478e81638a3d94d)
+      holograph := sload(_holographSlot)
     }
   }
 
@@ -941,7 +945,7 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
    */
   function _source() private view returns (address sourceContract) {
     assembly {
-      sourceContract := sload(0xee63e41dd03b4d304382a6596ec5f4a6eb601d3640835d27fca1d0be62955bb5)
+      sourceContract := sload(_sourceContractSlot)
     }
   }
 

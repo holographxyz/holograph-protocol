@@ -120,10 +120,13 @@ import "./struct/OperatorJob.sol";
  * @dev This smart contract contains the actual core operator logic.
  */
 contract HolographOperator is Admin, Initializable, IHolographOperator {
-  /**
-   * @dev Internal nonce used for randomness.
-   */
-  uint256 private _jobNonce;
+  bytes32 constant _bridgeSlot = 0xeb87cbb21687feb327e3d58c6c16d552231d12c7a0e8115042a4165fac8a77f9;
+  bytes32 constant _deadAddressSlot = 0x0c01c0d9182738e91eab986a4ef4a5a120cc00ed5032b67c0bd8d0e70b247cf3;
+  bytes32 constant _holographSlot = 0xb4107f746e9496e8452accc7de63d1c5e14c19f510932daa04077cd49e8bd77a;
+  bytes32 constant _interfacesSlot = 0xbd3084b8c09da87ad159c247a60e209784196be2530cecbbd8f337fdd1848827;
+  bytes32 constant _jobNonceSlot = 0x1cda64803f3b43503042e00863791e8d996666552d5855a78d53ee1dd4b3286d;
+  bytes32 constant _lZEndpointSlot = 0x56825e447adf54cdde5f04815fcf9b1dd26ef9d5c053625147c18b7c13091686;
+  bytes32 constant _registrySlot = 0xce8e75d5c5227ce29a4ee170160bb296e5dea6934b80a9bd723f7ef1e7c850e7;
 
   /**
    * @dev Internal number (in seconds), used for defining a window for operator to execute the job.
@@ -178,7 +181,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
   modifier onlyLZ() {
     assembly {
       // check if lzEndpoint
-      switch eq(sload(0x2944abfef32f38db0df81ab8a585718b1584ffa240274312f8a85cb682b6b688), caller())
+      switch eq(sload(_lZEndpointSlot), caller())
       case 0 {
         // check if operator is calling self, used for job estimations
         switch eq(address(), caller())
@@ -206,13 +209,13 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
       (address, address, address, address)
     );
     assembly {
-      // sstore(0x64cf6cf9ad5921ebcb693f7949677bb85fb7da9db9bf2ca491de330b219f5e9a, 0x000000000000000000000000000000000000000000000000000000000000dead)
-      sstore(0x5705f5753aa4f617eef2cae1dada3d3355e9387b04d19191f09b545e684ca50d, origin())
+      // sstore(_deadAddressSlot, 0x000000000000000000000000000000000000000000000000000000000000dead)
+      sstore(_adminSlot, origin())
 
-      sstore(0x03be85923973d3197c19b1ad1f9b28c331dd9229cd80cbf84926b2286fc4563f, bridge)
-      sstore(0x1eee493315beeac80829afd0aaa340f3821cabe68571a2743478e81638a3d94d, holograph)
-      sstore(0x23e584d4fb363739321c1e56c9bcdc29517a4c57065f8502226c995fd15b2472, interfaces)
-      sstore(0x460c4059d72b144253e5fc4e2aacbae2bcd6362c67862cd58ecbab0e7b10c349, registry)
+      sstore(_bridgeSlot, bridge)
+      sstore(_holographSlot, holograph)
+      sstore(_interfacesSlot, interfaces)
+      sstore(_registrySlot, registry)
     }
     _blockTime = 10; // 10 blocks allowed for execution
     unchecked {
@@ -247,10 +250,9 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     }
     unchecked {
       bytes32 jobHash = keccak256(_payload);
-      ++_jobNonce;
       ++_operatorTempStorageCounter;
       // use job hash, job nonce, block number, and block timestamp for generating a random number
-      uint256 random = uint256(keccak256(abi.encodePacked(jobHash, _jobNonce, block.number, block.timestamp)));
+      uint256 random = uint256(keccak256(abi.encodePacked(jobHash, _jobNonce(), block.number, block.timestamp)));
       // divide by total number of pods, use modulus/remainder
       uint256 pod = random % _operatorPods.length;
       // identify the total number of available operators in pod
@@ -283,22 +285,18 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     // we will also manage gas/value here
     bytes32 hash = keccak256(_payload);
     require(_operatorJobs[hash] > 0, "HOLOGRAPH: invalid job");
+    // temp workaround to allow for leaving onlyBridge on BridgeIn functions
+    IHolographBridge(_bridge()).executeJob(_payload);
+    /*
     assembly {
-      calldatacopy(0, 0, calldatasize())
-      let result := call(
-        gas(),
-        sload(0x03be85923973d3197c19b1ad1f9b28c331dd9229cd80cbf84926b2286fc4563f),
-        callvalue(),
-        0,
-        calldatasize(),
-        0,
-        0
-      )
+      calldatacopy(0, _payload.offset, _payload.length)
+      let result := call(gas(), sload(_bridgeSlot), callvalue(), 0, _payload.length, 0, 0)
       if eq(result, 0) {
         returndatacopy(0, 0, returndatasize())
         revert(0, returndatasize())
       }
     }
+    */
     delete _operatorJobs[hash];
   }
 
@@ -309,7 +307,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     bytes calldata _payload
   ) external payable {
     assembly {
-      // switch eq(sload(0x64cf6cf9ad5921ebcb693f7949677bb85fb7da9db9bf2ca491de330b219f5e9a), caller())
+      // switch eq(sload(_deadAddressSlot), caller())
       // allow only address(0) so that function succeeds only on estimate gas calls
       switch eq(mload(0x60), caller())
       case 0 {
@@ -331,7 +329,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
   ) external payable onlyBridge {
     ILayerZeroEndpoint lZEndpoint;
     assembly {
-      lZEndpoint := sload(0x2944abfef32f38db0df81ab8a585718b1584ffa240274312f8a85cb682b6b688)
+      lZEndpoint := sload(_lZEndpointSlot)
     }
     lZEndpoint.send{value: msg.value}(
       uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
@@ -341,6 +339,17 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
       address(this),
       abi.encodePacked(uint16(1), uint256(52000 + (_payload.length * 25)))
     );
+  }
+
+  /**
+   * @dev Internal nonce used for randomness.
+   *      We increment it on each return.
+   */
+  function _jobNonce() private returns (uint256 jobNonce) {
+    assembly {
+      jobNonce := add(sload(_jobNonceSlot), 0x0000000000000000000000000000000000000000000000000000000000000001)
+      sstore(_jobNonceSlot, jobNonce)
+    }
   }
 
   function _popOperator(uint256 pod, uint256 operatorIndex) private {
@@ -356,25 +365,25 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
 
   function _bridge() private view returns (address bridge) {
     assembly {
-      bridge := sload(0x03be85923973d3197c19b1ad1f9b28c331dd9229cd80cbf84926b2286fc4563f)
+      bridge := sload(_bridgeSlot)
     }
   }
 
   function _holograph() private view returns (address holograph) {
     assembly {
-      holograph := sload(0x1eee493315beeac80829afd0aaa340f3821cabe68571a2743478e81638a3d94d)
+      holograph := sload(_holographSlot)
     }
   }
 
   function _interfaces() private view returns (IInterfaces interfaces) {
     assembly {
-      interfaces := sload(0x23e584d4fb363739321c1e56c9bcdc29517a4c57065f8502226c995fd15b2472)
+      interfaces := sload(_interfacesSlot)
     }
   }
 
   function _registry() private view returns (address registry) {
     assembly {
-      registry := sload(0x460c4059d72b144253e5fc4e2aacbae2bcd6362c67862cd58ecbab0e7b10c349)
+      registry := sload(_registrySlot)
     }
   }
 
@@ -382,7 +391,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     uint256 random,
     uint256 podSize,
     uint256 n
-  ) internal view returns (uint256) {
+  ) private view returns (uint256) {
     unchecked {
       return (random + uint256(blockhash(block.number - n))) % podSize;
     }
@@ -390,77 +399,61 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
 
   function getLZEndpoint() external view returns (address lZEndpoint) {
     assembly {
-      lZEndpoint := sload(0x2944abfef32f38db0df81ab8a585718b1584ffa240274312f8a85cb682b6b688)
+      lZEndpoint := sload(_lZEndpointSlot)
     }
   }
 
   function setLZEndpoint(address lZEndpoint) external onlyAdmin {
     assembly {
-      sstore(0x2944abfef32f38db0df81ab8a585718b1584ffa240274312f8a85cb682b6b688, lZEndpoint)
+      sstore(_lZEndpointSlot, lZEndpoint)
     }
   }
 
   function getBridge() external view returns (address bridge) {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.bridge')) - 1);
     assembly {
-      bridge := sload(0x03be85923973d3197c19b1ad1f9b28c331dd9229cd80cbf84926b2286fc4563f)
+      bridge := sload(_bridgeSlot)
     }
   }
 
   function setBridge(address bridge) external onlyAdmin {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.bridge')) - 1);
     assembly {
-      sstore(0x03be85923973d3197c19b1ad1f9b28c331dd9229cd80cbf84926b2286fc4563f, bridge)
+      sstore(_bridgeSlot, bridge)
     }
   }
 
   function getHolograph() external view returns (address holograph) {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.holograph')) - 1);
     assembly {
-      holograph := sload(0x1eee493315beeac80829afd0aaa340f3821cabe68571a2743478e81638a3d94d)
+      holograph := sload(_holographSlot)
     }
   }
 
   function setHolograph(address holograph) external onlyAdmin {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.holograph')) - 1);
     assembly {
-      sstore(0x7eefc8e705e14d34b5d1d6c3ea7f4e20cecb5956b182bac952a455d9372b87e2, holograph)
+      sstore(_holographSlot, holograph)
     }
   }
 
   function getInterfaces() external view returns (address interfaces) {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.interfaces')) - 1);
     assembly {
-      interfaces := sload(0x23e584d4fb363739321c1e56c9bcdc29517a4c57065f8502226c995fd15b2472)
+      interfaces := sload(_interfacesSlot)
     }
   }
 
   function setInterfaces(address interfaces) external onlyAdmin {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.interfaces')) - 1);
     assembly {
-      sstore(0x23e584d4fb363739321c1e56c9bcdc29517a4c57065f8502226c995fd15b2472, interfaces)
+      sstore(_interfacesSlot, interfaces)
     }
   }
 
   function getRegistry() external view returns (address registry) {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.registry')) - 1);
     assembly {
-      registry := sload(0x460c4059d72b144253e5fc4e2aacbae2bcd6362c67862cd58ecbab0e7b10c349)
+      registry := sload(_registrySlot)
     }
   }
 
   function setRegistry(address registry) external onlyAdmin {
-    // The slot hash has been precomputed for gas optimizaion
-    // bytes32 slot = bytes32(uint256(keccak256('eip1967.Holograph.Bridge.registry')) - 1);
     assembly {
-      sstore(0x460c4059d72b144253e5fc4e2aacbae2bcd6362c67862cd58ecbab0e7b10c349, registry)
+      sstore(_registrySlot, registry)
     }
   }
 

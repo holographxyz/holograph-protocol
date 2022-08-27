@@ -54,7 +54,7 @@ import {
 } from '../typechain-types';
 import { DeploymentConfigStruct } from '../typechain-types/HolographFactory';
 
-describe.only('Testing Operator functionality (L1)', async function () {
+describe('Testing Operator functionality (L1)', async function () {
   const lzReceiveABI = {
     inputs: [
       {

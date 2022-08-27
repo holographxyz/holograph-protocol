@@ -214,7 +214,7 @@ contract Interfaces is Admin, Initializable {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
     address contractAdmin = abi.decode(data, (address));
     assembly {
-      sstore(precomputeslot("eip1967.Holograph.Bridge.admin"), contractAdmin)
+      sstore(_adminSlot, contractAdmin)
     }
 
     // ERC20
@@ -252,16 +252,15 @@ contract Interfaces is Admin, Initializable {
     _supportedInterfaces[InterfaceType.ERC20][ERC20Burnable.burn.selector ^ ERC20Burnable.burnFrom.selector] = true;
 
     // ERC20Safer
-    // bytes4(keccak256(abi.encodePacked('safeTransfer(address,uint256)'))) == 0x423f6cef
-    _supportedInterfaces[InterfaceType.ERC20][0x423f6cef] = true;
-    // bytes4(keccak256(abi.encodePacked('safeTransfer(address,uint256,bytes)'))) == 0xeb795549
-    _supportedInterfaces[InterfaceType.ERC20][0xeb795549] = true;
-    // bytes4(keccak256(abi.encodePacked('safeTransferFrom(address,address,uint256)'))) == 0x42842e0e
-    _supportedInterfaces[InterfaceType.ERC20][0x42842e0e] = true;
-    // bytes4(keccak256(abi.encodePacked('safeTransferFrom(address,address,uint256,bytes)'))) == 0xb88d4fde
-    _supportedInterfaces[InterfaceType.ERC20][0xb88d4fde] = true;
+    _supportedInterfaces[InterfaceType.ERC20][functionsig("safeTransfer(address,uint256)")] = true;
+    _supportedInterfaces[InterfaceType.ERC20][functionsig("safeTransfer(address,uint256,bytes)")] = true;
+    _supportedInterfaces[InterfaceType.ERC20][functionsig("safeTransferFrom(address,address,uint256)")] = true;
+    _supportedInterfaces[InterfaceType.ERC20][functionsig("safeTransferFrom(address,address,uint256,bytes)")] = true;
     _supportedInterfaces[InterfaceType.ERC20][
-      bytes4(0x423f6cef) ^ bytes4(0xeb795549) ^ bytes4(0x42842e0e) ^ bytes4(0xb88d4fde)
+      bytes4(functionsig("safeTransfer(address,uint256)")) ^
+        bytes4(functionsig("safeTransfer(address,uint256,bytes)")) ^
+        bytes4(functionsig("safeTransferFrom(address,address,uint256)")) ^
+        bytes4(functionsig("safeTransferFrom(address,address,uint256,bytes)"))
     ] = true;
 
     // ERC20Permit
@@ -280,10 +279,8 @@ contract Interfaces is Admin, Initializable {
     // ERC721
     _supportedInterfaces[InterfaceType.ERC721][ERC721.balanceOf.selector] = true;
     _supportedInterfaces[InterfaceType.ERC721][ERC721.ownerOf.selector] = true;
-    // bytes4(keccak256(abi.encodePacked('safeTransferFrom(address,address,uint256,bytes)'))) == 0xb88d4fde
-    _supportedInterfaces[InterfaceType.ERC721][0xb88d4fde] = true;
-    // bytes4(keccak256(abi.encodePacked('safeTransferFrom(address,address,uint256)'))) == 0x42842e0e
-    _supportedInterfaces[InterfaceType.ERC721][0x42842e0e] = true;
+    _supportedInterfaces[InterfaceType.ERC721][functionsig("safeTransferFrom(address,address,uint256)")] = true;
+    _supportedInterfaces[InterfaceType.ERC721][functionsig("safeTransferFrom(address,address,uint256,bytes)")] = true;
     _supportedInterfaces[InterfaceType.ERC721][ERC721.transferFrom.selector] = true;
     _supportedInterfaces[InterfaceType.ERC721][ERC721.approve.selector] = true;
     _supportedInterfaces[InterfaceType.ERC721][ERC721.setApprovalForAll.selector] = true;
@@ -292,10 +289,9 @@ contract Interfaces is Admin, Initializable {
     _supportedInterfaces[InterfaceType.ERC721][
       ERC721.balanceOf.selector ^
         ERC721.ownerOf.selector ^
-        0xb88d4fde ^
-        0x42842e0e ^
+        functionsig("safeTransferFrom(address,address,uint256)") ^
+        functionsig("safeTransferFrom(address,address,uint256,bytes)") ^
         ERC721.transferFrom.selector ^
-        ERC721.approve.selector ^
         ERC721.approve.selector ^
         ERC721.setApprovalForAll.selector ^
         ERC721.getApproved.selector ^
@@ -333,7 +329,6 @@ contract Interfaces is Admin, Initializable {
     _supportedInterfaces[InterfaceType.ERC721][CollectionURI.contractURI.selector] = true;
 
     // PA1D
-
     _supportedInterfaces[InterfaceType.PA1D][IPA1D.initPA1D.selector] = true;
     _supportedInterfaces[InterfaceType.PA1D][IPA1D.configurePayouts.selector] = true;
     _supportedInterfaces[InterfaceType.PA1D][IPA1D.getPayoutInfo.selector] = true;
@@ -345,6 +340,7 @@ contract Interfaces is Admin, Initializable {
     _supportedInterfaces[InterfaceType.PA1D][IPA1D.royaltyInfo.selector] = true;
     _supportedInterfaces[InterfaceType.PA1D][IPA1D.getFeeBps.selector] = true;
     _supportedInterfaces[InterfaceType.PA1D][IPA1D.getFeeRecipients.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][IPA1D.getFeeBps.selector ^ IPA1D.getFeeRecipients.selector] = true;
     _supportedInterfaces[InterfaceType.PA1D][IPA1D.getRoyalties.selector] = true;
     _supportedInterfaces[InterfaceType.PA1D][IPA1D.getFees.selector] = true;
     _supportedInterfaces[InterfaceType.PA1D][IPA1D.tokenCreator.selector] = true;
