@@ -108,6 +108,7 @@ import "./enum/ChainIdType.sol";
 
 import "./interface/ERC20Holograph.sol";
 import "./interface/ERC721Holograph.sol";
+import "./interface/HolographableEnforcer.sol";
 import "./interface/IHolograph.sol";
 import "./interface/IHolographBridge.sol";
 import "./interface/IHolographFactory.sol";
@@ -184,71 +185,123 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     }
   }
 
-  function erc721in(
+  function bridgeInRequest(
     uint256, /* nonce*/
     uint32 fromChain,
-    address collection,
-    address from,
-    address to,
-    uint256 tokenId,
-    bytes calldata data,
+    address holographableContract,
+    address hToken,
     address hTokenRecipient,
-    uint256 hTokenValue
-  ) external onlyBridge {
-    require(_registry().isHolographedContract(collection), "HOLOGRAPH: not holographed");
-    require(
-      ERC721Holograph(collection).holographBridgeIn(fromChain, from, to, tokenId, data) ==
-        ERC721Holograph.holographBridgeIn.selector,
-      "HOLOGRAPH: bridge in failed"
-    );
+    uint256 hTokenValue,
+    bytes calldata data
+  ) external onlyOperator {
+    require(_registry().isHolographedContract(holographableContract), "HOLOGRAPH: not holographed");
+    (bytes4 selector) = HolographableEnforcer(holographableContract).bridgeIn(fromChain, data);
+    require(selector == HolographableEnforcer.bridgeIn.selector, "HOLOGRAPH: bridge in failed");
     if (hTokenValue > 0) {
       // provide operator with hToken value for executing bridge job
       require(
-        ERC20Holograph(_registry().getHToken(fromChain)).holographBridgeMint(hTokenRecipient, hTokenValue) ==
+        ERC20Holograph(hToken).holographBridgeMint(hTokenRecipient, hTokenValue) ==
           ERC20Holograph.holographBridgeMint.selector,
         "HOLOGRAPH: hToken mint failed"
       );
     }
   }
 
-  function erc721out(
+  function bridgeOutRequest(
     uint32 toChain,
-    address collection,
-    address from,
-    address to,
-    uint256 tokenId
+    address holographableContract,
+    uint256 gasLimit,
+    uint256 gasPrice,
+    bytes calldata data
   ) external payable {
-    require(_registry().isHolographedContract(collection), "HOLOGRAPH: not holographed");
-    ERC721Holograph erc721 = ERC721Holograph(collection);
-    require(erc721.exists(tokenId), "HOLOGRAPH: token doesn't exist");
-    address tokenOwner = erc721.ownerOf(tokenId);
-    require(
-      tokenOwner == msg.sender ||
-        erc721.getApproved(tokenId) == msg.sender ||
-        erc721.isApprovedForAll(tokenOwner, msg.sender),
-      "HOLOGRAPH: not approved/owner"
+    require(_registry().isHolographedContract(holographableContract), "HOLOGRAPH: not holographed");
+    (bytes4 selector, bytes memory payload) = HolographableEnforcer(holographableContract).bridgeOut(toChain, msg.sender, data);
+    require(selector == HolographableEnforcer.bridgeOut.selector, "HOLOGRAPH: bridge out failed");
+    bytes memory encodedData = abi.encodeWithSelector(
+      HolographableEnforcer.bridgeIn.selector,
+      _jobNonce(),
+      _holograph().getChainType(),
+      holographableContract,
+      _registry().getHToken(_holograph().getChainType()),
+      address(0),
+      0,
+      payload
     );
-    require(to != address(0), "HOLOGRAPH: zero address");
-    (bytes4 selector, bytes memory data) = erc721.holographBridgeOut(toChain, from, to, tokenId);
-    require(selector == ERC721Holograph.holographBridgeOut.selector, "HOLOGRAPH: bridge out failed");
+
     _operator().send{value: msg.value}(
+      gasLimit,
+      gasPrice,
       toChain,
       msg.sender,
-      abi.encodeWithSignature(
-        "erc721in(uint256,uint32,address,address,address,uint256,bytes,address,uint256)",
-        _jobNonce(),
-        _holograph().getChainType(),
-        collection,
-        from,
-        to,
-        tokenId,
-        data,
-        address(0),
-        0
-      )
+      encodedData
     );
   }
-
+//
+//   function erc721in(
+//     uint256, /* nonce*/
+//     uint32 fromChain,
+//     address collection,
+//     address from,
+//     address to,
+//     uint256 tokenId,
+//     bytes calldata data,
+//     address hTokenRecipient,
+//     uint256 hTokenValue
+//   ) external onlyBridge {
+//     require(_registry().isHolographedContract(collection), "HOLOGRAPH: not holographed");
+//     require(
+//       ERC721Holograph(collection).holographBridgeIn(fromChain, from, to, tokenId, data) ==
+//         ERC721Holograph.holographBridgeIn.selector,
+//       "HOLOGRAPH: bridge in failed"
+//     );
+//     if (hTokenValue > 0) {
+//       // provide operator with hToken value for executing bridge job
+//       require(
+//         ERC20Holograph(_registry().getHToken(fromChain)).holographBridgeMint(hTokenRecipient, hTokenValue) ==
+//           ERC20Holograph.holographBridgeMint.selector,
+//         "HOLOGRAPH: hToken mint failed"
+//       );
+//     }
+//   }
+//
+//   function erc721out(
+//     uint32 toChain,
+//     address collection,
+//     address from,
+//     address to,
+//     uint256 tokenId
+//   ) external payable {
+//     require(_registry().isHolographedContract(collection), "HOLOGRAPH: not holographed");
+//     ERC721Holograph erc721 = ERC721Holograph(collection);
+//     require(erc721.exists(tokenId), "HOLOGRAPH: token doesn't exist");
+//     address tokenOwner = erc721.ownerOf(tokenId);
+//     require(
+//       tokenOwner == msg.sender ||
+//         erc721.getApproved(tokenId) == msg.sender ||
+//         erc721.isApprovedForAll(tokenOwner, msg.sender),
+//       "HOLOGRAPH: not approved/owner"
+//     );
+//     require(to != address(0), "HOLOGRAPH: zero address");
+//     (bytes4 selector, bytes memory data) = erc721.holographBridgeOut(toChain, from, to, tokenId);
+//     require(selector == 0xde8b1ef1, "HOLOGRAPH: bridge out failed");
+//     _operator().send{value: msg.value}(
+//       toChain,
+//       msg.sender,
+//       abi.encodeWithSignature(
+//         "erc721in(uint256,uint32,address,address,address,uint256,bytes,address,uint256)",
+//         _jobNonce(),
+//         _holograph().getChainType(),
+//         collection,
+//         from,
+//         to,
+//         tokenId,
+//         data,
+//         address(0),
+//         0
+//       )
+//     );
+//   }
+//
   function erc20in(
     uint256, /* nonce*/
     uint32 fromChain,
@@ -289,6 +342,8 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     (bytes4 selector, bytes memory data) = erc20.holographBridgeOut(toChain, msg.sender, from, to, amount);
     require(selector == ERC20Holograph.holographBridgeOut.selector, "HOLOGRAPH: bridge out failed");
     _operator().send{value: msg.value}(
+      0,
+      0,
       toChain,
       msg.sender,
       abi.encodeWithSignature(
@@ -335,6 +390,8 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     address signer
   ) external payable {
     _operator().send{value: msg.value}(
+      0,
+      0,
       toChain,
       msg.sender,
       abi.encodeWithSignature(
@@ -347,7 +404,39 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
       )
     );
   }
-
+//
+//   function erc721out(
+//     uint32 toChain,
+//     address collection,
+//     address from,
+//     address to,
+//     uint256 tokenId,
+//     uint256 gas,
+//     uint256 gasPrice
+//   ) external payable {
+//     uint32 chain = _holograph().getChainType();
+//     _registry().getHToken(chain).call{ value: gas * gasPrice}("");
+//     require(_registry().isHolographedContract(collection), "HOLOGRAPH: not holographed");
+//     (bytes4 selector, bytes memory data) = ERC721Holograph(collection).holographBridgeOut(toChain, msg.sender, from, to, tokenId);
+//     require(selector == 0x8b591bab, "HOLOGRAPH: bridge out failed");
+//     _operator().send{value: msg.value}(
+//       toChain,
+//       msg.sender,
+//       abi.encodeWithSignature(
+//         "erc721in(uint256,uint32,address,address,address,uint256,bytes,address,uint256)",
+//         _jobNonce(),
+//         chain,
+//         collection,
+//         from,
+//         to,
+//         tokenId,
+//         data,
+//         address(0),
+//         0
+//       )
+//     );
+//   }
+//
   /**
    * @dev Internal nonce used for randomness.
    *      We increment it on each return.

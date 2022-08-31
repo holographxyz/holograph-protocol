@@ -107,26 +107,6 @@ import "../struct/Verification.sol";
 interface IHolographBridge {
   function executeJob(bytes calldata _payload) external;
 
-  function erc721in(
-    uint256 nonce,
-    uint32 fromChain,
-    address collection,
-    address from,
-    address to,
-    uint256 tokenId,
-    bytes calldata data,
-    address hTokenRecipient,
-    uint256 hTokenValue
-  ) external;
-
-  function erc721out(
-    uint32 toChain,
-    address collection,
-    address from,
-    address to,
-    uint256 tokenId
-  ) external payable;
-
   function erc20in(
     uint256 nonce,
     uint32 fromChain,

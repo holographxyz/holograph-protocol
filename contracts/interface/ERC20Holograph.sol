@@ -108,6 +108,7 @@ import "./ERC20Permit.sol";
 import "./ERC20Receiver.sol";
 import "./ERC20Safer.sol";
 import "./ERC165.sol";
+import "./HolographableEnforcer.sol";
 
 interface ERC20Holograph is ERC165, ERC20, ERC20Burnable, ERC20Metadata, ERC20Receiver, ERC20Safer, ERC20Permit {
   function holographBridgeIn(

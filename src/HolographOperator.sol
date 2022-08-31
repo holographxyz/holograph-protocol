@@ -186,18 +186,18 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     // we will also manage gas/value here
     bytes32 hash = keccak256(_payload);
     require(_operatorJobs[hash] > 0, "HOLOGRAPH: invalid job");
-    // temp workaround to allow for leaving onlyBridge on BridgeIn functions
-    IHolographBridge(_bridge()).executeJob(_payload);
-    /*
+    uint256 gasLimit = 0;
+    uint256 gasPrice = 0;
     assembly {
-      calldatacopy(0, _payload.offset, _payload.length)
-      let result := call(gas(), sload(_bridgeSlot), callvalue(), 0, _payload.length, 0, 0)
+      calldatacopy(0, _payload.offset, sub(_payload.length, 0x40))
+      gasLimit := calldataload(sub(add(_payload.offset, _payload.length), 0x40))
+      gasPrice := calldataload(sub(add(_payload.offset, _payload.length), 0x20))
+      let result := call(gasLimit, sload(_bridgeSlot), callvalue(), 0, sub(_payload.length, 0x40), 0, 0)
       if eq(result, 0) {
         returndatacopy(0, 0, returndatasize())
         revert(0, returndatasize())
       }
     }
-    */
     delete _operatorJobs[hash];
   }
 
@@ -224,6 +224,8 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
   }
 
   function send(
+    uint256 gasLimit,
+    uint256 gasPrice,
     uint32 toChain,
     address msgSender,
     bytes calldata _payload
@@ -235,7 +237,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     lZEndpoint.send{value: msg.value}(
       uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
       abi.encodePacked(address(this)),
-      _payload,
+      abi.encodePacked(_payload, gasLimit, gasPrice),
       payable(msgSender),
       address(this),
       abi.encodePacked(uint16(1), uint256(52000 + (_payload.length * 25)))
@@ -254,13 +256,15 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
   }
 
   function _popOperator(uint256 pod, uint256 operatorIndex) private {
-    unchecked {
-      uint256 lastIndex = _operatorPods[pod].length - 1;
-      if (lastIndex != operatorIndex) {
-        _operatorPods[pod][operatorIndex] = _operatorPods[pod][lastIndex];
+    if (operatorIndex > 0) {
+      unchecked {
+        uint256 lastIndex = _operatorPods[pod].length - 1;
+        if (lastIndex != operatorIndex) {
+          _operatorPods[pod][operatorIndex] = _operatorPods[pod][lastIndex];
+        }
+        delete _operatorPods[pod][lastIndex];
+        _operatorPods[pod].pop();
       }
-      delete _operatorPods[pod][lastIndex];
-      _operatorPods[pod].pop();
     }
   }
 

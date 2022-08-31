@@ -119,6 +119,8 @@ interface IHolographOperator {
   ) external payable;
 
   function send(
+    uint256 gas,
+    uint256 gasPrice,
     uint32 toChain,
     address msgSender,
     bytes calldata _payload

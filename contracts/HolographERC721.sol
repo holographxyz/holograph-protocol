@@ -113,6 +113,7 @@ import "./interface/ERC721.sol";
 import "./interface/ERC721Holograph.sol";
 import "./interface/ERC721Metadata.sol";
 import "./interface/ERC721TokenReceiver.sol";
+import "./interface/HolographableEnforcer.sol";
 import "./interface/HolographedERC721.sol";
 import "./interface/IHolograph.sol";
 import "./interface/IHolographer.sol";
@@ -203,6 +204,14 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
    * @dev To make exact CREATE2 deployment possible, constructor is left empty. We utilize the "init" function instead.
    */
   constructor() {}
+
+  /**
+   * @notice Only allow calls from bridge smart contract.
+   */
+  modifier onlyBridge() {
+    require(msg.sender == _bridge(), "ERC721: bridge only call");
+    _;
+  }
 
   /**
    * @notice Gets a base64 encoded contract JSON file.
@@ -325,43 +334,27 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
     }
   }
 
-  /**
-   * @dev Allows the bridge to bring in a token from another blockchain.
-   *  Note: function selector 0x2dd69ea4 is bytes4(keccak256("holographBridgeIn(address,address,uint256,bytes)"))
-   */
-  function holographBridgeIn(
-    uint32 chainType,
-    address from,
-    address to,
-    uint256 tokenId,
-    bytes calldata data
-  ) external returns (bytes4) {
-    require(msg.sender == _bridge(), "ERC721: only bridge can call");
+  function bridgeIn(uint32 fromChain, bytes calldata payload) external onlyBridge returns (bytes4) {
+    (address from, address to, uint256 tokenId, bytes memory data) = abi.decode(payload, (address, address, uint256, bytes));
     require(!_exists(tokenId), "ERC721: token already exists");
     delete _burnedTokens[tokenId];
     _mint(to, tokenId);
     if (_isEventRegistered(HolographERC721Event.bridgeIn)) {
-      require(SourceERC721().bridgeIn(chainType, from, to, tokenId, data), "HOLOGRAPH: bridge in failed");
+      require(SourceERC721().bridgeIn(fromChain, from, to, tokenId, data), "HOLOGRAPH: bridge in failed");
     }
-    return ERC721Holograph.holographBridgeIn.selector;
+    return HolographableEnforcer.bridgeIn.selector;
   }
 
-  /**
-   * @dev Allows the bridge to take a token out onto another blockchain.
-   *  Note: function selector 0x57aeff0a is bytes4(keccak256("holographBridgeOut(address,address,uint256)"))
-   */
-  function holographBridgeOut(
-    uint32 chainType,
-    address from,
-    address to,
-    uint256 tokenId
-  ) external returns (bytes4 selector, bytes memory data) {
-    require(msg.sender == _bridge(), "ERC721: only bridge can call");
+  function bridgeOut(uint32 toChain, address sender, bytes calldata payload) external onlyBridge returns (bytes4 selector, bytes memory data) {
+    (address from, address to, uint256 tokenId) = abi.decode(payload, (address, address, uint256));
+    require(to != address(0), "ERC721: zero address");
+    require(_isApproved(sender, tokenId), "ERC721: sender not approved");
+    require(from == _tokenOwner[tokenId], "ERC721: from is not owner");
     if (_isEventRegistered(HolographERC721Event.bridgeOut)) {
-      data = SourceERC721().bridgeOut(chainType, from, to, tokenId);
+      data = SourceERC721().bridgeOut(toChain, from, to, tokenId);
     }
     _burn(from, tokenId);
-    return (ERC721Holograph.holographBridgeOut.selector, data);
+    return (HolographableEnforcer.bridgeOut.selector, abi.encode(from, to, tokenId, data));
   }
 
   /**
