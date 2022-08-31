@@ -33,6 +33,7 @@ const MAINNET_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY || DEPLOYER;
 
 const MATIC_PRIVATE_KEY = process.env.MATIC_PRIVATE_KEY || DEPLOYER;
 const MUMBAI_PRIVATE_KEY = process.env.MUMBAI_PRIVATE_KEY || DEPLOYER;
+const FUJI_PRIVATE_KEY = process.env.FUJI_PRIVATE_KEY || DEPLOYER;
 
 const CXIP_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY || DEPLOYER;
 
@@ -179,6 +180,11 @@ const config: HardhatUserConfig = {
       url: networks.mumbai.rpc,
       chainId: networks.mumbai.chain,
       accounts: [MUMBAI_PRIVATE_KEY],
+    },
+    fuji: {
+      url: networks.fuji.rpc,
+      chainId: networks.fuji.chain,
+      accounts: [FUJI_PRIVATE_KEY],
     },
     cxip: {
       url: networks.cxip.rpc,
