@@ -33,10 +33,10 @@
     "prettier:fix": "prettier --loglevel error --ignore-path .gitignore --write ."
   },
   "dependencies": {
+    "@holographxyz/hardhat-deploy-holographed": "^0.0.2",
+    "@holographxyz/hardhat-holograph-contract-builder": "^0.0.2",
     "chai-ethers": "^0.0.1",
     "ganache": "^7.2.0",
-    "hardhat-deploy-holographed": "https://github.com/holographxyz/hardhat-deploy-holographed.git",
-    "hardhat-holograph-contract-builder": "https://github.com/holographxyz/hardhat-holograph-contract-builder.git",
     "path": "^0.12.7",
     "truffle-hdwallet-provider": "^1.0.17",
     "web3": "^1.7.0",
