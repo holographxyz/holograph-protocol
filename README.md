@@ -1,7 +1,7 @@
 <div align="center">
   <a href="https://holograph.xyz"><img alt="Holograph" src="https://user-images.githubusercontent.com/21043504/188220186-9c7f55e0-143a-41b4-a6b8-90e8bd54bfd9.png" width=600></a>
   <br />
-  <h1> The Holograph Protocol</h1>
+  <h1>Holograph Protocol</h1>
 </div>
 <p align="center">
   <a href="https://github.com/holographxyz/holograph-protocol/blob/feature/update-readme/test/badge.svg"><img src="https://github.com/holographxyz/holograph-protocol/blob/feature/update-readme/test/badge.svg" /></a>
