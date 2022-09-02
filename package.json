@@ -4,11 +4,11 @@
   "description": "Holograph Protocol",
   "license": "UNLICENSED",
   "author": "holographxyz",
-  "main": "index.js",
   "files": [
-    "typechain",
+    "abi",
     "contracts",
-    "deployments"
+    "deployments",
+    "typechain"
   ],
   "scripts": {
     "init": "cp sample.env .env",
