@@ -4,7 +4,7 @@
   <h1> The Holograph Protocol</h1>
 </div>
 <p align="center">
-  <a href="todo-setup-workflow-badges"><img src="" /></a>
+  <a href="https://github.com/holographxyz/holograph-protocol/blob/feature/update-readme/test/badge.svg"><img src="https://github.com/holographxyz/holograph-protocol/blob/feature/update-readme/test/badge.svg" /></a>
 </p>
 
 ## TL;DR
