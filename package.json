@@ -1,14 +1,19 @@
 {
-  "name": "holograph-protocol",
-  "version": "1.0.0",
+  "name": "@holographxyz/holograph-protocol",
+  "version": "0.0.1",
   "description": "Holograph Protocol",
-  "license": "UNLICENSED",
-  "author": "holographxyz",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "author": "@holographxyz",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/holographxyz/holograph-protocol.git"
+  },
+  "main": "index.js",
   "files": [
     "abi",
     "contracts",
     "deployments",
-    "typechain"
+    "typechain-types"
   ],
   "scripts": {
     "init": "cp sample.env .env",
