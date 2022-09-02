@@ -1,9 +1,9 @@
 {
-  "name": "Holograph-Bridge-Protocol",
-  "version": "1.0.2",
-  "description": "Holograph Bridge Protocol",
+  "name": "holograph-protocol",
+  "version": "1.0.0",
+  "description": "Holograph Protocol",
   "license": "UNLICENSED",
-  "author": "cxip-labs",
+  "author": "holographxyz",
   "main": "index.js",
   "files": [
     "typechain",
@@ -13,7 +13,6 @@
   "scripts": {
     "init": "cp sample.env .env",
     "abi": "hardhat abi",
-    "build": "hardhat inject-holograph-address",
     "clean-compile": "yarn run clean ; yarn run compile",
     "clean": "hardhat clean",
     "compile": "hardhat compile",
@@ -31,8 +30,8 @@
   "dependencies": {
     "chai-ethers": "^0.0.1",
     "ganache": "^7.2.0",
-    "hardhat-deploy-holographed": "https://github.com/cxip-labs/hardhat-deploy-holographed.git",
-    "hardhat-holograph-contract-builder": "https://github.com/cxip-labs/hardhat-holograph-contract-builder.git",
+    "hardhat-deploy-holographed": "https://github.com/holographxyz/hardhat-deploy-holographed.git",
+    "hardhat-holograph-contract-builder": "https://github.com/holographxyz/hardhat-holograph-contract-builder.git",
     "path": "^0.12.7",
     "truffle-hdwallet-provider": "^1.0.17",
     "web3": "^1.7.0",

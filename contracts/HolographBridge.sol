@@ -227,7 +227,6 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
       0,
       payload
     );
-
     _operator().send{value: msg.value}(
       gasLimit,
       gasPrice,
