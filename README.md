@@ -17,7 +17,7 @@ Extensive documentation is available [here](https://docs.holograph.xyz/).
 
 ## Community
 
-Come hang on our very active [discord](https://discord.com/invite/holograph) ⚡️✨
+Come hang on our very active [Discord](https://discord.com/invite/holograph) ⚡️✨
 
 ## Contributing
 
