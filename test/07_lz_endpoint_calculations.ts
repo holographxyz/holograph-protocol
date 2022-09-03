@@ -54,7 +54,7 @@ import {
 } from '../typechain-types';
 import { DeploymentConfigStruct } from '../typechain-types/HolographFactory';
 
-describe.only('Testing LZ Endpoint costs (L1 & L2)', async function () {
+describe('Testing LZ Endpoint costs (L1 & L2)', async function () {
   const lzReceiveABI = {
     inputs: [
       {
