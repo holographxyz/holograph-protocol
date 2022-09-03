@@ -18,6 +18,7 @@
   "scripts": {
     "init": "cp sample.env .env",
     "abi": "hardhat abi",
+    "build": "hardhat holograph-build-contracts",
     "clean-compile": "yarn run clean ; yarn run compile",
     "clean": "hardhat clean",
     "compile": "hardhat compile",
