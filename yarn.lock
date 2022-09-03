@@ -1164,10 +1164,10 @@
     "@ethersproject/properties" "^5.6.0"
     "@ethersproject/strings" "^5.6.1"
 
-"@holographxyz/hardhat-deploy-holographed@^0.0.2":
-  version "0.0.2"
-  resolved "https://registry.yarnpkg.com/@holographxyz/hardhat-deploy-holographed/-/hardhat-deploy-holographed-0.0.2.tgz#76babe1d49bf95ec4918310f9c0a88682eafa8b9"
-  integrity sha512-hEUd2MW+CrfUFDTFi3kRvcpr39xyPecSWgoCG9X9a0NXReUGWvOb8Jqaa+leozmg6Zua1eAUEmxkQF9EEi8ECA==
+"@holographxyz/hardhat-deploy-holographed@^0.0.3":
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/@holographxyz/hardhat-deploy-holographed/-/hardhat-deploy-holographed-0.0.3.tgz#a6ecd2fc23c1e6613fc1514f5b38d46774be4746"
+  integrity sha512-8e2PPp3g6M+hTUYyDw8rwpHyXTz/6Z2gSlJyNFOs675mw+fwTmVnNqW59ffS5I+95MNyawbnMxE3ZQWiu9tkww==
   dependencies:
     "@types/qs" "^6.9.7"
     axios "^0.21.1"

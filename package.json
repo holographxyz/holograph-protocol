@@ -34,7 +34,7 @@
     "prettier:fix": "prettier --loglevel error --ignore-path .gitignore --write ."
   },
   "dependencies": {
-    "@holographxyz/hardhat-deploy-holographed": "^0.0.2",
+    "@holographxyz/hardhat-deploy-holographed": "^0.0.3",
     "@holographxyz/hardhat-holograph-contract-builder": "^0.0.3",
     "chai-ethers": "^0.0.1",
     "ganache": "^7.2.0",
