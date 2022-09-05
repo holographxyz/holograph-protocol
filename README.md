@@ -7,13 +7,9 @@
   <a href="https://github.com/holographxyz/holograph-protocol/blob/feature/update-readme/test/badge.svg"><img src="https://github.com/holographxyz/holograph-protocol/blob/feature/update-readme/test/badge.svg" /></a>
 </p>
 
-## TL;DR
+## Description
 
-This is where [Holograph](https://holograph.xyz) gets built.
-
-## Documentation
-
-Extensive documentation is available [here](https://docs.holograph.xyz/).
+Holograph provides omnichain NFT infrastructure for the web3 ecosystem. Holograph Protocol enables the creation, deployment, minting, & bridging of omnichain NFTs with complete data integrity.
 
 ## Directory Structure
 
@@ -89,14 +85,19 @@ Our update process takes the form of a PR merging the `testnet` branch into the 
 Our primary development branch is [`develop`](https://github.com/holographxyz/holograph-protocol/tree/testnet).
 `develop` contains the most up-to-date software that is being tested via experimental network deployments.
 
-## Community
-
-Come hang on our very active [Discord](https://discord.com/invite/holograph) ⚡️✨
-
 ## Contributing
 
 Read through [CONTRIBUTING.md](./CONTRIBUTING.md) for a general overview of our contribution process.
 
+## Official Links
+
+* [Website](https://holograph.xyz)
+* [App](https://app.holograph.xyz)
+* [Docs](https://docs.holograph.xyz)
+* [Discord](https://discord.com/invite/holograph)
+* [Twitter](https://twitter.com/holographxyz)
+* [Mirror](https://mirror.xyz/holographxyz.eth)
+
 ## License
 
-Files under this repository are licensed under [Holograph Limited Public License](https://github.com/holographxyz/holograph-protocol/blob/testnet/LICENSE.md) (H-LPL) 1.0.0 unless otherwise stated
+Files under this repository are licensed under [Holograph Limited Public License](https://github.com/holographxyz/holograph-protocol/blob/testnet/LICENSE.md) (H-LPL) 1.0.0 unless otherwise stated.
