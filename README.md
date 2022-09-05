@@ -15,14 +15,6 @@ This is where [Holograph](https://holograph.xyz) gets built.
 
 Extensive documentation is available [here](https://docs.holograph.xyz/).
 
-## Community
-
-Come hang on our very active [Discord](https://discord.com/invite/holograph) ⚡️✨
-
-## Contributing
-
-Read through [CONTRIBUTING.md](./CONTRIBUTING.md) for a general overview of our contribution process.
-
 ## Directory Structure
 
 <pre>
@@ -96,6 +88,14 @@ Our update process takes the form of a PR merging the `testnet` branch into the 
 
 Our primary development branch is [`develop`](https://github.com/holographxyz/holograph-protocol/tree/testnet).
 `develop` contains the most up-to-date software that is being tested via experimental network deployments.
+
+## Community
+
+Come hang on our very active [Discord](https://discord.com/invite/holograph) ⚡️✨
+
+## Contributing
+
+Read through [CONTRIBUTING.md](./CONTRIBUTING.md) for a general overview of our contribution process.
 
 ## License
 
