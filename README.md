@@ -11,26 +11,14 @@
 
 Holograph provides omnichain NFT infrastructure for the web3 ecosystem. Holograph Protocol enables the creation, deployment, minting, & bridging of omnichain NFTs with complete data integrity.
 
-## Directory Structure
-
-<pre>
-root
-
-├── <a href="./config">config</a>: Network configuration files
-├── <a href="./contracts">contracts</a>: Smart contracts that power the Holograph protocol
-├── <a href="./deploy">deploy</a>: Deployment scripts for the smart contracts uses <a href="https://hardhat.org/">Hardhat</a> and <a href="https://github.com/wighawag/hardhat-deploy">Hardhat Deploy</a>
-├── <a href="./deployments">deployments</a>: Deployment build files that include contract addresses on each network
-├── <a href="./scripts">scripts</a>: Scripts and helper utilities
-├── <a href="./src">src</a>: Source contracts that get dynamically transpiled down into the finalized output <a href="./contracts">contracts</a>
-└── <a href="./test">test</a>: Hardhat tests for the smart contracts
-</pre>
-
 ## Development
 
 ### Getting started
 
-1. This project uses [asdf](https://asdf-vm.com/) for versions management. Install following the directions
-1. Run `asdf install` to have the correct tool versions.
+1. This project uses [asdf](https://asdf-vm.com/) for versions management. Install following plugins 
+   - Install [asdf Node plugin](https://github.com/asdf-vm/asdf-nodejs): `asdf plugin add nodejs https://github.com/asdf-vm/asdf-nodejs.git`
+   - Install [asdf yarn plugin](https://github.com/twuni/asdf-yarn): `asdf plugin-add yarn`
+1. Run `asdf install` after to have the correct tool versions.
 1. Install dependencies with `yarn install`.
 1. Initialize the project with `yarn run init` _(this will copy sample environment configs)_.
 
@@ -56,6 +44,21 @@ _If you need the smart contracts ABI files for dApp integrations, use `yarn run 
 **Before pushing your work to the repo, make sure to prepare your code**
 
 Please make use of the `yarn run prettier:fix` command to format the codebase into a universal style.
+
+## Directory Structure
+
+<pre>
+root
+
+├── <a href="./config">config</a>: Network configuration files
+├── <a href="./contracts">contracts</a>: Smart contracts that power the Holograph protocol
+├── <a href="./deploy">deploy</a>: Deployment scripts for the smart contracts uses <a href="https://hardhat.org/">Hardhat</a> and <a href="https://github.com/wighawag/hardhat-deploy">Hardhat Deploy</a>
+├── <a href="./deployments">deployments</a>: Deployment build files that include contract addresses on each network
+├── <a href="./scripts">scripts</a>: Scripts and helper utilities
+├── <a href="./src">src</a>: Source contracts that get dynamically transpiled down into the finalized output <a href="./contracts">contracts</a>
+└── <a href="./test">test</a>: Hardhat tests for the smart contracts
+</pre>
+
 
 ## Branching Model and Releases
 
