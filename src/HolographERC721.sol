@@ -115,6 +115,14 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
   }
 
   /**
+   * @notice Only allow calls from source smart contract.
+   */
+  modifier onlySource() {
+    require(msg.sender == _source(), "ERC721: source only call");
+    _;
+  }
+
+  /**
    * @notice Gets a base64 encoded contract JSON file.
    * @return string The URI.
    */
@@ -366,8 +374,7 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
    *  Note: this is put in place to make sure that custom logic could be implemented for merging, gamification, etc.
    *  Note: token cannot be burned if it's locked by bridge.
    */
-  function sourceBurn(uint256 tokenId) external {
-    require(msg.sender == _source(), "ERC721: only source can burn");
+  function sourceBurn(uint256 tokenId) external onlySource {
     address wallet = _tokenOwner[tokenId];
     require(wallet != _bridge(), "ERC721: token is bridged");
     _burn(wallet, tokenId);
@@ -376,8 +383,7 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
   /**
    * @dev Allows for source smart contract to mint a token.
    */
-  function sourceMint(address to, uint224 tokenId) external {
-    require(msg.sender == _source(), "ERC721: only source can mint");
+  function sourceMint(address to, uint224 tokenId) external onlySource {
     // uint32 is reserved for chain id to be used
     // we need to get current chain id, and prepend it to tokenId
     // this will prevent possible tokenId overlap if minting simultaneously on multiple chains is possible
@@ -389,16 +395,14 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
   /**
    * @dev Allows source to get the prepend for their tokenIds.
    */
-  function sourceGetChainPrepend() external view returns (uint256) {
-    require(msg.sender == _source(), "ERC721: only source needs this");
+  function sourceGetChainPrepend() external onlySource view returns (uint256) {
     return uint256(bytes32(abi.encodePacked(_chain(), uint224(0))));
   }
 
   /**
    * @dev Allows for source smart contract to mint a batch of tokens.
    */
-  function sourceMintBatch(address to, uint224[] calldata tokenIds) external {
-    require(msg.sender == _source(), "ERC721: only source can mint");
+  function sourceMintBatch(address to, uint224[] calldata tokenIds) external onlySource {
     require(tokenIds.length < 1000, "ERC721: max batch size is 1000");
     uint32 chain = _chain();
     uint256 token;
@@ -413,8 +417,7 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
   /**
    * @dev Allows for source smart contract to mint a batch of tokens.
    */
-  function sourceMintBatch(address[] calldata wallets, uint224[] calldata tokenIds) external {
-    require(msg.sender == _source(), "ERC721: only source can mint");
+  function sourceMintBatch(address[] calldata wallets, uint224[] calldata tokenIds) external onlySource {
     require(wallets.length == tokenIds.length, "ERC721: array length missmatch");
     require(tokenIds.length < 1000, "ERC721: max batch size is 1000");
     uint32 chain = _chain();
@@ -433,8 +436,7 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
     address to,
     uint224 startingTokenId,
     uint256 length
-  ) external {
-    require(msg.sender == _source(), "ERC721: only source can mint");
+  ) external onlySource {
     uint32 chain = _chain();
     uint256 token;
     for (uint256 i = 0; i < length; i++) {
@@ -450,8 +452,7 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
    *  Note: this is put in place to make sure that custom logic could be implemented for merging, gamification, etc.
    *  Note: token cannot be transfered if it's locked by bridge.
    */
-  function sourceTransfer(address to, uint256 tokenId) external {
-    require(msg.sender == _source(), "ERC721: only source can transfer");
+  function sourceTransfer(address to, uint256 tokenId) external onlySource {
     address wallet = _tokenOwner[tokenId];
     require(wallet != _bridge(), "ERC721: token is bridged");
     _transferFrom(wallet, to, tokenId);

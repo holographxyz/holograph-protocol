@@ -11,24 +11,8 @@ import "./ERC20Safer.sol";
 import "./ERC165.sol";
 import "./HolographableEnforcer.sol";
 
-interface ERC20Holograph is ERC165, ERC20, ERC20Burnable, ERC20Metadata, ERC20Receiver, ERC20Safer, ERC20Permit {
-  function holographBridgeIn(
-    uint32 chainType,
-    address from,
-    address to,
-    uint256 amount,
-    bytes calldata data
-  ) external returns (bytes4);
-
+interface ERC20Holograph is ERC165, ERC20, ERC20Burnable, ERC20Metadata, ERC20Receiver, ERC20Safer, ERC20Permit, HolographableEnforcer {
   function holographBridgeMint(address to, uint256 amount) external returns (bytes4);
-
-  function holographBridgeOut(
-    uint32 chainType,
-    address operator,
-    address from,
-    address to,
-    uint256 amount
-  ) external returns (bytes4, bytes memory data);
 
   function sourceBurn(address from, uint256 amount) external;
 

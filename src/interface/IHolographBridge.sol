@@ -6,27 +6,9 @@ import "../struct/DeploymentConfig.sol";
 import "../struct/Verification.sol";
 
 interface IHolographBridge {
-  function executeJob(bytes calldata _payload) external;
+  function bridgeInRequest(uint256 nonce, uint32 fromChain, address holographableContract, address hToken, address hTokenRecipient, uint256 hTokenValue, bytes calldata data) external;
 
-  function erc20in(
-    uint256 nonce,
-    uint32 fromChain,
-    address token,
-    address from,
-    address to,
-    uint256 amount,
-    bytes calldata data,
-    address hTokenRecipient,
-    uint256 hTokenValue
-  ) external;
-
-  function erc20out(
-    uint32 toChain,
-    address token,
-    address from,
-    address to,
-    uint256 amount
-  ) external payable;
+  function bridgeOutRequest(uint32 toChain, address holographableContract, uint256 gasLimit, uint256 gasPrice, bytes calldata data) external payable;
 
   function deployIn(
     uint256 nonce,
