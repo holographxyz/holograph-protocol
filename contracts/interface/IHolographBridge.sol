@@ -123,18 +123,9 @@ interface IHolographBridge {
     bytes calldata data
   ) external payable;
 
-  function deployIn(
-    uint256 nonce,
-    uint32 fromChain,
-    bytes calldata data,
-    address hTokenRecipient,
-    uint256 hTokenValue
-  ) external;
-
-  function deployOut(
+  function getBridgeOutRequestPayload(
     uint32 toChain,
-    DeploymentConfig calldata config,
-    Verification calldata signature,
-    address signer
-  ) external payable;
+    address holographableContract,
+    bytes calldata data
+  ) external view returns (bytes memory samplePayload);
 }

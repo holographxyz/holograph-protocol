@@ -43,16 +43,7 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
   }
 
   modifier onlyOperator() {
-    assembly {
-      switch eq(sload(_operatorSlot), caller())
-      case 0 {
-        mstore(0x80, 0x08c379a000000000000000000000000000000000000000000000000000000000)
-        mstore(0xa0, 0x0000002000000000000000000000000000000000000000000000000000000000)
-        mstore(0xc0, 0x00000018484f4c4f47524150483a206f70657261746f72206f6e6c7900000000)
-        mstore(0xe0, 0x0000000000000000000000000000000000000000000000000000000000000000)
-        revert(0x80, 0xc4)
-      }
-    }
+    require(msg.sender == address(_operator()), "HOLOGRAPH: operator only call");
     _;
   }
 
@@ -84,7 +75,10 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     uint256 hTokenValue,
     bytes calldata data
   ) external onlyOperator {
-    require(_registry().isHolographedContract(holographableContract), "HOLOGRAPH: not holographed");
+    require(
+      _registry().isHolographedContract(holographableContract) || address(_factory()) == holographableContract,
+      "HOLOGRAPH: not holographed"
+    );
     bytes4 selector = HolographableEnforcer(holographableContract).bridgeIn(fromChain, data);
     require(selector == HolographableEnforcer.bridgeIn.selector, "HOLOGRAPH: bridge in failed");
     if (hTokenValue > 0) {
@@ -104,7 +98,10 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     uint256 gasPrice,
     bytes calldata data
   ) external payable {
-    require(_registry().isHolographedContract(holographableContract), "HOLOGRAPH: not holographed");
+    require(
+      _registry().isHolographedContract(holographableContract) || address(_factory()) == holographableContract,
+      "HOLOGRAPH: not holographed"
+    );
     (bytes4 selector, bytes memory payload) = HolographableEnforcer(holographableContract).bridgeOut(
       toChain,
       msg.sender,
@@ -127,11 +124,12 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
   function getBridgeOutRequestPayload(
     uint32 toChain,
     address holographableContract,
-    uint256 gasLimit,
-    uint256 gasPrice,
     bytes calldata data
   ) external view returns (bytes memory samplePayload) {
-    require(_registry().isHolographedContract(holographableContract), "HOLOGRAPH: not holographed");
+    require(
+      _registry().isHolographedContract(holographableContract) || address(_factory()) == holographableContract,
+      "HOLOGRAPH: not holographed"
+    );
     (bool success, bytes memory rawResponse) = holographableContract.staticcall(
       abi.encodeWithSelector(HolographableEnforcer.bridgeOut.selector, toChain, msg.sender, data)
     );
@@ -152,51 +150,7 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
       0,
       payload
     );
-    samplePayload = abi.encodePacked(encodedData, gasLimit, gasPrice);
-  }
-
-  function deployIn(
-    uint256, /* nonce*/
-    uint32 fromChain,
-    bytes calldata data,
-    address hTokenRecipient,
-    uint256 hTokenValue
-  ) external onlyOperator {
-    (DeploymentConfig memory config, Verification memory signature, address signer) = abi.decode(
-      data,
-      (DeploymentConfig, Verification, address)
-    );
-    _factory().deployHolographableContract(config, signature, signer);
-    if (hTokenValue > 0) {
-      // provide operator with hToken value for executing bridge job
-      require(
-        ERC20Holograph(_registry().getHToken(fromChain)).holographBridgeMint(hTokenRecipient, hTokenValue) ==
-          ERC20Holograph.holographBridgeMint.selector,
-        "HOLOGRAPH: hToken mint failed"
-      );
-    }
-  }
-
-  function deployOut(
-    uint32 toChain,
-    DeploymentConfig calldata config,
-    Verification calldata signature,
-    address signer
-  ) external payable {
-    _operator().send{value: msg.value}(
-      0,
-      0,
-      toChain,
-      msg.sender,
-      abi.encodeWithSignature(
-        "deployIn(uint256,uint32,bytes,address,uint256)",
-        _jobNonce(),
-        _holograph().getChainType(),
-        abi.encode(config, signature, signer),
-        address(0),
-        0
-      )
-    );
+    samplePayload = abi.encodePacked(encodedData, type(uint256).max, type(uint256).max);
   }
 
   /**

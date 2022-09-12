@@ -106,6 +106,7 @@ import "./abstract/Initializable.sol";
 
 import "./Holographer.sol";
 
+import "./interface/HolographableEnforcer.sol";
 import "./interface/IHolograph.sol";
 import "./interface/IHolographRegistry.sol";
 import "./interface/IInitializable.sol";
@@ -118,7 +119,7 @@ import "./struct/Verification.sol";
  * @dev With the goal of deploying replicate-able non-fungible token smart contracts through this process.
  * @dev This is just the first step. But it is fundamental for achieving cross-chain non-fungible tokens.
  */
-contract HolographFactory is Admin, Initializable {
+contract HolographFactory is Admin, Initializable, HolographableEnforcer {
   bytes32 constant _holographSlot = 0xb4107f746e9496e8452accc7de63d1c5e14c19f510932daa04077cd49e8bd77a;
   bytes32 constant _registrySlot = 0xce8e75d5c5227ce29a4ee170160bb296e5dea6934b80a9bd723f7ef1e7c850e7;
 
@@ -144,16 +145,39 @@ contract HolographFactory is Admin, Initializable {
     return IInitializable.init.selector;
   }
 
+  function bridgeIn(
+    uint32,
+    /* fromChain*/
+    bytes calldata payload
+  ) external returns (bytes4) {
+    (DeploymentConfig memory config, Verification memory signature, address signer) = abi.decode(
+      payload,
+      (DeploymentConfig, Verification, address)
+    );
+    deployHolographableContract(config, signature, signer);
+    return HolographableEnforcer.bridgeIn.selector;
+  }
+
+  function bridgeOut(
+    uint32,
+    /* toChain*/
+    address,
+    /* sender*/
+    bytes calldata payload
+  ) external pure returns (bytes4 selector, bytes memory data) {
+    return (HolographableEnforcer.bridgeOut.selector, payload);
+  }
+
   /**
    * @dev A sample function of the deployment of bridgeable smart contracts.
    * @dev The used variables and formatting is not the final or decisive version, but the general idea is directly portrayed.
    * @notice In this function we have incorporated a secure storage function/extension. Keep in mind that this is not required or needed for bridgeable deployments to work. It is just a personal development choice.
    */
   function deployHolographableContract(
-    DeploymentConfig calldata config,
-    Verification calldata signature,
+    DeploymentConfig memory config,
+    Verification memory signature,
     address signer
-  ) external {
+  ) public {
     bytes32 hash = keccak256(
       abi.encodePacked(
         config.contractType,

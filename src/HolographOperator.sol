@@ -154,6 +154,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
         revert(0x80, 0xc4)
       }
     }
+    // would be a good idea to check payload gas price here and if it is significantly lower than current amount, to set zero address as operator to not lock-up an operator unnecessarily
     unchecked {
       bytes32 jobHash = keccak256(_payload);
       ++_operatorTempStorageCounter;
@@ -198,13 +199,6 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
       gasPrice := calldataload(sub(add(_payload.offset, _payload.length), 0x20))
     }
     OperatorJob memory job = getJobDetails(hash);
-    /*struct OperatorJob {
-      uint8 pod;
-      uint16 blockTimes;
-      address operator;
-      uint40 startBlock;
-      uint16[5] fallbackOperators;
-    }*/
     // first check if not default operator, or if zero address operator selected
     if (job.operator != address(0)) {
       if (job.operator != msg.sender) {
@@ -255,18 +249,14 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
 
   function jobEstimator(bytes calldata _payload) external payable {
     assembly {
-      // switch eq(sload(_deadAddressSlot), caller())
-      // allow only address(0) so that function succeeds only on estimate gas calls
-      switch eq(mload(0x60), caller())
+      switch eq(sload(_deadAddressSlot), caller())
       case 0 {
         mstore(0x80, 0x08c379a000000000000000000000000000000000000000000000000000000000)
         mstore(0xa0, 0x0000002000000000000000000000000000000000000000000000000000000000)
-        mstore(0xc0, 0x00000018484f4c4f47524150483a206f70657261746f72206f6e6c7900000000)
+        mstore(0xc0, 0x000000484f4c4f47524150483a2074657374206f6e6c792063616c6c00000000)
         mstore(0xe0, 0x0000000000000000000000000000000000000000000000000000000000000000)
         revert(0x80, 0xc4)
       }
-    }
-    assembly {
       let result := call(gas(), sload(_bridgeSlot), callvalue(), 0, sub(_payload.length, 0x40), 0, 0)
       if eq(result, 0) {
         returndatacopy(0, 0, returndatasize())
