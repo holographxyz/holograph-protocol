@@ -12,16 +12,33 @@ import networks from './config/networks';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const getGitBranch = function () {
-  const acceptableBranches = ['mainnet', 'testnet', 'develop'];
-  const contents = fs.readFileSync('./.git/HEAD', 'utf8');
-  const branch = contents.trim().split('ref: refs/heads/')[1];
-  if (acceptableBranches.includes(branch)) {
-    return branch;
-  } else {
-    return 'develop';
+enum Environment {
+  develop = 'develop',
+  testnet = 'testnet',
+  mainnet = 'mainnet',
+}
+
+const getEnvironment = (): Environment => {
+  let environment = Environment.develop
+  const acceptableBranches: Set<string> = new Set<string>(['develop', 'testnet', 'mainnet'])
+  const head = './.git/HEAD'
+  const env: string = process.env.HOLOGRAPH_ENVIRONMENT || ''
+  if (env === '') {
+    if (fs.existsSync(head)) {
+      const contents = fs.readFileSync('./.git/HEAD', 'utf8')
+      const branch = contents.trim().split('ref: refs/heads/')[1]
+      if (acceptableBranches.has(branch)) {
+        environment = Environment[branch as keyof typeof Environment]
+      }
+    }
+  } else if (acceptableBranches.has(env)) {
+    environment = Environment[env as keyof typeof Environment]
   }
-};
+
+  return environment
+}
+
+const currentEnvironment = Environment[getEnvironment()];
 
 const SOLIDITY_VERSION = process.env.SOLIDITY_VERSION || '0.8.13';
 
@@ -86,7 +103,12 @@ task('abi', 'Create standalone ABI files for all smart contracts')
     } else {
       recursiveDelete('./abi');
     }
-    extractABIs('./artifacts/contracts', './abi');
+    if (!fs.existsSync('./abi/' + currentEnvironment)) {
+      fs.mkdirSync('./abi/' + currentEnvironment);
+    } else {
+      recursiveDelete('./abi/' + currentEnvironment);
+    }
+    extractABIs('./artifacts/contracts', './abi/' + currentEnvironment);
   });
 
 /**
@@ -95,7 +117,7 @@ task('abi', 'Create standalone ABI files for all smart contracts')
  */
 const config: HardhatUserConfig = {
   paths: {
-    deployments: DEPLOYMENT_PATH + '/' + getGitBranch(),
+    deployments: DEPLOYMENT_PATH + '/' + currentEnvironment,
   },
   defaultNetwork: 'localhost',
   external: {
