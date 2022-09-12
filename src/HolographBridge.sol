@@ -124,6 +124,37 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     _operator().send{value: msg.value}(gasLimit, gasPrice, toChain, msg.sender, encodedData);
   }
 
+  function getBridgeOutRequestPayload(
+    uint32 toChain,
+    address holographableContract,
+    uint256 gasLimit,
+    uint256 gasPrice,
+    bytes calldata data
+  ) external view returns (bytes memory samplePayload) {
+    require(_registry().isHolographedContract(holographableContract), "HOLOGRAPH: not holographed");
+    (bool success, bytes memory rawResponse) = holographableContract.staticcall(
+      abi.encodeWithSelector(HolographableEnforcer.bridgeOut.selector, toChain, msg.sender, data)
+    );
+    require(success, "HOLOGRAPH: bridge out failed");
+    (bytes4 selector, bytes memory payload) = abi.decode(rawResponse, (bytes4, bytes));
+    uint256 jobNonce;
+    assembly {
+      jobNonce := sload(_jobNonceSlot)
+    }
+    require(selector == HolographableEnforcer.bridgeOut.selector, "HOLOGRAPH: bridge out failed");
+    bytes memory encodedData = abi.encodeWithSelector(
+      HolographableEnforcer.bridgeIn.selector,
+      jobNonce + 1,
+      _holograph().getChainType(),
+      holographableContract,
+      _registry().getHToken(_holograph().getChainType()),
+      address(0),
+      0,
+      payload
+    );
+    samplePayload = abi.encodePacked(encodedData, gasLimit, gasPrice);
+  }
+
   function deployIn(
     uint256, /* nonce*/
     uint32 fromChain,
