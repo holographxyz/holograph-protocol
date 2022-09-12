@@ -58,7 +58,34 @@ const ETHERSCAN_API_KEY: string = process.env.ETHERSCAN_API_KEY || '';
 const POLYGONSCAN_API_KEY: string = process.env.POLYGONSCAN_API_KEY || '';
 const AVALANCHE_API_KEY: string = process.env.AVALANCHE_API_KEY || '';
 
-const DEPLOYMENT_SALT = parseInt(process.env.DEPLOYMENT_SALT || '0');
+const selectDeploymentSalt = (): number => {
+  let salt;
+  switch (currentEnvironment) {
+    case Environment.develop:
+      salt = parseInt(process.env.DEVELOP_DEPLOYMENT_SALT || '1000');
+      if (salt > 999999 || salt < 1000) {
+        throw new Error('DEVELOP_DEPLOYMENT_SALT is out of bounds. Allowed range is [1000-999999]');
+      }
+      break;
+    case Environment.testnet:
+      salt = parseInt(process.env.TESTNET_DEPLOYMENT_SALT || '0');
+      if (salt > 999 || salt < 0) {
+        throw new Error('TESTNET_DEPLOYMENT_SALT is out of bounds. Allowed range is [0-999]');
+      }
+      break;
+    case Environment.mainnet:
+      salt = parseInt(process.env.DEVELOP_DEPLOYMENT_SALT || '0');
+      if (salt > 999 || salt < 0) {
+        throw new Error('DEVELOP_DEPLOYMENT_SALT is out of bounds. Allowed range is [0-999]');
+      }
+      break;
+    default:
+      throw new Error('Unknown Environment provided -> ' + currentEnvironment.toString());
+  }
+  return salt;
+};
+
+const DEPLOYMENT_SALT = selectDeploymentSalt();
 
 const DEPLOYMENT_PATH = process.env.DEPLOYMENT_PATH || 'deployments';
 
