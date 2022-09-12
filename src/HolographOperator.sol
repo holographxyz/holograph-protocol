@@ -70,6 +70,11 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
   mapping(address => uint256) private _bondedOperators;
 
   /**
+   * @dev Internal mapping of bonded operator amounts.
+   */
+  mapping(address => uint256) private _bondedAmounts;
+
+  /**
    * @dev Event is emitted for every time that a valid job is available.
    */
   event AvailableOperatorJob(bytes32 jobHash, bytes payload);
@@ -189,9 +194,56 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     uint256 gasLimit = 0;
     uint256 gasPrice = 0;
     assembly {
-      calldatacopy(0, _payload.offset, sub(_payload.length, 0x40))
       gasLimit := calldataload(sub(add(_payload.offset, _payload.length), 0x40))
       gasPrice := calldataload(sub(add(_payload.offset, _payload.length), 0x20))
+    }
+    OperatorJob memory job = getJobDetails(hash);
+    /*struct OperatorJob {
+      uint8 pod;
+      uint16 blockTimes;
+      address operator;
+      uint40 startBlock;
+      uint16[5] fallbackOperators;
+    }*/
+    // first check if not default operator, or if zero address operator selected
+    if (job.operator != address(0)) {
+      if (job.operator != msg.sender) {
+        // then check if time is still within limits
+        uint256 elapsedTime = block.timestamp - uint256(job.startBlock);
+        require(elapsedTime > job.blockTimes, "HOLOGRAPH: operator has time");
+        // we are at a point where operator failed to execute
+        // we need to check if gas price was a variable
+        uint256 timeDifference = tx.gasprice / gasPrice;
+        require(timeDifference < 2, "HOLOGRAPH: gas spike detected");
+        // at this point an operator failed to execute in given amount of time
+        // we now need to check if next operator is allowed
+        if (timeDifference < 6) {
+          address fallbackOperator = _operatorPods[job.pod][uint256(job.fallbackOperators[timeDifference - 1])];
+          require(fallbackOperator == address(0) || fallbackOperator == msg.sender, "HOLOGRAPH: invalid fallback");
+        }
+        // reward the current operator
+        uint256 amount = (_podMultiplier**job.pod) * _baseBondAmount;
+        // this is where we slash default operator for missing the job
+        // for simplicity at this point, slashing pod base fee
+        _bondedAmounts[job.operator] -= amount;
+        // amount gets sent to msg.sender
+        _bondedAmounts[msg.sender] += amount;
+        // operator does not get re-instated
+      } else {
+        // put operator back in
+        _operatorPods[job.pod].push(msg.sender);
+        _bondedOperators[msg.sender] = job.pod + 1;
+      }
+    }
+    //// we need to decide on a reward for operating here
+    // uint256 reward = ???;
+    //// operator gets sent the reward
+    // _bondedOperators[msg.sender] += reward;
+    // check that we have enough gas from operator to execute
+    require(gasleft() > gasLimit, "HOLOGRAPH: not enough gas left");
+    // now execute job
+    assembly {
+      calldatacopy(0, _payload.offset, sub(_payload.length, 0x40))
       let result := call(gasLimit, sload(_bridgeSlot), callvalue(), 0, sub(_payload.length, 0x40), 0, 0)
       if eq(result, 0) {
         returndatacopy(0, 0, returndatasize())
@@ -201,12 +253,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     delete _operatorJobs[hash];
   }
 
-  function jobEstimator(
-    uint16 _srcChainId,
-    bytes calldata _srcAddress,
-    uint64 _nonce,
-    bytes calldata _payload
-  ) external payable {
+  function jobEstimator(bytes calldata _payload) external payable {
     assembly {
       // switch eq(sload(_deadAddressSlot), caller())
       // allow only address(0) so that function succeeds only on estimate gas calls
@@ -219,8 +266,13 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
         revert(0x80, 0xc4)
       }
     }
-    IHolographOperator(payable(address(this))).lzReceive(_srcChainId, _srcAddress, _nonce, _payload);
-    IHolographOperator(payable(address(this))).executeJob(_payload);
+    assembly {
+      let result := call(gas(), sload(_bridgeSlot), callvalue(), 0, sub(_payload.length, 0x40), 0, 0)
+      if eq(result, 0) {
+        returndatacopy(0, 0, returndatasize())
+        revert(0, returndatasize())
+      }
+    }
   }
 
   function send(
@@ -258,6 +310,9 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
   function _popOperator(uint256 pod, uint256 operatorIndex) private {
     if (operatorIndex > 0) {
       unchecked {
+        address operator = _operatorPods[pod][operatorIndex];
+        // remove operator pod reference
+        _bondedOperators[operator] = 0;
         uint256 lastIndex = _operatorPods[pod].length - 1;
         if (lastIndex != operatorIndex) {
           _operatorPods[pod][operatorIndex] = _operatorPods[pod][lastIndex];
@@ -362,7 +417,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     }
   }
 
-  function getJobDetails(bytes32 jobHash) external view returns (OperatorJob memory) {
+  function getJobDetails(bytes32 jobHash) public view returns (OperatorJob memory) {
     uint256 packed = _operatorJobs[jobHash];
     return
       OperatorJob(
@@ -405,6 +460,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
       require(_operatorPods[pod].length < type(uint16).max, "HOLOGRAPH: too many operators");
       _operatorPods[pod].push(operator);
       _bondedOperators[operator] = pod + 1;
+      _bondedAmounts[operator] = amount;
     }
   }
 }

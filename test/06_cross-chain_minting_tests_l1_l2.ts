@@ -172,7 +172,7 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
     for (let i = 0; i < target; i++) {
       let tx = await balancer.sendTransaction({
         to: balancer.address,
-        value: '0x0000000000000000000000000000000000000000000000000000000000000000'
+        value: '0x0000000000000000000000000000000000000000000000000000000000000000',
       });
       await tx.wait();
     }
@@ -232,7 +232,7 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
         let payload: BytesLike =
           functionHash('deployIn(uint256,uint32,bytes,address,uint256)') +
           generateInitCode(
-            ['uint256','uint32','bytes','address','uint256'],
+            ['uint256', 'uint32', 'bytes', 'address', 'uint256'],
             [
               jobNonce.toHexString(),
               l1.network.holographId,
@@ -251,7 +251,7 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
                 ]
               ),
               zeroAddress(),
-              0
+              0,
             ]
           ).substring(2);
 
@@ -310,7 +310,7 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
         let payload: BytesLike =
           functionHash('deployIn(uint256,uint32,bytes,address,uint256)') +
           generateInitCode(
-            ['uint256','uint32','bytes','address','uint256'],
+            ['uint256', 'uint32', 'bytes', 'address', 'uint256'],
             [
               jobNonce.toHexString(),
               l2.network.holographId,
@@ -329,7 +329,7 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
                 ]
               ),
               zeroAddress(),
-              0
+              0,
             ]
           ).substring(2);
 

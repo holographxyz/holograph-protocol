@@ -209,7 +209,7 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
    * @notice Only allow calls from bridge smart contract.
    */
   modifier onlyBridge() {
-    require(msg.sender == _bridge(), "ERC721: bridge only call");
+    require(msg.sender == _holograph().getBridge(), "ERC721: bridge only call");
     _;
   }
 
@@ -217,7 +217,11 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
    * @notice Only allow calls from source smart contract.
    */
   modifier onlySource() {
-    require(msg.sender == _source(), "ERC721: source only call");
+    address sourceContract;
+    assembly {
+      sourceContract := sload(_sourceContractSlot)
+    }
+    require(msg.sender == sourceContract, "ERC721: source only call");
     _;
   }
 
@@ -245,10 +249,14 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
    */
   function supportsInterface(bytes4 interfaceId) external view returns (bool) {
     IInterfaces interfaces = IInterfaces(_interfaces());
+    ERC165 erc165Contract;
+    assembly {
+      erc165Contract := sload(_sourceContractSlot)
+    }
     if (
       interfaces.supportsInterface(InterfaceType.ERC721, interfaceId) || // check global interfaces
       interfaces.supportsInterface(InterfaceType.PA1D, interfaceId) || // check if royalties supports interface
-      ERC165(_source()).supportsInterface(interfaceId) // check if source supports interface
+      erc165Contract.supportsInterface(interfaceId) // check if source supports interface
     ) {
       return true;
     } else {
@@ -271,7 +279,11 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
    */
   function tokenURI(uint256 tokenId) external view returns (string memory) {
     require(_exists(tokenId), "ERC721: token does not exist");
-    return ERC721Metadata(_source()).tokenURI(tokenId);
+    ERC721Metadata sourceContract;
+    assembly {
+      sourceContract := sload(_sourceContractSlot)
+    }
+    return sourceContract.tokenURI(tokenId);
   }
 
   /**
@@ -343,7 +355,10 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
   }
 
   function bridgeIn(uint32 fromChain, bytes calldata payload) external onlyBridge returns (bytes4) {
-    (address from, address to, uint256 tokenId, bytes memory data) = abi.decode(payload, (address, address, uint256, bytes));
+    (address from, address to, uint256 tokenId, bytes memory data) = abi.decode(
+      payload,
+      (address, address, uint256, bytes)
+    );
     require(!_exists(tokenId), "ERC721: token already exists");
     delete _burnedTokens[tokenId];
     _mint(to, tokenId);
@@ -353,7 +368,11 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
     return HolographableEnforcer.bridgeIn.selector;
   }
 
-  function bridgeOut(uint32 toChain, address sender, bytes calldata payload) external onlyBridge returns (bytes4 selector, bytes memory data) {
+  function bridgeOut(
+    uint32 toChain,
+    address sender,
+    bytes calldata payload
+  ) external onlyBridge returns (bytes4 selector, bytes memory data) {
     (address from, address to, uint256 tokenId) = abi.decode(payload, (address, address, uint256));
     require(to != address(0), "ERC721: zero address");
     require(_isApproved(sender, tokenId), "ERC721: sender not approved");
@@ -371,8 +390,10 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
    */
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "ERC721: already initialized");
+    IInitializable sourceContract;
     assembly {
       sstore(_ownerSlot, caller())
+      sourceContract := sload(_sourceContractSlot)
     }
     (
       string memory contractName,
@@ -387,10 +408,7 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
     _bps = contractBps;
     _eventConfig = eventConfig;
     if (!skipInit) {
-      require(
-        IInitializable(_source()).init(initCode) == IInitializable.init.selector,
-        "ERC721: could not init source"
-      );
+      require(sourceContract.init(initCode) == IInitializable.init.selector, "ERC721: could not init source");
       (bool success, bytes memory returnData) = _royalties().delegatecall(
         abi.encodeWithSignature("initPA1D(bytes)", abi.encode(address(this), uint256(contractBps)))
       );
@@ -475,7 +493,6 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
    */
   function sourceBurn(uint256 tokenId) external onlySource {
     address wallet = _tokenOwner[tokenId];
-    require(wallet != _bridge(), "ERC721: token is bridged");
     _burn(wallet, tokenId);
   }
 
@@ -494,57 +511,57 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
   /**
    * @dev Allows source to get the prepend for their tokenIds.
    */
-  function sourceGetChainPrepend() external onlySource view returns (uint256) {
+  function sourceGetChainPrepend() external view onlySource returns (uint256) {
     return uint256(bytes32(abi.encodePacked(_chain(), uint224(0))));
   }
 
   /**
    * @dev Allows for source smart contract to mint a batch of tokens.
    */
-  function sourceMintBatch(address to, uint224[] calldata tokenIds) external onlySource {
-    require(tokenIds.length < 1000, "ERC721: max batch size is 1000");
-    uint32 chain = _chain();
-    uint256 token;
-    for (uint256 i = 0; i < tokenIds.length; i++) {
-      require(!_burnedTokens[token], "ERC721: can't mint burned token");
-      token = uint256(bytes32(abi.encodePacked(chain, tokenIds[i])));
-      require(!_burnedTokens[token], "ERC721: can't mint burned token");
-      _mint(to, token);
-    }
-  }
+  //   function sourceMintBatch(address to, uint224[] calldata tokenIds) external onlySource {
+  //     require(tokenIds.length < 1000, "ERC721: max batch size is 1000");
+  //     uint32 chain = _chain();
+  //     uint256 token;
+  //     for (uint256 i = 0; i < tokenIds.length; i++) {
+  //       require(!_burnedTokens[token], "ERC721: can't mint burned token");
+  //       token = uint256(bytes32(abi.encodePacked(chain, tokenIds[i])));
+  //       require(!_burnedTokens[token], "ERC721: can't mint burned token");
+  //       _mint(to, token);
+  //     }
+  //   }
 
   /**
    * @dev Allows for source smart contract to mint a batch of tokens.
    */
-  function sourceMintBatch(address[] calldata wallets, uint224[] calldata tokenIds) external onlySource {
-    require(wallets.length == tokenIds.length, "ERC721: array length missmatch");
-    require(tokenIds.length < 1000, "ERC721: max batch size is 1000");
-    uint32 chain = _chain();
-    uint256 token;
-    for (uint256 i = 0; i < tokenIds.length; i++) {
-      token = uint256(bytes32(abi.encodePacked(chain, tokenIds[i])));
-      require(!_burnedTokens[token], "ERC721: can't mint burned token");
-      _mint(wallets[i], token);
-    }
-  }
+  //   function sourceMintBatch(address[] calldata wallets, uint224[] calldata tokenIds) external onlySource {
+  //     require(wallets.length == tokenIds.length, "ERC721: array length missmatch");
+  //     require(tokenIds.length < 1000, "ERC721: max batch size is 1000");
+  //     uint32 chain = _chain();
+  //     uint256 token;
+  //     for (uint256 i = 0; i < tokenIds.length; i++) {
+  //       token = uint256(bytes32(abi.encodePacked(chain, tokenIds[i])));
+  //       require(!_burnedTokens[token], "ERC721: can't mint burned token");
+  //       _mint(wallets[i], token);
+  //     }
+  //   }
 
   /**
    * @dev Allows for source smart contract to mint a batch of tokens.
    */
-  function sourceMintBatchIncremental(
-    address to,
-    uint224 startingTokenId,
-    uint256 length
-  ) external onlySource {
-    uint32 chain = _chain();
-    uint256 token;
-    for (uint256 i = 0; i < length; i++) {
-      token = uint256(bytes32(abi.encodePacked(chain, startingTokenId)));
-      require(!_burnedTokens[token], "ERC721: can't mint burned token");
-      _mint(to, token);
-      startingTokenId++;
-    }
-  }
+  //   function sourceMintBatchIncremental(
+  //     address to,
+  //     uint224 startingTokenId,
+  //     uint256 length
+  //   ) external onlySource {
+  //     uint32 chain = _chain();
+  //     uint256 token;
+  //     for (uint256 i = 0; i < length; i++) {
+  //       token = uint256(bytes32(abi.encodePacked(chain, startingTokenId)));
+  //       require(!_burnedTokens[token], "ERC721: can't mint burned token");
+  //       _mint(to, token);
+  //       startingTokenId++;
+  //     }
+  //   }
 
   /**
    * @dev Allows for source smart contract to transfer a token.
@@ -553,7 +570,6 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
    */
   function sourceTransfer(address to, uint256 tokenId) external onlySource {
     address wallet = _tokenOwner[tokenId];
-    require(wallet != _bridge(), "ERC721: token is bridged");
     _transferFrom(wallet, to, tokenId);
   }
 
@@ -896,15 +912,10 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
   /**
    * @dev Get the source smart contract as bridgeable interface.
    */
-  function SourceERC721() private view returns (HolographedERC721) {
-    return HolographedERC721(_source());
-  }
-
-  /**
-   * @dev Get the bridge contract address.
-   */
-  function _bridge() private view returns (address) {
-    return _holograph().getBridge();
+  function SourceERC721() private view returns (HolographedERC721 sourceContract) {
+    assembly {
+      sourceContract := sload(_sourceContractSlot)
+    }
   }
 
   /**
@@ -915,7 +926,11 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
   }
 
   function owner() public view override returns (address) {
-    return Ownable(_source()).owner();
+    Ownable ownableContract;
+    assembly {
+      ownableContract := sload(_sourceContractSlot)
+    }
+    return ownableContract.owner();
   }
 
   function _holograph() private view returns (IHolograph holograph) {
@@ -932,15 +947,6 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
       IHolographRegistry(_holograph().getRegistry()).getContractTypeAddress(
         0x0000000000000000000000000000000000000000000000000000000050413144
       );
-  }
-
-  /**
-   * @dev Get the source smart contract.
-   */
-  function _source() private view returns (address sourceContract) {
-    assembly {
-      sourceContract := sload(_sourceContractSlot)
-    }
   }
 
   /**
@@ -970,11 +976,10 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
         }
       }
     } else {
-      _target = _source();
       assembly {
         calldatacopy(0, 0, calldatasize())
         mstore(calldatasize(), caller())
-        let result := call(gas(), _target, callvalue(), 0, add(calldatasize(), 32), 0, 0)
+        let result := call(gas(), sload(_sourceContractSlot), callvalue(), 0, add(calldatasize(), 32), 0, 0)
         returndatacopy(0, 0, returndatasize())
         switch result
         case 0 {

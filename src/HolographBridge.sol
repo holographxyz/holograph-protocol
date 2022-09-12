@@ -75,17 +75,6 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     return IInitializable.init.selector;
   }
 
-  function executeJob(bytes calldata _payload) external onlyOperator {
-    assembly {
-      calldatacopy(0, _payload.offset, _payload.length)
-      let result := callcode(gas(), address(), callvalue(), 0, _payload.length, 0, 0)
-      if eq(result, 0) {
-        returndatacopy(0, 0, returndatasize())
-        revert(0, returndatasize())
-      }
-    }
-  }
-
   function bridgeInRequest(
     uint256, /* nonce*/
     uint32 fromChain,
@@ -96,7 +85,7 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     bytes calldata data
   ) external onlyOperator {
     require(_registry().isHolographedContract(holographableContract), "HOLOGRAPH: not holographed");
-    (bytes4 selector) = HolographableEnforcer(holographableContract).bridgeIn(fromChain, data);
+    bytes4 selector = HolographableEnforcer(holographableContract).bridgeIn(fromChain, data);
     require(selector == HolographableEnforcer.bridgeIn.selector, "HOLOGRAPH: bridge in failed");
     if (hTokenValue > 0) {
       // provide operator with hToken value for executing bridge job
@@ -116,7 +105,11 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     bytes calldata data
   ) external payable {
     require(_registry().isHolographedContract(holographableContract), "HOLOGRAPH: not holographed");
-    (bytes4 selector, bytes memory payload) = HolographableEnforcer(holographableContract).bridgeOut(toChain, msg.sender, data);
+    (bytes4 selector, bytes memory payload) = HolographableEnforcer(holographableContract).bridgeOut(
+      toChain,
+      msg.sender,
+      data
+    );
     require(selector == HolographableEnforcer.bridgeOut.selector, "HOLOGRAPH: bridge out failed");
     bytes memory encodedData = abi.encodeWithSelector(
       HolographableEnforcer.bridgeIn.selector,
@@ -128,13 +121,7 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
       0,
       payload
     );
-    _operator().send{value: msg.value}(
-      gasLimit,
-      gasPrice,
-      toChain,
-      msg.sender,
-      encodedData
-    );
+    _operator().send{value: msg.value}(gasLimit, gasPrice, toChain, msg.sender, encodedData);
   }
 
   function deployIn(
@@ -143,7 +130,7 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     bytes calldata data,
     address hTokenRecipient,
     uint256 hTokenValue
-  ) external onlyBridge {
+  ) external onlyOperator {
     (DeploymentConfig memory config, Verification memory signature, address signer) = abi.decode(
       data,
       (DeploymentConfig, Verification, address)
