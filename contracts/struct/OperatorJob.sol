@@ -106,6 +106,7 @@ struct OperatorJob {
   uint16 blockTimes;
   address operator;
   uint40 startBlock;
+  uint64 startTimestamp;
   uint16[5] fallbackOperators;
 }
 

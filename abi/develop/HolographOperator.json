@@ -175,6 +175,11 @@
             "type": "uint40"
           },
           {
+            "internalType": "uint64",
+            "name": "startTimestamp",
+            "type": "uint64"
+          },
+          {
             "internalType": "uint16[5]",
             "name": "fallbackOperators",
             "type": "uint16[5]"

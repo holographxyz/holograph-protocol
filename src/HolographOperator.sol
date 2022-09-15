@@ -203,6 +203,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
           (_RBH(random, podSize, 3) << 128) |
           (_RBH(random, podSize, 4) << 112) |
           (_RBH(random, podSize, 5) << 96) |
+          (block.timestamp << 16) |
           0
       ); // 80 next available bit position && so far 176 bits used with only 128 left
       emit AvailableOperatorJob(jobHash, _payload);
@@ -225,14 +226,14 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     if (job.operator != address(0)) {
       uint256 pod = job.pod - 1;
       if (job.operator != msg.sender) {
-        // then check if time is still within limits
-        uint256 elapsedTime = block.timestamp - uint256(job.startBlock);
-        require(elapsedTime > job.blockTimes, "HOLOGRAPH: operator has time");
         // we are at a point where operator failed to execute
-        // we need to check if gas price was a variable
-        uint256 timeDifference = tx.gasprice / gasPrice;
-        require(timeDifference < 2, "HOLOGRAPH: gas spike detected");
+        // then check if time is still within limits
+        uint256 elapsedTime = block.timestamp - uint256(job.startTimestamp);
+        uint256 timeDifference = elapsedTime / job.blockTimes;
+        require(timeDifference > 0, "HOLOGRAPH: operator has time");
         // at this point an operator failed to execute in given amount of time
+        // we need to check if gas price was a variable
+        require(gasPrice >= tx.gasprice, "HOLOGRAPH: gas spike detected");
         // we now need to check if next operator is allowed
         if (timeDifference < 6) {
           uint256 podIndex = uint256(job.fallbackOperators[timeDifference - 1]);
@@ -244,13 +245,13 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
           }
         }
         // reward the current operator
-        uint256 amount = _getBaseBondAmount(job.pod);
+        uint256 amount = _getBaseBondAmount(pod);
         // this is where we slash default operator for missing the job
         // for simplicity at this point, slashing pod base fee
         _bondedAmounts[job.operator] -= amount;
         // amount gets sent to msg.sender
         _bondedAmounts[msg.sender] += amount;
-        uint256 currentBondAmount = _getCurrentBondAmount(job.pod);
+        uint256 currentBondAmount = _getCurrentBondAmount(pod);
         // check leftover bonded amount
         if (currentBondAmount >= _bondedAmounts[job.operator]) {
           // if enough bond amount leftover, put operator back in
@@ -458,6 +459,8 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
         uint16(_blockTime),
         _operatorTempStorage[uint32(packed >> 216)],
         uint40(packed >> 176),
+        // TODO: move the bit-shifting around to have it be sequential
+        uint64(packed >> 16),
         [
           uint16(packed >> 160),
           uint16(packed >> 144),
@@ -483,7 +486,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
       return current;
     }
     uint256 threshold = _operatorThreshold / (2**pod);
-    uint256 position = _operatorPods[pod - 1].length;
+    uint256 position = _operatorPods[pod].length;
     if (position > threshold) {
       position -= threshold;
       //       current += (current / _operatorThresholdDivisor) * position;
@@ -493,8 +496,8 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
   }
 
   function getPodBondAmount(uint256 pod) external view returns (uint256 base, uint256 current) {
-    base = _getBaseBondAmount(pod);
-    current = _getCurrentBondAmount(pod);
+    base = _getBaseBondAmount(pod - 1);
+    current = _getCurrentBondAmount(pod - 1);
   }
 
   function bondUtilityToken(
