@@ -144,6 +144,21 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
   uint256 private _podMultiplier;
 
   /**
+   * @dev The threshold used for limiting number of operators in a pod.
+   */
+  uint256 private _operatorThreshold;
+
+  /**
+   * @dev The threshold step used for increasing bond amount once threshold is reached.
+   */
+  uint256 private _operatorThresholdStep;
+
+  /**
+   * @dev The threshold divisor used for increasing bond amount once threshold is reached.
+   */
+  uint256 private _operatorThresholdDivisor;
+
+  /**
    * @dev Internal mapping of operator job details for a specific job hash.
    */
   mapping(bytes32 => uint256) private _operatorJobs;
@@ -224,9 +239,16 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     }
     _blockTime = 10; // 10 blocks allowed for execution
     unchecked {
-      _baseBondAmount = 10**18; // one single token unit
+      _baseBondAmount = 100 * (10**18); // one single token unit * 100
     }
-    _podMultiplier = 4; // 1, 4, 16, 64
+    // how much to increase bond amount per pod
+    _podMultiplier = 2; // 1, 4, 16, 64
+    // starting pod max amount
+    _operatorThreshold = 1000;
+    // how often to increase price per each operator
+    _operatorThresholdStep = 10;
+    // we want to multiply by decimals, but instead will have to divide
+    _operatorThresholdDivisor = 100; // == * 0.01
     // set first operator for each pod as zero address
     _operatorPods = [[address(0)]];
     // mark zero address as bonded operator, to prevent abuse
@@ -272,7 +294,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
       _popOperator(pod, operatorIndex);
       podSize--;
       _operatorJobs[jobHash] = uint256(
-        (pod << 248) |
+        ((pod + 1) << 248) |
           (uint256(_operatorTempStorageCounter) << 216) |
           (block.number << 176) |
           (_RBH(random, podSize, 1) << 160) |
@@ -300,6 +322,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     OperatorJob memory job = getJobDetails(hash);
     // first check if not default operator, or if zero address operator selected
     if (job.operator != address(0)) {
+      uint256 pod = job.pod - 1;
       if (job.operator != msg.sender) {
         // then check if time is still within limits
         uint256 elapsedTime = block.timestamp - uint256(job.startBlock);
@@ -311,21 +334,37 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
         // at this point an operator failed to execute in given amount of time
         // we now need to check if next operator is allowed
         if (timeDifference < 6) {
-          address fallbackOperator = _operatorPods[job.pod][uint256(job.fallbackOperators[timeDifference - 1])];
-          require(fallbackOperator == address(0) || fallbackOperator == msg.sender, "HOLOGRAPH: invalid fallback");
+          uint256 podIndex = uint256(job.fallbackOperators[timeDifference - 1]);
+          // do a quick sanity check to make sure operator did not leave from index and does not result in revert
+          if (podIndex < _operatorPods[pod].length) {
+            // only do check if it is valid, otherwise allow anyone to do this
+            address fallbackOperator = _operatorPods[pod][podIndex];
+            require(fallbackOperator == msg.sender || fallbackOperator == address(0), "HOLOGRAPH: invalid fallback");
+          }
         }
         // reward the current operator
-        uint256 amount = (_podMultiplier**job.pod) * _baseBondAmount;
+        uint256 amount = _getBaseBondAmount(job.pod);
         // this is where we slash default operator for missing the job
         // for simplicity at this point, slashing pod base fee
         _bondedAmounts[job.operator] -= amount;
         // amount gets sent to msg.sender
         _bondedAmounts[msg.sender] += amount;
-        // operator does not get re-instated
+        uint256 currentBondAmount = _getCurrentBondAmount(job.pod);
+        // check leftover bonded amount
+        if (currentBondAmount >= _bondedAmounts[job.operator]) {
+          // if enough bond amount leftover, put operator back in
+          _operatorPods[pod].push(job.operator);
+          _bondedOperators[job.operator] = job.pod;
+        } else {
+          // return rest of bond amount to operator
+          // and do not re-instate the operator
+          // ... for now we just make that number disappear
+          _bondedAmounts[job.operator] = 0;
+        }
       } else {
         // put operator back in
-        _operatorPods[job.pod].push(msg.sender);
-        _bondedOperators[msg.sender] = job.pod + 1;
+        _operatorPods[pod].push(msg.sender);
+        _bondedOperators[msg.sender] = job.pod;
       }
     }
     //// we need to decide on a reward for operating here
@@ -364,6 +403,9 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     }
   }
 
+  /*
+   * @dev Need to add an extra function to get LZ gas amount needed for their internal cross-chain message verification
+   */
   function send(
     uint256 gasLimit,
     uint256 gasPrice,
@@ -375,6 +417,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     assembly {
       lZEndpoint := sload(_lZEndpointSlot)
     }
+    // need to recalculate the gas amounts for LZ to deliver message
     lZEndpoint.send{value: msg.value}(
       uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
       abi.encodePacked(address(this)),
@@ -524,12 +567,29 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
       );
   }
 
-  function getPodOperators(uint256 pod) external view returns (address[] memory) {
-    return _operatorPods[pod];
+  function getPodOperators(uint256 pod) external view returns (address[] memory operators) {
+    operators = _operatorPods[pod - 1];
   }
 
-  function getPodBondAmount(uint256 pod) external view returns (uint256) {
+  function _getBaseBondAmount(uint256 pod) private view returns (uint256) {
     return (_podMultiplier**pod) * _baseBondAmount;
+  }
+
+  function _getCurrentBondAmount(uint256 pod) private view returns (uint256) {
+    uint256 current = (_podMultiplier**pod) * _baseBondAmount;
+    uint256 threshold = _operatorThreshold / (2**pod);
+    uint256 position = _operatorPods[pod - 1].length;
+    if (position > threshold) {
+      position -= threshold;
+      //       current += (current / _operatorThresholdDivisor) * position;
+      current += (current / _operatorThresholdDivisor) * (position / _operatorThresholdStep);
+    }
+    return current;
+  }
+
+  function getPodBondAmount(uint256 pod) external view returns (uint256 base, uint256 current) {
+    base = _getBaseBondAmount(pod);
+    current = _getCurrentBondAmount(pod);
   }
 
   function bondUtilityToken(
@@ -539,16 +599,17 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
   ) external {
     require(_bondedOperators[operator] == 0, "HOLOGRAPH: operator is bonded");
     unchecked {
-      require(((_podMultiplier**pod) * _baseBondAmount) <= amount, "HOLOGRAPH: bond amount too small");
+      uint256 current = _getCurrentBondAmount(pod);
+      require(current <= amount, "HOLOGRAPH: bond amount too small");
       // subtract difference and only keep bond amount
-      if (_operatorPods.length < pod + 1) {
-        for (uint256 i = _operatorPods.length; i < pod + 1; i++) {
+      if (_operatorPods.length < pod) {
+        for (uint256 i = _operatorPods.length; i <= pod; i++) {
           _operatorPods.push([address(0)]);
         }
       }
-      require(_operatorPods[pod].length < type(uint16).max, "HOLOGRAPH: too many operators");
-      _operatorPods[pod].push(operator);
-      _bondedOperators[operator] = pod + 1;
+      require(_operatorPods[pod - 1].length < type(uint16).max, "HOLOGRAPH: too many operators");
+      _operatorPods[pod - 1].push(operator);
+      _bondedOperators[operator] = pod;
       _bondedAmounts[operator] = amount;
     }
   }

@@ -12,16 +12,33 @@ import networks from './config/networks';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const getGitBranch = function () {
-  const acceptableBranches = ['mainnet', 'testnet', 'develop'];
-  const contents = fs.readFileSync('./.git/HEAD', 'utf8');
-  const branch = contents.trim().split('ref: refs/heads/')[1];
-  if (acceptableBranches.includes(branch)) {
-    return branch;
-  } else {
-    return 'develop';
+enum Environment {
+  develop = 'develop',
+  testnet = 'testnet',
+  mainnet = 'mainnet',
+}
+
+const getEnvironment = (): Environment => {
+  let environment = Environment.develop;
+  const acceptableBranches: Set<string> = new Set<string>(['develop', 'testnet', 'mainnet']);
+  const head = './.git/HEAD';
+  const env: string = process.env.HOLOGRAPH_ENVIRONMENT || '';
+  if (env === '') {
+    if (fs.existsSync(head)) {
+      const contents = fs.readFileSync('./.git/HEAD', 'utf8');
+      const branch = contents.trim().split('ref: refs/heads/')[1];
+      if (acceptableBranches.has(branch)) {
+        environment = Environment[branch as keyof typeof Environment];
+      }
+    }
+  } else if (acceptableBranches.has(env)) {
+    environment = Environment[env as keyof typeof Environment];
   }
+
+  return environment;
 };
+
+const currentEnvironment = Environment[getEnvironment()];
 
 const SOLIDITY_VERSION = process.env.SOLIDITY_VERSION || '0.8.13';
 
@@ -41,7 +58,34 @@ const ETHERSCAN_API_KEY: string = process.env.ETHERSCAN_API_KEY || '';
 const POLYGONSCAN_API_KEY: string = process.env.POLYGONSCAN_API_KEY || '';
 const AVALANCHE_API_KEY: string = process.env.AVALANCHE_API_KEY || '';
 
-const DEPLOYMENT_SALT = parseInt(process.env.DEPLOYMENT_SALT || '0');
+const selectDeploymentSalt = (): number => {
+  let salt;
+  switch (currentEnvironment) {
+    case Environment.develop:
+      salt = parseInt(process.env.DEVELOP_DEPLOYMENT_SALT || '1000');
+      if (salt > 999999 || salt < 1000) {
+        throw new Error('DEVELOP_DEPLOYMENT_SALT is out of bounds. Allowed range is [1000-999999]');
+      }
+      break;
+    case Environment.testnet:
+      salt = parseInt(process.env.TESTNET_DEPLOYMENT_SALT || '0');
+      if (salt > 999 || salt < 0) {
+        throw new Error('TESTNET_DEPLOYMENT_SALT is out of bounds. Allowed range is [0-999]');
+      }
+      break;
+    case Environment.mainnet:
+      salt = parseInt(process.env.MAINNET_DEPLOYMENT_SALT || '0');
+      if (salt > 999 || salt < 0) {
+        throw new Error('DEVELOP_DEPLOYMENT_SALT is out of bounds. Allowed range is [0-999]');
+      }
+      break;
+    default:
+      throw new Error('Unknown Environment provided -> ' + currentEnvironment);
+  }
+  return salt;
+};
+
+const DEPLOYMENT_SALT = selectDeploymentSalt();
 
 const DEPLOYMENT_PATH = process.env.DEPLOYMENT_PATH || 'deployments';
 
@@ -83,10 +127,13 @@ task('abi', 'Create standalone ABI files for all smart contracts')
     };
     if (!fs.existsSync('./abi')) {
       fs.mkdirSync('./abi');
-    } else {
-      recursiveDelete('./abi');
     }
-    extractABIs('./artifacts/contracts', './abi');
+    if (!fs.existsSync('./abi/' + currentEnvironment)) {
+      fs.mkdirSync('./abi/' + currentEnvironment);
+    } else {
+      recursiveDelete('./abi/' + currentEnvironment);
+    }
+    extractABIs('./artifacts/contracts', './abi/' + currentEnvironment);
   });
 
 /**
@@ -95,37 +142,37 @@ task('abi', 'Create standalone ABI files for all smart contracts')
  */
 const config: HardhatUserConfig = {
   paths: {
-    deployments: DEPLOYMENT_PATH + '/' + getGitBranch(),
+    deployments: DEPLOYMENT_PATH + '/' + currentEnvironment,
   },
   defaultNetwork: 'localhost',
   external: {
     deployments: {
-      arbitrum: ['externalDeployments/arbitrum'],
-      arbitrum_rinkeby: ['externalDeployments/arbitrum_rinkeby'],
-      aurora: ['externalDeployments/aurora'],
-      aurora_testnet: ['externalDeployments/aurora_testnet'],
-      avax: ['externalDeployments/avax'],
-      bsc: ['externalDeployments/bsc'],
-      bsc_testnet: ['externalDeployments/bsc_testnet'],
-      cronos: ['externalDeployments/cronos'],
-      cronos_testnet: ['externalDeployments/cronos_testnet'],
-      cxip: ['externalDeployments/cxip'],
-      eth: ['externalDeployments/eth'],
-      eth_goerli: ['externalDeployments/eth_goerli'],
-      eth_kovan: ['externalDeployments/eth_kovan'],
-      eth_rinkeby: ['externalDeployments/eth_rinkeby'],
-      eth_ropsten: ['externalDeployments/eth_ropsten'],
-      ftm: ['externalDeployments/ftm'],
-      ftm_testnet: ['externalDeployments/ftm_testnet'],
-      fuji: ['externalDeployments/fuji'],
-      gno: ['externalDeployments/gno'],
-      gno_sokol: ['externalDeployments/gno_sokol'],
-      localhost: ['externalDeployments/localhost'],
-      localhost2: ['externalDeployments/localhost2'],
-      matic: ['externalDeployments/matic'],
-      mumbai: ['externalDeployments/mumbai'],
-      optimism: ['externalDeployments/optimism'],
-      optimism_kovan: ['externalDeployments/optimism_kovan'],
+      arbitrum: [DEPLOYMENT_PATH + '/external/arbitrum'],
+      arbitrum_rinkeby: [DEPLOYMENT_PATH + '/external/arbitrum_rinkeby'],
+      aurora: [DEPLOYMENT_PATH + '/external/aurora'],
+      aurora_testnet: [DEPLOYMENT_PATH + '/external/aurora_testnet'],
+      avax: [DEPLOYMENT_PATH + '/external/avax'],
+      bsc: [DEPLOYMENT_PATH + '/external/bsc'],
+      bsc_testnet: [DEPLOYMENT_PATH + '/external/bsc_testnet'],
+      cronos: [DEPLOYMENT_PATH + '/external/cronos'],
+      cronos_testnet: [DEPLOYMENT_PATH + '/external/cronos_testnet'],
+      cxip: [DEPLOYMENT_PATH + '/external/cxip'],
+      eth: [DEPLOYMENT_PATH + '/external/eth'],
+      eth_goerli: [DEPLOYMENT_PATH + '/external/eth_goerli'],
+      eth_kovan: [DEPLOYMENT_PATH + '/external/eth_kovan'],
+      eth_rinkeby: [DEPLOYMENT_PATH + '/external/eth_rinkeby'],
+      eth_ropsten: [DEPLOYMENT_PATH + '/external/eth_ropsten'],
+      ftm: [DEPLOYMENT_PATH + '/external/ftm'],
+      ftm_testnet: [DEPLOYMENT_PATH + '/external/ftm_testnet'],
+      fuji: [DEPLOYMENT_PATH + '/external/fuji'],
+      gno: [DEPLOYMENT_PATH + '/external/gno'],
+      gno_sokol: [DEPLOYMENT_PATH + '/external/gno_sokol'],
+      localhost: [DEPLOYMENT_PATH + '/external/localhost'],
+      localhost2: [DEPLOYMENT_PATH + '/external/localhost2'],
+      matic: [DEPLOYMENT_PATH + '/external/matic'],
+      mumbai: [DEPLOYMENT_PATH + '/external/mumbai'],
+      optimism: [DEPLOYMENT_PATH + '/external/optimism'],
+      optimism_kovan: [DEPLOYMENT_PATH + '/external/optimism_kovan'],
     },
   },
   networks: {
