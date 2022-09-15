@@ -568,6 +568,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
   }
 
   function getPodOperators(uint256 pod) external view returns (address[] memory operators) {
+    require(_operatorPods.length >= pod, "HOLOGRAPH: pod does not exist");
     operators = _operatorPods[pod - 1];
   }
 
@@ -577,6 +578,9 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
 
   function _getCurrentBondAmount(uint256 pod) private view returns (uint256) {
     uint256 current = (_podMultiplier**pod) * _baseBondAmount;
+    if (_operatorPods.length < pod) {
+      return current;
+    }
     uint256 threshold = _operatorThreshold / (2**pod);
     uint256 position = _operatorPods[pod - 1].length;
     if (position > threshold) {
