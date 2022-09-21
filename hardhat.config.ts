@@ -45,14 +45,13 @@ const SOLIDITY_VERSION = process.env.SOLIDITY_VERSION || '0.8.13';
 const MNEMONIC = process.env.MNEMONIC || 'test '.repeat(11) + 'junk';
 const DEPLOYER = process.env.DEPLOYER || '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 
-const RINKEBY_PRIVATE_KEY = process.env.RINKEBY_PRIVATE_KEY! || DEPLOYER;
 const MAINNET_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY || DEPLOYER;
-
+const GOERLI_PRIVATE_KEY = process.env.GOERLI_PRIVATE_KEY || DEPLOYER;
+const RINKEBY_PRIVATE_KEY = process.env.RINKEBY_PRIVATE_KEY || DEPLOYER;
 const MATIC_PRIVATE_KEY = process.env.MATIC_PRIVATE_KEY || DEPLOYER;
 const MUMBAI_PRIVATE_KEY = process.env.MUMBAI_PRIVATE_KEY || DEPLOYER;
 const FUJI_PRIVATE_KEY = process.env.FUJI_PRIVATE_KEY || DEPLOYER;
-
-const CXIP_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY || DEPLOYER;
+const CXIP_PRIVATE_KEY = process.env.CXIP_PRIVATE_KEY || DEPLOYER;
 
 const ETHERSCAN_API_KEY: string = process.env.ETHERSCAN_API_KEY || '';
 const POLYGONSCAN_API_KEY: string = process.env.POLYGONSCAN_API_KEY || '';
@@ -217,6 +216,11 @@ const config: HardhatUserConfig = {
       url: networks.eth_rinkeby.rpc,
       chainId: networks.eth_rinkeby.chain,
       accounts: [RINKEBY_PRIVATE_KEY],
+    },
+    eth_goerli: {
+      url: networks.eth_goerli.rpc,
+      chainId: networks.eth_goerli.chain,
+      accounts: [GOERLI_PRIVATE_KEY],
     },
     matic: {
       url: networks.matic.rpc,
