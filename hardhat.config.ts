@@ -13,14 +13,15 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 enum Environment {
+  experimental = 'experimental',
   develop = 'develop',
   testnet = 'testnet',
   mainnet = 'mainnet',
 }
 
 const getEnvironment = (): Environment => {
-  let environment = Environment.develop;
-  const acceptableBranches: Set<string> = new Set<string>(['develop', 'testnet', 'mainnet']);
+  let environment = Environment.experimental;
+  const acceptableBranches: Set<string> = new Set<string>(['experimental', 'develop', 'testnet', 'mainnet']);
   const head = './.git/HEAD';
   const env: string = process.env.HOLOGRAPH_ENVIRONMENT || '';
   if (env === '') {
@@ -60,6 +61,12 @@ const AVALANCHE_API_KEY: string = process.env.AVALANCHE_API_KEY || '';
 const selectDeploymentSalt = (): number => {
   let salt;
   switch (currentEnvironment) {
+    case Environment.experimental:
+      salt = parseInt(process.env.EXPERIMENTAL_DEPLOYMENT_SALT || '1000000');
+      if (salt > 9999999 || salt < 1000000) {
+        throw new Error('EXPERIMENTAL_DEPLOYMENT_SALT is out of bounds. Allowed range is [1000000-9999999]');
+      }
+      break;
     case Environment.develop:
       salt = parseInt(process.env.DEVELOP_DEPLOYMENT_SALT || '1000');
       if (salt > 999999 || salt < 1000) {
@@ -266,15 +273,13 @@ const config: HardhatUserConfig = {
     timeout: 1000 * 60 * 60,
   },
   gasReporter: {
-    enabled: process.env.REPORT_GAS ? true : false,
-    currency: 'USD',
-    gasPrice: 100,
-    coinmarketcap: process.env.COINMARKETCAP_API_KEY,
+    enabled: false
   },
   etherscan: {
     apiKey: {
       mainnet: ETHERSCAN_API_KEY,
       rinkeby: ETHERSCAN_API_KEY,
+      goerli: ETHERSCAN_API_KEY,
       polygon: POLYGONSCAN_API_KEY,
       polygonMumbai: POLYGONSCAN_API_KEY,
       avalanche: AVALANCHE_API_KEY,

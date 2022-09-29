@@ -15,6 +15,7 @@ import "./interface/IInitializable.sol";
  */
 contract HolographRegistry is Admin, Initializable {
   bytes32 constant _holographSlot = precomputeslot("eip1967.Holograph.holograph");
+  bytes32 constant _utilityTokenSlot = precomputeslot("eip1967.Holograph.utilityToken");
 
   /**
    * @dev A list of smart contracts that are guaranteed secure and holographable.
@@ -143,6 +144,18 @@ contract HolographRegistry is Admin, Initializable {
    */
   function getHToken(uint32 chainId) external view returns (address) {
     return _hTokens[chainId];
+  }
+
+  function getUtilityToken() external view returns (address tokenContract) {
+    assembly {
+      tokenContract := sload(_utilityTokenSlot)
+    }
+  }
+
+  function setUtilityToken(address tokenContract) external onlyAdmin {
+    assembly {
+      sstore(_utilityTokenSlot, tokenContract)
+    }
   }
 
   function isHolographedContract(address smartContract) external view returns (bool) {

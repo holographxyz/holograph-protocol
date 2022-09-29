@@ -7,6 +7,7 @@ import "./abstract/Initializable.sol";
 
 import "./enum/ChainIdType.sol";
 
+import "./interface/ERC20Holograph.sol";
 import "./interface/IHolograph.sol";
 import "./interface/IHolographBridge.sol";
 import "./interface/IHolographOperator.sol";
@@ -14,6 +15,7 @@ import "./interface/IHolographRegistry.sol";
 import "./interface/IInitializable.sol";
 import "./interface/IInterfaces.sol";
 import "./interface/ILayerZeroEndpoint.sol";
+import "./interface/Ownable.sol";
 
 import "./struct/OperatorJob.sol";
 
@@ -476,6 +478,20 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     operators = _operatorPods[pod - 1];
   }
 
+  function getPodOperators(uint256 pod, uint256 index, uint256 length) external view returns (address[] memory operators) {
+    require(_operatorPods.length >= pod, "HOLOGRAPH: pod does not exist");
+    // decrease by one for easy code usage
+    pod--;
+    uint256 supply = _operatorPods[pod].length;
+    if (index + length > supply) {
+      length = supply - index;
+    }
+    operators = new address[](length);
+    for (uint256 i = 0; i < length; i++) {
+      operators[i] = _operatorPods[pod][index + i];
+    }
+  }
+
   function _getBaseBondAmount(uint256 pod) private view returns (uint256) {
     return (_podMultiplier**pod) * _baseBondAmount;
   }
@@ -500,6 +516,29 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     current = _getCurrentBondAmount(pod - 1);
   }
 
+  function getBondedPod(address operator) external view returns (uint256 pod) {
+    return _bondedOperators[operator];
+  }
+
+// add top-up option
+
+  function unbondUtilityToken(address operator, address recipient) external {
+    require(_bondedOperators[operator] != 0, "HOLOGRAPH: operator not bonded");
+    if (msg.sender != operator) {
+      require(_isContract(operator), "HOLOGRAPH: operator not contract");
+      // check that operator is ownable contract
+      require(Ownable(operator).isOwner(msg.sender), "HOLOGRAPH: sender not owner");
+    }
+    address utilityToken = IHolographRegistry(_registry()).getUtilityToken();
+    uint256 amount = _bondedAmounts[operator];
+    // here we subtract our fee for unbonding
+    require(ERC20Holograph(utilityToken).transfer(recipient, amount), "HOLOGRAPH: token transfer failed");
+    //// we need to track operator pod index for easy removal
+    // _popOperator(_bondedOperators[operator] - 1, operatorPodIndex);
+    _bondedOperators[operator] = 0;
+    _bondedAmounts[operator] = 0;
+  }
+
   function bondUtilityToken(
     address operator,
     uint256 amount,
@@ -516,9 +555,20 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
         }
       }
       require(_operatorPods[pod - 1].length < type(uint16).max, "HOLOGRAPH: too many operators");
+      address utilityToken = IHolographRegistry(_registry()).getUtilityToken();
+      // we extract utility token amount from msg sender
+      require(ERC20Holograph(utilityToken).transferFrom(msg.sender, address(this), amount), "HOLOGRAPH: token transfer failed");
       _operatorPods[pod - 1].push(operator);
       _bondedOperators[operator] = pod;
       _bondedAmounts[operator] = amount;
     }
+  }
+
+  function _isContract(address contractAddress) private view returns (bool) {
+    bytes32 codehash;
+    assembly {
+      codehash := extcodehash(contractAddress)
+    }
+    return (codehash != 0x0 && codehash != precomputekeccak256(""));
   }
 }

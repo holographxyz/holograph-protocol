@@ -13,7 +13,7 @@ import {
   generateErc20Config,
   generateInitCode,
 } from '../scripts/utils/helpers';
-import { HolographERC20Event, ConfigureEvents } from '../scripts/utils/events';
+import { HolographERC20Event, ConfigureEvents, AllEventsEnabled } from '../scripts/utils/events';
 import networks from '../config/networks';
 
 const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
@@ -42,21 +42,22 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
 
   const chainId = '0x' + network.holographId.toString(16).padStart(8, '0');
 
-  let hTokenAddress = await holographRegistry.getHToken(chainId);
+  let HLGAddress = await holographRegistry.getUtilityToken();
 
-  if (hTokenAddress == zeroAddress()) {
-    hre.deployments.log('need to deploy "hToken" for chain:', chainId);
+  if (HLGAddress == zeroAddress()) {
+    hre.deployments.log('need to deploy "HLG" for chain:', chainId);
 
     let { erc20Config, erc20ConfigHash, erc20ConfigHashBytes } = await generateErc20Config(
-      network,
+      // we set network to primary token network, for testnets it's rinkeby (soon goerli)
+      networks['eth_rinkeby'],
       deployer.address,
-      'hToken',
-      network.tokenName + ' (Holographed)',
-      'h' + network.tokenSymbol,
-      network.tokenName + ' (Holographed)',
+      'HolographUtilityToken',
+      'Holograph Utility Token',
+      'HLG',
+      'Holograph Utility Token',
       '1',
       18,
-      ConfigureEvents([]),
+      AllEventsEnabled(),
       generateInitCode(['address', 'uint16'], [deployer.address, 0]),
       salt
     );
@@ -75,16 +76,16 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     if (deployResult.events.length < 1 || deployResult.events[0].event != 'BridgeableContractDeployed') {
       throw new Error('BridgeableContractDeployed event not fired');
     }
-    hTokenAddress = deployResult.events[0].args[0];
-    const setHTokenTx = await holographRegistry.setHToken(chainId, hTokenAddress);
+    HLGAddress = deployResult.events[0].args[0];
+    const setHTokenTx = await holographRegistry.setUtilityToken(HLGAddress);
     await setHTokenTx.wait();
 
-    hre.deployments.log('deployed "hToken" at:', await holographRegistry.getHToken(chainId));
+    hre.deployments.log('deployed "HLG" at:', await holographRegistry.getUtilityToken());
   } else {
-    hre.deployments.log('reusing "hToken" at:', hTokenAddress);
+    hre.deployments.log('reusing "HLG" at:', HLGAddress);
   }
 };
 
 export default func;
-func.tags = ['hToken'];
+func.tags = ['HLG'];
 func.dependencies = ['HolographGenesis', 'DeploySources', 'DeployERC20', 'RegisterTemplates'];

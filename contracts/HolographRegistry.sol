@@ -114,6 +114,7 @@ import "./interface/IInitializable.sol";
  */
 contract HolographRegistry is Admin, Initializable {
   bytes32 constant _holographSlot = 0xb4107f746e9496e8452accc7de63d1c5e14c19f510932daa04077cd49e8bd77a;
+  bytes32 constant _utilityTokenSlot = 0xbf76518d46db472b71aa7677a0908b8016f3dee568415ffa24055f9a670f9c37;
 
   /**
    * @dev A list of smart contracts that are guaranteed secure and holographable.
@@ -176,10 +177,7 @@ contract HolographRegistry is Admin, Initializable {
     assembly {
       contractType := extcodehash(contractAddress)
     }
-    require(
-      (contractType != 0x0 && contractType != 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470),
-      "HOLOGRAPH: empty contract"
-    );
+    require((contractType != 0x0 && contractType != 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470), "HOLOGRAPH: empty contract");
     require(_contractTypeAddresses[contractType] == address(0), "HOLOGRAPH: contract already set");
     require(!_reservedTypes[contractType], "HOLOGRAPH: reserved address type");
     _contractTypeAddresses[contractType] = contractAddress;
@@ -245,6 +243,18 @@ contract HolographRegistry is Admin, Initializable {
    */
   function getHToken(uint32 chainId) external view returns (address) {
     return _hTokens[chainId];
+  }
+
+  function getUtilityToken() external view returns (address tokenContract) {
+    assembly {
+      tokenContract := sload(_utilityTokenSlot)
+    }
+  }
+
+  function setUtilityToken(address tokenContract) external onlyAdmin {
+    assembly {
+      sstore(_utilityTokenSlot, tokenContract)
+    }
   }
 
   function isHolographedContract(address smartContract) external view returns (bool) {
