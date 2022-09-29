@@ -106,5 +106,5 @@ enum ChainIdType {
   EVM, //        1
   HOLOGRAPH, //  2
   LAYERZERO, //  3
-  ABACUS //      4
+  HYPERLANE //   4
 }
