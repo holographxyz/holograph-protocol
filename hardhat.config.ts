@@ -273,7 +273,7 @@ const config: HardhatUserConfig = {
     timeout: 1000 * 60 * 60,
   },
   gasReporter: {
-    enabled: false
+    enabled: false,
   },
   etherscan: {
     apiKey: {

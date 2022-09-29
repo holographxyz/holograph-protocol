@@ -577,7 +577,11 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     operators = _operatorPods[pod - 1];
   }
 
-  function getPodOperators(uint256 pod, uint256 index, uint256 length) external view returns (address[] memory operators) {
+  function getPodOperators(
+    uint256 pod,
+    uint256 index,
+    uint256 length
+  ) external view returns (address[] memory operators) {
     require(_operatorPods.length >= pod, "HOLOGRAPH: pod does not exist");
     // decrease by one for easy code usage
     pod--;
@@ -619,7 +623,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     return _bondedOperators[operator];
   }
 
-// add top-up option
+  // add top-up option
 
   function unbondUtilityToken(address operator, address recipient) external {
     require(_bondedOperators[operator] != 0, "HOLOGRAPH: operator not bonded");
@@ -656,7 +660,10 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
       require(_operatorPods[pod - 1].length < type(uint16).max, "HOLOGRAPH: too many operators");
       address utilityToken = IHolographRegistry(_registry()).getUtilityToken();
       // we extract utility token amount from msg sender
-      require(ERC20Holograph(utilityToken).transferFrom(msg.sender, address(this), amount), "HOLOGRAPH: token transfer failed");
+      require(
+        ERC20Holograph(utilityToken).transferFrom(msg.sender, address(this), amount),
+        "HOLOGRAPH: token transfer failed"
+      );
       _operatorPods[pod - 1].push(operator);
       _bondedOperators[operator] = pod;
       _bondedAmounts[operator] = amount;
