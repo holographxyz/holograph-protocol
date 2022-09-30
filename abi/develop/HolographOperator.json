@@ -9,18 +9,12 @@
     "inputs": [
       {
         "indexed": false,
-        "internalType": "bytes32",
-        "name": "jobHash",
-        "type": "bytes32"
-      },
-      {
-        "indexed": false,
         "internalType": "bytes",
-        "name": "payload",
+        "name": "_payload",
         "type": "bytes"
       }
     ],
-    "name": "AvailableOperatorJob",
+    "name": "AvailableJob",
     "type": "event"
   },
   {
@@ -52,29 +46,6 @@
     "name": "adminCall",
     "outputs": [],
     "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "operator",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "pod",
-        "type": "uint256"
-      }
-    ],
-    "name": "bondUtilityToken",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
