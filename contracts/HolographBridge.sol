@@ -172,6 +172,7 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     address hToken,
     address hTokenRecipient,
     uint256 hTokenValue,
+    bool doNotRevert,
     bytes calldata data
   ) external onlyOperator {
     require(
@@ -188,6 +189,7 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
         "HOLOGRAPH: hToken mint failed"
       );
     }
+    require(doNotRevert, "HOLOGRAPH: reverted");
   }
 
   function bridgeOutRequest(
@@ -208,13 +210,14 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     );
     require(selector == HolographableEnforcer.bridgeOut.selector, "HOLOGRAPH: bridge out failed");
     bytes memory encodedData = abi.encodeWithSelector(
-      HolographableEnforcer.bridgeIn.selector,
+      IHolographBridge.bridgeInRequest.selector,
       _jobNonce(),
       _holograph().getChainType(),
       holographableContract,
       _registry().getHToken(_holograph().getChainType()),
       address(0),
       0,
+      true,
       payload
     );
     _operator().send{value: msg.value}(gasLimit, gasPrice, toChain, msg.sender, encodedData);
@@ -240,13 +243,14 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     }
     require(selector == HolographableEnforcer.bridgeOut.selector, "HOLOGRAPH: bridge out failed");
     bytes memory encodedData = abi.encodeWithSelector(
-      HolographableEnforcer.bridgeIn.selector,
+      IHolographBridge.bridgeInRequest.selector,
       jobNonce + 1,
       _holograph().getChainType(),
       holographableContract,
       _registry().getHToken(_holograph().getChainType()),
       address(0),
       0,
+      true,
       payload
     );
     samplePayload = abi.encodePacked(encodedData, type(uint256).max, type(uint256).max);

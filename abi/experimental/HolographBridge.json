@@ -68,6 +68,11 @@
         "type": "uint256"
       },
       {
+        "internalType": "bool",
+        "name": "doNotRevert",
+        "type": "bool"
+      },
+      {
         "internalType": "bytes",
         "name": "data",
         "type": "bytes"

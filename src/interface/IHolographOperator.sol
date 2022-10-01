@@ -12,7 +12,7 @@ interface IHolographOperator {
 
   function executeJob(bytes calldata _payload) external payable;
 
-  function jobEstimator(bytes calldata _payload) external payable;
+  function jobEstimator(bytes calldata _payload) external payable returns (uint256 leftoverGas);
 
   function send(
     uint256 gas,

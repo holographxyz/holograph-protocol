@@ -48,8 +48,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     hre.deployments.log('need to deploy "HLG" for chain:', chainId);
 
     let { erc20Config, erc20ConfigHash, erc20ConfigHashBytes } = await generateErc20Config(
-      // we set network to primary token network, for testnets it's rinkeby (soon goerli)
-      networks['eth_rinkeby'],
+      // we set network to primary token network, for testnets it's goerli
+      networks['eth_goerli'],
       deployer.address,
       'HolographUtilityToken',
       'Holograph Utility Token',
@@ -58,7 +58,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       '1',
       18,
       AllEventsEnabled(),
-      generateInitCode(['address', 'uint16'], [deployer.address, 0]),
+      generateInitCode(['address'], [deployer.address]),
       salt
     );
 
@@ -73,10 +73,20 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       nonce: await hre.ethers.provider.getTransactionCount(deployer.address),
     });
     const deployResult = await depoyTx.wait();
-    if (deployResult.events.length < 1 || deployResult.events[0].event != 'BridgeableContractDeployed') {
+    let eventIndex: number = 0;
+    let eventFound: boolean = false;
+    for (let i = 0, l = deployResult.events.length; i < l; i++) {
+      let e = deployResult.events[i];
+      if (e.event == 'BridgeableContractDeployed') {
+        eventFound = true;
+        eventIndex = i;
+        break;
+      }
+    }
+    if (!eventFound) {
       throw new Error('BridgeableContractDeployed event not fired');
     }
-    HLGAddress = deployResult.events[0].args[0];
+    HLGAddress = deployResult.events[eventIndex].args[0];
     const setHTokenTx = await holographRegistry.setUtilityToken(HLGAddress);
     await setHTokenTx.wait();
 
@@ -87,5 +97,5 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
 };
 
 export default func;
-func.tags = ['HLG'];
+func.tags = ['HLG', 'HolographUtilityToken'];
 func.dependencies = ['HolographGenesis', 'DeploySources', 'DeployERC20', 'RegisterTemplates'];

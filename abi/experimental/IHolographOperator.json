@@ -34,7 +34,13 @@
       }
     ],
     "name": "jobEstimator",
-    "outputs": [],
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "leftoverGas",
+        "type": "uint256"
+      }
+    ],
     "stateMutability": "payable",
     "type": "function"
   },

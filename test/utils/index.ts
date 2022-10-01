@@ -30,6 +30,7 @@ import {
   HolographTreasury,
   HolographTreasuryProxy,
   HToken,
+  HolographUtilityToken,
   Interfaces,
   MockERC721Receiver,
   MockLZEndpoint,
@@ -107,6 +108,7 @@ export interface PreTest {
   holographTreasury: HolographTreasury;
   holographTreasuryProxy: HolographTreasuryProxy;
   hToken: HToken;
+  utilityToken: HolographUtilityToken;
   interfaces: Interfaces;
   mockErc721Receiver: MockERC721Receiver;
   owner: Owner;
@@ -120,6 +122,8 @@ export interface PreTest {
   treasury: HolographTreasury;
   hTokenHolographer: Holographer;
   hTokenEnforcer: HolographERC20;
+  utilityTokenHolographer: Holographer;
+  utilityTokenEnforcer: HolographERC20;
   sampleErc20Holographer: Holographer;
   sampleErc20Enforcer: HolographERC20;
   sampleErc721Holographer: Holographer;
@@ -180,6 +184,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
     'MockERC721Receiver',
     'RegisterTemplates',
     'hToken',
+    'HolographUtilityToken',
     'SampleERC20',
     'SampleERC721',
     'CxipERC721Proxy',
@@ -227,6 +232,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
   let holographTreasury: HolographTreasury;
   let holographTreasuryProxy: HolographTreasuryProxy;
   let hToken: HToken;
+  let utilityToken: HolographUtilityToken;
   let interfaces: Interfaces;
   let mockErc721Receiver: MockERC721Receiver;
   let owner: Owner;
@@ -242,6 +248,8 @@ export default async function (l2?: boolean): Promise<PreTest> {
 
   let hTokenHolographer: Holographer;
   let hTokenEnforcer: HolographERC20;
+  let utilityTokenHolographer: Holographer;
+  let utilityTokenEnforcer: HolographERC20;
   let sampleErc20Holographer: Holographer;
   let sampleErc20Enforcer: HolographERC20;
   let sampleErc721Holographer: Holographer;
@@ -312,6 +320,19 @@ export default async function (l2?: boolean): Promise<PreTest> {
     await hTokenHolographer.getHolographEnforcer()
   )) as HolographERC20;
   hToken = (await hre.ethers.getContractAt('hToken', await hTokenHolographer.getSourceContract())) as HToken;
+
+  utilityTokenHolographer = (await hre.ethers.getContractAt(
+    'Holographer',
+    await registry.getUtilityToken()
+  )) as Holographer;
+  utilityTokenEnforcer = (await hre.ethers.getContractAt(
+    'HolographERC20',
+    await utilityTokenHolographer.getHolographEnforcer()
+  )) as HolographERC20;
+  utilityToken = (await hre.ethers.getContractAt(
+    'HolographUtilityToken',
+    await utilityTokenHolographer.getSourceContract()
+  )) as HolographUtilityToken;
 
   sampleErc20Hash = await generateErc20Config(
     network,
@@ -443,6 +464,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
     holographTreasury,
     holographTreasuryProxy,
     hToken,
+    utilityToken,
     interfaces,
     mockErc721Receiver,
     owner,
@@ -456,6 +478,8 @@ export default async function (l2?: boolean): Promise<PreTest> {
     treasury,
     hTokenHolographer,
     hTokenEnforcer,
+    utilityTokenHolographer,
+    utilityTokenEnforcer,
     sampleErc20Holographer,
     sampleErc20Enforcer,
     sampleErc721Holographer,

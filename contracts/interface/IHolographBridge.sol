@@ -112,6 +112,7 @@ interface IHolographBridge {
     address hToken,
     address hTokenRecipient,
     uint256 hTokenValue,
+    bool doNotRevert,
     bytes calldata data
   ) external;
 

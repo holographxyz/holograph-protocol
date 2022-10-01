@@ -24,7 +24,6 @@ import "./struct/OperatorJob.sol";
  */
 contract HolographOperator is Admin, Initializable, IHolographOperator {
   bytes32 constant _bridgeSlot = precomputeslot("eip1967.Holograph.bridge");
-  bytes32 constant _deadAddressSlot = precomputeslot("eip1967.Holograph.deadAddress");
   bytes32 constant _holographSlot = precomputeslot("eip1967.Holograph.holograph");
   bytes32 constant _interfacesSlot = precomputeslot("eip1967.Holograph.interfaces");
   bytes32 constant _jobNonceSlot = precomputeslot("eip1967.Holograph.jobNonce");
@@ -87,6 +86,11 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
   mapping(address => uint256) private _bondedOperators;
 
   /**
+   * @dev Internal mapping of bonded operators, to prevent double bonding.
+   */
+  mapping(address => uint256) private _operatorPodIndex;
+
+  /**
    * @dev Internal mapping of bonded operator amounts.
    */
   mapping(address => uint256) private _bondedAmounts;
@@ -132,7 +136,6 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
       (address, address, address, address)
     );
     assembly {
-      // sstore(_deadAddressSlot, 0x000000000000000000000000000000000000000000000000000000000000dead)
       sstore(_adminSlot, origin())
 
       sstore(_bridgeSlot, bridge)
@@ -195,7 +198,9 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
       // decrease pod size to accomodate popped operator
       _operatorTempStorage[_operatorTempStorageCounter] = _operatorPods[pod][operatorIndex];
       _popOperator(pod, operatorIndex);
-      podSize--;
+      if (podSize > 1) {
+        podSize--;
+      }
       _operatorJobs[jobHash] = uint256(
         ((pod + 1) << 248) |
           (uint256(_operatorTempStorageCounter) << 216) |
@@ -258,6 +263,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
         if (currentBondAmount >= _bondedAmounts[job.operator]) {
           // if enough bond amount leftover, put operator back in
           _operatorPods[pod].push(job.operator);
+          _operatorPodIndex[job.operator] = _operatorPods[pod].length - 1;
           _bondedOperators[job.operator] = job.pod;
         } else {
           // return rest of bond amount to operator
@@ -268,6 +274,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
       } else {
         // put operator back in
         _operatorPods[pod].push(msg.sender);
+        _operatorPodIndex[job.operator] = _operatorPods[pod].length - 1;
         _bondedOperators[msg.sender] = job.pod;
       }
     }
@@ -289,21 +296,19 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     delete _operatorJobs[hash];
   }
 
-  function jobEstimator(bytes calldata _payload) external payable {
+  function jobEstimator(bytes calldata _payload) external payable returns (uint256) {
     assembly {
-      switch eq(sload(_deadAddressSlot), caller())
-      case 0 {
-        mstore(0x80, 0x08c379a000000000000000000000000000000000000000000000000000000000)
-        mstore(0xa0, 0x0000002000000000000000000000000000000000000000000000000000000000)
-        mstore(0xc0, 0x000000484f4c4f47524150483a2074657374206f6e6c792063616c6c00000000)
-        mstore(0xe0, 0x0000000000000000000000000000000000000000000000000000000000000000)
-        revert(0x80, 0xc4)
-      }
+      calldatacopy(0, _payload.offset, sub(_payload.length, 0x40))
+      // we purposefully trigger a revert to be made
+      mstore8(0xE3, 0x00)
       let result := call(gas(), sload(_bridgeSlot), callvalue(), 0, sub(_payload.length, 0x40), 0, 0)
-      if eq(result, 0) {
+      // we purposefully revert if for some reason the call went through still
+      if eq(result, 1) {
         returndatacopy(0, 0, returndatasize())
         revert(0, returndatasize())
       }
+      mstore(0x00, gas())
+      return(0x00, 0x20)
     }
   }
 
@@ -349,6 +354,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
         address operator = _operatorPods[pod][operatorIndex];
         // remove operator pod reference
         _bondedOperators[operator] = 0;
+        _operatorPodIndex[operator] = 0;
         uint256 lastIndex = _operatorPods[pod].length - 1;
         if (lastIndex != operatorIndex) {
           _operatorPods[pod][operatorIndex] = _operatorPods[pod][lastIndex];
@@ -538,7 +544,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     // here we subtract our fee for unbonding
     require(ERC20Holograph(utilityToken).transfer(recipient, amount), "HOLOGRAPH: token transfer failed");
     //// we need to track operator pod index for easy removal
-    // _popOperator(_bondedOperators[operator] - 1, operatorPodIndex);
+    _popOperator(_bondedOperators[operator] - 1, _operatorPodIndex[operator]);
     _bondedOperators[operator] = 0;
     _bondedAmounts[operator] = 0;
   }
@@ -550,7 +556,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
   ) external {
     require(_bondedOperators[operator] == 0, "HOLOGRAPH: operator is bonded");
     unchecked {
-      uint256 current = _getCurrentBondAmount(pod);
+      uint256 current = _getCurrentBondAmount(pod - 1);
       require(current <= amount, "HOLOGRAPH: bond amount too small");
       // subtract difference and only keep bond amount
       if (_operatorPods.length < pod) {
@@ -566,6 +572,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
         "HOLOGRAPH: token transfer failed"
       );
       _operatorPods[pod - 1].push(operator);
+      _operatorPodIndex[operator] = _operatorPods[pod - 1].length - 1;
       _bondedOperators[operator] = pod;
       _bondedAmounts[operator] = amount;
     }
