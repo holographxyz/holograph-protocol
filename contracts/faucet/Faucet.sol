@@ -102,18 +102,12 @@
 pragma solidity 0.8.13;
 
 import "../abstract/Initializable.sol";
-
-interface ERC20 {
-  event Transfer(address indexed from, address indexed to, uint256 value);
-
-  function balanceOf(address account) external view returns (uint256);
-
-  function transfer(address to, uint256 value) external returns (bool);
-}
+import "../interface/ERC20Holograph.sol";
+import "../interface/IInitializable.sol";
 
 contract Faucet is Initializable {
   address public owner;
-  ERC20 public token;
+  ERC20Holograph public token;
 
   uint256 public faucetDripAmount = 100 ether;
   uint256 public faucetCooldown = 24 hours;
@@ -131,22 +125,10 @@ contract Faucet is Initializable {
    * @dev Special function to allow a one time initialisation on deployment.
    */
   function init(bytes memory data) external override returns (bytes4) {
-    (address contractOwner_, address tokenInstance_) = abi.decode(data, (address, address));
-    require(tokenInstance_ != address(0));
-    token = ERC20(tokenInstance_);
-    owner = msg.sender;
-    // run underlying initializer logic
-    return _init(data);
-  }
-
-  function _init(
-    bytes memory /* data*/
-  ) internal returns (bytes4) {
     require(!_isInitialized(), "Faucet contract is already initialized");
-    address holographer = msg.sender;
-    assembly {
-      sstore(0xe860eb97addcc8d7a4df2e57474b879e6fae678a490e3807075a99030ddd9250, holographer)
-    }
+    (address contractOwner_, address tokenInstance_) = abi.decode(data, (address, address));
+    token = ERC20Holograph(tokenInstance_);
+    owner = contractOwner_;
     _setInitialized();
     return IInitializable.init.selector;
   }
