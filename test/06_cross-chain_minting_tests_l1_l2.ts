@@ -58,7 +58,7 @@ import { DeploymentConfigStruct } from '../typechain-types/HolographFactory';
 
 type KeyOf<T extends object> = Extract<keyof T, string>;
 
-describe.only('Testing cross-chain minting (L1 & L2)', async function () {
+describe('Testing cross-chain minting (L1 & L2)', async function () {
   const lzReceiveABI = {
     inputs: [
       {
