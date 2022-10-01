@@ -285,7 +285,9 @@
           "storageLayout",
           "evm.gasEstimates"
         ],
-        "": ["ast"]
+        "": [
+          "ast"
+        ]
       }
     },
     "libraries": {}
