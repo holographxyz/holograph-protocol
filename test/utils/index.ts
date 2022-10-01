@@ -14,6 +14,7 @@ import {
   CxipERC721,
   CxipERC721Proxy,
   ERC20Mock,
+  Faucet,
   Holograph,
   HolographBridge,
   HolographBridgeProxy,
@@ -126,6 +127,7 @@ export interface PreTest {
   sampleErc721Enforcer: HolographERC721;
   cxipErc721Holographer: Holographer;
   cxipErc721Enforcer: HolographERC721;
+  faucet: Faucet
 }
 
 const animatedLoader = function (text: string) {
@@ -183,6 +185,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
     'SampleERC20',
     'SampleERC721',
     'CxipERC721Proxy',
+    'Faucet',
   ];
 
   let loop = animatedLoader('\x1b[2m' + ' loading/deploying relevant contracts');
@@ -233,6 +236,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
   let pa1d: PA1D;
   let sampleErc20: SampleERC20;
   let sampleErc721: SampleERC721;
+  let faucet: Faucet;
 
   let treasury: HolographTreasury;
   let registry: HolographRegistry;
@@ -281,6 +285,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
   pa1d = (await hre.ethers.getContract('PA1D')) as PA1D;
   // sampleErc20 = (await hre.ethers.getContractOrNull('SampleERC20')) as SampleERC20;
   // sampleErc721 = (await hre.ethers.getContractOrNull('SampleERC721')) as SampleERC721;
+  faucet = await hre.ethers.getContract<Faucet>('Faucet')
 
   bridge = holographBridge.attach(await holograph.getBridge()) as HolographBridge;
   factory = holographFactory.attach(await holograph.getFactory()) as HolographFactory;
@@ -462,5 +467,6 @@ export default async function (l2?: boolean): Promise<PreTest> {
     sampleErc721Enforcer,
     cxipErc721Holographer,
     cxipErc721Enforcer,
+    faucet,
   } as PreTest;
 }

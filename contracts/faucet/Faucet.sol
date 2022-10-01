@@ -101,78 +101,103 @@
 
 pragma solidity 0.8.13;
 
+import "../abstract/Initializable.sol";
+
 interface ERC20 {
-    event Transfer(address indexed from, address indexed to, uint256 value);
-    function balanceOf(address account) external view returns (uint256);
-    function transfer(address to, uint256 value) external returns (bool);
+  event Transfer(address indexed from, address indexed to, uint256 value);
+  function balanceOf(address account) external view returns (uint256);
+  function transfer(address to, uint256 value) external returns (bool);
 }
 
-contract Faucet {
-    address public owner;
-    ERC20 public token;
+contract Faucet is Initializable {
+  address public owner;
+  ERC20 public token;
 
-    uint256 public faucetDripAmount = 100 ether;
-    uint256 public faucetCooldown = 24 hours;
+  uint256 public faucetDripAmount = 100 ether;
+  uint256 public faucetCooldown = 24 hours;
 
-    mapping(address => uint256) lastAccessTime;
+  mapping(address => uint256) lastAccessTime;
 
-    constructor(address tokenInstance_) {
-        require(tokenInstance_ != address(0));
-        token = ERC20(tokenInstance_);
-        owner = msg.sender;
+  /**
+  * @notice Constructor is empty and not utilised.
+  * @dev To make exact CREATE2 deployment possible, constructor is left empty. We utilize the "init" function instead.
+  */
+  constructor() {}
+
+  /**
+  * @notice Initializes the token.
+  * @dev Special function to allow a one time initialisation on deployment.
+  */
+  function init(bytes memory data) external override returns (bytes4) {
+    (address contractOwner_, address tokenInstance_) = abi.decode(data, (address, address));
+    require(tokenInstance_ != address(0));
+    token = ERC20(tokenInstance_);
+    owner = msg.sender;
+    // run underlying initializer logic
+    return _init(data);
+  }
+
+  function _init(bytes memory /* data*/) internal returns (bytes4) {
+    require(!_isInitialized(), "Faucet contract is already initialized");
+    address holographer = msg.sender;
+    assembly {
+      sstore(0xe860eb97addcc8d7a4df2e57474b879e6fae678a490e3807075a99030ddd9250, holographer)
     }
+    _setInitialized();
+    return IInitializable.init.selector;
+  }
 
-    /// @notice Get tokens from faucet's own balance. Rate limited.
-    function requestTokens() external {
-        require(isAllowedToWithdraw(msg.sender), 'Come back later');
-        require(token.balanceOf(address(this)) >= faucetDripAmount, "Faucet is empty");
-        lastAccessTime[msg.sender] = block.timestamp;
-        token.transfer(msg.sender, faucetDripAmount);
-    }
+  /// @notice Get tokens from faucet's own balance. Rate limited.
+  function requestTokens() external {
+    require(isAllowedToWithdraw(msg.sender), 'Come back later');
+    require(token.balanceOf(address(this)) >= faucetDripAmount, "Faucet is empty");
+    lastAccessTime[msg.sender] = block.timestamp;
+    token.transfer(msg.sender, faucetDripAmount);
+  }
 
-    /// @notice Grant tokens to receiver from faucet's own balance. Not rate limited.
-    function grantTokens(address address_) external onlyOwner {
-        require(token.balanceOf(address(this)) >= faucetDripAmount, "Faucet is empty");
-        token.transfer(address_, faucetDripAmount);
-    }
+  /// @notice Grant tokens to receiver from faucet's own balance. Not rate limited.
+  function grantTokens(address address_) external onlyOwner {
+    require(token.balanceOf(address(this)) >= faucetDripAmount, "Faucet is empty");
+    token.transfer(address_, faucetDripAmount);
+  }
 
-    function grantTokens(address address_, uint256 amountWei_) external onlyOwner {
-        require(token.balanceOf(address(this)) >= amountWei_, "Insufficient funds");
-        token.transfer(address_, amountWei_);
-    }
+  function grantTokens(address address_, uint256 amountWei_) external onlyOwner {
+    require(token.balanceOf(address(this)) >= amountWei_, "Insufficient funds");
+    token.transfer(address_, amountWei_);
+  }
 
-    /// @notice Withdraw funds from the faucet.
-    function withdrawTokens(address receiver_) external onlyOwner {
-        token.transfer(receiver_, token.balanceOf(address(this)));
-    }
+  /// @notice Withdraw funds from the faucet.
+  function withdrawTokens(address receiver_) external onlyOwner {
+    token.transfer(receiver_, token.balanceOf(address(this)));
+  }
 
-    function withdrawTokens(address receiver_, uint256 amountWei_) external onlyOwner {
-        require(token.balanceOf(address(this)) >= amountWei_, "Insufficient funds");
-        token.transfer(receiver_, amountWei_);
-    }
+  function withdrawTokens(address receiver_, uint256 amountWei_) external onlyOwner {
+    require(token.balanceOf(address(this)) >= amountWei_, "Insufficient funds");
+    token.transfer(receiver_, amountWei_);
+  }
 
-    /// @notice Configure the time between two drip requests. Time is in seconds.
-    function setWithdrawCooldown(uint256 waitTimeSeconds_) external onlyOwner {
-        faucetCooldown = waitTimeSeconds_;
-    }
+  /// @notice Configure the time between two drip requests. Time is in seconds.
+  function setWithdrawCooldown(uint256 waitTimeSeconds_) external onlyOwner {
+    faucetCooldown = waitTimeSeconds_;
+  }
 
-    /// @notice Configure the drip request amount. Amount is in wei.
-    function setWithdrawAmount(uint256 amountWei_) external onlyOwner {
-        faucetDripAmount = amountWei_;
-    }
+  /// @notice Configure the drip request amount. Amount is in wei.
+  function setWithdrawAmount(uint256 amountWei_) external onlyOwner {
+    faucetDripAmount = amountWei_;
+  }
 
-    /// @notice Check whether an address can request drip and is not on cooldown.
-    function isAllowedToWithdraw(address address_) public view returns (bool) {
-        if(lastAccessTime[address_] == 0) {
-            return true;
-        } else if(block.timestamp >= lastAccessTime[address_] + faucetCooldown) {
-            return true;
-        }
-        return false;
+  /// @notice Check whether an address can request drip and is not on cooldown.
+  function isAllowedToWithdraw(address address_) public view returns (bool) {
+    if(lastAccessTime[address_] == 0) {
+      return true;
+    } else if(block.timestamp >= lastAccessTime[address_] + faucetCooldown) {
+      return true;
     }
+    return false;
+  }
 
-    modifier onlyOwner(){
-        require(msg.sender == owner, "Caller is not the owner");
-        _;
-    }
+  modifier onlyOwner(){
+    require(msg.sender == owner, "Caller is not the owner");
+    _;
+  }
 }

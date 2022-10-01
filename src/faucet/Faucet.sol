@@ -2,13 +2,15 @@
 
 /*SOLIDITY_COMPILER_VERSION*/
 
+import "../abstract/Initializable.sol";
+
 interface ERC20 {
   event Transfer(address indexed from, address indexed to, uint256 value);
   function balanceOf(address account) external view returns (uint256);
   function transfer(address to, uint256 value) external returns (bool);
 }
 
-contract Faucet {
+contract Faucet is Initializable {
   address public owner;
   ERC20 public token;
 
@@ -17,10 +19,33 @@ contract Faucet {
 
   mapping(address => uint256) lastAccessTime;
 
-  constructor(address tokenInstance_) {
+  /**
+  * @notice Constructor is empty and not utilised.
+  * @dev To make exact CREATE2 deployment possible, constructor is left empty. We utilize the "init" function instead.
+  */
+  constructor() {}
+
+  /**
+  * @notice Initializes the token.
+  * @dev Special function to allow a one time initialisation on deployment.
+  */
+  function init(bytes memory data) external override returns (bytes4) {
+    (address contractOwner_, address tokenInstance_) = abi.decode(data, (address, address));
     require(tokenInstance_ != address(0));
     token = ERC20(tokenInstance_);
     owner = msg.sender;
+    // run underlying initializer logic
+    return _init(data);
+  }
+
+  function _init(bytes memory /* data*/) internal returns (bytes4) {
+    require(!_isInitialized(), "Faucet contract is already initialized");
+    address holographer = msg.sender;
+    assembly {
+      sstore(precomputeslot("eip1967.Holograph.Bridge.holographer"), holographer)
+    }
+    _setInitialized();
+    return IInitializable.init.selector;
   }
 
   /// @notice Get tokens from faucet's own balance. Rate limited.
