@@ -128,5 +128,5 @@ interface IHolographBridge {
     uint32 toChain,
     address holographableContract,
     bytes calldata data
-  ) external view returns (bytes memory samplePayload);
+  ) external returns (bytes memory samplePayload);
 }

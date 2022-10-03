@@ -124,25 +124,49 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     _operator().send{value: msg.value}(gasLimit, gasPrice, toChain, msg.sender, encodedData);
   }
 
+  function revertedBridgeOutRequest(
+    address sender,
+    uint32 toChain,
+    address holographableContract,
+    bytes calldata data
+  ) external returns (string memory revertReason) {
+    try HolographableEnforcer(holographableContract).bridgeOut(toChain, sender, data) returns (
+      bytes4 selector,
+      bytes memory payload
+    ) {
+      if (selector != HolographableEnforcer.bridgeOut.selector) {
+        return "HOLOGRAPH: bridge out failed";
+      }
+      // otherwise we revert here
+      revert(string(payload));
+    } catch Error(string memory reason) {
+      return reason;
+    } catch {
+      return "HOLOGRAPH: unknown error";
+    }
+  }
+
   function getBridgeOutRequestPayload(
     uint32 toChain,
     address holographableContract,
     bytes calldata data
-  ) external view returns (bytes memory samplePayload) {
+  ) external returns (bytes memory samplePayload) {
     require(
       _registry().isHolographedContract(holographableContract) || address(_factory()) == holographableContract,
       "HOLOGRAPH: not holographed"
     );
-    (bool success, bytes memory rawResponse) = holographableContract.staticcall(
-      abi.encodeWithSelector(HolographableEnforcer.bridgeOut.selector, toChain, msg.sender, data)
-    );
-    require(success, "HOLOGRAPH: bridge out failed");
-    (bytes4 selector, bytes memory payload) = abi.decode(rawResponse, (bytes4, bytes));
+    bytes memory payload;
+    try this.revertedBridgeOutRequest(msg.sender, toChain, holographableContract, data) returns (
+      string memory revertReason
+    ) {
+      revert(revertReason);
+    } catch Error(string memory realResponse) {
+      payload = bytes(realResponse);
+    }
     uint256 jobNonce;
     assembly {
       jobNonce := sload(_jobNonceSlot)
     }
-    require(selector == HolographableEnforcer.bridgeOut.selector, "HOLOGRAPH: bridge out failed");
     bytes memory encodedData = abi.encodeWithSelector(
       IHolographBridge.bridgeInRequest.selector,
       jobNonce + 1,

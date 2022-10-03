@@ -155,7 +155,7 @@
         "type": "bytes"
       }
     ],
-    "stateMutability": "view",
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -250,6 +250,40 @@
         "internalType": "bytes4",
         "name": "",
         "type": "bytes4"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "uint32",
+        "name": "toChain",
+        "type": "uint32"
+      },
+      {
+        "internalType": "address",
+        "name": "holographableContract",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "data",
+        "type": "bytes"
+      }
+    ],
+    "name": "revertedBridgeOutRequest",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "revertReason",
+        "type": "string"
       }
     ],
     "stateMutability": "nonpayable",
