@@ -20,7 +20,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       'HolographRegistryProxy',
       'HolographTreasury',
       'HolographTreasuryProxy',
-      'Interfaces',
+      'HolographInterfaces',
       'PA1D',
       'CxipERC721',
       'CxipERC721Proxy',

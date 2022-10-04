@@ -31,7 +31,7 @@ import {
   HolographTreasuryProxy,
   HToken,
   HolographUtilityToken,
-  Interfaces,
+  HolographInterfaces,
   MockERC721Receiver,
   MockLZEndpoint,
   Owner,
@@ -109,7 +109,7 @@ export interface PreTest {
   holographTreasuryProxy: HolographTreasuryProxy;
   hToken: HToken;
   utilityToken: HolographUtilityToken;
-  interfaces: Interfaces;
+  holographInterfaces: HolographInterfaces;
   mockErc721Receiver: MockERC721Receiver;
   owner: Owner;
   pa1d: PA1D;
@@ -172,7 +172,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
     'HolographRegistryProxy',
     'HolographTreasury',
     'HolographTreasuryProxy',
-    'Interfaces',
+    'HolographInterfaces',
     'PA1D',
 
     'HolographERC20',
@@ -233,7 +233,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
   let holographTreasuryProxy: HolographTreasuryProxy;
   let hToken: HToken;
   let utilityToken: HolographUtilityToken;
-  let interfaces: Interfaces;
+  let holographInterfaces: HolographInterfaces;
   let mockErc721Receiver: MockERC721Receiver;
   let owner: Owner;
   let pa1d: PA1D;
@@ -283,7 +283,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
   holographTreasury = (await hre.ethers.getContract('HolographTreasury')) as HolographTreasury;
   holographTreasuryProxy = (await hre.ethers.getContract('HolographTreasuryProxy')) as HolographTreasuryProxy;
   // hToken = (await hre.ethers.getContractOrNull('hToken')) as HToken;
-  interfaces = (await hre.ethers.getContractOrNull('Interfaces')) as Interfaces;
+  holographInterfaces = (await hre.ethers.getContractOrNull('HolographInterfaces')) as HolographInterfaces;
   mockErc721Receiver = (await hre.ethers.getContract('MockERC721Receiver')) as MockERC721Receiver;
   owner = (await hre.ethers.getContractOrNull('Owner')) as Owner;
   pa1d = (await hre.ethers.getContract('PA1D')) as PA1D;
@@ -465,7 +465,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
     holographTreasuryProxy,
     hToken,
     utilityToken,
-    interfaces,
+    holographInterfaces,
     mockErc721Receiver,
     owner,
     pa1d,

@@ -20,7 +20,7 @@ import "./interface/IHolograph.sol";
 import "./interface/IHolographer.sol";
 import "./interface/IHolographRegistry.sol";
 import "./interface/IInitializable.sol";
-import "./interface/IInterfaces.sol";
+import "./interface/IHolographInterfaces.sol";
 import "./interface/IPA1D.sol";
 import "./interface/Ownable.sol";
 
@@ -131,7 +131,7 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
    * @return string The URI.
    */
   function contractURI() external view returns (string memory) {
-    return IInterfaces(_interfaces()).contractURI(_name, "", "", _bps, address(this));
+    return IHolographInterfaces(_interfaces()).contractURI(_name, "", "", _bps, address(this));
   }
 
   /**
@@ -149,7 +149,7 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
    * @return bool True if supported.
    */
   function supportsInterface(bytes4 interfaceId) external view returns (bool) {
-    IInterfaces interfaces = IInterfaces(_interfaces());
+    IHolographInterfaces interfaces = IHolographInterfaces(_interfaces());
     ERC165 erc165Contract;
     assembly {
       erc165Contract := sload(_sourceContractSlot)
@@ -862,7 +862,7 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
   fallback() external payable {
     // we check if royalties support the function, send there, otherwise revert to source
     address _target;
-    if (IInterfaces(_interfaces()).supportsInterface(InterfaceType.PA1D, msg.sig)) {
+    if (IHolographInterfaces(_interfaces()).supportsInterface(InterfaceType.PA1D, msg.sig)) {
       _target = _royalties();
       assembly {
         calldatacopy(0, 0, calldatasize())

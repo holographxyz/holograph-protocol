@@ -105,7 +105,7 @@ import "../enum/ChainIdType.sol";
 import "../enum/InterfaceType.sol";
 import "../enum/TokenUriType.sol";
 
-interface IInterfaces {
+interface IHolographInterfaces {
   function contractURI(
     string calldata name,
     string calldata imageURL,

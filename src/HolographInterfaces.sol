@@ -26,7 +26,7 @@ import "./interface/IPA1D.sol";
 import "./library/Base64.sol";
 import "./library/Strings.sol";
 
-contract Interfaces is Admin, Initializable {
+contract HolographInterfaces is Admin, Initializable {
   mapping(InterfaceType => mapping(bytes4 => bool)) private _supportedInterfaces;
   mapping(ChainIdType => mapping(uint256 => mapping(ChainIdType => uint256))) private _chainIdMap;
   mapping(TokenUriType => string) private _prependURI;

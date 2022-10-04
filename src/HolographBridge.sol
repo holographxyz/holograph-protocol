@@ -16,7 +16,7 @@ import "./interface/IHolographFactory.sol";
 import "./interface/IHolographOperator.sol";
 import "./interface/IHolographRegistry.sol";
 import "./interface/IInitializable.sol";
-import "./interface/IInterfaces.sol";
+import "./interface/IHolographInterfaces.sol";
 
 import "./struct/DeploymentConfig.sol";
 import "./struct/Verification.sol";
@@ -204,7 +204,7 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     }
   }
 
-  function _interfaces() private view returns (IInterfaces interfaces) {
+  function _interfaces() private view returns (IHolographInterfaces interfaces) {
     assembly {
       interfaces := sload(_interfacesSlot)
     }

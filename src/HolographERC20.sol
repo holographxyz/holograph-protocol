@@ -24,7 +24,7 @@ import "./interface/IHolograph.sol";
 import "./interface/IHolographer.sol";
 import "./interface/IHolographRegistry.sol";
 import "./interface/IInitializable.sol";
-import "./interface/IInterfaces.sol";
+import "./interface/IHolographInterfaces.sol";
 import "./interface/Ownable.sol";
 
 import "./library/Counters.sol";
@@ -176,7 +176,7 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
    * This makes it easier for external smart contracts to easily identify a valid ERC20 token contract.
    */
   function supportsInterface(bytes4 interfaceId) external view returns (bool) {
-    IInterfaces interfaces = IInterfaces(_interfaces());
+    IHolographInterfaces interfaces = IHolographInterfaces(_interfaces());
     ERC165 erc165Contract;
     assembly {
       erc165Contract := sload(_sourceContractSlot)

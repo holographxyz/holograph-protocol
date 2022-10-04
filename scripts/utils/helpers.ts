@@ -46,13 +46,21 @@ export interface LeanHardhatRuntimeEnvironment {
   deploymentSalt: string;
 }
 
+export enum NetworkType {
+  local = "local",
+  testnet = "testnet",
+  mainnet = "mainnet"
+}
+
 export interface Network {
+  type: NetworkType;
   chain: number;
   rpc: string;
   holographId: number;
   tokenName: string;
   tokenSymbol: string;
-  lzEndpoint?: string;
+  lzEndpoint: string;
+  lzId: number;
   webSocket?: string;
 }
 
