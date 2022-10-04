@@ -6,7 +6,9 @@ import "../abstract/Initializable.sol";
 
 interface ERC20 {
   event Transfer(address indexed from, address indexed to, uint256 value);
+
   function balanceOf(address account) external view returns (uint256);
+
   function transfer(address to, uint256 value) external returns (bool);
 }
 
@@ -20,15 +22,15 @@ contract Faucet is Initializable {
   mapping(address => uint256) lastAccessTime;
 
   /**
-  * @notice Constructor is empty and not utilised.
-  * @dev To make exact CREATE2 deployment possible, constructor is left empty. We utilize the "init" function instead.
-  */
+   * @notice Constructor is empty and not utilised.
+   * @dev To make exact CREATE2 deployment possible, constructor is left empty. We utilize the "init" function instead.
+   */
   constructor() {}
 
   /**
-  * @notice Initializes the token.
-  * @dev Special function to allow a one time initialisation on deployment.
-  */
+   * @notice Initializes the token.
+   * @dev Special function to allow a one time initialisation on deployment.
+   */
   function init(bytes memory data) external override returns (bytes4) {
     (address contractOwner_, address tokenInstance_) = abi.decode(data, (address, address));
     require(tokenInstance_ != address(0));
@@ -38,7 +40,9 @@ contract Faucet is Initializable {
     return _init(data);
   }
 
-  function _init(bytes memory /* data*/) internal returns (bytes4) {
+  function _init(
+    bytes memory /* data*/
+  ) internal returns (bytes4) {
     require(!_isInitialized(), "Faucet contract is already initialized");
     address holographer = msg.sender;
     assembly {
@@ -50,7 +54,7 @@ contract Faucet is Initializable {
 
   /// @notice Get tokens from faucet's own balance. Rate limited.
   function requestTokens() external {
-    require(isAllowedToWithdraw(msg.sender), 'Come back later');
+    require(isAllowedToWithdraw(msg.sender), "Come back later");
     require(token.balanceOf(address(this)) >= faucetDripAmount, "Faucet is empty");
     lastAccessTime[msg.sender] = block.timestamp;
     token.transfer(msg.sender, faucetDripAmount);
@@ -89,15 +93,15 @@ contract Faucet is Initializable {
 
   /// @notice Check whether an address can request drip and is not on cooldown.
   function isAllowedToWithdraw(address address_) public view returns (bool) {
-    if(lastAccessTime[address_] == 0) {
+    if (lastAccessTime[address_] == 0) {
       return true;
-    } else if(block.timestamp >= lastAccessTime[address_] + faucetCooldown) {
+    } else if (block.timestamp >= lastAccessTime[address_] + faucetCooldown) {
       return true;
     }
     return false;
   }
 
-  modifier onlyOwner(){
+  modifier onlyOwner() {
     require(msg.sender == owner, "Caller is not the owner");
     _;
   }

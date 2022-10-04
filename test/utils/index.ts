@@ -127,7 +127,7 @@ export interface PreTest {
   sampleErc721Enforcer: HolographERC721;
   cxipErc721Holographer: Holographer;
   cxipErc721Enforcer: HolographERC721;
-  faucet: Faucet
+  faucet: Faucet;
 }
 
 const animatedLoader = function (text: string) {
@@ -285,7 +285,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
   pa1d = (await hre.ethers.getContract('PA1D')) as PA1D;
   // sampleErc20 = (await hre.ethers.getContractOrNull('SampleERC20')) as SampleERC20;
   // sampleErc721 = (await hre.ethers.getContractOrNull('SampleERC721')) as SampleERC721;
-  faucet = await hre.ethers.getContract<Faucet>('Faucet')
+  faucet = await hre.ethers.getContract<Faucet>('Faucet');
 
   bridge = holographBridge.attach(await holograph.getBridge()) as HolographBridge;
   factory = holographFactory.attach(await holograph.getFactory()) as HolographFactory;
