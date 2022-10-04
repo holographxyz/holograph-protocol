@@ -80,7 +80,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     hre.deployments.log('HolographInterfaces supports all currently configured networks');
   } else {
     hre.deployments.log('HolographInterfaces needs to have some network support configured');
-    hre.deployments.log(JSON.stringify(needToMap, undefined, 2));
+    hre.deployments.log(JSON.stringify(needToMap));
     let fromChainType: number[] = [];
     let fromChainId: number[] = [];
     let toChainType: number[] = [];
