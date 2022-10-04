@@ -4,6 +4,8 @@ import Web3 from 'web3';
 import { BytesLike, ContractFactory, Contract } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from '@holographxyz/hardhat-deploy-holographed/types';
+import networks from '../config/networks';
+import { Network, NetworkType } from '../scripts/utils/helpers';
 import {
   LeanHardhatRuntimeEnvironment,
   hreSplit,
@@ -12,6 +14,7 @@ import {
   zeroAddress,
 } from '../scripts/utils/helpers';
 import { ConfigureEvents } from '../scripts/utils/events';
+import { HolographInterfaces } from '../typechain-types';
 
 const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   let { hre, hre2 } = await hreSplit(hre1, global.__companionNetwork);
@@ -26,107 +29,75 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     process.exit();
   };
 
-  const holographInterfaces = await hre.ethers.getContract('HolographInterfaces');
-  // gotta iterate over all supported networks/mappings
-/*
-  const erc721Hash = '0x' + web3.utils.asciiToHex('HolographERC721').substring(2).padStart(64, '0');
-  if ((await holographRegistry.getContractTypeAddress(erc721Hash)) != futureErc721Address) {
-    const erc721Tx = await holographRegistry
-      .setContractTypeAddress(erc721Hash, futureErc721Address, {
-        nonce: await hre.ethers.provider.getTransactionCount(deployer),
-      })
-      .catch(error);
-    hre.deployments.log('Transaction hash:', erc721Tx.hash);
-    await erc721Tx.wait();
-    hre.deployments.log(
-      `Registered "HolographERC721" to: ${await holographRegistry.getContractTypeAddress(erc721Hash)}`
-    );
-  } else {
-    hre.deployments.log('"HolographERC721" is already registered');
-  }
-
-  const futureCxipErc721Address = await genesisDeriveFutureAddress(
+  const futureHolographInterfacesAddress = await genesisDeriveFutureAddress(
     hre,
     salt,
-    'CxipERC721',
+    'HolographInterfaces',
     generateInitCode(['address'], [zeroAddress()])
   );
-  hre.deployments.log('the future "CxipERC721" address is', futureCxipErc721Address);
+  hre.deployments.log('the future "HolographInterfaces" address is', futureHolographInterfacesAddress);
 
-  const cxipErc721Hash = '0x' + web3.utils.asciiToHex('CxipERC721').substring(2).padStart(64, '0');
-  if ((await holographRegistry.getContractTypeAddress(cxipErc721Hash)) != futureCxipErc721Address) {
-    const cxipErc721Tx = await holographRegistry
-      .setContractTypeAddress(cxipErc721Hash, futureCxipErc721Address, {
-        nonce: await hre.ethers.provider.getTransactionCount(deployer),
-      })
-      .catch(error);
-    hre.deployments.log('Transaction hash:', cxipErc721Tx.hash);
-    await cxipErc721Tx.wait();
-    hre.deployments.log(
-      `Registered "CxipERC721" to: ${await holographRegistry.getContractTypeAddress(cxipErc721Hash)}`
-    );
-  } else {
-    hre.deployments.log('"CxipERC721" is already registered');
+  const holographInterfaces: HolographInterfaces = (await hre.ethers.getContractAt(
+    'HolographInterfaces',
+    futureHolographInterfacesAddress
+  )) as HolographInterfaces;
+  const network: Network = networks[hre.networkName];
+  const networkType: NetworkType = network.type;
+  const networkKeys: string[] = Object.keys(networks);
+  const networkValues: Network[] = Object.values(networks);
+  let supportedNetworkNames: string[] = [];
+  let supportedNetworks: Network[] = [];
+  let needToMap: number[][] = [];
+  for (let i = 0, l = networkKeys.length; i < l; i++) {
+    const key: string = networkKeys[i];
+    const value: Network = networkValues[i];
+    if (value.type == networkType) {
+      supportedNetworkNames.push(key);
+      supportedNetworks.push(value);
+      if (value.holographId > 0) {
+        let evm2hlg: number = (await holographInterfaces.getChainId(1, value.chain, 2)).toNumber();
+        if (evm2hlg != value.holographId) {
+          needToMap.push([1, value.chain, 2, value.holographId]);
+        }
+        let hlg2evm: number = (await holographInterfaces.getChainId(2, value.holographId, 1)).toNumber();
+        if (hlg2evm != value.chain) {
+          needToMap.push([2, value.holographId, 1, value.chain]);
+        }
+        if (value.lzId > 0) {
+          let lz2hlg: number = (await holographInterfaces.getChainId(3, value.lzId, 2)).toNumber();
+          if (lz2hlg != value.holographId) {
+            needToMap.push([3, value.lzId, 2, value.holographId]);
+          }
+          let hlg2lz: number = (await holographInterfaces.getChainId(2, value.holographId, 3)).toNumber();
+          if (hlg2lz != value.lzId) {
+            needToMap.push([2, value.holographId, 3, value.lzId]);
+          }
+        }
+      }
+    }
   }
-
-  const futureErc20Address = await genesisDeriveFutureAddress(
-    hre,
-    salt,
-    'HolographERC20',
-    generateInitCode(
-      ['string', 'string', 'uint16', 'uint256', 'string', 'string', 'bool', 'bytes'],
-      [
-        'Holograph ERC20 Token', // contractName
-        'HolographERC20', // contractSymbol
-        18, // contractDecimals
-        ConfigureEvents([]), // eventConfig
-        'HolographERC20', // domainSeperator
-        '1', // domainVersion
-        true, // skipInit
-        '0x', // initCode
-      ]
-    )
-  );
-  hre.deployments.log('the future "HolographERC20" address is', futureErc20Address);
-
-  const erc20Hash = '0x' + web3.utils.asciiToHex('HolographERC20').substring(2).padStart(64, '0');
-  if ((await holographRegistry.getContractTypeAddress(erc20Hash)) != futureErc20Address) {
-    const erc20Tx = await holographRegistry
-      .setContractTypeAddress(erc20Hash, futureErc20Address, {
-        nonce: await hre.ethers.provider.getTransactionCount(deployer),
-      })
-      .catch(error);
-    hre.deployments.log('Transaction hash:', erc20Tx.hash);
-    await erc20Tx.wait();
-    hre.deployments.log(`Registered "HolographERC20" to: ${await holographRegistry.getContractTypeAddress(erc20Hash)}`);
+  if (needToMap.length == 0) {
+    hre.deployments.log('HolographInterfaces supports all currently configured networks');
   } else {
-    hre.deployments.log('"HolographERC20" is already registered');
+    hre.deployments.log('HolographInterfaces needs to have some network support configured');
+    hre.deployments.log(JSON.stringify(needToMap, undefined, 2));
+    let fromChainType: number[] = [];
+    let fromChainId: number[] = [];
+    let toChainType: number[] = [];
+    let toChainId: number[] = [];
+    for (let chainMap of needToMap) {
+      fromChainType.push(chainMap[0]);
+      fromChainId.push(chainMap[1]);
+      toChainType.push(chainMap[2]);
+      toChainId.push(chainMap[3]);
+    }
+    let tx = await holographInterfaces.updateChainIdMaps(fromChainType, fromChainId, toChainType, toChainId, {
+      nonce: await hre.ethers.provider.getTransactionCount(deployer),
+    });
+    await tx.wait();
   }
-
-  const futureRoyaltiesAddress = await genesisDeriveFutureAddress(
-    hre,
-    salt,
-    'PA1D',
-    generateInitCode(['address', 'uint256'], [zeroAddress(), '0x' + '00'.repeat(32)])
-  );
-  hre.deployments.log('the future "PA1D" address is', futureRoyaltiesAddress);
-
-  const pa1dHash = '0x' + web3.utils.asciiToHex('PA1D').substring(2).padStart(64, '0');
-  if ((await holographRegistry.getContractTypeAddress(pa1dHash)) != futureRoyaltiesAddress) {
-    const pa1dTx = await holographRegistry
-      .setContractTypeAddress(pa1dHash, futureRoyaltiesAddress, {
-        nonce: await hre.ethers.provider.getTransactionCount(deployer),
-      })
-      .catch(error);
-    hre.deployments.log('Transaction hash:', pa1dTx.hash);
-    await pa1dTx.wait();
-    hre.deployments.log(`Registered "PA1D" to: ${await holographRegistry.getContractTypeAddress(pa1dHash)}`);
-  } else {
-    hre.deployments.log('"PA1D" is already registered');
-  }
-*/
 };
 
 export default func;
-func.tags = ['RegisterTemplates'];
-func.dependencies = ['HolographGenesis', 'DeploySources', 'DeployERC20', 'DeployERC721', 'DeployERC1155'];
+func.tags = ['ValidateInterfaces'];
+func.dependencies = ['HolographGenesis', 'DeploySources'];

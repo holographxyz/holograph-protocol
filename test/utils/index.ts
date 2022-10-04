@@ -183,6 +183,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
     'ERC20Mock',
     'MockERC721Receiver',
     'RegisterTemplates',
+    'ValidateInterfaces',
     'hToken',
     'HolographUtilityToken',
     'SampleERC20',

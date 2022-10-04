@@ -168,7 +168,9 @@ contract CxipERC721 is ERC721H {
     return
       string(
         abi.encodePacked(
-          IHolographInterfaces(IHolograph(IHolographer(holographer()).getHolograph()).getInterfaces()).getUriPrepend(uriType),
+          IHolographInterfaces(IHolograph(IHolographer(holographer()).getHolograph()).getInterfaces()).getUriPrepend(
+            uriType
+          ),
           _tokenURIs[_tokenId][uriType]
         )
       );

@@ -480,7 +480,12 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
           futureOperatorAddress,
           generateInitCode(
             ['address', 'address', 'address', 'address'],
-            [futureBridgeProxyAddress, futureHolographAddress, futureHolographInterfacesAddress, futureRegistryProxyAddress]
+            [
+              futureBridgeProxyAddress,
+              futureHolographAddress,
+              futureHolographInterfacesAddress,
+              futureRegistryProxyAddress,
+            ]
           ),
         ]
       ),
@@ -689,7 +694,10 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   }
 
   // HolographInterfaces
-  let interfacesDeployedCode: string = await hre.provider.send('eth_getCode', [futureHolographInterfacesAddress, 'latest']);
+  let interfacesDeployedCode: string = await hre.provider.send('eth_getCode', [
+    futureHolographInterfacesAddress,
+    'latest',
+  ]);
   if (interfacesDeployedCode == '0x' || interfacesDeployedCode == '') {
     hre.deployments.log('"HolographInterfaces" bytecode not found, need to deploy"');
     let interfaces = await genesisDeployHelper(
