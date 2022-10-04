@@ -22,7 +22,7 @@ const networks: Networks = {
     tokenName: 'Localhost',
     tokenSymbol: 'LH',
     lzEndpoint: '0x0000000000000000000000000000000000000000'.toLowerCase(),
-    lzId: 0,
+    lzId: 65535,
   },
   localhost2: {
     type: NetworkType.local,
@@ -32,7 +32,7 @@ const networks: Networks = {
     tokenName: 'Localhost 2',
     tokenSymbol: 'LH2',
     lzEndpoint: '0x0000000000000000000000000000000000000000'.toLowerCase(),
-    lzId: 0,
+    lzId: 65534,
   },
   // TEST NETWORKS
   celo_testnet: {
