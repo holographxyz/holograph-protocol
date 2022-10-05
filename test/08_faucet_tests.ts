@@ -13,11 +13,6 @@ describe('Testing the Holograph Faucet', async () => {
   let SAMPLEERC20: SampleERC20;
   let FAUCET: Faucet;
 
-  let DEPLOYER: string;
-  let USER_A: string;
-  let USER_B: string;
-  let USER_C: string;
-
   const DEFAULT_DRIP_AMOUNT = BigNumber.from('100000000000000000000'); // 100 eth
   const DEFAULT_DRIP_COOLDOWN = 24 * 60 * 60; // 24 hours in seconds
   const INITIAL_FAUCET_FUNDS = DEFAULT_DRIP_AMOUNT.mul(20); // enough for 10 drips
@@ -33,12 +28,8 @@ describe('Testing the Holograph Faucet', async () => {
     ERC20 = await l1.holographErc20.attach(l1.sampleErc20Holographer.address);
     SAMPLEERC20 = await l1.sampleErc20.attach(l1.sampleErc20Holographer.address);
     FAUCET = l1.faucet;
-    DEPLOYER = l1.deployer.address;
-    USER_A = l1.wallet1.address;
-    USER_B = l1.wallet2.address;
-    USER_C = l1.wallet3.address;
 
-    await SAMPLEERC20.functions.mint(FAUCET.address, INITIAL_FAUCET_FUNDS);
+    await SAMPLEERC20.mint(FAUCET.address, INITIAL_FAUCET_FUNDS);
   });
 
   after(async () => {});
@@ -49,74 +40,70 @@ describe('Testing the Holograph Faucet', async () => {
 
   describe('Test Initializer', async function () {
     it('should fail initializing already initialized Faucet', async function () {
-      await expect(
-        await FAUCET.functions.init(generateInitCode(['address', 'address'], [DEPLOYER, ERC20.address]))
-      ).to.be.revertedWith(INITIALIZED);
+      await expect(FAUCET.init(generateInitCode(['address', 'address'], [l1.deployer.address, ERC20.address]))).to.be.revertedWith(INITIALIZED);
     });
   });
 
   describe('Default drip flow', async () => {
     it('isAllowedToWithdraw(): User is allowed to withdraw for the first time', async function () {
-      expect(await FAUCET.functions.isAllowedToWithdraw(DEPLOYER)).to.be.true;
+      expect(await FAUCET.isAllowedToWithdraw(l1.deployer.address)).to.be.true;
     });
 
     it('requestTokens(): User can withdraw for the first time', async function () {
-      await FAUCET.functions.requestTokens().then((tx) => tx.wait());
+      await FAUCET.requestTokens();
       dripCount++;
-      expect(await ERC20.functions.balanceOf(DEPLOYER)).to.equal(DEFAULT_DRIP_AMOUNT);
+      expect(await ERC20.balanceOf(l1.deployer.address)).to.equal(DEFAULT_DRIP_AMOUNT);
     });
 
     it('isAllowedToWithdraw(): User is not allowed to withdraw for the second time', async function () {
-      expect(await FAUCET.functions.isAllowedToWithdraw(DEPLOYER)).to.be.false;
+      expect(await FAUCET.isAllowedToWithdraw(l1.deployer.address)).to.be.false;
     });
 
     it('requestTokens(): User cannot withdraw for the second time', async function () {
-      await expect(await FAUCET.functions.requestTokens()).to.be.revertedWith(COME_BACK_LATER)
+      await expect(FAUCET.requestTokens()).to.be.revertedWith(COME_BACK_LATER)
     });
   });
 
   describe('Owner drip flow', async () => {
     it('grantTokens(): Owner can grant tokens', async function () {
-      await FAUCET.functions['grantTokens(address)'](DEPLOYER).then((tx) => tx.wait());
+      await FAUCET['grantTokens(address)'](l1.deployer.address);
       dripCount++;
-      expect(await ERC20.functions.balanceOf(DEPLOYER)).to.equal(DEFAULT_DRIP_AMOUNT.mul(2));
+      expect(await ERC20.balanceOf(l1.deployer.address)).to.equal(DEFAULT_DRIP_AMOUNT.mul(2));
     });
 
     it('grantTokens(): Owner can grant tokens again with arbitrary amount', async function () {
       const factor = 2;
-      await FAUCET.functions['grantTokens(address,uint256)'](DEPLOYER, DEFAULT_DRIP_AMOUNT.mul(factor)).then((tx) =>
-        tx.wait()
-      );
+      await FAUCET['grantTokens(address,uint256)'](l1.deployer.address, DEFAULT_DRIP_AMOUNT.mul(factor));
       dripCount += factor;
-      expect(await ERC20.functions.balanceOf(DEPLOYER)).to.equal(DEFAULT_DRIP_AMOUNT.mul(2 + factor));
+      expect(await ERC20.balanceOf(l1.deployer.address)).to.equal(DEFAULT_DRIP_AMOUNT.mul(2 + factor));
     });
   });
 
   describe('Owner can adjust Withdraw Cooldown', async () => {
     it('isAllowedToWithdraw(): Owner is not allowed to withdraw', async function () {
-      await expect(await FAUCET.functions.isAllowedToWithdraw(DEPLOYER)).to.be.revertedWith(COME_BACK_LATER);
+      expect(await FAUCET.isAllowedToWithdraw(l1.deployer.address)).to.be.false;
     });
 
     it('setWithdrawCooldown(): Owner adjusts Withdraw Cooldown to 0 seconds', async function () {
-      await expect(await FAUCET.functions.setWithdrawCooldown(0)).to.not.reverted;
-      expect(await FAUCET.functions.faucetCooldown).to.equal(0);
+      await expect(FAUCET.setWithdrawCooldown(0)).to.not.be.reverted;
+      expect(await FAUCET.faucetCooldown()).to.equal(0);
     });
 
     it('isAllowedToWithdraw(): Owner is allowed to withdraw', async function () {
-      expect(await FAUCET.functions.isAllowedToWithdraw(DEPLOYER)).to.be.true;
+      expect(await FAUCET.isAllowedToWithdraw(l1.deployer.address)).to.be.true;
     });
 
     it('setWithdrawCooldown(): Owner adjusts Withdraw Cooldown back to 24 hours', async function () {
-      await expect(await FAUCET.functions.setWithdrawCooldown(DEFAULT_DRIP_COOLDOWN)).to.not.reverted;
-      expect(await FAUCET.functions.faucetCooldown).to.equal(DEFAULT_DRIP_COOLDOWN);
+      await expect(FAUCET.setWithdrawCooldown(DEFAULT_DRIP_COOLDOWN)).to.not.be.reverted;
+      expect(await FAUCET.faucetCooldown()).to.equal(DEFAULT_DRIP_COOLDOWN);
     });
 
     it('isAllowedToWithdraw(): Owner is not allowed to withdraw', async function () {
-      await expect(await FAUCET.functions.isAllowedToWithdraw(DEPLOYER)).to.be.revertedWith(COME_BACK_LATER);
+      expect(await FAUCET.isAllowedToWithdraw(l1.deployer.address)).to.be.false;
     });
 
-    it(`setWithdrawCooldown(): User can't adjust Withdraw Cooldown`, async function () {
-      await expect(await FAUCET.connect(USER_A).setWithdrawCooldown(0)).to.revertedWith(NOT_AN_OWNER);
+    it("setWithdrawCooldown(): User can't adjust Withdraw Cooldown", async function () {
+      await expect(FAUCET.connect(l1.wallet1).setWithdrawCooldown(0)).to.revertedWith(NOT_AN_OWNER);
     });
   });
 
@@ -124,41 +111,37 @@ describe('Testing the Holograph Faucet', async () => {
     const factor = 2;
 
     it('setWithdrawAmount(): Owner adjusts Withdraw Amount', async function () {
-      await expect(await FAUCET.functions.setWithdrawAmount(DEFAULT_DRIP_AMOUNT.mul(factor))).to.not.reverted;
-      expect(await FAUCET.functions.faucetDripAmount).to.equal(DEFAULT_DRIP_AMOUNT.mul(factor));
+      await expect(FAUCET.setWithdrawAmount(DEFAULT_DRIP_AMOUNT.mul(factor))).to.not.be.reverted;
+      expect(await FAUCET.faucetDripAmount()).to.equal(DEFAULT_DRIP_AMOUNT.mul(factor));
     });
 
     it('requestTokens(): User can withdraw increased amount', async function () {
-      await FAUCET.connect(USER_A)
-        .functions.requestTokens()
-        .then((tx) => tx.wait());
+      await FAUCET.connect(l1.wallet1).requestTokens();
       dripCount += factor;
-      expect(await ERC20.functions.balanceOf(USER_A)).to.equal(DEFAULT_DRIP_AMOUNT.mul(factor));
+      expect(await ERC20.balanceOf(l1.wallet1.address)).to.equal(DEFAULT_DRIP_AMOUNT.mul(factor));
     });
 
     it('setWithdrawAmount(): Owner adjusts Withdraw Amount back to 100 eth', async function () {
-      await expect(await FAUCET.functions.setWithdrawAmount(DEFAULT_DRIP_AMOUNT)).to.not.reverted;
-      expect(await FAUCET.functions.faucetDripAmount).to.equal(DEFAULT_DRIP_AMOUNT);
+      await expect(FAUCET.setWithdrawAmount(DEFAULT_DRIP_AMOUNT)).to.not.be.reverted;
+      expect(await FAUCET.faucetDripAmount()).to.equal(DEFAULT_DRIP_AMOUNT);
     });
 
     it(`setWithdrawAmount(): User can't adjust Withdraw Amount`, async function () {
-      await expect(await FAUCET.connect(USER_A).setWithdrawAmount(0)).to.revertedWith(NOT_AN_OWNER);
+      await expect(FAUCET.connect(l1.wallet1).setWithdrawAmount(0)).to.revertedWith(NOT_AN_OWNER);
     });
   });
 
   describe('Owner can Withdraw Faucet funds', async () => {
     it('withdrawTokens()', async function () {
-      await FAUCET.functions.withdrawTokens(USER_B, DEFAULT_DRIP_AMOUNT).then((tx) => tx.wait());
+      await FAUCET.withdrawTokens(l1.wallet2.address, DEFAULT_DRIP_AMOUNT);
       dripCount++;
-      expect(await ERC20.functions.balanceOf(USER_B)).to.equal(DEFAULT_DRIP_AMOUNT);
+      expect(await ERC20.balanceOf(l1.wallet2.address)).to.equal(DEFAULT_DRIP_AMOUNT);
     });
 
     it('withdrawAllTokens()', async function () {
-      await FAUCET.functions.withdrawAllTokens(USER_C).then((tx) => tx.wait());
-      expect(await ERC20.functions.balanceOf(USER_C)).to.equal(
-        INITIAL_FAUCET_FUNDS.sub(DEFAULT_DRIP_AMOUNT.mul(dripCount))
-      );
-      expect(await ERC20.functions.balanceOf(FAUCET.address)).to.equal(0);
+      await FAUCET.withdrawAllTokens(l1.wallet3.address);
+      expect(await ERC20.balanceOf(l1.wallet3.address)).to.equal(INITIAL_FAUCET_FUNDS.sub(DEFAULT_DRIP_AMOUNT.mul(dripCount)));
+      expect(await ERC20.balanceOf(FAUCET.address)).to.equal(0);
     });
   });
 });
