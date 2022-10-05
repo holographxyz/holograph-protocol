@@ -34,4 +34,8 @@ interface IHolograph {
   function getTreasury() external view returns (address treasury);
 
   function setTreasury(address treasury) external;
+
+  function getUtilityToken() external view returns (address utilityToken);
+
+  function setUtilityToken(address utilityToken) external;
 }

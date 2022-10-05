@@ -122,6 +122,7 @@ contract Holograph is Admin, Initializable, IHolograph {
   bytes32 constant _operatorSlot = 0x7caba557ad34138fa3b7e43fb574e0e6cc10481c3073e0dffbc560db81b5c60f;
   bytes32 constant _registrySlot = 0xce8e75d5c5227ce29a4ee170160bb296e5dea6934b80a9bd723f7ef1e7c850e7;
   bytes32 constant _treasurySlot = 0x4215e7a38d75164ca078bbd61d0992cdeb1ba16f3b3ead5944966d3e4080e8b6;
+  bytes32 constant _utilityTokenSlot = 0xbf76518d46db472b71aa7677a0908b8016f3dee568415ffa24055f9a670f9c37;
 
   /**
    * @dev Constructor is left empty and init is used instead.
@@ -137,8 +138,9 @@ contract Holograph is Admin, Initializable, IHolograph {
       address interfaces,
       address operator,
       address registry,
-      address treasury
-    ) = abi.decode(data, (uint32, address, address, address, address, address, address));
+      address treasury,
+      address utilityToken
+    ) = abi.decode(data, (uint32, address, address, address, address, address, address, address));
     assembly {
       sstore(_adminSlot, origin())
       sstore(_bridgeSlot, bridge)
@@ -149,6 +151,7 @@ contract Holograph is Admin, Initializable, IHolograph {
       sstore(_operatorSlot, operator)
       sstore(_registrySlot, registry)
       sstore(_treasurySlot, treasury)
+      sstore(_utilityTokenSlot, utilityToken)
     }
     _setInitialized();
     return IInitializable.init.selector;
@@ -253,6 +256,18 @@ contract Holograph is Admin, Initializable, IHolograph {
   function setTreasury(address treasury) external onlyAdmin {
     assembly {
       sstore(_treasurySlot, treasury)
+    }
+  }
+
+  function getUtilityToken() external view returns (address utilityToken) {
+    assembly {
+      utilityToken := sload(_utilityTokenSlot)
+    }
+  }
+
+  function setUtilityToken(address utilityToken) external onlyAdmin {
+    assembly {
+      sstore(_utilityTokenSlot, utilityToken)
     }
   }
 

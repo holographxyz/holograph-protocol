@@ -12,6 +12,8 @@ import {
   StrictECDSA,
   generateErc20Config,
   generateInitCode,
+  Network,
+  NetworkType,
 } from '../scripts/utils/helpers';
 import { HolographERC20Event, ConfigureEvents, AllEventsEnabled } from '../scripts/utils/events';
 import networks from '../config/networks';
@@ -42,14 +44,25 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
 
   const chainId = '0x' + network.holographId.toString(16).padStart(8, '0');
 
+  const currentNetworkType: NetworkType = networks[hre.networkName].type;
+  let primaryNetwork: Network;
+  if (currentNetworkType == NetworkType.local) {
+    primaryNetwork = networks.localhost;
+  } else if (currentNetworkType == NetworkType.testnet) {
+    primaryNetwork = networks.eth_goerli;
+  } else if (currentNetworkType == NetworkType.mainnet) {
+    primaryNetwork = networks.eth_goerli;
+  } else {
+    throw new Error('cannot identity current NetworkType');
+  }
+
   let HLGAddress = await holographRegistry.getUtilityToken();
 
   if (HLGAddress == zeroAddress()) {
     hre.deployments.log('need to deploy "HLG" for chain:', chainId);
 
     let { erc20Config, erc20ConfigHash, erc20ConfigHashBytes } = await generateErc20Config(
-      // we set network to primary token network, for testnets it's goerli
-      networks['eth_goerli'],
+      primaryNetwork,
       deployer.address,
       'HolographUtilityToken',
       'Holograph Utility Token',
@@ -57,7 +70,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       'Holograph Utility Token',
       '1',
       18,
-      AllEventsEnabled(),
+      ConfigureEvents([HolographERC20Event.bridgeIn, HolographERC20Event.bridgeOut]),
       generateInitCode(['address'], [deployer.address]),
       salt
     );

@@ -1277,7 +1277,7 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
         it('token #3 beaming from l1 to l2 should succeed', async function () {
           let data: BytesLike = generateInitCode(
             ['address', 'address', 'uint256'],
-            [l1.deployer.address, l2.deployer.address, thirdNFTl1]
+            [l1.deployer.address, l2.deployer.address, thirdNFTl1.toHexString()]
           );
 
           let estimatedPayload: BytesLike = await l1.bridge
@@ -1316,7 +1316,7 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           gasUsage['#3 bridge from l1'] = gasUsage['#3 bridge from l1'].add(await getGasUsage(l1.hre));
 
           await expect(
-            l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).ownerOf(thirdNFTl1)
+            l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).ownerOf(thirdNFTl1.toHexString())
           ).to.be.revertedWith('ERC721: token does not exist');
 
           await expect(
@@ -1367,7 +1367,7 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
         it('token #3 beaming from l2 to l1 should succeed', async function () {
           let data: BytesLike = generateInitCode(
             ['address', 'address', 'uint256'],
-            [l2.deployer.address, l1.deployer.address, thirdNFTl2]
+            [l2.deployer.address, l1.deployer.address, thirdNFTl2.toHexString()]
           );
 
           let estimatedPayload: BytesLike = await l2.bridge
@@ -1406,7 +1406,7 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           gasUsage['#3 bridge from l2'] = gasUsage['#3 bridge from l2'].add(await getGasUsage(l2.hre));
 
           await expect(
-            l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).ownerOf(thirdNFTl2)
+            l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).ownerOf(thirdNFTl2.toHexString())
           ).to.be.revertedWith('ERC721: token does not exist');
 
           await expect(
@@ -1449,9 +1449,9 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
 
           gasUsage['#3 bridge from l2'] = gasUsage['#3 bridge from l2'].add(await getGasUsage(l1.hre));
 
-          expect(await l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).ownerOf(thirdNFTl2)).to.equal(
-            l1.deployer.address
-          );
+          expect(
+            await l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).ownerOf(thirdNFTl2.toHexString())
+          ).to.equal(l1.deployer.address);
         });
 
         /*

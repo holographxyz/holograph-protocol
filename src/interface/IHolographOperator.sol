@@ -29,22 +29,6 @@ interface IHolographOperator {
     bytes calldata _payload
   ) external payable;
 
-  function getLZEndpoint() external view returns (address lZEndpoint);
-
-  function setLZEndpoint(address lZEndpoint) external;
-
-  function getBridge() external view returns (address bridge);
-
-  function setBridge(address bridge) external;
-
-  function getInterfaces() external view returns (address interfaces);
-
-  function setInterfaces(address interfaces) external;
-
-  function getRegistry() external view returns (address registry);
-
-  function setRegistry(address registry) external;
-
   function getJobDetails(bytes32 jobHash) external view returns (OperatorJob memory);
 
   function getPodOperators(uint256 pod) external view returns (address[] memory operators);
@@ -66,4 +50,24 @@ interface IHolographOperator {
     uint256 amount,
     uint256 pod
   ) external;
+
+  function getLZEndpoint() external view returns (address lZEndpoint);
+
+  function setLZEndpoint(address lZEndpoint) external;
+
+  function getBridge() external view returns (address bridge);
+
+  function setBridge(address bridge) external;
+
+  function getInterfaces() external view returns (address interfaces);
+
+  function setInterfaces(address interfaces) external;
+
+  function getRegistry() external view returns (address registry);
+
+  function setRegistry(address registry) external;
+
+  function getUtilityToken() external view returns (address utilityToken);
+
+  function setUtilityToken(address utilityToken) external;
 }

@@ -26,6 +26,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
   bytes32 constant _jobNonceSlot = precomputeslot("eip1967.Holograph.jobNonce");
   bytes32 constant _lZEndpointSlot = precomputeslot("eip1967.Holograph.lZEndpoint");
   bytes32 constant _registrySlot = precomputeslot("eip1967.Holograph.registry");
+  bytes32 constant _utilityTokenSlot = precomputeslot("eip1967.Holograph.utilityToken");
 
   /**
    * @dev Internal number (in seconds), used for defining a window for operator to execute the job.
@@ -123,12 +124,16 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
 
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
-    (address bridge, address interfaces, address registry) = abi.decode(data, (address, address, address));
+    (address bridge, address interfaces, address registry, address utilityToken) = abi.decode(
+      data,
+      (address, address, address, address)
+    );
     assembly {
       sstore(_adminSlot, origin())
       sstore(_bridgeSlot, bridge)
       sstore(_interfacesSlot, interfaces)
       sstore(_registrySlot, registry)
+      sstore(_utilityTokenSlot, utilityToken)
     }
     _blockTime = 10; // 10 blocks allowed for execution
     unchecked {
@@ -324,54 +329,6 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     );
   }
 
-  function getLZEndpoint() external view returns (address lZEndpoint) {
-    assembly {
-      lZEndpoint := sload(_lZEndpointSlot)
-    }
-  }
-
-  function setLZEndpoint(address lZEndpoint) external onlyAdmin {
-    assembly {
-      sstore(_lZEndpointSlot, lZEndpoint)
-    }
-  }
-
-  function getBridge() external view returns (address bridge) {
-    assembly {
-      bridge := sload(_bridgeSlot)
-    }
-  }
-
-  function setBridge(address bridge) external onlyAdmin {
-    assembly {
-      sstore(_bridgeSlot, bridge)
-    }
-  }
-
-  function getInterfaces() external view returns (address interfaces) {
-    assembly {
-      interfaces := sload(_interfacesSlot)
-    }
-  }
-
-  function setInterfaces(address interfaces) external onlyAdmin {
-    assembly {
-      sstore(_interfacesSlot, interfaces)
-    }
-  }
-
-  function getRegistry() external view returns (address registry) {
-    assembly {
-      registry := sload(_registrySlot)
-    }
-  }
-
-  function setRegistry(address registry) external onlyAdmin {
-    assembly {
-      sstore(_registrySlot, registry)
-    }
-  }
-
   function getJobDetails(bytes32 jobHash) public view returns (OperatorJob memory) {
     uint256 packed = _operatorJobs[jobHash];
     return
@@ -426,23 +383,6 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
 
   // add top-up option
 
-  function unbondUtilityToken(address operator, address recipient) external {
-    require(_bondedOperators[operator] != 0, "HOLOGRAPH: operator not bonded");
-    if (msg.sender != operator) {
-      require(_isContract(operator), "HOLOGRAPH: operator not contract");
-      // check that operator is ownable contract
-      require(Ownable(operator).isOwner(msg.sender), "HOLOGRAPH: sender not owner");
-    }
-    address utilityToken = IHolographRegistry(_registry()).getUtilityToken();
-    uint256 amount = _bondedAmounts[operator];
-    // here we subtract our fee for unbonding
-    require(ERC20Holograph(utilityToken).transfer(recipient, amount), "HOLOGRAPH: token transfer failed");
-    //// we need to track operator pod index for easy removal
-    _popOperator(_bondedOperators[operator] - 1, _operatorPodIndex[operator]);
-    _bondedOperators[operator] = 0;
-    _bondedAmounts[operator] = 0;
-  }
-
   function bondUtilityToken(
     address operator,
     uint256 amount,
@@ -459,16 +399,91 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
         }
       }
       require(_operatorPods[pod - 1].length < type(uint16).max, "HOLOGRAPH: too many operators");
-      address utilityToken = IHolographRegistry(_registry()).getUtilityToken();
       // we extract utility token amount from msg sender
       require(
-        ERC20Holograph(utilityToken).transferFrom(msg.sender, address(this), amount),
+        ERC20Holograph(_utilityToken()).transferFrom(msg.sender, address(this), amount),
         "HOLOGRAPH: token transfer failed"
       );
       _operatorPods[pod - 1].push(operator);
       _operatorPodIndex[operator] = _operatorPods[pod - 1].length - 1;
       _bondedOperators[operator] = pod;
       _bondedAmounts[operator] = amount;
+    }
+  }
+
+  function unbondUtilityToken(address operator, address recipient) external {
+    require(_bondedOperators[operator] != 0, "HOLOGRAPH: operator not bonded");
+    if (msg.sender != operator) {
+      require(_isContract(operator), "HOLOGRAPH: operator not contract");
+      // check that operator is ownable contract
+      require(Ownable(operator).isOwner(msg.sender), "HOLOGRAPH: sender not owner");
+    }
+    uint256 amount = _bondedAmounts[operator];
+    // here we subtract our fee for unbonding
+    require(_utilityToken().transfer(recipient, amount), "HOLOGRAPH: token transfer failed");
+    //// we need to track operator pod index for easy removal
+    _popOperator(_bondedOperators[operator] - 1, _operatorPodIndex[operator]);
+    _bondedOperators[operator] = 0;
+    _bondedAmounts[operator] = 0;
+  }
+
+  function getLZEndpoint() external view returns (address lZEndpoint) {
+    assembly {
+      lZEndpoint := sload(_lZEndpointSlot)
+    }
+  }
+
+  function setLZEndpoint(address lZEndpoint) external onlyAdmin {
+    assembly {
+      sstore(_lZEndpointSlot, lZEndpoint)
+    }
+  }
+
+  function getBridge() external view returns (address bridge) {
+    assembly {
+      bridge := sload(_bridgeSlot)
+    }
+  }
+
+  function setBridge(address bridge) external onlyAdmin {
+    assembly {
+      sstore(_bridgeSlot, bridge)
+    }
+  }
+
+  function getInterfaces() external view returns (address interfaces) {
+    assembly {
+      interfaces := sload(_interfacesSlot)
+    }
+  }
+
+  function setInterfaces(address interfaces) external onlyAdmin {
+    assembly {
+      sstore(_interfacesSlot, interfaces)
+    }
+  }
+
+  function getRegistry() external view returns (address registry) {
+    assembly {
+      registry := sload(_registrySlot)
+    }
+  }
+
+  function setRegistry(address registry) external onlyAdmin {
+    assembly {
+      sstore(_registrySlot, registry)
+    }
+  }
+
+  function getUtilityToken() external view returns (address utilityToken) {
+    assembly {
+      utilityToken := sload(_utilityTokenSlot)
+    }
+  }
+
+  function setUtilityToken(address utilityToken) external onlyAdmin {
+    assembly {
+      sstore(_utilityTokenSlot, utilityToken)
     }
   }
 
@@ -487,6 +502,12 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
   function _registry() private view returns (address registry) {
     assembly {
       registry := sload(_registrySlot)
+    }
+  }
+
+  function _utilityToken() private view returns (ERC20Holograph utilityToken) {
+    assembly {
+      utilityToken := sload(_utilityTokenSlot)
     }
   }
 
