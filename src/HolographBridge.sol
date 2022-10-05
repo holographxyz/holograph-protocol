@@ -27,7 +27,6 @@ import "./struct/Verification.sol";
 contract HolographBridge is Admin, Initializable, IHolographBridge {
   bytes32 constant _factorySlot = precomputeslot("eip1967.Holograph.factory");
   bytes32 constant _holographSlot = precomputeslot("eip1967.Holograph.holograph");
-  bytes32 constant _interfacesSlot = precomputeslot("eip1967.Holograph.interfaces");
   bytes32 constant _jobNonceSlot = precomputeslot("eip1967.Holograph.jobNonce");
   bytes32 constant _operatorSlot = precomputeslot("eip1967.Holograph.operator");
   bytes32 constant _registrySlot = precomputeslot("eip1967.Holograph.registry");
@@ -47,15 +46,14 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
 
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
-    (address factory, address holograph, address interfaces, address operator, address registry) = abi.decode(
+    (address factory, address holograph, address operator, address registry) = abi.decode(
       data,
-      (address, address, address, address, address)
+      (address, address, address, address)
     );
     assembly {
       sstore(_adminSlot, origin())
       sstore(_factorySlot, factory)
       sstore(_holographSlot, holograph)
-      sstore(_interfacesSlot, interfaces)
       sstore(_operatorSlot, operator)
       sstore(_registrySlot, registry)
     }
@@ -198,18 +196,6 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     }
   }
 
-  function getInterfaces() external view returns (address interfaces) {
-    assembly {
-      interfaces := sload(_interfacesSlot)
-    }
-  }
-
-  function setInterfaces(address interfaces) external onlyAdmin {
-    assembly {
-      sstore(_interfacesSlot, interfaces)
-    }
-  }
-
   function getJobNonce() external view returns (uint256 jobNonce) {
     assembly {
       jobNonce := sload(_jobNonceSlot)
@@ -249,12 +235,6 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
   function _holograph() private view returns (IHolograph holograph) {
     assembly {
       holograph := sload(_holographSlot)
-    }
-  }
-
-  function _interfaces() private view returns (IHolographInterfaces interfaces) {
-    assembly {
-      interfaces := sload(_interfacesSlot)
     }
   }
 

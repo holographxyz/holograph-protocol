@@ -77,8 +77,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     salt,
     'HolographBridge',
     generateInitCode(
-      ['address', 'address', 'address', 'address', 'address'],
-      [zeroAddress(), zeroAddress(), zeroAddress(), zeroAddress(), zeroAddress()]
+      ['address', 'address', 'address', 'address'],
+      [zeroAddress(), zeroAddress(), zeroAddress(), zeroAddress()]
     )
   );
   hre.deployments.log('the future "HolographBridge" address is', futureBridgeAddress);
@@ -285,8 +285,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       salt,
       'HolographBridge',
       generateInitCode(
-        ['address', 'address', 'address', 'address', 'address'],
-        [zeroAddress(), zeroAddress(), zeroAddress(), zeroAddress(), zeroAddress()]
+        ['address', 'address', 'address', 'address'],
+        [zeroAddress(), zeroAddress(), zeroAddress(), zeroAddress()]
       ),
       futureBridgeAddress
     );
@@ -307,14 +307,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
         [
           futureBridgeAddress,
           generateInitCode(
-            ['address', 'address', 'address', 'address', 'address'],
-            [
-              futureFactoryProxyAddress,
-              futureHolographAddress,
-              futureHolographInterfacesAddress,
-              futureOperatorProxyAddress,
-              futureRegistryProxyAddress,
-            ]
+            ['address', 'address', 'address', 'address'],
+            [futureFactoryProxyAddress, futureHolographAddress, futureOperatorProxyAddress, futureRegistryProxyAddress]
           ),
         ]
       ),
@@ -347,13 +341,6 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     if ((await holographBridge.getHolograph()) != futureHolographAddress) {
       hre.deployments.log('Updating Holograph reference');
       let tx = await holographBridge.setHolograph(futureHolographAddress, {
-        nonce: await hre.ethers.provider.getTransactionCount(deployer),
-      });
-      await tx.wait();
-    }
-    if ((await holographBridge.getInterfaces()) != futureHolographInterfacesAddress) {
-      hre.deployments.log('Updating HolographInterfaces reference');
-      let tx = await holographBridge.setInterfaces(futureHolographInterfacesAddress, {
         nonce: await hre.ethers.provider.getTransactionCount(deployer),
       });
       await tx.wait();

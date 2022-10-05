@@ -43,10 +43,6 @@ interface IHolographBridge {
 
   function setHolograph(address holograph) external;
 
-  function getInterfaces() external view returns (address interfaces);
-
-  function setInterfaces(address interfaces) external;
-
   function getJobNonce() external view returns (uint256 jobNonce);
 
   function getOperator() external view returns (address operator);

@@ -126,7 +126,6 @@ import "./struct/Verification.sol";
 contract HolographBridge is Admin, Initializable, IHolographBridge {
   bytes32 constant _factorySlot = 0xa49f20855ba576e09d13c8041c8039fa655356ea27f6c40f1ec46a4301cd5b23;
   bytes32 constant _holographSlot = 0xb4107f746e9496e8452accc7de63d1c5e14c19f510932daa04077cd49e8bd77a;
-  bytes32 constant _interfacesSlot = 0xbd3084b8c09da87ad159c247a60e209784196be2530cecbbd8f337fdd1848827;
   bytes32 constant _jobNonceSlot = 0x1cda64803f3b43503042e00863791e8d996666552d5855a78d53ee1dd4b3286d;
   bytes32 constant _operatorSlot = 0x7caba557ad34138fa3b7e43fb574e0e6cc10481c3073e0dffbc560db81b5c60f;
   bytes32 constant _registrySlot = 0xce8e75d5c5227ce29a4ee170160bb296e5dea6934b80a9bd723f7ef1e7c850e7;
@@ -146,15 +145,14 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
 
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
-    (address factory, address holograph, address interfaces, address operator, address registry) = abi.decode(
+    (address factory, address holograph, address operator, address registry) = abi.decode(
       data,
-      (address, address, address, address, address)
+      (address, address, address, address)
     );
     assembly {
       sstore(_adminSlot, origin())
       sstore(_factorySlot, factory)
       sstore(_holographSlot, holograph)
-      sstore(_interfacesSlot, interfaces)
       sstore(_operatorSlot, operator)
       sstore(_registrySlot, registry)
     }
@@ -297,18 +295,6 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     }
   }
 
-  function getInterfaces() external view returns (address interfaces) {
-    assembly {
-      interfaces := sload(_interfacesSlot)
-    }
-  }
-
-  function setInterfaces(address interfaces) external onlyAdmin {
-    assembly {
-      sstore(_interfacesSlot, interfaces)
-    }
-  }
-
   function getJobNonce() external view returns (uint256 jobNonce) {
     assembly {
       jobNonce := sload(_jobNonceSlot)
@@ -348,12 +334,6 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
   function _holograph() private view returns (IHolograph holograph) {
     assembly {
       holograph := sload(_holographSlot)
-    }
-  }
-
-  function _interfaces() private view returns (IHolographInterfaces interfaces) {
-    assembly {
-      interfaces := sload(_interfacesSlot)
     }
   }
 
