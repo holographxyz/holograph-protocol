@@ -40,7 +40,9 @@ describe('Testing the Holograph Faucet', async () => {
 
   describe('Test Initializer', async function () {
     it('should fail initializing already initialized Faucet', async function () {
-      await expect(FAUCET.init(generateInitCode(['address', 'address'], [l1.deployer.address, ERC20.address]))).to.be.revertedWith(INITIALIZED);
+      await expect(
+        FAUCET.init(generateInitCode(['address', 'address'], [l1.deployer.address, ERC20.address]))
+      ).to.be.revertedWith(INITIALIZED);
     });
   });
 
@@ -60,7 +62,7 @@ describe('Testing the Holograph Faucet', async () => {
     });
 
     it('requestTokens(): User cannot withdraw for the second time', async function () {
-      await expect(FAUCET.requestTokens()).to.be.revertedWith(COME_BACK_LATER)
+      await expect(FAUCET.requestTokens()).to.be.revertedWith(COME_BACK_LATER);
     });
   });
 
@@ -140,7 +142,9 @@ describe('Testing the Holograph Faucet', async () => {
 
     it('withdrawAllTokens()', async function () {
       await FAUCET.withdrawAllTokens(l1.wallet3.address);
-      expect(await ERC20.balanceOf(l1.wallet3.address)).to.equal(INITIAL_FAUCET_FUNDS.sub(DEFAULT_DRIP_AMOUNT.mul(dripCount)));
+      expect(await ERC20.balanceOf(l1.wallet3.address)).to.equal(
+        INITIAL_FAUCET_FUNDS.sub(DEFAULT_DRIP_AMOUNT.mul(dripCount))
+      );
       expect(await ERC20.balanceOf(FAUCET.address)).to.equal(0);
     });
   });
