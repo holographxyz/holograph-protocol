@@ -50,7 +50,7 @@ describe('Testing the Holograph Faucet', async () => {
   describe('Test Initializer', async function () {
     it('should fail initializing already initialized Faucet', async function () {
       await expect(
-        FAUCET.init(generateInitCode(['address', 'address'], [DEPLOYER, ERC20.address]))
+        await FAUCET.functions.init(generateInitCode(['address', 'address'], [DEPLOYER, ERC20.address]))
       ).to.be.revertedWith(INITIALIZED);
     });
   });
@@ -71,7 +71,7 @@ describe('Testing the Holograph Faucet', async () => {
     });
 
     it('requestTokens(): User cannot withdraw for the second time', async function () {
-      await expect(FAUCET.functions.requestTokens()).to.be.revertedWith(COME_BACK_LATER);
+      await expect(await FAUCET.functions.requestTokens()).to.be.revertedWith(COME_BACK_LATER)
     });
   });
 
@@ -94,12 +94,12 @@ describe('Testing the Holograph Faucet', async () => {
 
   describe('Owner can adjust Withdraw Cooldown', async () => {
     it('isAllowedToWithdraw(): Owner is not allowed to withdraw', async function () {
-      await expect(FAUCET.functions.isAllowedToWithdraw(DEPLOYER)).to.be.revertedWith(COME_BACK_LATER);
+      await expect(await FAUCET.functions.isAllowedToWithdraw(DEPLOYER)).to.be.revertedWith(COME_BACK_LATER);
     });
 
     it('setWithdrawCooldown(): Owner adjusts Withdraw Cooldown to 0 seconds', async function () {
-      expect(await FAUCET.functions.setWithdrawCooldown(0)).to.not.reverted;
-      expect(await FAUCET.faucetCooldown).to.equal(0);
+      await expect(await FAUCET.functions.setWithdrawCooldown(0)).to.not.reverted;
+      expect(await FAUCET.functions.faucetCooldown).to.equal(0);
     });
 
     it('isAllowedToWithdraw(): Owner is allowed to withdraw', async function () {
@@ -107,16 +107,16 @@ describe('Testing the Holograph Faucet', async () => {
     });
 
     it('setWithdrawCooldown(): Owner adjusts Withdraw Cooldown back to 24 hours', async function () {
-      expect(await FAUCET.functions.setWithdrawCooldown(DEFAULT_DRIP_COOLDOWN)).to.not.reverted;
-      expect(await FAUCET.faucetCooldown).to.equal(DEFAULT_DRIP_COOLDOWN);
+      await expect(await FAUCET.functions.setWithdrawCooldown(DEFAULT_DRIP_COOLDOWN)).to.not.reverted;
+      expect(await FAUCET.functions.faucetCooldown).to.equal(DEFAULT_DRIP_COOLDOWN);
     });
 
     it('isAllowedToWithdraw(): Owner is not allowed to withdraw', async function () {
-      await expect(FAUCET.functions.isAllowedToWithdraw(DEPLOYER)).to.be.revertedWith(COME_BACK_LATER);
+      await expect(await FAUCET.functions.isAllowedToWithdraw(DEPLOYER)).to.be.revertedWith(COME_BACK_LATER);
     });
 
     it(`setWithdrawCooldown(): User can't adjust Withdraw Cooldown`, async function () {
-      await expect(FAUCET.connect(USER_A).setWithdrawCooldown(0)).to.revertedWith(NOT_AN_OWNER);
+      await expect(await FAUCET.connect(USER_A).setWithdrawCooldown(0)).to.revertedWith(NOT_AN_OWNER);
     });
   });
 
@@ -124,8 +124,8 @@ describe('Testing the Holograph Faucet', async () => {
     const factor = 2;
 
     it('setWithdrawAmount(): Owner adjusts Withdraw Amount', async function () {
-      expect(await FAUCET.functions.setWithdrawAmount(DEFAULT_DRIP_AMOUNT.mul(factor))).to.not.reverted;
-      expect(await FAUCET.faucetDripAmount).to.equal(DEFAULT_DRIP_AMOUNT.mul(factor));
+      await expect(await FAUCET.functions.setWithdrawAmount(DEFAULT_DRIP_AMOUNT.mul(factor))).to.not.reverted;
+      expect(await FAUCET.functions.faucetDripAmount).to.equal(DEFAULT_DRIP_AMOUNT.mul(factor));
     });
 
     it('requestTokens(): User can withdraw increased amount', async function () {
@@ -137,24 +137,24 @@ describe('Testing the Holograph Faucet', async () => {
     });
 
     it('setWithdrawAmount(): Owner adjusts Withdraw Amount back to 100 eth', async function () {
-      expect(await FAUCET.functions.setWithdrawAmount(DEFAULT_DRIP_AMOUNT)).to.not.reverted;
-      expect(await FAUCET.faucetDripAmount).to.equal(DEFAULT_DRIP_AMOUNT);
+      await expect(await FAUCET.functions.setWithdrawAmount(DEFAULT_DRIP_AMOUNT)).to.not.reverted;
+      expect(await FAUCET.functions.faucetDripAmount).to.equal(DEFAULT_DRIP_AMOUNT);
     });
 
     it(`setWithdrawAmount(): User can't adjust Withdraw Amount`, async function () {
-      await expect(FAUCET.connect(USER_A).functions.setWithdrawAmount(0)).to.revertedWith(NOT_AN_OWNER);
+      await expect(await FAUCET.connect(USER_A).setWithdrawAmount(0)).to.revertedWith(NOT_AN_OWNER);
     });
   });
 
   describe('Owner can Withdraw Faucet funds', async () => {
-    it('withdrawTokens(address,uint256)', async function () {
-      await FAUCET.functions['withdrawTokens(address,uint256)'](USER_B, DEFAULT_DRIP_AMOUNT).then((tx) => tx.wait());
+    it('withdrawTokens()', async function () {
+      await FAUCET.functions.withdrawTokens(USER_B, DEFAULT_DRIP_AMOUNT).then((tx) => tx.wait());
       dripCount++;
       expect(await ERC20.functions.balanceOf(USER_B)).to.equal(DEFAULT_DRIP_AMOUNT);
     });
 
-    it('withdrawTokens(address)', async function () {
-      await FAUCET.functions['withdrawTokens(address)'](USER_C).then((tx) => tx.wait());
+    it('withdrawAllTokens()', async function () {
+      await FAUCET.functions.withdrawAllTokens(USER_C).then((tx) => tx.wait());
       expect(await ERC20.functions.balanceOf(USER_C)).to.equal(
         INITIAL_FAUCET_FUNDS.sub(DEFAULT_DRIP_AMOUNT.mul(dripCount))
       );

@@ -53,11 +53,12 @@ contract Faucet is Initializable {
     token.transfer(address_, amountWei_);
   }
 
-  /// @notice Withdraw funds from the faucet.
-  function withdrawTokens(address receiver_) external onlyOwner {
+  /// @notice Withdraw all funds from the faucet.
+  function withdrawAllTokens(address receiver_) external onlyOwner {
     token.transfer(receiver_, token.balanceOf(address(this)));
   }
 
+  /// @notice Withdraw amount of funds from the faucet. Amount is in wei.
   function withdrawTokens(address receiver_, uint256 amountWei_) external onlyOwner {
     require(token.balanceOf(address(this)) >= amountWei_, "Insufficient funds");
     token.transfer(receiver_, amountWei_);
