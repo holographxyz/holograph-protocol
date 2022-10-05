@@ -117,7 +117,10 @@ import "./struct/DeploymentConfig.sol";
 import "./struct/Verification.sol";
 
 /**
- * @dev This smart contract contains the actual core treasury logic.
+ * @title Holograph Treasury
+ * @author https://github.com/holographxyz
+ * @notice This contract holds and manages the protocol treasury.
+ * @dev As of now this is an empty zero logic contract. Still a work in progress.
  */
 contract HolographTreasury is Admin, Initializable, IHolographTreasury {
   bytes32 constant _bridgeSlot = 0xeb87cbb21687feb327e3d58c6c16d552231d12c7a0e8115042a4165fac8a77f9;
@@ -130,6 +133,10 @@ contract HolographTreasury is Admin, Initializable, IHolographTreasury {
    */
   constructor() {}
 
+  /**
+   * @notice Used internally to initialize the contract instead of through a constructor
+   * @dev This function is called by the deployer/factory when creating a contract.
+   */
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
     (address bridge, address holograph, address operator, address registry) = abi.decode(

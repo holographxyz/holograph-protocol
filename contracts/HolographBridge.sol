@@ -114,7 +114,10 @@ import "./interface/IHolographRegistry.sol";
 import "./interface/IInitializable.sol";
 
 /**
- * @dev This smart contract contains the actual core bridging logic.
+ * @title Holograph Bridge
+ * @author https://github.com/holographxyz
+ * @notice Beam your holographable assets through this contract.
+ * @dev The contract abstracts all the complexities of making bridge requests and uses a universal interface to bridge any type of holographable assets.
  */
 contract HolographBridge is Admin, Initializable, IHolographBridge {
   bytes32 constant _factorySlot = 0xa49f20855ba576e09d13c8041c8039fa655356ea27f6c40f1ec46a4301cd5b23;
@@ -124,7 +127,7 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
   bytes32 constant _registrySlot = 0xce8e75d5c5227ce29a4ee170160bb296e5dea6934b80a9bd723f7ef1e7c850e7;
 
   /**
-   * @dev Allows calls only from HolographOperator contract.
+   * @dev Allow calls only from HolographOperator contract.
    */
   modifier onlyOperator() {
     require(msg.sender == address(_operator()), "HOLOGRAPH: operator only call");
@@ -136,6 +139,10 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
    */
   constructor() {}
 
+  /**
+   * @notice Used internally to initialize the contract instead of through a constructor
+   * @dev This function is called by the deployer/factory when creating a contract.
+   */
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
     (address factory, address holograph, address operator, address registry) = abi.decode(

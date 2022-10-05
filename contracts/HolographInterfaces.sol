@@ -267,43 +267,10 @@ contract HolographInterfaces is Admin, Initializable {
     _supportedInterfaces[InterfaceType.PA1D][IPA1D.getTokenAddress.selector] = true;
   }
 
-  function getUriPrepend(TokenUriType uriType) external view returns (string memory prepend) {
-    prepend = _prependURI[uriType];
-  }
-
-  function updateUriPrepend(TokenUriType uriType, string calldata prepend) external onlyAdmin {
-    _prependURI[uriType] = prepend;
-  }
-
-  function getChainId(
-    ChainIdType fromChainType,
-    uint256 fromChainId,
-    ChainIdType toChainType
-  ) external view returns (uint256 toChainId) {
-    return _chainIdMap[fromChainType][fromChainId][toChainType];
-  }
-
-  function updateChainIdMap(
-    ChainIdType fromChainType,
-    uint256 fromChainId,
-    ChainIdType toChainType,
-    uint256 toChainId
-  ) external onlyAdmin {
-    _chainIdMap[fromChainType][fromChainId][toChainType] = toChainId;
-  }
-
-  function updateChainIdMaps(
-    ChainIdType[] calldata fromChainType,
-    uint256[] calldata fromChainId,
-    ChainIdType[] calldata toChainType,
-    uint256[] calldata toChainId
-  ) external onlyAdmin {
-    uint256 length = fromChainType.length;
-    for (uint256 i = 0; i < length; i++) {
-      _chainIdMap[fromChainType[i]][fromChainId[i]][toChainType[i]] = toChainId[i];
-    }
-  }
-
+  /**
+   * @notice Used internally to initialize the contract instead of through a constructor
+   * @dev This function is called by the deployer/factory when creating a contract.
+   */
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
     address contractAdmin = abi.decode(data, (address));
@@ -346,6 +313,49 @@ contract HolographInterfaces is Admin, Initializable {
       );
   }
 
+  function getUriPrepend(TokenUriType uriType) external view returns (string memory prepend) {
+    prepend = _prependURI[uriType];
+  }
+
+  function updateUriPrepend(TokenUriType uriType, string calldata prepend) external onlyAdmin {
+    _prependURI[uriType] = prepend;
+  }
+
+  function updateUriPrepends(TokenUriType[] calldata uriTypes, string[] calldata prepends) external onlyAdmin {
+    for (uint256 i = 0; i < uriTypes.length; i++) {
+      _prependURI[uriTypes[i]] = prepends[i];
+    }
+  }
+
+  function getChainId(
+    ChainIdType fromChainType,
+    uint256 fromChainId,
+    ChainIdType toChainType
+  ) external view returns (uint256 toChainId) {
+    return _chainIdMap[fromChainType][fromChainId][toChainType];
+  }
+
+  function updateChainIdMap(
+    ChainIdType fromChainType,
+    uint256 fromChainId,
+    ChainIdType toChainType,
+    uint256 toChainId
+  ) external onlyAdmin {
+    _chainIdMap[fromChainType][fromChainId][toChainType] = toChainId;
+  }
+
+  function updateChainIdMaps(
+    ChainIdType[] calldata fromChainType,
+    uint256[] calldata fromChainId,
+    ChainIdType[] calldata toChainType,
+    uint256[] calldata toChainId
+  ) external onlyAdmin {
+    uint256 length = fromChainType.length;
+    for (uint256 i = 0; i < length; i++) {
+      _chainIdMap[fromChainType[i]][fromChainId[i]][toChainType[i]] = toChainId[i];
+    }
+  }
+
   function supportsInterface(InterfaceType interfaceType, bytes4 interfaceId) external view returns (bool) {
     return _supportedInterfaces[interfaceType][interfaceId];
   }
@@ -358,7 +368,7 @@ contract HolographInterfaces is Admin, Initializable {
     _supportedInterfaces[interfaceType][interfaceId] = supported;
   }
 
-  function updateInterfaceBatch(
+  function updateInterfaces(
     InterfaceType interfaceType,
     bytes4[] calldata interfaceIds,
     bool supported

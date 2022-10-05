@@ -15,21 +15,17 @@ interface IHolographInterfaces {
     address contractAddress
   ) external pure returns (string memory);
 
-  function supportsInterface(InterfaceType interfaceType, bytes4 interfaceId) external view returns (bool);
+  function getUriPrepend(TokenUriType uriType) external view returns (string memory prepend);
 
-  function updateInterface(
-    InterfaceType interfaceType,
-    bytes4 interfaceId,
-    bool supported
-  ) external;
+  function updateUriPrepend(TokenUriType uriType, string calldata prepend) external;
+
+  function updateUriPrepends(TokenUriType[] calldata uriTypes, string[] calldata prepends) external;
 
   function getChainId(
     ChainIdType fromChainType,
     uint256 fromChainId,
     ChainIdType toChainType
   ) external view returns (uint256 toChainId);
-
-  function getUriPrepend(TokenUriType uriType) external view returns (string memory prepend);
 
   function updateChainIdMap(
     ChainIdType fromChainType,
@@ -43,5 +39,19 @@ interface IHolographInterfaces {
     uint256[] calldata fromChainId,
     ChainIdType[] calldata toChainType,
     uint256[] calldata toChainId
+  ) external;
+
+  function supportsInterface(InterfaceType interfaceType, bytes4 interfaceId) external view returns (bool);
+
+  function updateInterface(
+    InterfaceType interfaceType,
+    bytes4 interfaceId,
+    bool supported
+  ) external;
+
+  function updateInterfaces(
+    InterfaceType interfaceType,
+    bytes4[] calldata interfaceIds,
+    bool supported
   ) external;
 }

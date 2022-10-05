@@ -154,7 +154,8 @@ contract HolographRegistry is Admin, Initializable, IHolographRegistry {
   constructor() {}
 
   /**
-   * @dev An array of initially reserved contract types for admin only to set.
+   * @notice Used internally to initialize the contract instead of through a constructor
+   * @dev This function is called by the deployer/factory when creating a contract.
    */
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");

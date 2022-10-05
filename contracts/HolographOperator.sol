@@ -197,6 +197,9 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     _;
   }
 
+  /**
+   * @dev Allow calls only from LayerZero endpoint contract.
+   */
   modifier onlyLZ() {
     assembly {
       // check if lzEndpoint
@@ -217,10 +220,15 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
   }
 
   /**
-   * @dev Constructor is left empty and init is used instead.
+   * @notice Used internally to initialize the contract instead of through a constructor
+   * @dev This function is called by the deployer/factory when creating a contract.
    */
   constructor() {}
 
+  /**
+   * @notice Used internally to initialize the contract instead of through a constructor
+   * @dev This function is called by the deployer/factory when creating a contract.
+   */
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
     (address bridge, address interfaces, address registry, address utilityToken) = abi.decode(
@@ -499,10 +507,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
       }
       require(_operatorPods[pod - 1].length < type(uint16).max, "HOLOGRAPH: too many operators");
       // we extract utility token amount from msg sender
-      require(
-        ERC20Holograph(_utilityToken()).transferFrom(msg.sender, address(this), amount),
-        "HOLOGRAPH: token transfer failed"
-      );
+      require(_utilityToken().transferFrom(msg.sender, address(this), amount), "HOLOGRAPH: token transfer failed");
       _operatorPods[pod - 1].push(operator);
       _operatorPodIndex[operator] = _operatorPods[pod - 1].length - 1;
       _bondedOperators[operator] = pod;

@@ -292,7 +292,7 @@
         "type": "bool"
       }
     ],
-    "name": "updateInterfaceBatch",
+    "name": "updateInterfaces",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -311,6 +311,24 @@
       }
     ],
     "name": "updateUriPrepend",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum TokenUriType[]",
+        "name": "uriTypes",
+        "type": "uint8[]"
+      },
+      {
+        "internalType": "string[]",
+        "name": "prepends",
+        "type": "string[]"
+      }
+    ],
+    "name": "updateUriPrepends",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

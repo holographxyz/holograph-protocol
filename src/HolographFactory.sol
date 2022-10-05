@@ -24,6 +24,10 @@ contract HolographFactory is Admin, Initializable, Holographable, IHolographFact
    */
   constructor() {}
 
+  /**
+   * @notice Used internally to initialize the contract instead of through a constructor
+   * @dev This function is called by the deployer/factory when creating a contract.
+   */
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
     (address holograph, address registry) = abi.decode(data, (address, address));
