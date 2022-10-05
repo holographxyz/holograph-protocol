@@ -2,17 +2,18 @@
 
 /*SOLIDITY_COMPILER_VERSION*/
 
-import "./abstract/Admin.sol";
-import "./abstract/Initializable.sol";
+import "../abstract/Admin.sol";
+import "../abstract/Initializable.sol";
 
-import "./interface/IHolograph.sol";
-import "./interface/IHolographRegistry.sol";
-import "./interface/IInitializable.sol";
+import "../interface/IHolograph.sol";
+import "../interface/IHolographer.sol";
+import "../interface/IHolographRegistry.sol";
+import "../interface/IInitializable.sol";
 
 /**
  * @dev This contract is a binder. It puts together all the variables to make the underlying contracts functional and be bridgeable.
  */
-contract Holographer is Admin, Initializable {
+contract Holographer is Admin, Initializable, IHolographer {
   bytes32 constant _originChainSlot = precomputeslot("eip1967.Holograph.originChain");
   bytes32 constant _holographSlot = precomputeslot("eip1967.Holograph.holograph");
   bytes32 constant _contractTypeSlot = precomputeslot("eip1967.Holograph.contractType");
@@ -20,7 +21,7 @@ contract Holographer is Admin, Initializable {
   bytes32 constant _blockHeightSlot = precomputeslot("eip1967.Holograph.blockHeight");
 
   /**
-   * @dev Constructor is left empty and only the admin address is set.
+   * @dev Constructor is left empty and init is used instead.
    */
   constructor() {}
 
@@ -33,11 +34,11 @@ contract Holographer is Admin, Initializable {
     );
     assembly {
       sstore(_adminSlot, caller())
-      sstore(_originChainSlot, originChain)
-      sstore(_holographSlot, holograph)
-      sstore(_contractTypeSlot, contractType)
-      sstore(_sourceContractSlot, sourceContract)
       sstore(_blockHeightSlot, number())
+      sstore(_contractTypeSlot, contractType)
+      sstore(_holographSlot, holograph)
+      sstore(_originChainSlot, originChain)
+      sstore(_sourceContractSlot, sourceContract)
     }
     (bool success, bytes memory returnData) = getHolographEnforcer().delegatecall(
       abi.encodeWithSignature("init(bytes)", initCode)

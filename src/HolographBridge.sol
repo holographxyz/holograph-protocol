@@ -9,14 +9,14 @@ import "./enum/ChainIdType.sol";
 
 import "./interface/ERC20Holograph.sol";
 import "./interface/ERC721Holograph.sol";
-import "./interface/HolographableEnforcer.sol";
+import "./interface/Holographable.sol";
 import "./interface/IHolograph.sol";
 import "./interface/IHolographBridge.sol";
 import "./interface/IHolographFactory.sol";
+import "./interface/IHolographInterfaces.sol";
 import "./interface/IHolographOperator.sol";
 import "./interface/IHolographRegistry.sol";
 import "./interface/IInitializable.sol";
-import "./interface/IHolographInterfaces.sol";
 
 import "./struct/DeploymentConfig.sol";
 import "./struct/Verification.sol";
@@ -33,19 +33,17 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
   bytes32 constant _registrySlot = precomputeslot("eip1967.Holograph.registry");
 
   /**
-   * @dev Constructor is left empty and only the admin address is set.
+   * @dev Allows calls only from HolographOperator contract.
    */
-  constructor() {}
-
-  modifier onlyBridge() {
-    require(msg.sender == address(this), "HOLOGRAPH: bridge only call");
-    _;
-  }
-
   modifier onlyOperator() {
     require(msg.sender == address(_operator()), "HOLOGRAPH: operator only call");
     _;
   }
+
+  /**
+   * @dev Constructor is left empty and init is used instead.
+   */
+  constructor() {}
 
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
@@ -55,7 +53,6 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     );
     assembly {
       sstore(_adminSlot, origin())
-
       sstore(_factorySlot, factory)
       sstore(_holographSlot, holograph)
       sstore(_interfacesSlot, interfaces)
@@ -75,13 +72,13 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     uint256 hTokenValue,
     bool doNotRevert,
     bytes calldata data
-  ) external onlyOperator {
+  ) external payable onlyOperator {
     require(
       _registry().isHolographedContract(holographableContract) || address(_factory()) == holographableContract,
       "HOLOGRAPH: not holographed"
     );
-    bytes4 selector = HolographableEnforcer(holographableContract).bridgeIn(fromChain, data);
-    require(selector == HolographableEnforcer.bridgeIn.selector, "HOLOGRAPH: bridge in failed");
+    bytes4 selector = Holographable(holographableContract).bridgeIn(fromChain, data);
+    require(selector == Holographable.bridgeIn.selector, "HOLOGRAPH: bridge in failed");
     if (hTokenValue > 0) {
       // provide operator with hToken value for executing bridge job
       require(
@@ -104,18 +101,14 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
       _registry().isHolographedContract(holographableContract) || address(_factory()) == holographableContract,
       "HOLOGRAPH: not holographed"
     );
-    (bytes4 selector, bytes memory payload) = HolographableEnforcer(holographableContract).bridgeOut(
-      toChain,
-      msg.sender,
-      data
-    );
-    require(selector == HolographableEnforcer.bridgeOut.selector, "HOLOGRAPH: bridge out failed");
+    (bytes4 selector, bytes memory payload) = Holographable(holographableContract).bridgeOut(toChain, msg.sender, data);
+    require(selector == Holographable.bridgeOut.selector, "HOLOGRAPH: bridge out failed");
     bytes memory encodedData = abi.encodeWithSelector(
       IHolographBridge.bridgeInRequest.selector,
       _jobNonce(),
-      _holograph().getChainType(),
+      _holograph().getHolographChainId(),
       holographableContract,
-      _registry().getHToken(_holograph().getChainType()),
+      _registry().getHToken(_holograph().getHolographChainId()),
       address(0),
       0,
       true,
@@ -130,11 +123,11 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     address holographableContract,
     bytes calldata data
   ) external returns (string memory revertReason) {
-    try HolographableEnforcer(holographableContract).bridgeOut(toChain, sender, data) returns (
+    try Holographable(holographableContract).bridgeOut(toChain, sender, data) returns (
       bytes4 selector,
       bytes memory payload
     ) {
-      if (selector != HolographableEnforcer.bridgeOut.selector) {
+      if (selector != Holographable.bridgeOut.selector) {
         return "HOLOGRAPH: bridge out failed";
       }
       // otherwise we revert here
@@ -170,62 +163,15 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     bytes memory encodedData = abi.encodeWithSelector(
       IHolographBridge.bridgeInRequest.selector,
       jobNonce + 1,
-      _holograph().getChainType(),
+      _holograph().getHolographChainId(),
       holographableContract,
-      _registry().getHToken(_holograph().getChainType()),
+      _registry().getHToken(_holograph().getHolographChainId()),
       address(0),
       0,
       true,
       payload
     );
     samplePayload = abi.encodePacked(encodedData, type(uint256).max, type(uint256).max);
-  }
-
-  /**
-   * @dev Internal nonce used for randomness.
-   *      We increment it on each return.
-   */
-  function _jobNonce() private returns (uint256 jobNonce) {
-    assembly {
-      jobNonce := add(sload(_jobNonceSlot), 0x0000000000000000000000000000000000000000000000000000000000000001)
-      sstore(_jobNonceSlot, jobNonce)
-    }
-  }
-
-  function _factory() private view returns (IHolographFactory factory) {
-    assembly {
-      factory := sload(_factorySlot)
-    }
-  }
-
-  function _holograph() private view returns (IHolograph holograph) {
-    assembly {
-      holograph := sload(_holographSlot)
-    }
-  }
-
-  function _interfaces() private view returns (IHolographInterfaces interfaces) {
-    assembly {
-      interfaces := sload(_interfacesSlot)
-    }
-  }
-
-  function _operator() private view returns (IHolographOperator operator) {
-    assembly {
-      operator := sload(_operatorSlot)
-    }
-  }
-
-  function _registry() private view returns (IHolographRegistry registry) {
-    assembly {
-      registry := sload(_registrySlot)
-    }
-  }
-
-  function getJobNonce() external view returns (uint256 jobNonce) {
-    assembly {
-      jobNonce := sload(_jobNonceSlot)
-    }
   }
 
   function getFactory() external view returns (address factory) {
@@ -264,6 +210,12 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
     }
   }
 
+  function getJobNonce() external view returns (uint256 jobNonce) {
+    assembly {
+      jobNonce := sload(_jobNonceSlot)
+    }
+  }
+
   function getOperator() external view returns (address operator) {
     assembly {
       operator := sload(_operatorSlot)
@@ -285,6 +237,46 @@ contract HolographBridge is Admin, Initializable, IHolographBridge {
   function setRegistry(address registry) external onlyAdmin {
     assembly {
       sstore(_registrySlot, registry)
+    }
+  }
+
+  function _factory() private view returns (IHolographFactory factory) {
+    assembly {
+      factory := sload(_factorySlot)
+    }
+  }
+
+  function _holograph() private view returns (IHolograph holograph) {
+    assembly {
+      holograph := sload(_holographSlot)
+    }
+  }
+
+  function _interfaces() private view returns (IHolographInterfaces interfaces) {
+    assembly {
+      interfaces := sload(_interfacesSlot)
+    }
+  }
+
+  /**
+   * @dev Internal nonce used for randomness. We increment it on each call.
+   */
+  function _jobNonce() private returns (uint256 jobNonce) {
+    assembly {
+      jobNonce := add(sload(_jobNonceSlot), 0x0000000000000000000000000000000000000000000000000000000000000001)
+      sstore(_jobNonceSlot, jobNonce)
+    }
+  }
+
+  function _operator() private view returns (IHolographOperator operator) {
+    assembly {
+      operator := sload(_operatorSlot)
+    }
+  }
+
+  function _registry() private view returns (IHolographRegistry registry) {
+    assembly {
+      registry := sload(_registrySlot)
     }
   }
 }

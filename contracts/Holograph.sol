@@ -107,21 +107,31 @@ import "./abstract/Initializable.sol";
 import "./interface/IInitializable.sol";
 import "./interface/IHolograph.sol";
 
+/**
+ * @title Holograph
+ * @author https://github.com/holographxyz
+ * @notice This is the primary Holograph Protocol smart contract.
+ * @dev This contract stores a reference to all the primary modules and variables of the protocol.
+ */
 contract Holograph is Admin, Initializable, IHolograph {
-  bytes32 constant _chainTypeSlot = 0x559ee1ab52f1e7dce7933c1945873a89fe5a5eb9f9bac817ed5387cc33fb88b9;
   bytes32 constant _bridgeSlot = 0xeb87cbb21687feb327e3d58c6c16d552231d12c7a0e8115042a4165fac8a77f9;
+  bytes32 constant _chainIdSlot = 0x7651bfc11f7485d07ab2b41c1312e2007c8cb7efb0f7352a6dee4a1153eebab2;
   bytes32 constant _factorySlot = 0xa49f20855ba576e09d13c8041c8039fa655356ea27f6c40f1ec46a4301cd5b23;
+  bytes32 constant _holographChainIdSlot = 0xd840a780c26e07edc6e1ee2eaa6f134ed5488dbd762614116653cee8542a3844;
   bytes32 constant _interfacesSlot = 0xbd3084b8c09da87ad159c247a60e209784196be2530cecbbd8f337fdd1848827;
   bytes32 constant _operatorSlot = 0x7caba557ad34138fa3b7e43fb574e0e6cc10481c3073e0dffbc560db81b5c60f;
   bytes32 constant _registrySlot = 0xce8e75d5c5227ce29a4ee170160bb296e5dea6934b80a9bd723f7ef1e7c850e7;
   bytes32 constant _treasurySlot = 0x4215e7a38d75164ca078bbd61d0992cdeb1ba16f3b3ead5944966d3e4080e8b6;
 
+  /**
+   * @dev Constructor is left empty and init is used instead.
+   */
   constructor() {}
 
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
     (
-      uint32 chainType,
+      uint32 holographChainId,
       address bridge,
       address factory,
       address interfaces,
@@ -131,9 +141,10 @@ contract Holograph is Admin, Initializable, IHolograph {
     ) = abi.decode(data, (uint32, address, address, address, address, address, address));
     assembly {
       sstore(_adminSlot, origin())
-      sstore(_chainTypeSlot, chainType)
       sstore(_bridgeSlot, bridge)
+      sstore(_chainIdSlot, chainid())
       sstore(_factorySlot, factory)
+      sstore(_holographChainIdSlot, holographChainId)
       sstore(_interfacesSlot, interfaces)
       sstore(_operatorSlot, operator)
       sstore(_registrySlot, registry)
@@ -141,18 +152,6 @@ contract Holograph is Admin, Initializable, IHolograph {
     }
     _setInitialized();
     return IInitializable.init.selector;
-  }
-
-  function getChainType() external view returns (uint32 chainType) {
-    assembly {
-      chainType := sload(_chainTypeSlot)
-    }
-  }
-
-  function setChainType(uint32 chainType) external onlyAdmin {
-    assembly {
-      sstore(_chainTypeSlot, chainType)
-    }
   }
 
   function getBridge() external view returns (address bridge) {
@@ -167,6 +166,24 @@ contract Holograph is Admin, Initializable, IHolograph {
     }
   }
 
+  /**
+   * @dev Returns the chain id. Useful for checking if/when a hard fork occurs.
+   */
+  function getChainId() external view returns (uint256 chainId) {
+    assembly {
+      chainId := sload(_chainIdSlot)
+    }
+  }
+
+  /**
+   * @dev Allow the chain id to be changed. Useful for updating once a hard fork has been mitigated.
+   */
+  function setChainId(uint256 chainId) external onlyAdmin {
+    assembly {
+      sstore(_chainIdSlot, chainId)
+    }
+  }
+
   function getFactory() external view returns (address factory) {
     assembly {
       factory := sload(_factorySlot)
@@ -176,6 +193,18 @@ contract Holograph is Admin, Initializable, IHolograph {
   function setFactory(address factory) external onlyAdmin {
     assembly {
       sstore(_factorySlot, factory)
+    }
+  }
+
+  function getHolographChainId() external view returns (uint32 holographChainId) {
+    assembly {
+      holographChainId := sload(_holographChainIdSlot)
+    }
+  }
+
+  function setHolographChainId(uint32 holographChainId) external onlyAdmin {
+    assembly {
+      sstore(_holographChainIdSlot, holographChainId)
     }
   }
 

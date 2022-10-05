@@ -80,7 +80,7 @@
     ],
     "name": "bridgeInRequest",
     "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
