@@ -104,21 +104,14 @@ pragma solidity 0.8.13;
 import "./abstract/Admin.sol";
 import "./abstract/Initializable.sol";
 
-import "./enum/ChainIdType.sol";
-
 import "./interface/ERC20Holograph.sol";
-import "./interface/ERC721Holograph.sol";
 import "./interface/Holographable.sol";
 import "./interface/IHolograph.sol";
 import "./interface/IHolographBridge.sol";
 import "./interface/IHolographFactory.sol";
-import "./interface/IHolographInterfaces.sol";
 import "./interface/IHolographOperator.sol";
 import "./interface/IHolographRegistry.sol";
 import "./interface/IInitializable.sol";
-
-import "./struct/DeploymentConfig.sol";
-import "./struct/Verification.sol";
 
 /**
  * @dev This smart contract contains the actual core bridging logic.

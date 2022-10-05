@@ -27,7 +27,7 @@ contract HolographTreasury is Admin, Initializable, IHolographTreasury {
   bytes32 constant _registrySlot = precomputeslot("eip1967.Holograph.registry");
 
   /**
-   * @dev Constructor is left empty and only the admin address is set.
+   * @dev Constructor is left empty and init is used instead.
    */
   constructor() {}
 

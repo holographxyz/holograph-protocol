@@ -7,9 +7,9 @@ interface IHolographer {
 
   function getHolograph() external view returns (address holograph);
 
-  function getHolographEnforcer() external view returns (address payable);
+  function getHolographEnforcer() external view returns (address);
 
   function getOriginChain() external view returns (uint32 originChain);
 
-  function getSourceContract() external view returns (address payable sourceContract);
+  function getSourceContract() external view returns (address sourceContract);
 }

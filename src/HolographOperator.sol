@@ -8,8 +8,6 @@ import "./abstract/Initializable.sol";
 import "./enum/ChainIdType.sol";
 
 import "./interface/ERC20Holograph.sol";
-import "./interface/IHolograph.sol";
-import "./interface/IHolographBridge.sol";
 import "./interface/IHolographOperator.sol";
 import "./interface/IHolographRegistry.sol";
 import "./interface/IInitializable.sol";
@@ -24,7 +22,6 @@ import "./struct/OperatorJob.sol";
  */
 contract HolographOperator is Admin, Initializable, IHolographOperator {
   bytes32 constant _bridgeSlot = precomputeslot("eip1967.Holograph.bridge");
-  bytes32 constant _holographSlot = precomputeslot("eip1967.Holograph.holograph");
   bytes32 constant _interfacesSlot = precomputeslot("eip1967.Holograph.interfaces");
   bytes32 constant _jobNonceSlot = precomputeslot("eip1967.Holograph.jobNonce");
   bytes32 constant _lZEndpointSlot = precomputeslot("eip1967.Holograph.lZEndpoint");
@@ -95,11 +92,6 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
    */
   mapping(address => uint256) private _bondedAmounts;
 
-  /**
-   * @dev Event is emitted for every time that a valid job is available.
-   */
-  event AvailableOperatorJob(bytes32 jobHash, bytes payload);
-
   modifier onlyBridge() {
     require(msg.sender == _bridge(), "HOLOGRAPH: bridge only call");
     _;
@@ -125,21 +117,16 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
   }
 
   /**
-   * @dev Constructor is left empty and only the admin address is set.
+   * @dev Constructor is left empty and init is used instead.
    */
   constructor() {}
 
   function init(bytes memory data) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
-    (address bridge, address holograph, address interfaces, address registry) = abi.decode(
-      data,
-      (address, address, address, address)
-    );
+    (address bridge, address interfaces, address registry) = abi.decode(data, (address, address, address));
     assembly {
       sstore(_adminSlot, origin())
-
       sstore(_bridgeSlot, bridge)
-      sstore(_holographSlot, holograph)
       sstore(_interfacesSlot, interfaces)
       sstore(_registrySlot, registry)
     }
@@ -337,68 +324,6 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     );
   }
 
-  /**
-   * @dev Internal nonce used for randomness.
-   *      We increment it on each return.
-   */
-  function _jobNonce() private returns (uint256 jobNonce) {
-    assembly {
-      jobNonce := add(sload(_jobNonceSlot), 0x0000000000000000000000000000000000000000000000000000000000000001)
-      sstore(_jobNonceSlot, jobNonce)
-    }
-  }
-
-  function _popOperator(uint256 pod, uint256 operatorIndex) private {
-    if (operatorIndex > 0) {
-      unchecked {
-        address operator = _operatorPods[pod][operatorIndex];
-        // remove operator pod reference
-        _bondedOperators[operator] = 0;
-        _operatorPodIndex[operator] = 0;
-        uint256 lastIndex = _operatorPods[pod].length - 1;
-        if (lastIndex != operatorIndex) {
-          _operatorPods[pod][operatorIndex] = _operatorPods[pod][lastIndex];
-        }
-        delete _operatorPods[pod][lastIndex];
-        _operatorPods[pod].pop();
-      }
-    }
-  }
-
-  function _bridge() private view returns (address bridge) {
-    assembly {
-      bridge := sload(_bridgeSlot)
-    }
-  }
-
-  function _holograph() private view returns (address holograph) {
-    assembly {
-      holograph := sload(_holographSlot)
-    }
-  }
-
-  function _interfaces() private view returns (IHolographInterfaces interfaces) {
-    assembly {
-      interfaces := sload(_interfacesSlot)
-    }
-  }
-
-  function _registry() private view returns (address registry) {
-    assembly {
-      registry := sload(_registrySlot)
-    }
-  }
-
-  function _RBH(
-    uint256 random,
-    uint256 podSize,
-    uint256 n
-  ) private view returns (uint256) {
-    unchecked {
-      return (random + uint256(blockhash(block.number - n))) % podSize;
-    }
-  }
-
   function getLZEndpoint() external view returns (address lZEndpoint) {
     assembly {
       lZEndpoint := sload(_lZEndpointSlot)
@@ -420,18 +345,6 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
   function setBridge(address bridge) external onlyAdmin {
     assembly {
       sstore(_bridgeSlot, bridge)
-    }
-  }
-
-  function getHolograph() external view returns (address holograph) {
-    assembly {
-      holograph := sload(_holographSlot)
-    }
-  }
-
-  function setHolograph(address holograph) external onlyAdmin {
-    assembly {
-      sstore(_holographSlot, holograph)
     }
   }
 
@@ -502,25 +415,6 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     }
   }
 
-  function _getBaseBondAmount(uint256 pod) private view returns (uint256) {
-    return (_podMultiplier**pod) * _baseBondAmount;
-  }
-
-  function _getCurrentBondAmount(uint256 pod) private view returns (uint256) {
-    uint256 current = (_podMultiplier**pod) * _baseBondAmount;
-    if (_operatorPods.length < pod) {
-      return current;
-    }
-    uint256 threshold = _operatorThreshold / (2**pod);
-    uint256 position = _operatorPods[pod].length;
-    if (position > threshold) {
-      position -= threshold;
-      //       current += (current / _operatorThresholdDivisor) * position;
-      current += (current / _operatorThresholdDivisor) * (position / _operatorThresholdStep);
-    }
-    return current;
-  }
-
   function getPodBondAmount(uint256 pod) external view returns (uint256 base, uint256 current) {
     base = _getBaseBondAmount(pod - 1);
     current = _getCurrentBondAmount(pod - 1);
@@ -575,6 +469,81 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
       _operatorPodIndex[operator] = _operatorPods[pod - 1].length - 1;
       _bondedOperators[operator] = pod;
       _bondedAmounts[operator] = amount;
+    }
+  }
+
+  function _bridge() private view returns (address bridge) {
+    assembly {
+      bridge := sload(_bridgeSlot)
+    }
+  }
+
+  function _interfaces() private view returns (IHolographInterfaces interfaces) {
+    assembly {
+      interfaces := sload(_interfacesSlot)
+    }
+  }
+
+  function _registry() private view returns (address registry) {
+    assembly {
+      registry := sload(_registrySlot)
+    }
+  }
+
+  /**
+   * @dev Internal nonce used for randomness.
+   *      We increment it on each return.
+   */
+  function _jobNonce() private returns (uint256 jobNonce) {
+    assembly {
+      jobNonce := add(sload(_jobNonceSlot), 0x0000000000000000000000000000000000000000000000000000000000000001)
+      sstore(_jobNonceSlot, jobNonce)
+    }
+  }
+
+  function _popOperator(uint256 pod, uint256 operatorIndex) private {
+    if (operatorIndex > 0) {
+      unchecked {
+        address operator = _operatorPods[pod][operatorIndex];
+        // remove operator pod reference
+        _bondedOperators[operator] = 0;
+        _operatorPodIndex[operator] = 0;
+        uint256 lastIndex = _operatorPods[pod].length - 1;
+        if (lastIndex != operatorIndex) {
+          _operatorPods[pod][operatorIndex] = _operatorPods[pod][lastIndex];
+        }
+        delete _operatorPods[pod][lastIndex];
+        _operatorPods[pod].pop();
+      }
+    }
+  }
+
+  function _getBaseBondAmount(uint256 pod) private view returns (uint256) {
+    return (_podMultiplier**pod) * _baseBondAmount;
+  }
+
+  function _getCurrentBondAmount(uint256 pod) private view returns (uint256) {
+    uint256 current = (_podMultiplier**pod) * _baseBondAmount;
+    if (_operatorPods.length < pod) {
+      return current;
+    }
+    uint256 threshold = _operatorThreshold / (2**pod);
+    uint256 position = _operatorPods[pod].length;
+    if (position > threshold) {
+      position -= threshold;
+      //       current += (current / _operatorThresholdDivisor) * position;
+      current += (current / _operatorThresholdDivisor) * (position / _operatorThresholdStep);
+    }
+    return current;
+  }
+
+  function _RBH(
+    uint256 random,
+    uint256 podSize,
+    uint256 n
+  ) private view returns (uint256) {
+    unchecked {
+      return (random + uint256(blockhash(block.number - n))) % podSize;
     }
   }
 

@@ -40,9 +40,9 @@ contract Holographer is Admin, Initializable, IHolographer {
       sstore(_originChainSlot, originChain)
       sstore(_sourceContractSlot, sourceContract)
     }
-    (bool success, bytes memory returnData) = getHolographEnforcer().delegatecall(
-      abi.encodeWithSignature("init(bytes)", initCode)
-    );
+    (bool success, bytes memory returnData) = IHolographRegistry(IHolograph(holograph).getRegistry())
+      .getContractTypeAddress(contractType)
+      .delegatecall(abi.encodeWithSignature("init(bytes)", initCode));
     bytes4 selector = abi.decode(returnData, (bytes4));
     require(success && selector == IInitializable.init.selector, "initialization failed");
     _setInitialized();
@@ -52,7 +52,7 @@ contract Holographer is Admin, Initializable, IHolographer {
   /**
    * @dev Returns the block height of when the smart contract was deployed. Useful for retrieving deployment config for re-deployment on other EVM-compatible chains.
    */
-  function getDeploymentBlock() public view returns (address holograph) {
+  function getDeploymentBlock() external view returns (address holograph) {
     assembly {
       holograph := sload(_blockHeightSlot)
     }
@@ -61,7 +61,7 @@ contract Holographer is Admin, Initializable, IHolographer {
   /**
    * @dev Returns a hardcoded address for the Holograph smart contract.
    */
-  function getHolograph() public view returns (address holograph) {
+  function getHolograph() external view returns (address holograph) {
     assembly {
       holograph := sload(_holographSlot)
     }
@@ -70,20 +70,20 @@ contract Holographer is Admin, Initializable, IHolographer {
   /**
    * @dev Returns a hardcoded address for the Holograph smart contract that controls and enforces the ERC standards.
    */
-  function getHolographEnforcer() public view returns (address payable) {
+  function getHolographEnforcer() public view returns (address) {
     IHolograph holograph;
     bytes32 contractType;
     assembly {
       holograph := sload(_holographSlot)
       contractType := sload(_contractTypeSlot)
     }
-    return payable(IHolographRegistry(holograph.getRegistry()).getContractTypeAddress(contractType));
+    return IHolographRegistry(holograph.getRegistry()).getContractTypeAddress(contractType);
   }
 
   /**
    * @dev Returns the original chain that contract was deployed on.
    */
-  function getOriginChain() public view returns (uint32 originChain) {
+  function getOriginChain() external view returns (uint32 originChain) {
     assembly {
       originChain := sload(_originChainSlot)
     }
@@ -92,7 +92,7 @@ contract Holographer is Admin, Initializable, IHolographer {
   /**
    * @dev Returns a hardcoded address for the custom secure storage contract deployed in parallel with this contract deployment.
    */
-  function getSourceContract() public view returns (address payable sourceContract) {
+  function getSourceContract() external view returns (address sourceContract) {
     assembly {
       sourceContract := sload(_sourceContractSlot)
     }
