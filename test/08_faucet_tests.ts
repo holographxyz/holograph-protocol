@@ -25,7 +25,7 @@ describe('Testing the Holograph Faucet', async () => {
   before(async function () {
     l1 = await setup();
 
-    let hlgTokenAddress = (ERC20 = await l1.holographErc20.attach(await l1.holograph.getUtilityToken()));
+    ERC20 = await l1.holographErc20.attach(await l1.holograph.getUtilityToken());
     FAUCET = l1.faucet;
 
     await ERC20.transfer(FAUCET.address, INITIAL_FAUCET_FUNDS);
