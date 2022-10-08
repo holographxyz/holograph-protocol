@@ -456,6 +456,10 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
       );
   }
 
+  function getTotalPods() external view returns (uint256 pods) {
+    return _operatorPods.length;
+  }
+
   function getPodOperators(uint256 pod) external view returns (address[] memory operators) {
     require(_operatorPods.length >= pod, "HOLOGRAPH: pod does not exist");
     operators = _operatorPods[pod - 1];
