@@ -7,138 +7,139 @@ import "./abstract/Initializable.sol";
 
 import "./enum/ChainIdType.sol";
 
-import "./interface/ERC20Holograph.sol";
-import "./interface/IHolographOperator.sol";
-import "./interface/IHolographRegistry.sol";
-import "./interface/IInitializable.sol";
-import "./interface/IHolographInterfaces.sol";
-import "./interface/ILayerZeroEndpoint.sol";
+import "./interface/HolographBridgeInterface.sol";
+import "./interface/HolographERC20Interface.sol";
+import "./interface/HolographInterface.sol";
+import "./interface/HolographOperatorInterface.sol";
+import "./interface/HolographRegistryInterface.sol";
+import "./interface/InitializableInterface.sol";
+import "./interface/HolographInterfacesInterface.sol";
+import "./interface/LayerZeroEndpointInterface.sol";
 import "./interface/Ownable.sol";
 
 import "./struct/OperatorJob.sol";
 
 /**
- * @dev This smart contract contains the actual core operator logic.
+ * @title Holograph Operator
+ * @author https://github.com/holographxyz
+ * @notice Participate in the Holograph Protocol by becoming an Operator
+ * @dev This contract allows operators to bond utility tokens and help execute operator jobs
  */
-contract HolographOperator is Admin, Initializable, IHolographOperator {
+contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
+  /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.bridge')) - 1)
+   */
   bytes32 constant _bridgeSlot = precomputeslot("eip1967.Holograph.bridge");
+  /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.holograph')) - 1)
+   */
+  bytes32 constant _holographSlot = precomputeslot("eip1967.Holograph.holograph");
+  /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.interfaces')) - 1)
+   */
   bytes32 constant _interfacesSlot = precomputeslot("eip1967.Holograph.interfaces");
+  /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.jobNonce')) - 1)
+   */
   bytes32 constant _jobNonceSlot = precomputeslot("eip1967.Holograph.jobNonce");
+  /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.lZEndpoint')) - 1)
+   */
   bytes32 constant _lZEndpointSlot = precomputeslot("eip1967.Holograph.lZEndpoint");
+  /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.registry')) - 1)
+   */
   bytes32 constant _registrySlot = precomputeslot("eip1967.Holograph.registry");
+  /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.utilityToken')) - 1)
+   */
   bytes32 constant _utilityTokenSlot = precomputeslot("eip1967.Holograph.utilityToken");
 
   /**
-   * @dev Internal number (in seconds), used for defining a window for operator to execute the job.
+   * @dev Internal number (in seconds), used for defining a window for operator to execute the job
    */
   uint256 private _blockTime;
 
   /**
-   * @dev Minimum amount of tokens needed for bonding.
+   * @dev Minimum amount of tokens needed for bonding
    */
   uint256 private _baseBondAmount;
 
   /**
-   * @dev The multiplier used for calculating bonding amount for pods.
+   * @dev The multiplier used for calculating bonding amount for pods
    */
   uint256 private _podMultiplier;
 
   /**
-   * @dev The threshold used for limiting number of operators in a pod.
+   * @dev The threshold used for limiting number of operators in a pod
    */
   uint256 private _operatorThreshold;
 
   /**
-   * @dev The threshold step used for increasing bond amount once threshold is reached.
+   * @dev The threshold step used for increasing bond amount once threshold is reached
    */
   uint256 private _operatorThresholdStep;
 
   /**
-   * @dev The threshold divisor used for increasing bond amount once threshold is reached.
+   * @dev The threshold divisor used for increasing bond amount once threshold is reached
    */
   uint256 private _operatorThresholdDivisor;
 
   /**
-   * @dev Internal mapping of operator job details for a specific job hash.
+   * @dev Internal mapping of operator job details for a specific job hash
    */
   mapping(bytes32 => uint256) private _operatorJobs;
 
   /**
-   * @dev Internal mapping of operator addresses, used for temp storage when defining an operator job.
+   * @dev Internal mapping of operator addresses, used for temp storage when defining an operator job
    */
   mapping(uint256 => address) private _operatorTempStorage;
 
   /**
-   * @dev Internal index used for storing/referencing operator temp storage.
+   * @dev Internal index used for storing/referencing operator temp storage
    */
   uint32 private _operatorTempStorageCounter;
 
   /**
-   * @dev Multi-dimensional array of available operators.
+   * @dev Multi-dimensional array of available operators
    */
   address[][] private _operatorPods;
 
   /**
-   * @dev Internal mapping of bonded operators, to prevent double bonding.
+   * @dev Internal mapping of bonded operators, to prevent double bonding
    */
   mapping(address => uint256) private _bondedOperators;
 
   /**
-   * @dev Internal mapping of bonded operators, to prevent double bonding.
+   * @dev Internal mapping of bonded operators, to prevent double bonding
    */
   mapping(address => uint256) private _operatorPodIndex;
 
   /**
-   * @dev Internal mapping of bonded operator amounts.
+   * @dev Internal mapping of bonded operator amounts
    */
   mapping(address => uint256) private _bondedAmounts;
 
-  modifier onlyBridge() {
-    require(msg.sender == _bridge(), "HOLOGRAPH: bridge only call");
-    _;
-  }
-
   /**
-   * @dev Allow calls only from LayerZero endpoint contract.
-   */
-  modifier onlyLZ() {
-    assembly {
-      // check if lzEndpoint
-      switch eq(sload(_lZEndpointSlot), caller())
-      case 0 {
-        // check if operator is calling self, used for job estimations
-        switch eq(address(), caller())
-        case 0 {
-          mstore(0x80, 0x08c379a000000000000000000000000000000000000000000000000000000000)
-          mstore(0xa0, 0x0000002000000000000000000000000000000000000000000000000000000000)
-          mstore(0xc0, 0x0000001b484f4c4f47524150483a204c5a206f6e6c7920656e64706f696e7400)
-          mstore(0xe0, 0x0000000000000000000000000000000000000000000000000000000000000000)
-          revert(0x80, 0xc4)
-        }
-      }
-    }
-    _;
-  }
-
-  /**
-   * @notice Used internally to initialize the contract instead of through a constructor
-   * @dev This function is called by the deployer/factory when creating a contract.
+   * @dev Constructor is left empty and init is used instead
    */
   constructor() {}
 
   /**
    * @notice Used internally to initialize the contract instead of through a constructor
-   * @dev This function is called by the deployer/factory when creating a contract.
+   * @dev This function is called by the deployer/factory when creating a contract
+   * @param initPayload abi encoded payload to use for contract initilaization
    */
-  function init(bytes memory data) external override returns (bytes4) {
+  function init(bytes memory initPayload) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
-    (address bridge, address interfaces, address registry, address utilityToken) = abi.decode(
-      data,
-      (address, address, address, address)
+    (address bridge, address holograph, address interfaces, address registry, address utilityToken) = abi.decode(
+      initPayload,
+      (address, address, address, address, address)
     );
     assembly {
       sstore(_adminSlot, origin())
       sstore(_bridgeSlot, bridge)
+      sstore(_holographSlot, holograph)
       sstore(_interfacesSlot, interfaces)
       sstore(_registrySlot, registry)
       sstore(_utilityTokenSlot, utilityToken)
@@ -160,7 +161,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     // mark zero address as bonded operator, to prevent abuse
     _bondedOperators[address(0)] = 1;
     _setInitialized();
-    return IInitializable.init.selector;
+    return InitializableInterface.init.selector;
   }
 
   function lzReceive(
@@ -168,8 +169,23 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     bytes calldata _srcAddress,
     uint64, /* _nonce*/
     bytes calldata _payload
-  ) external payable onlyLZ {
+  ) external payable {
     assembly {
+      /**
+       * @dev check if msg.sender is LayerZero Endpoint
+       */
+      switch eq(sload(_lZEndpointSlot), caller())
+      case 0 {
+        // check if operator is calling self, used for job estimations
+        switch eq(address(), caller())
+        case 0 {
+          mstore(0x80, 0x08c379a000000000000000000000000000000000000000000000000000000000)
+          mstore(0xa0, 0x0000002000000000000000000000000000000000000000000000000000000000)
+          mstore(0xc0, 0x0000001b484f4c4f47524150483a204c5a206f6e6c7920656e64706f696e7400)
+          mstore(0xe0, 0x0000000000000000000000000000000000000000000000000000000000000000)
+          revert(0x80, 0xc4)
+        }
+      }
       let ptr := mload(0x40)
       calldatacopy(add(ptr, 0x0c), _srcAddress.offset, _srcAddress.length)
       switch eq(mload(ptr), address())
@@ -193,7 +209,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
       uint256 podSize = _operatorPods[pod].length;
       // select a primary operator
       uint256 operatorIndex = random % podSize;
-      // If operator index is 0, then it's open season! Anyone can execute this job. First come first serve.
+      // If operator index is 0, then it's open season! Anyone can execute this job. First come first serve
       // pop operator to ensure that they cannot be selected for any other job until this one completes
       // decrease pod size to accomodate popped operator
       _operatorTempStorage[_operatorTempStorageCounter] = _operatorPods[pod][operatorIndex];
@@ -312,7 +328,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     }
   }
 
-  /*
+  /**
    * @dev Need to add an extra function to get LZ gas amount needed for their internal cross-chain message verification
    */
   function send(
@@ -320,9 +336,35 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     uint256 gasPrice,
     uint32 toChain,
     address msgSender,
-    bytes calldata _payload
-  ) external payable onlyBridge {
-    ILayerZeroEndpoint lZEndpoint;
+    uint256 nonce,
+    address holographableContract,
+    bytes calldata bridgeOutPayload
+  ) external payable {
+    require(msg.sender == _bridge(), "HOLOGRAPH: bridge only call");
+    bytes memory encodedData = abi.encodeWithSelector(
+      HolographBridgeInterface.bridgeInRequest.selector,
+      /**
+       * @dev job nonce is an incremented value that is assigned to each bridge request to guarantee unique hashes
+       */
+      nonce,
+      /**
+       * @dev including the current holograph chain id (origin chain)
+       */
+      _holograph().getHolographChainId(),
+      /**
+       * @dev holographable contract have the same address across all chains, so our destination address will be the same
+       */
+      holographableContract,
+      /**
+       * @dev combine all the data to send to Holograph Operator
+       */
+      _registry().getHToken(_holograph().getHolographChainId()),
+      address(0),
+      0,
+      true,
+      bridgeOutPayload
+    );
+    LayerZeroEndpointInterface lZEndpoint;
     assembly {
       lZEndpoint := sload(_lZEndpointSlot)
     }
@@ -330,10 +372,10 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     lZEndpoint.send{value: msg.value}(
       uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
       abi.encodePacked(address(this), address(this)),
-      abi.encodePacked(_payload, gasLimit, gasPrice),
+      abi.encodePacked(encodedData, gasLimit, gasPrice),
       payable(msgSender),
       address(this),
-      abi.encodePacked(uint16(1), uint256(52000 + (_payload.length * 25)))
+      abi.encodePacked(uint16(1), uint256(52000 + (encodedData.length * 25)))
     );
   }
 
@@ -357,7 +399,7 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
       );
   }
 
-  function getTotalPods() external view returns (uint256 pods) {
+  function getTotalPods() external view returns (uint256 totalPods) {
     return _operatorPods.length;
   }
 
@@ -436,60 +478,120 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     _bondedAmounts[operator] = 0;
   }
 
+  /**
+   * @notice Get the address of the approved LayerZero Endpoint
+   * @dev All lzReceive function calls allow only requests from this address
+   */
   function getLZEndpoint() external view returns (address lZEndpoint) {
     assembly {
       lZEndpoint := sload(_lZEndpointSlot)
     }
   }
 
+  /**
+   * @notice Update the approved LayerZero Endpoint address
+   * @param lZEndpoint address of the LayerZero Endpoint to use
+   */
   function setLZEndpoint(address lZEndpoint) external onlyAdmin {
     assembly {
       sstore(_lZEndpointSlot, lZEndpoint)
     }
   }
 
+  /**
+   * @notice Get the address of the Holograph Bridge module
+   * @dev Used for beaming holographable assets cross-chain
+   */
   function getBridge() external view returns (address bridge) {
     assembly {
       bridge := sload(_bridgeSlot)
     }
   }
 
+  /**
+   * @notice Update the Holograph Bridge module address
+   * @param bridge address of the Holograph Bridge smart contract to use
+   */
   function setBridge(address bridge) external onlyAdmin {
     assembly {
       sstore(_bridgeSlot, bridge)
     }
   }
 
+  /**
+   * @notice Get the Holograph Protocol contract
+   * @dev Used for storing a reference to all the primary modules and variables of the protocol
+   */
+  function getHolograph() external view returns (address holograph) {
+    assembly {
+      holograph := sload(_holographSlot)
+    }
+  }
+
+  /**
+   * @notice Update the Holograph Protocol contract address
+   * @param holograph address of the Holograph Protocol smart contract to use
+   */
+  function setHolograph(address holograph) external onlyAdmin {
+    assembly {
+      sstore(_holographSlot, holograph)
+    }
+  }
+
+  /**
+   * @notice Get the address of the Holograph Interfaces module
+   * @dev Holograph uses this contract to store data that needs to be accessed by a large portion of the modules
+   */
   function getInterfaces() external view returns (address interfaces) {
     assembly {
       interfaces := sload(_interfacesSlot)
     }
   }
 
+  /**
+   * @notice Update the Holograph Interfaces module address
+   * @param interfaces address of the Holograph Interfaces smart contract to use
+   */
   function setInterfaces(address interfaces) external onlyAdmin {
     assembly {
       sstore(_interfacesSlot, interfaces)
     }
   }
 
+  /**
+   * @notice Get the Holograph Registry module
+   * @dev This module stores a reference for all deployed holographable smart contracts
+   */
   function getRegistry() external view returns (address registry) {
     assembly {
       registry := sload(_registrySlot)
     }
   }
 
+  /**
+   * @notice Update the Holograph Registry module address
+   * @param registry address of the Holograph Registry smart contract to use
+   */
   function setRegistry(address registry) external onlyAdmin {
     assembly {
       sstore(_registrySlot, registry)
     }
   }
 
+  /**
+   * @notice Get the Holograph Utility Token address
+   * @dev This is the official utility token of the Holograph Protocol
+   */
   function getUtilityToken() external view returns (address utilityToken) {
     assembly {
       utilityToken := sload(_utilityTokenSlot)
     }
   }
 
+  /**
+   * @notice Update the Holograph Utility Token address
+   * @param utilityToken address of the Holograph Utility Token smart contract to use
+   */
   function setUtilityToken(address utilityToken) external onlyAdmin {
     assembly {
       sstore(_utilityTokenSlot, utilityToken)
@@ -502,27 +604,33 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
     }
   }
 
-  function _interfaces() private view returns (IHolographInterfaces interfaces) {
+  function _holograph() private view returns (HolographInterface holograph) {
+    assembly {
+      holograph := sload(_holographSlot)
+    }
+  }
+
+  function _interfaces() private view returns (HolographInterfacesInterface interfaces) {
     assembly {
       interfaces := sload(_interfacesSlot)
     }
   }
 
-  function _registry() private view returns (address registry) {
+  function _registry() private view returns (HolographRegistryInterface registry) {
     assembly {
       registry := sload(_registrySlot)
     }
   }
 
-  function _utilityToken() private view returns (ERC20Holograph utilityToken) {
+  function _utilityToken() private view returns (HolographERC20Interface utilityToken) {
     assembly {
       utilityToken := sload(_utilityTokenSlot)
     }
   }
 
   /**
-   * @dev Internal nonce used for randomness.
-   *      We increment it on each return.
+   * @dev Internal nonce used for randomness
+   *      We increment it on each return
    */
   function _jobNonce() private returns (uint256 jobNonce) {
     assembly {
@@ -583,5 +691,17 @@ contract HolographOperator is Admin, Initializable, IHolographOperator {
       codehash := extcodehash(contractAddress)
     }
     return (codehash != 0x0 && codehash != precomputekeccak256(""));
+  }
+
+  /**
+   * @dev Purposefully left empty to ensure ether transfers use least amount of gas possible
+   */
+  receive() external payable {}
+
+  /**
+   * @dev Purposefully reverts to prevent any calls to undefined functions
+   */
+  fallback() external payable {
+    revert();
   }
 }

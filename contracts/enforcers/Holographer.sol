@@ -104,29 +104,49 @@ pragma solidity 0.8.13;
 import "../abstract/Admin.sol";
 import "../abstract/Initializable.sol";
 
-import "../interface/IHolograph.sol";
-import "../interface/IHolographer.sol";
-import "../interface/IHolographRegistry.sol";
-import "../interface/IInitializable.sol";
+import "../interface/HolographInterface.sol";
+import "../interface/HolographerInterface.sol";
+import "../interface/HolographRegistryInterface.sol";
+import "../interface/InitializableInterface.sol";
 
 /**
  * @dev This contract is a binder. It puts together all the variables to make the underlying contracts functional and be bridgeable.
  */
-contract Holographer is Admin, Initializable, IHolographer {
+contract Holographer is Admin, Initializable, HolographerInterface {
+  /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.originChain')) - 1)
+   */
   bytes32 constant _originChainSlot = 0xd49ffd6af8249d6e6b5963d9d2b22c6db30ad594cb468453047a14e1c1bcde4d;
+  /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.holograph')) - 1)
+   */
   bytes32 constant _holographSlot = 0xb4107f746e9496e8452accc7de63d1c5e14c19f510932daa04077cd49e8bd77a;
+  /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.contractType')) - 1)
+   */
   bytes32 constant _contractTypeSlot = 0x0b671eb65810897366dd82c4cbb7d9dff8beda8484194956e81e89b8a361d9c7;
+  /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.sourceContract')) - 1)
+   */
   bytes32 constant _sourceContractSlot = 0x27d542086d1e831d40b749e7f5509a626c3047a36d160781c40d5acc83e5b074;
+  /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.blockHeight')) - 1)
+   */
   bytes32 constant _blockHeightSlot = 0x9172848b0f1df776dc924b58e7fa303087ae0409bbf611608529e7f747d55de3;
 
   /**
-   * @dev Constructor is left empty and init is used instead.
+   * @dev Constructor is left empty and init is used instead
    */
   constructor() {}
 
-  function init(bytes memory data) external override returns (bytes4) {
+  /**
+   * @notice Used internally to initialize the contract instead of through a constructor
+   * @dev This function is called by the deployer/factory when creating a contract
+   * @param initPayload abi encoded payload to use for contract initilaization
+   */
+  function init(bytes memory initPayload) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPHER: already initialized");
-    (bytes memory encoded, bytes memory initCode) = abi.decode(data, (bytes, bytes));
+    (bytes memory encoded, bytes memory initCode) = abi.decode(initPayload, (bytes, bytes));
     (uint32 originChain, address holograph, bytes32 contractType, address sourceContract) = abi.decode(
       encoded,
       (uint32, address, bytes32, address)
@@ -139,13 +159,13 @@ contract Holographer is Admin, Initializable, IHolographer {
       sstore(_originChainSlot, originChain)
       sstore(_sourceContractSlot, sourceContract)
     }
-    (bool success, bytes memory returnData) = IHolographRegistry(IHolograph(holograph).getRegistry())
+    (bool success, bytes memory returnData) = HolographRegistryInterface(HolographInterface(holograph).getRegistry())
       .getContractTypeAddress(contractType)
       .delegatecall(abi.encodeWithSignature("init(bytes)", initCode));
     bytes4 selector = abi.decode(returnData, (bytes4));
-    require(success && selector == IInitializable.init.selector, "initialization failed");
+    require(success && selector == InitializableInterface.init.selector, "initialization failed");
     _setInitialized();
-    return IInitializable.init.selector;
+    return InitializableInterface.init.selector;
   }
 
   /**
@@ -170,13 +190,13 @@ contract Holographer is Admin, Initializable, IHolographer {
    * @dev Returns a hardcoded address for the Holograph smart contract that controls and enforces the ERC standards.
    */
   function getHolographEnforcer() public view returns (address) {
-    IHolograph holograph;
+    HolographInterface holograph;
     bytes32 contractType;
     assembly {
       holograph := sload(_holographSlot)
       contractType := sload(_contractTypeSlot)
     }
-    return IHolographRegistry(holograph.getRegistry()).getContractTypeAddress(contractType);
+    return HolographRegistryInterface(holograph.getRegistry()).getContractTypeAddress(contractType);
   }
 
   /**

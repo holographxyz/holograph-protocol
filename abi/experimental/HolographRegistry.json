@@ -5,6 +5,10 @@
     "type": "constructor"
   },
   {
+    "stateMutability": "payable",
+    "type": "fallback"
+  },
+  {
     "inputs": [],
     "name": "admin",
     "outputs": [
@@ -179,7 +183,7 @@
     "outputs": [
       {
         "internalType": "address",
-        "name": "tokenContract",
+        "name": "utilityToken",
         "type": "address"
       }
     ],
@@ -190,7 +194,7 @@
     "inputs": [
       {
         "internalType": "bytes",
-        "name": "data",
+        "name": "initPayload",
         "type": "bytes"
       }
     ],
@@ -328,7 +332,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "tokenContract",
+        "name": "utilityToken",
         "type": "address"
       }
     ],
@@ -354,5 +358,9 @@
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
+  },
+  {
+    "stateMutability": "payable",
+    "type": "receive"
   }
 ]

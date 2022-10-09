@@ -112,7 +112,7 @@ import "../enum/InterfaceType.sol";
 
 import "../interface/ERC20.sol";
 import "../interface/ERC20Burnable.sol";
-import "../interface/ERC20Holograph.sol";
+import "../interface/HolographERC20Interface.sol";
 import "../interface/ERC20Metadata.sol";
 import "../interface/ERC20Permit.sol";
 import "../interface/ERC20Receiver.sol";
@@ -120,11 +120,11 @@ import "../interface/ERC20Safer.sol";
 import "../interface/ERC165.sol";
 import "../interface/Holographable.sol";
 import "../interface/HolographedERC20.sol";
-import "../interface/IHolograph.sol";
-import "../interface/IHolographer.sol";
-import "../interface/IHolographRegistry.sol";
-import "../interface/IInitializable.sol";
-import "../interface/IHolographInterfaces.sol";
+import "../interface/HolographInterface.sol";
+import "../interface/HolographerInterface.sol";
+import "../interface/HolographRegistryInterface.sol";
+import "../interface/InitializableInterface.sol";
+import "../interface/HolographInterfacesInterface.sol";
 import "../interface/Ownable.sol";
 
 import "../library/Counters.sol";
@@ -136,8 +136,14 @@ import "../library/ECDSA.sol";
  * @notice A smart contract for minting and managing Holograph Bridgeable ERC20 Tokens.
  * @dev The entire logic and functionality of the smart contract is self-contained.
  */
-contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ERC20Holograph {
+contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, HolographERC20Interface {
+  /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.holograph')) - 1)
+   */
   bytes32 constant _holographSlot = 0xb4107f746e9496e8452accc7de63d1c5e14c19f510932daa04077cd49e8bd77a;
+  /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.sourceContract')) - 1)
+   */
   bytes32 constant _sourceContractSlot = 0x27d542086d1e831d40b749e7f5509a626c3047a36d160781c40d5acc83e5b074;
 
   using Counters for Counters.Counter;
@@ -183,11 +189,6 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
   mapping(address => Counters.Counter) private _nonces;
 
   /**
-   * @dev Constructor does not accept any parameters.
-   */
-  constructor() {}
-
-  /**
    * @notice Only allow calls from bridge smart contract.
    */
   modifier onlyBridge() {
@@ -208,12 +209,18 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
   }
 
   /**
-   * @notice Initializes the collection.
-   * @dev Special function to allow a one time initialisation on deployment. Also configures and deploys royalties.
+   * @dev Constructor is left empty and init is used instead
    */
-  function init(bytes memory data) external override returns (bytes4) {
+  constructor() {}
+
+  /**
+   * @notice Used internally to initialize the contract instead of through a constructor
+   * @dev This function is called by the deployer/factory when creating a contract
+   * @param initPayload abi encoded payload to use for contract initilaization
+   */
+  function init(bytes memory initPayload) external override returns (bytes4) {
     require(!_isInitialized(), "ERC20: already initialized");
-    IInitializable sourceContract;
+    InitializableInterface sourceContract;
     assembly {
       sstore(_reentrantSlot, 0x0000000000000000000000000000000000000000000000000000000000000001)
       sstore(_ownerSlot, caller())
@@ -228,17 +235,17 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
       string memory domainVersion,
       bool skipInit,
       bytes memory initCode
-    ) = abi.decode(data, (string, string, uint8, uint256, string, string, bool, bytes));
+    ) = abi.decode(initPayload, (string, string, uint8, uint256, string, string, bool, bytes));
     _name = contractName;
     _symbol = contractSymbol;
     _decimals = contractDecimals;
     _eventConfig = eventConfig;
     if (!skipInit) {
-      require(sourceContract.init(initCode) == IInitializable.init.selector, "ERC20: could not init source");
+      require(sourceContract.init(initCode) == InitializableInterface.init.selector, "ERC20: could not init source");
     }
     _setInitialized();
     _eip712_init(domainSeperator, domainVersion);
-    return IInitializable.init.selector;
+    return InitializableInterface.init.selector;
   }
 
   /**
@@ -276,7 +283,7 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
    * This makes it easier for external smart contracts to easily identify a valid ERC20 token contract.
    */
   function supportsInterface(bytes4 interfaceId) external view returns (bool) {
-    IHolographInterfaces interfaces = IHolographInterfaces(_interfaces());
+    HolographInterfacesInterface interfaces = HolographInterfacesInterface(_interfaces());
     ERC165 erc165Contract;
     assembly {
       erc165Contract := sload(_sourceContractSlot)
@@ -410,7 +417,7 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
    */
   function holographBridgeMint(address to, uint256 amount) external onlyBridge returns (bytes4) {
     _mint(to, amount);
-    return ERC20Holograph.holographBridgeMint.selector;
+    return HolographERC20Interface.holographBridgeMint.selector;
   }
 
   function increaseAllowance(address spender, uint256 addedValue) public returns (bool) {
@@ -738,7 +745,7 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, ER
     return ownableContract.owner();
   }
 
-  function _holograph() private view returns (IHolograph holograph) {
+  function _holograph() private view returns (HolographInterface holograph) {
     assembly {
       holograph := sload(_holographSlot)
     }

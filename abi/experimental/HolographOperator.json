@@ -24,6 +24,10 @@
     "type": "event"
   },
   {
+    "stateMutability": "payable",
+    "type": "fallback"
+  },
+  {
     "inputs": [],
     "name": "admin",
     "outputs": [
@@ -129,6 +133,19 @@
       {
         "internalType": "address",
         "name": "bridge",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getHolograph",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "holograph",
         "type": "address"
       }
     ],
@@ -299,6 +316,19 @@
   },
   {
     "inputs": [],
+    "name": "getTotalPods",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "totalPods",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "getUtilityToken",
     "outputs": [
       {
@@ -314,7 +344,7 @@
     "inputs": [
       {
         "internalType": "bytes",
-        "name": "data",
+        "name": "initPayload",
         "type": "bytes"
       }
     ],
@@ -399,8 +429,18 @@
         "type": "address"
       },
       {
+        "internalType": "uint256",
+        "name": "nonce",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "holographableContract",
+        "type": "address"
+      },
+      {
         "internalType": "bytes",
-        "name": "_payload",
+        "name": "bridgeOutPayload",
         "type": "bytes"
       }
     ],
@@ -431,6 +471,19 @@
       }
     ],
     "name": "setBridge",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "holograph",
+        "type": "address"
+      }
+    ],
+    "name": "setHolograph",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -504,5 +557,9 @@
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
+  },
+  {
+    "stateMutability": "payable",
+    "type": "receive"
   }
 ]

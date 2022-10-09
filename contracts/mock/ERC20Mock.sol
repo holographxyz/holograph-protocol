@@ -106,7 +106,7 @@ import "../abstract/NonReentrant.sol";
 
 import "../interface/ERC20.sol";
 import "../interface/ERC20Burnable.sol";
-import "../interface/ERC20Holograph.sol";
+import "../interface/HolographERC20Interface.sol";
 import "../interface/ERC20Metadata.sol";
 import "../interface/ERC20Permit.sol";
 import "../interface/ERC20Receiver.sol";

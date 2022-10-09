@@ -24,19 +24,20 @@ const getEnvironment = (): Environment => {
   const acceptableBranches: Set<string> = new Set<string>(['experimental', 'develop', 'testnet', 'mainnet']);
   const head = './.git/HEAD';
   const env: string = process.env.HOLOGRAPH_ENVIRONMENT || '';
-  console.log('HOLOGRAPH_ENVIRONMENT =', env);
   if (env === '') {
     if (fs.existsSync(head)) {
       const contents = fs.readFileSync('./.git/HEAD', 'utf8');
       const branch = contents.trim().split('ref: refs/heads/')[1];
+      console.log('GitBranch:', branch);
       if (acceptableBranches.has(branch)) {
         environment = Environment[branch as keyof typeof Environment];
       }
     }
   } else if (acceptableBranches.has(env)) {
+    console.log('HOLOGRAPH_ENVIRONMENT:', env);
     environment = Environment[env as keyof typeof Environment];
   }
-  console.log('getEnvironment =', environment);
+  console.log('Environment:', environment);
 
   return environment;
 };

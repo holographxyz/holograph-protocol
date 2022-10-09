@@ -20,12 +20,18 @@ import "./interface/ERC721.sol";
 import "./interface/ERC721Enumerable.sol";
 import "./interface/ERC721Metadata.sol";
 import "./interface/ERC721TokenReceiver.sol";
-import "./interface/IInitializable.sol";
-import "./interface/IPA1D.sol";
+import "./interface/InitializableInterface.sol";
+import "./interface/PA1DInterface.sol";
 
 import "./library/Base64.sol";
 import "./library/Strings.sol";
 
+/**
+ * @title Holograph Interfaces
+ * @author https://github.com/holographxyz
+ * @notice Get universal Holograph Protocol variables
+ * @dev The contract stores a reference of all supported: chains, interfaces, functions, etc.
+ */
 contract HolographInterfaces is Admin, Initializable {
   mapping(InterfaceType => mapping(bytes4 => bool)) private _supportedInterfaces;
   mapping(ChainIdType => mapping(uint256 => mapping(ChainIdType => uint256))) private _chainIdMap;
@@ -148,41 +154,44 @@ contract HolographInterfaces is Admin, Initializable {
     _supportedInterfaces[InterfaceType.ERC721][CollectionURI.contractURI.selector] = true;
 
     // PA1D
-    _supportedInterfaces[InterfaceType.PA1D][IPA1D.initPA1D.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][IPA1D.configurePayouts.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][IPA1D.getPayoutInfo.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][IPA1D.getEthPayout.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][IPA1D.getTokenPayout.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][IPA1D.getTokensPayout.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][IPA1D.supportsInterface.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][IPA1D.setRoyalties.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][IPA1D.royaltyInfo.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][IPA1D.getFeeBps.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][IPA1D.getFeeRecipients.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][IPA1D.getFeeBps.selector ^ IPA1D.getFeeRecipients.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][IPA1D.getRoyalties.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][IPA1D.getFees.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][IPA1D.tokenCreator.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][IPA1D.calculateRoyaltyFee.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][IPA1D.marketContract.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][IPA1D.tokenCreators.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][IPA1D.bidSharesForToken.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][IPA1D.getStorageSlot.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][IPA1D.getTokenAddress.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.initPA1D.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.configurePayouts.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.getPayoutInfo.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.getEthPayout.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.getTokenPayout.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.getTokensPayout.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.supportsInterface.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.setRoyalties.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.royaltyInfo.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.getFeeBps.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.getFeeRecipients.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][
+      PA1DInterface.getFeeBps.selector ^ PA1DInterface.getFeeRecipients.selector
+    ] = true;
+    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.getRoyalties.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.getFees.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.tokenCreator.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.calculateRoyaltyFee.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.marketContract.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.tokenCreators.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.bidSharesForToken.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.getStorageSlot.selector] = true;
+    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.getTokenAddress.selector] = true;
   }
 
   /**
    * @notice Used internally to initialize the contract instead of through a constructor
-   * @dev This function is called by the deployer/factory when creating a contract.
+   * @dev This function is called by the deployer/factory when creating a contract
+   * @param initPayload abi encoded payload to use for contract initilaization
    */
-  function init(bytes memory data) external override returns (bytes4) {
+  function init(bytes memory initPayload) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
-    address contractAdmin = abi.decode(data, (address));
+    address contractAdmin = abi.decode(initPayload, (address));
     assembly {
       sstore(_adminSlot, contractAdmin)
     }
     _setInitialized();
-    return IInitializable.init.selector;
+    return InitializableInterface.init.selector;
   }
 
   function contractURI(
@@ -282,10 +291,16 @@ contract HolographInterfaces is Admin, Initializable {
     }
   }
 
+  /**
+   * @dev Purposefully reverts to prevent having any type of ether transfered into the contract
+   */
   receive() external payable {
     revert();
   }
 
+  /**
+   * @dev Purposefully reverts to prevent any calls to undefined functions
+   */
   fallback() external payable {
     revert();
   }

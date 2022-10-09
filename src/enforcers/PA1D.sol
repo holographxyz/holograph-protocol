@@ -9,8 +9,8 @@ import "../abstract/Owner.sol";
 import "../library/Zora.sol";
 
 import "../interface/ERC20.sol";
-import "../interface/IInitializable.sol";
-import "../interface/IPA1D.sol";
+import "../interface/InitializableInterface.sol";
+import "../interface/PA1DInterface.sol";
 
 /**
  * @title PA1D (CXIP)
@@ -19,10 +19,25 @@ import "../interface/IPA1D.sol";
  * @dev This smart contract is not intended to be used directly. Apply it to any of your ERC721 or ERC1155 smart contracts through a delegatecall fallback.
  */
 contract PA1D is Admin, Owner, Initializable {
+  /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.PA1D.defaultBp')) - 1)
+   */
   bytes32 constant _defaultBpSlot = precomputeslot("eip1967.Holograph.PA1D.defaultBp");
+  /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.PA1D.defaultReceiver')) - 1)
+   */
   bytes32 constant _defaultReceiverSlot = precomputeslot("eip1967.Holograph.PA1D.defaultReceiver");
+  /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.PA1D.initialized')) - 1)
+   */
   bytes32 constant _initializedPaidSlot = precomputeslot("eip1967.Holograph.PA1D.initialized");
+  /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.PA1D.payout.addresses')) - 1)
+   */
   bytes32 constant _payoutAddressesSlot = precomputeslot("eip1967.Holograph.PA1D.payout.addresses");
+  /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.PA1D.payout.bps')) - 1)
+   */
   bytes32 constant _payoutBpsSlot = precomputeslot("eip1967.Holograph.PA1D.payout.bps");
 
   string constant _bpString = "eip1967.Holograph.PA1D.bp";
@@ -47,36 +62,40 @@ contract PA1D is Admin, Owner, Initializable {
   }
 
   /**
-   * @notice Constructor is empty and not utilised.
-   * @dev Since the smart contract is being used inside of a fallback context, the constructor function is not being used.
+   * @dev Constructor is left empty and init is used instead
    */
   constructor() {}
 
-  function init(bytes memory data) external override returns (bytes4) {
+  /**
+   * @notice Used internally to initialize the contract instead of through a constructor
+   * @dev This function is called by the deployer/factory when creating a contract
+   * @param initPayload abi encoded payload to use for contract initilaization
+   */
+  function init(bytes memory initPayload) external override returns (bytes4) {
     require(!_isInitialized(), "PA1D: already initialized");
     assembly {
       sstore(_adminSlot, caller())
       sstore(_ownerSlot, caller())
     }
-    (address receiver, uint256 bp) = abi.decode(data, (address, uint256));
+    (address receiver, uint256 bp) = abi.decode(initPayload, (address, uint256));
     setRoyalties(0, payable(receiver), bp);
     _setInitialized();
-    return IInitializable.init.selector;
+    return InitializableInterface.init.selector;
   }
 
-  function initPA1D(bytes memory data) external returns (bytes4) {
+  function initPA1D(bytes memory initPayload) external returns (bytes4) {
     uint256 initialized;
     assembly {
       initialized := sload(_initializedPaidSlot)
     }
     require(initialized == 0, "PA1D: already initialized");
-    (address receiver, uint256 bp) = abi.decode(data, (address, uint256));
+    (address receiver, uint256 bp) = abi.decode(initPayload, (address, uint256));
     setRoyalties(0, payable(receiver), bp);
     initialized = 1;
     assembly {
       sstore(_initializedPaidSlot, initialized)
     }
-    return IInitializable.init.selector;
+    return InitializableInterface.init.selector;
   }
 
   /**

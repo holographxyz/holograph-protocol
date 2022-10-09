@@ -110,17 +110,17 @@ import "../enum/InterfaceType.sol";
 
 import "../interface/ERC165.sol";
 import "../interface/ERC721.sol";
-import "../interface/ERC721Holograph.sol";
+import "../interface/HolographERC721Interface.sol";
 import "../interface/ERC721Metadata.sol";
 import "../interface/ERC721TokenReceiver.sol";
 import "../interface/Holographable.sol";
 import "../interface/HolographedERC721.sol";
-import "../interface/IHolograph.sol";
-import "../interface/IHolographer.sol";
-import "../interface/IHolographRegistry.sol";
-import "../interface/IInitializable.sol";
-import "../interface/IHolographInterfaces.sol";
-import "../interface/IPA1D.sol";
+import "../interface/HolographInterface.sol";
+import "../interface/HolographerInterface.sol";
+import "../interface/HolographRegistryInterface.sol";
+import "../interface/InitializableInterface.sol";
+import "../interface/HolographInterfacesInterface.sol";
+import "../interface/PA1DInterface.sol";
 import "../interface/Ownable.sol";
 
 /**
@@ -129,8 +129,14 @@ import "../interface/Ownable.sol";
  * @notice A smart contract for minting and managing Holograph Bridgeable ERC721 NFTs.
  * @dev The entire logic and functionality of the smart contract is self-contained.
  */
-contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
+contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializable {
+  /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.holograph')) - 1)
+   */
   bytes32 constant _holographSlot = 0xb4107f746e9496e8452accc7de63d1c5e14c19f510932daa04077cd49e8bd77a;
+  /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.sourceContract')) - 1)
+   */
   bytes32 constant _sourceContractSlot = 0x27d542086d1e831d40b749e7f5509a626c3047a36d160781c40d5acc83e5b074;
 
   /**
@@ -200,12 +206,6 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
   mapping(uint256 => bool) private _burnedTokens;
 
   /**
-   * @notice Constructor is empty and not utilised.
-   * @dev To make exact CREATE2 deployment possible, constructor is left empty. We utilize the "init" function instead.
-   */
-  constructor() {}
-
-  /**
    * @notice Only allow calls from bridge smart contract.
    */
   modifier onlyBridge() {
@@ -226,11 +226,53 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
   }
 
   /**
+   * @dev Constructor is left empty and init is used instead
+   */
+  constructor() {}
+
+  /**
+   * @notice Used internally to initialize the contract instead of through a constructor
+   * @dev This function is called by the deployer/factory when creating a contract
+   * @param initPayload abi encoded payload to use for contract initilaization
+   */
+  function init(bytes memory initPayload) external override returns (bytes4) {
+    require(!_isInitialized(), "ERC721: already initialized");
+    InitializableInterface sourceContract;
+    assembly {
+      sstore(_ownerSlot, caller())
+      sourceContract := sload(_sourceContractSlot)
+    }
+    (
+      string memory contractName,
+      string memory contractSymbol,
+      uint16 contractBps,
+      uint256 eventConfig,
+      bool skipInit,
+      bytes memory initCode
+    ) = abi.decode(initPayload, (string, string, uint16, uint256, bool, bytes));
+    _name = contractName;
+    _symbol = contractSymbol;
+    _bps = contractBps;
+    _eventConfig = eventConfig;
+    if (!skipInit) {
+      require(sourceContract.init(initCode) == InitializableInterface.init.selector, "ERC721: could not init source");
+      (bool success, bytes memory returnData) = _royalties().delegatecall(
+        abi.encodeWithSignature("initPA1D(bytes)", abi.encode(address(this), uint256(contractBps)))
+      );
+      bytes4 selector = abi.decode(returnData, (bytes4));
+      require(success && selector == InitializableInterface.init.selector, "ERC721: coud not init PA1D");
+    }
+
+    _setInitialized();
+    return InitializableInterface.init.selector;
+  }
+
+  /**
    * @notice Gets a base64 encoded contract JSON file.
    * @return string The URI.
    */
   function contractURI() external view returns (string memory) {
-    return IHolographInterfaces(_interfaces()).contractURI(_name, "", "", _bps, address(this));
+    return HolographInterfacesInterface(_interfaces()).contractURI(_name, "", "", _bps, address(this));
   }
 
   /**
@@ -248,7 +290,7 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
    * @return bool True if supported.
    */
   function supportsInterface(bytes4 interfaceId) external view returns (bool) {
-    IHolographInterfaces interfaces = IHolographInterfaces(_interfaces());
+    HolographInterfacesInterface interfaces = HolographInterfacesInterface(_interfaces());
     ERC165 erc165Contract;
     assembly {
       erc165Contract := sload(_sourceContractSlot)
@@ -382,42 +424,6 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
     }
     _burn(from, tokenId);
     return (Holographable.bridgeOut.selector, abi.encode(from, to, tokenId, data));
-  }
-
-  /**
-   * @notice Initializes the collection.
-   * @dev Special function to allow a one time initialisation on deployment. Also configures and deploys royalties.
-   */
-  function init(bytes memory data) external override returns (bytes4) {
-    require(!_isInitialized(), "ERC721: already initialized");
-    IInitializable sourceContract;
-    assembly {
-      sstore(_ownerSlot, caller())
-      sourceContract := sload(_sourceContractSlot)
-    }
-    (
-      string memory contractName,
-      string memory contractSymbol,
-      uint16 contractBps,
-      uint256 eventConfig,
-      bool skipInit,
-      bytes memory initCode
-    ) = abi.decode(data, (string, string, uint16, uint256, bool, bytes));
-    _name = contractName;
-    _symbol = contractSymbol;
-    _bps = contractBps;
-    _eventConfig = eventConfig;
-    if (!skipInit) {
-      require(sourceContract.init(initCode) == IInitializable.init.selector, "ERC721: could not init source");
-      (bool success, bytes memory returnData) = _royalties().delegatecall(
-        abi.encodeWithSignature("initPA1D(bytes)", abi.encode(address(this), uint256(contractBps)))
-      );
-      bytes4 selector = abi.decode(returnData, (bytes4));
-      require(success && selector == IInitializable.init.selector, "ERC721: coud not init PA1D");
-    }
-
-    _setInitialized();
-    return IInitializable.init.selector;
   }
 
   /**
@@ -752,7 +758,7 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
     if (_isEventRegistered(HolographERC721Event.beforeOnERC721Received)) {
       require(SourceERC721().beforeOnERC721Received(_operator, _from, address(this), _tokenId, _data));
     }
-    try ERC721Holograph(_operator).ownerOf(_tokenId) returns (address tokenOwner) {
+    try HolographERC721Interface(_operator).ownerOf(_tokenId) returns (address tokenOwner) {
       require(tokenOwner == address(this), "ERC721: contract not token owner");
     } catch {
       revert("ERC721: token does not exist");
@@ -870,8 +876,9 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
   }
 
   function _chain() private view returns (uint32) {
-    uint32 currentChain = IHolograph(IHolographer(payable(address(this))).getHolograph()).getHolographChainId();
-    if (currentChain != IHolographer(payable(address(this))).getOriginChain()) {
+    uint32 currentChain = HolographInterface(HolographerInterface(payable(address(this))).getHolograph())
+      .getHolographChainId();
+    if (currentChain != HolographerInterface(payable(address(this))).getOriginChain()) {
       return currentChain;
     }
     return uint32(0);
@@ -933,7 +940,7 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
     return ownableContract.owner();
   }
 
-  function _holograph() private view returns (IHolograph holograph) {
+  function _holograph() private view returns (HolographInterface holograph) {
     assembly {
       holograph := sload(_holographSlot)
     }
@@ -944,7 +951,7 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
    */
   function _royalties() private view returns (address) {
     return
-      IHolographRegistry(_holograph().getRegistry()).getContractTypeAddress(
+      HolographRegistryInterface(_holograph().getRegistry()).getContractTypeAddress(
         0x0000000000000000000000000000000000000000000000000000000050413144
       );
   }
@@ -961,7 +968,7 @@ contract HolographERC721 is Admin, Owner, ERC721Holograph, Initializable {
   fallback() external payable {
     // we check if royalties support the function, send there, otherwise revert to source
     address _target;
-    if (IHolographInterfaces(_interfaces()).supportsInterface(InterfaceType.PA1D, msg.sig)) {
+    if (HolographInterfacesInterface(_interfaces()).supportsInterface(InterfaceType.PA1D, msg.sig)) {
       _target = _royalties();
       assembly {
         calldatacopy(0, 0, calldatasize())

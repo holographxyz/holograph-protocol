@@ -104,17 +104,24 @@ pragma solidity 0.8.13;
 import "./abstract/Admin.sol";
 import "./abstract/Initializable.sol";
 
-import "./interface/IHolograph.sol";
-import "./interface/IHolographRegistry.sol";
-import "./interface/IInitializable.sol";
+import "./interface/HolographInterface.sol";
+import "./interface/HolographRegistryInterface.sol";
+import "./interface/InitializableInterface.sol";
 
 /**
- * @dev This smart contract stores the different source codes that have been prepared and can be used for bridging.
- * @dev We will store here the layer 1 for ERC721 and ERC1155 smart contracts.
- * @dev This way it can be super easy to upgrade/update the source code once, and have all smart contracts automatically updated.
+ * @title Holograph Registry
+ * @author https://github.com/holographxyz
+ * @notice View and validate all deployed holographable contracts
+ * @dev Use this to: validate that contracts are Holograph Protocol compliant, get source code for supported standards, and interact with hTokens
  */
-contract HolographRegistry is Admin, Initializable, IHolographRegistry {
+contract HolographRegistry is Admin, Initializable, HolographRegistryInterface {
+  /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.holograph')) - 1)
+   */
   bytes32 constant _holographSlot = 0xb4107f746e9496e8452accc7de63d1c5e14c19f510932daa04077cd49e8bd77a;
+  /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.utilityToken')) - 1)
+   */
   bytes32 constant _utilityTokenSlot = 0xbf76518d46db472b71aa7677a0908b8016f3dee568415ffa24055f9a670f9c37;
 
   /**
@@ -123,23 +130,23 @@ contract HolographRegistry is Admin, Initializable, IHolographRegistry {
   address[] private _holographableContracts;
 
   /**
-   * @dev A list of hashes and the mapped out contract addresses.
+   * @dev A list of hashes and the mapped out contract addresses
    */
   mapping(bytes32 => address) private _holographedContractsHashMap;
 
   /**
-   * @dev Storage slot for saving contract type to contract address references.
+   * @dev Storage slot for saving contract type to contract address references
    */
   mapping(bytes32 => address) private _contractTypeAddresses;
 
   /**
-   * @dev Reserved type addresses for Admin.
-   *  Note: this is used for defining default contracts.
+   * @dev Reserved type addresses for Admin
+   *  Note: this is used for defining default contracts
    */
   mapping(bytes32 => bool) private _reservedTypes;
 
   /**
-   * @dev A list of smart contracts that are guaranteed secure and holographable.
+   * @dev A list of smart contracts that are guaranteed secure and holographable
    */
   mapping(address => bool) private _holographedContracts;
 
@@ -149,17 +156,18 @@ contract HolographRegistry is Admin, Initializable, IHolographRegistry {
   mapping(uint32 => address) private _hTokens;
 
   /**
-   * @dev Constructor is left empty and init is used instead.
+   * @dev Constructor is left empty and init is used instead
    */
   constructor() {}
 
   /**
    * @notice Used internally to initialize the contract instead of through a constructor
-   * @dev This function is called by the deployer/factory when creating a contract.
+   * @dev This function is called by the deployer/factory when creating a contract
+   * @param initPayload abi encoded payload to use for contract initilaization
    */
-  function init(bytes memory data) external override returns (bytes4) {
+  function init(bytes memory initPayload) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
-    (address holograph, bytes32[] memory reservedTypes) = abi.decode(data, (address, bytes32[]));
+    (address holograph, bytes32[] memory reservedTypes) = abi.decode(initPayload, (address, bytes32[]));
     assembly {
       sstore(_adminSlot, origin())
       sstore(_holographSlot, holograph)
@@ -168,30 +176,34 @@ contract HolographRegistry is Admin, Initializable, IHolographRegistry {
       _reservedTypes[reservedTypes[i]] = true;
     }
     _setInitialized();
-    return IInitializable.init.selector;
+    return InitializableInterface.init.selector;
   }
 
   /**
-   * @dev Allows Holograph Factory to register a deployed contract, referenced with deployment hash.
+   * @dev Allows Holograph Factory to register a deployed contract, referenced with deployment hash
    */
   function factoryDeployedHash(bytes32 hash, address contractAddress) external {
     address holograph;
     assembly {
       holograph := sload(_holographSlot)
     }
-    require(msg.sender == IHolograph(holograph).getFactory(), "HOLOGRAPH: factory only function");
+    require(msg.sender == HolographInterface(holograph).getFactory(), "HOLOGRAPH: factory only function");
     _holographedContractsHashMap[hash] = contractAddress;
     _holographedContracts[contractAddress] = true;
     _holographableContracts.push(contractAddress);
   }
 
   /**
-   * @dev Returns the contract address for a contract type.
+   * @dev Returns the contract address for a contract type
    */
   function getContractTypeAddress(bytes32 contractType) external view returns (address) {
     return _contractTypeAddresses[contractType];
   }
 
+  /**
+   * @notice Get the Holograph Protocol contract
+   * @dev This contract stores a reference to all the primary modules and variables of the protocol
+   */
   function getHolograph() external view returns (address holograph) {
     assembly {
       holograph := sload(_holographSlot)
@@ -199,10 +211,10 @@ contract HolographRegistry is Admin, Initializable, IHolographRegistry {
   }
 
   /**
-   * @notice Get set length list, starting from index, for all holographable contracts.
-   * @param index The index to start enumeration from.
-   * @param length The length of returned results.
-   * @return contracts address[] Returns a set length array of holographable contracts deployed.
+   * @notice Get set length list, starting from index, for all holographable contracts
+   * @param index The index to start enumeration from
+   * @param length The length of returned results
+   * @return contracts address[] Returns a set length array of holographable contracts deployed
    */
   function getHolographableContracts(uint256 index, uint256 length) external view returns (address[] memory contracts) {
     uint256 supply = _holographableContracts.length;
@@ -216,7 +228,7 @@ contract HolographRegistry is Admin, Initializable, IHolographRegistry {
   }
 
   /**
-   * @notice Get total number of deployed holographable contracts.
+   * @notice Get total number of deployed holographable contracts
    */
   function getHolographableContractsLength() external view returns (uint256) {
     return _holographableContracts.length;
@@ -230,15 +242,19 @@ contract HolographRegistry is Admin, Initializable, IHolographRegistry {
   }
 
   /**
-   * @dev Returns the hToken address for a given chain id.
+   * @dev Returns the hToken address for a given chain id
    */
   function getHToken(uint32 chainId) external view returns (address) {
     return _hTokens[chainId];
   }
 
-  function getUtilityToken() external view returns (address tokenContract) {
+  /**
+   * @notice Get the Holograph Utility Token address
+   * @dev This is the official utility token of the Holograph Protocol
+   */
+  function getUtilityToken() external view returns (address utilityToken) {
     assembly {
-      tokenContract := sload(_utilityTokenSlot)
+      utilityToken := sload(_utilityTokenSlot)
     }
   }
 
@@ -251,14 +267,17 @@ contract HolographRegistry is Admin, Initializable, IHolographRegistry {
   }
 
   /**
-   * @dev Allows to reference a deployed smart contract, and use it's code as reference inside of Holographers.
+   * @dev Allows to reference a deployed smart contract, and use it's code as reference inside of Holographers
    */
   function referenceContractTypeAddress(address contractAddress) external returns (bytes32) {
     bytes32 contractType;
     assembly {
       contractType := extcodehash(contractAddress)
     }
-    require((contractType != 0x0 && contractType != 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470), "HOLOGRAPH: empty contract");
+    require(
+      (contractType != 0x0 && contractType != 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470),
+      "HOLOGRAPH: empty contract"
+    );
     require(_contractTypeAddresses[contractType] == address(0), "HOLOGRAPH: contract already set");
     require(!_reservedTypes[contractType], "HOLOGRAPH: reserved address type");
     _contractTypeAddresses[contractType] = contractAddress;
@@ -266,15 +285,19 @@ contract HolographRegistry is Admin, Initializable, IHolographRegistry {
   }
 
   /**
-   * @dev Sets the contract address for a contract type.
+   * @dev Sets the contract address for a contract type
    */
   function setContractTypeAddress(bytes32 contractType, address contractAddress) external onlyAdmin {
-    // For now we leave overriding as possible. need to think this through.
+    // For now we leave overriding as possible. need to think this through
     //require(_contractTypeAddresses[contractType] == address(0), "HOLOGRAPH: contract already set");
     require(_reservedTypes[contractType], "HOLOGRAPH: not reserved type");
     _contractTypeAddresses[contractType] = contractAddress;
   }
 
+  /**
+   * @notice Update the Holograph Protocol contract address
+   * @param holograph address of the Holograph Protocol smart contract to use
+   */
   function setHolograph(address holograph) external onlyAdmin {
     assembly {
       sstore(_holographSlot, holograph)
@@ -282,24 +305,42 @@ contract HolographRegistry is Admin, Initializable, IHolographRegistry {
   }
 
   /**
-   * @dev Sets the hToken address for a specific chain id.
+   * @dev Sets the hToken address for a specific chain id
    */
   function setHToken(uint32 chainId, address hToken) external onlyAdmin {
     _hTokens[chainId] = hToken;
   }
 
-  function setUtilityToken(address tokenContract) external onlyAdmin {
+  /**
+   * @notice Update the Holograph Utility Token address
+   * @param utilityToken address of the Holograph Utility Token smart contract to use
+   */
+  function setUtilityToken(address utilityToken) external onlyAdmin {
     assembly {
-      sstore(_utilityTokenSlot, tokenContract)
+      sstore(_utilityTokenSlot, utilityToken)
     }
   }
 
   /**
-   * @dev Allows admin to update or toggle reserved types.
+   * @dev Allows admin to update or toggle reserved types
    */
   function updateReservedContractTypes(bytes32[] calldata hashes, bool[] calldata reserved) external onlyAdmin {
     for (uint256 i = 0; i < hashes.length; i++) {
       _reservedTypes[hashes[i]] = reserved[i];
     }
+  }
+
+  /**
+   * @dev Purposefully reverts to prevent having any type of ether transfered into the contract
+   */
+  receive() external payable {
+    revert();
+  }
+
+  /**
+   * @dev Purposefully reverts to prevent any calls to undefined functions
+   */
+  fallback() external payable {
+    revert();
   }
 }
