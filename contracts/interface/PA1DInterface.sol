@@ -101,7 +101,7 @@
 
 pragma solidity 0.8.13;
 
-import "../library/Zora.sol";
+import "../struct/ZoraBidShares.sol";
 
 interface PA1DInterface {
   function initPA1D(bytes memory data) external returns (bytes4);
@@ -149,7 +149,7 @@ interface PA1DInterface {
 
   function tokenCreators(uint256 tokenId) external view returns (address);
 
-  function bidSharesForToken(uint256 tokenId) external view returns (Zora.BidShares memory bidShares);
+  function bidSharesForToken(uint256 tokenId) external view returns (ZoraBidShares memory bidShares);
 
   function getStorageSlot(string calldata slot) external pure returns (bytes32);
 

@@ -33,151 +33,25 @@ import "./library/Strings.sol";
  * @dev The contract stores a reference of all supported: chains, interfaces, functions, etc.
  */
 contract HolographInterfaces is Admin, Initializable {
+  /**
+   * @dev Internal mapping of all InterfaceType interfaces
+   */
   mapping(InterfaceType => mapping(bytes4 => bool)) private _supportedInterfaces;
+
+  /**
+   * @dev Internal mapping of all ChainIdType conversions
+   */
   mapping(ChainIdType => mapping(uint256 => mapping(ChainIdType => uint256))) private _chainIdMap;
+
+  /**
+   * @dev Internal mapping of all TokenUriType prepends
+   */
   mapping(TokenUriType => string) private _prependURI;
 
-  constructor() {
-    _prependURI[TokenUriType.IPFS] = "ipfs://";
-    _prependURI[TokenUriType.HTTPS] = "https://";
-    _prependURI[TokenUriType.ARWEAVE] = "ar://";
-
-    // ERC20
-
-    // ERC165
-    _supportedInterfaces[InterfaceType.ERC20][ERC165.supportsInterface.selector] = true;
-
-    // ERC20
-    _supportedInterfaces[InterfaceType.ERC20][ERC20.allowance.selector] = true;
-    _supportedInterfaces[InterfaceType.ERC20][ERC20.approve.selector] = true;
-    _supportedInterfaces[InterfaceType.ERC20][ERC20.balanceOf.selector] = true;
-    _supportedInterfaces[InterfaceType.ERC20][ERC20.totalSupply.selector] = true;
-    _supportedInterfaces[InterfaceType.ERC20][ERC20.transfer.selector] = true;
-    _supportedInterfaces[InterfaceType.ERC20][ERC20.transferFrom.selector] = true;
-    _supportedInterfaces[InterfaceType.ERC20][
-      ERC20.allowance.selector ^
-        ERC20.approve.selector ^
-        ERC20.balanceOf.selector ^
-        ERC20.totalSupply.selector ^
-        ERC20.transfer.selector ^
-        ERC20.transferFrom.selector
-    ] = true;
-
-    // ERC20Metadata
-    _supportedInterfaces[InterfaceType.ERC20][ERC20Metadata.name.selector] = true;
-    _supportedInterfaces[InterfaceType.ERC20][ERC20Metadata.symbol.selector] = true;
-    _supportedInterfaces[InterfaceType.ERC20][ERC20Metadata.decimals.selector] = true;
-    _supportedInterfaces[InterfaceType.ERC20][
-      ERC20Metadata.name.selector ^ ERC20Metadata.symbol.selector ^ ERC20Metadata.decimals.selector
-    ] = true;
-
-    // ERC20Burnable
-    _supportedInterfaces[InterfaceType.ERC20][ERC20Burnable.burn.selector] = true;
-    _supportedInterfaces[InterfaceType.ERC20][ERC20Burnable.burnFrom.selector] = true;
-    _supportedInterfaces[InterfaceType.ERC20][ERC20Burnable.burn.selector ^ ERC20Burnable.burnFrom.selector] = true;
-
-    // ERC20Safer
-    _supportedInterfaces[InterfaceType.ERC20][functionsig("safeTransfer(address,uint256)")] = true;
-    _supportedInterfaces[InterfaceType.ERC20][functionsig("safeTransfer(address,uint256,bytes)")] = true;
-    _supportedInterfaces[InterfaceType.ERC20][functionsig("safeTransferFrom(address,address,uint256)")] = true;
-    _supportedInterfaces[InterfaceType.ERC20][functionsig("safeTransferFrom(address,address,uint256,bytes)")] = true;
-    _supportedInterfaces[InterfaceType.ERC20][
-      bytes4(functionsig("safeTransfer(address,uint256)")) ^
-        bytes4(functionsig("safeTransfer(address,uint256,bytes)")) ^
-        bytes4(functionsig("safeTransferFrom(address,address,uint256)")) ^
-        bytes4(functionsig("safeTransferFrom(address,address,uint256,bytes)"))
-    ] = true;
-
-    // ERC20Permit
-    _supportedInterfaces[InterfaceType.ERC20][ERC20Permit.permit.selector] = true;
-    _supportedInterfaces[InterfaceType.ERC20][ERC20Permit.nonces.selector] = true;
-    _supportedInterfaces[InterfaceType.ERC20][ERC20Permit.DOMAIN_SEPARATOR.selector] = true;
-    _supportedInterfaces[InterfaceType.ERC20][
-      ERC20Permit.permit.selector ^ ERC20Permit.nonces.selector ^ ERC20Permit.DOMAIN_SEPARATOR.selector
-    ] = true;
-
-    // ERC721
-
-    // ERC165
-    _supportedInterfaces[InterfaceType.ERC721][ERC165.supportsInterface.selector] = true;
-
-    // ERC721
-    _supportedInterfaces[InterfaceType.ERC721][ERC721.balanceOf.selector] = true;
-    _supportedInterfaces[InterfaceType.ERC721][ERC721.ownerOf.selector] = true;
-    _supportedInterfaces[InterfaceType.ERC721][functionsig("safeTransferFrom(address,address,uint256)")] = true;
-    _supportedInterfaces[InterfaceType.ERC721][functionsig("safeTransferFrom(address,address,uint256,bytes)")] = true;
-    _supportedInterfaces[InterfaceType.ERC721][ERC721.transferFrom.selector] = true;
-    _supportedInterfaces[InterfaceType.ERC721][ERC721.approve.selector] = true;
-    _supportedInterfaces[InterfaceType.ERC721][ERC721.setApprovalForAll.selector] = true;
-    _supportedInterfaces[InterfaceType.ERC721][ERC721.getApproved.selector] = true;
-    _supportedInterfaces[InterfaceType.ERC721][ERC721.isApprovedForAll.selector] = true;
-    _supportedInterfaces[InterfaceType.ERC721][
-      ERC721.balanceOf.selector ^
-        ERC721.ownerOf.selector ^
-        functionsig("safeTransferFrom(address,address,uint256)") ^
-        functionsig("safeTransferFrom(address,address,uint256,bytes)") ^
-        ERC721.transferFrom.selector ^
-        ERC721.approve.selector ^
-        ERC721.setApprovalForAll.selector ^
-        ERC721.getApproved.selector ^
-        ERC721.isApprovedForAll.selector
-    ] = true;
-
-    // ERC721Enumerable
-    _supportedInterfaces[InterfaceType.ERC721][ERC721Enumerable.totalSupply.selector] = true;
-    _supportedInterfaces[InterfaceType.ERC721][ERC721Enumerable.tokenByIndex.selector] = true;
-    _supportedInterfaces[InterfaceType.ERC721][ERC721Enumerable.tokenOfOwnerByIndex.selector] = true;
-    _supportedInterfaces[InterfaceType.ERC721][
-      ERC721Enumerable.totalSupply.selector ^
-        ERC721Enumerable.tokenByIndex.selector ^
-        ERC721Enumerable.tokenOfOwnerByIndex.selector
-    ] = true;
-
-    // ERC721Metadata
-    _supportedInterfaces[InterfaceType.ERC721][ERC721Metadata.name.selector] = true;
-    _supportedInterfaces[InterfaceType.ERC721][ERC721Metadata.symbol.selector] = true;
-    _supportedInterfaces[InterfaceType.ERC721][ERC721Metadata.tokenURI.selector] = true;
-    _supportedInterfaces[InterfaceType.ERC721][
-      ERC721Metadata.name.selector ^ ERC721Metadata.symbol.selector ^ ERC721Metadata.tokenURI.selector
-    ] = true;
-
-    // adding ERC20-like-Metadata support for Etherscan totalSupply fix
-    _supportedInterfaces[InterfaceType.ERC721][ERC20Metadata.decimals.selector] = true;
-    _supportedInterfaces[InterfaceType.ERC721][
-      ERC721Metadata.name.selector ^ ERC721Metadata.symbol.selector ^ ERC20Metadata.decimals.selector
-    ] = true;
-
-    // ERC721TokenReceiver
-    _supportedInterfaces[InterfaceType.ERC721][ERC721TokenReceiver.onERC721Received.selector] = true;
-
-    // CollectionURI
-    _supportedInterfaces[InterfaceType.ERC721][CollectionURI.contractURI.selector] = true;
-
-    // PA1D
-    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.initPA1D.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.configurePayouts.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.getPayoutInfo.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.getEthPayout.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.getTokenPayout.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.getTokensPayout.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.supportsInterface.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.setRoyalties.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.royaltyInfo.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.getFeeBps.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.getFeeRecipients.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][
-      PA1DInterface.getFeeBps.selector ^ PA1DInterface.getFeeRecipients.selector
-    ] = true;
-    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.getRoyalties.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.getFees.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.tokenCreator.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.calculateRoyaltyFee.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.marketContract.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.tokenCreators.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.bidSharesForToken.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.getStorageSlot.selector] = true;
-    _supportedInterfaces[InterfaceType.PA1D][PA1DInterface.getTokenAddress.selector] = true;
-  }
+  /**
+   * @dev Constructor is left empty and init is used instead
+   */
+  constructor() {}
 
   /**
    * @notice Used internally to initialize the contract instead of through a constructor
@@ -194,6 +68,16 @@ contract HolographInterfaces is Admin, Initializable {
     return InitializableInterface.init.selector;
   }
 
+  /**
+   * @notice Get a base64 encoded contract URI JSON string
+   * @dev Used to dynamically generate contract JSON payload
+   * @param name the name of the smart contract
+   * @param imageURL string pointing to the primary contract image, can be: https, ipfs, or ar (arweave)
+   * @param externalLink url to website/page related to smart contract
+   * @param bps basis points used for specifying royalties percentage
+   * @param contractAddress address of the smart contract
+   * @return a base64 encoded json string representing the smart contract
+   */
   function contractURI(
     string calldata name,
     string calldata imageURL,
@@ -226,14 +110,28 @@ contract HolographInterfaces is Admin, Initializable {
       );
   }
 
+  /**
+   * @notice Get the prepend to use for tokenURI
+   * @dev Provides the prepend to use with TokenUriType URI
+   */
   function getUriPrepend(TokenUriType uriType) external view returns (string memory prepend) {
     prepend = _prependURI[uriType];
   }
 
+  /**
+   * @notice Update the tokenURI prepend
+   * @param uriType specify which TokenUriType to set for
+   * @param prepend the string to use for the prepend
+   */
   function updateUriPrepend(TokenUriType uriType, string calldata prepend) external onlyAdmin {
     _prependURI[uriType] = prepend;
   }
 
+  /**
+   * @notice Update the tokenURI prepends
+   * @param uriTypes specify array of TokenUriTypes to set for
+   * @param prepends array string to use for the prepends
+   */
   function updateUriPrepends(TokenUriType[] calldata uriTypes, string[] calldata prepends) external onlyAdmin {
     for (uint256 i = 0; i < uriTypes.length; i++) {
       _prependURI[uriTypes[i]] = prepends[i];

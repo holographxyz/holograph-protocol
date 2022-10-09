@@ -105,11 +105,11 @@ import "../abstract/Admin.sol";
 import "../abstract/Initializable.sol";
 import "../abstract/Owner.sol";
 
-import "../library/Zora.sol";
-
 import "../interface/ERC20.sol";
 import "../interface/InitializableInterface.sol";
 import "../interface/PA1DInterface.sol";
+
+import "../struct/ZoraBidShares.sol";
 
 /**
  * @title PA1D (CXIP)
@@ -662,7 +662,7 @@ contract PA1D is Admin, Owner, Initializable {
 
   // Zora
   // we provide the percentage that needs to be paid out from the sale
-  function bidSharesForToken(uint256 tokenId) public view returns (Zora.BidShares memory bidShares) {
+  function bidSharesForToken(uint256 tokenId) public view returns (ZoraBidShares memory bidShares) {
     // this information is outside of the scope of our
     bidShares.prevOwner.value = 0;
     bidShares.owner.value = 0;

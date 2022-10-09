@@ -254,7 +254,7 @@ contract HolographFactory is Admin, Initializable, Holographable, HolographFacto
     /**
      * @dev update the Holograph Registry with deployed contract address
      */
-    HolographRegistryInterface(registry).factoryDeployedHash(hash, holographerAddress);
+    HolographRegistryInterface(registry).setHolographedHashAddress(hash, holographerAddress);
     /**
      * @dev emit an event that on-chain indexers can easily read
      */

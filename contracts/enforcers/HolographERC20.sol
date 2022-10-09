@@ -127,7 +127,6 @@ import "../interface/InitializableInterface.sol";
 import "../interface/HolographInterfacesInterface.sol";
 import "../interface/Ownable.sol";
 
-import "../library/Counters.sol";
 import "../library/ECDSA.sol";
 
 /**
@@ -145,8 +144,6 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, Ho
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.sourceContract')) - 1)
    */
   bytes32 constant _sourceContractSlot = 0x27d542086d1e831d40b749e7f5509a626c3047a36d160781c40d5acc83e5b074;
-
-  using Counters for Counters.Counter;
 
   /**
    * @dev Configuration for events to trigger for source smart contract.
@@ -186,7 +183,7 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, Ho
   /**
    * @dev List of used up nonces. Used in the ERC20Permit interface functionality.
    */
-  mapping(address => Counters.Counter) private _nonces;
+  mapping(address => uint256) private _nonces;
 
   /**
    * @notice Only allow calls from bridge smart contract.
@@ -315,7 +312,7 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, Ho
   }
 
   function nonces(address account) public view returns (uint256) {
-    return _nonces[account].current();
+    return _nonces[account];
   }
 
   function symbol() public view returns (string memory) {
@@ -708,9 +705,8 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, Ho
    * _Available since v4.1._
    */
   function _useNonce(address account) private returns (uint256 current) {
-    Counters.Counter storage nonce = _nonces[account];
-    current = nonce.current();
-    nonce.increment();
+    current = _nonces[account];
+    _nonces[account]++;
   }
 
   function _isContract(address contractAddress) private view returns (bool) {

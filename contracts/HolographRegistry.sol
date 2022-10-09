@@ -125,12 +125,12 @@ contract HolographRegistry is Admin, Initializable, HolographRegistryInterface {
   bytes32 constant _utilityTokenSlot = 0xbf76518d46db472b71aa7677a0908b8016f3dee568415ffa24055f9a670f9c37;
 
   /**
-   * @dev Array of all Holographable contracts that were ever deployed on this EVM chain
+   * @dev Array of all Holographable contracts that were ever deployed on this chain
    */
   address[] private _holographableContracts;
 
   /**
-   * @dev A list of hashes and the mapped out contract addresses
+   * @dev A mapping of hashes to contract addresses
    */
   mapping(bytes32 => address) private _holographedContractsHashMap;
 
@@ -179,18 +179,27 @@ contract HolographRegistry is Admin, Initializable, HolographRegistryInterface {
     return InitializableInterface.init.selector;
   }
 
+  function isHolographedContract(address smartContract) external view returns (bool) {
+    return _holographedContracts[smartContract];
+  }
+
+  function isHolographedHashDeployed(bytes32 hash) external view returns (bool) {
+    return _holographedContractsHashMap[hash] != address(0);
+  }
+
   /**
-   * @dev Allows Holograph Factory to register a deployed contract, referenced with deployment hash
+   * @dev Allows to reference a deployed smart contract, and use it's code as reference inside of Holographers
    */
-  function factoryDeployedHash(bytes32 hash, address contractAddress) external {
-    address holograph;
+  function referenceContractTypeAddress(address contractAddress) external returns (bytes32) {
+    bytes32 contractType;
     assembly {
-      holograph := sload(_holographSlot)
+      contractType := extcodehash(contractAddress)
     }
-    require(msg.sender == HolographInterface(holograph).getFactory(), "HOLOGRAPH: factory only function");
-    _holographedContractsHashMap[hash] = contractAddress;
-    _holographedContracts[contractAddress] = true;
-    _holographableContracts.push(contractAddress);
+    require((contractType != 0x0 && contractType != 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470), "HOLOGRAPH: empty contract");
+    require(_contractTypeAddresses[contractType] == address(0), "HOLOGRAPH: contract already set");
+    require(!_reservedTypes[contractType], "HOLOGRAPH: reserved address type");
+    _contractTypeAddresses[contractType] = contractAddress;
+    return contractType;
   }
 
   /**
@@ -201,12 +210,30 @@ contract HolographRegistry is Admin, Initializable, HolographRegistryInterface {
   }
 
   /**
+   * @dev Sets the contract address for a contract type
+   */
+  function setContractTypeAddress(bytes32 contractType, address contractAddress) external onlyAdmin {
+    require(_reservedTypes[contractType], "HOLOGRAPH: not reserved type");
+    _contractTypeAddresses[contractType] = contractAddress;
+  }
+
+  /**
    * @notice Get the Holograph Protocol contract
    * @dev This contract stores a reference to all the primary modules and variables of the protocol
    */
   function getHolograph() external view returns (address holograph) {
     assembly {
       holograph := sload(_holographSlot)
+    }
+  }
+
+  /**
+   * @notice Update the Holograph Protocol contract address
+   * @param holograph address of the Holograph Protocol smart contract to use
+   */
+  function setHolograph(address holograph) external onlyAdmin {
+    assembly {
+      sstore(_holographSlot, holograph)
     }
   }
 
@@ -242,10 +269,56 @@ contract HolographRegistry is Admin, Initializable, HolographRegistryInterface {
   }
 
   /**
+   * @dev Allows Holograph Factory to register a deployed contract, referenced with deployment hash
+   */
+  function setHolographedHashAddress(bytes32 hash, address contractAddress) external {
+    address holograph;
+    assembly {
+      holograph := sload(_holographSlot)
+    }
+    require(msg.sender == HolographInterface(holograph).getFactory(), "HOLOGRAPH: factory only function");
+    _holographedContractsHashMap[hash] = contractAddress;
+    _holographedContracts[contractAddress] = true;
+    _holographableContracts.push(contractAddress);
+  }
+
+  /**
    * @dev Returns the hToken address for a given chain id
    */
   function getHToken(uint32 chainId) external view returns (address) {
     return _hTokens[chainId];
+  }
+
+  /**
+   * @dev Sets the hToken address for a specific chain id
+   */
+  function setHToken(uint32 chainId, address hToken) external onlyAdmin {
+    _hTokens[chainId] = hToken;
+  }
+
+  /**
+   * @dev Returns the reserved contract address for a contract type
+   */
+  function getReservedContractTypeAddress(bytes32 contractType) external view returns (address cotractTypeAddress) {
+    if (_reservedTypes[contractType]) {
+      cotractTypeAddress = _contractTypeAddresses[contractType];
+    }
+  }
+
+  /**
+   * @dev Allows admin to update or toggle reserved type
+   */
+  function setReservedContractTypeAddress(bytes32 hash, bool reserved) external onlyAdmin {
+    _reservedTypes[hash] = reserved;
+  }
+
+  /**
+   * @dev Allows admin to update or toggle reserved types
+   */
+  function setReservedContractTypeAddresses(bytes32[] calldata hashes, bool[] calldata reserved) external onlyAdmin {
+    for (uint256 i = 0; i < hashes.length; i++) {
+      _reservedTypes[hashes[i]] = reserved[i];
+    }
   }
 
   /**
@@ -258,59 +331,6 @@ contract HolographRegistry is Admin, Initializable, HolographRegistryInterface {
     }
   }
 
-  function isHolographedContract(address smartContract) external view returns (bool) {
-    return _holographedContracts[smartContract];
-  }
-
-  function isHolographedHashDeployed(bytes32 hash) external view returns (bool) {
-    return _holographedContractsHashMap[hash] != address(0);
-  }
-
-  /**
-   * @dev Allows to reference a deployed smart contract, and use it's code as reference inside of Holographers
-   */
-  function referenceContractTypeAddress(address contractAddress) external returns (bytes32) {
-    bytes32 contractType;
-    assembly {
-      contractType := extcodehash(contractAddress)
-    }
-    require(
-      (contractType != 0x0 && contractType != 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470),
-      "HOLOGRAPH: empty contract"
-    );
-    require(_contractTypeAddresses[contractType] == address(0), "HOLOGRAPH: contract already set");
-    require(!_reservedTypes[contractType], "HOLOGRAPH: reserved address type");
-    _contractTypeAddresses[contractType] = contractAddress;
-    return contractType;
-  }
-
-  /**
-   * @dev Sets the contract address for a contract type
-   */
-  function setContractTypeAddress(bytes32 contractType, address contractAddress) external onlyAdmin {
-    // For now we leave overriding as possible. need to think this through
-    //require(_contractTypeAddresses[contractType] == address(0), "HOLOGRAPH: contract already set");
-    require(_reservedTypes[contractType], "HOLOGRAPH: not reserved type");
-    _contractTypeAddresses[contractType] = contractAddress;
-  }
-
-  /**
-   * @notice Update the Holograph Protocol contract address
-   * @param holograph address of the Holograph Protocol smart contract to use
-   */
-  function setHolograph(address holograph) external onlyAdmin {
-    assembly {
-      sstore(_holographSlot, holograph)
-    }
-  }
-
-  /**
-   * @dev Sets the hToken address for a specific chain id
-   */
-  function setHToken(uint32 chainId, address hToken) external onlyAdmin {
-    _hTokens[chainId] = hToken;
-  }
-
   /**
    * @notice Update the Holograph Utility Token address
    * @param utilityToken address of the Holograph Utility Token smart contract to use
@@ -318,15 +338,6 @@ contract HolographRegistry is Admin, Initializable, HolographRegistryInterface {
   function setUtilityToken(address utilityToken) external onlyAdmin {
     assembly {
       sstore(_utilityTokenSlot, utilityToken)
-    }
-  }
-
-  /**
-   * @dev Allows admin to update or toggle reserved types
-   */
-  function updateReservedContractTypes(bytes32[] calldata hashes, bool[] calldata reserved) external onlyAdmin {
-    for (uint256 i = 0; i < hashes.length; i++) {
-      _reservedTypes[hashes[i]] = reserved[i];
     }
   }
 

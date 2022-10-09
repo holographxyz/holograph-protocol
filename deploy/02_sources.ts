@@ -784,8 +784,10 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       generateInitCode(['address'], [deployer.address]),
       futureHolographInterfacesAddress
     );
+    global.__deployedHolographInterfaces = true;
   } else {
     hre.deployments.log('"HolographInterfaces" is already deployed.');
+    global.__deployedHolographInterfaces = false;
   }
 
   // PA1D

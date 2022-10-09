@@ -101,17 +101,13 @@
 
 pragma solidity 0.8.13;
 
-library Zora {
-  struct Decimal {
-    uint256 value;
-  }
+import "./ZoraDecimal.sol";
 
-  struct BidShares {
-    // % of sale value that goes to the _previous_ owner of the nft
-    Decimal prevOwner;
-    // % of sale value that goes to the original creator of the nft
-    Decimal creator;
-    // % of sale value that goes to the seller (current owner) of the nft
-    Decimal owner;
-  }
+struct ZoraBidShares {
+  // % of sale value that goes to the _previous_ owner of the nft
+  ZoraDecimal prevOwner;
+  // % of sale value that goes to the original creator of the nft
+  ZoraDecimal creator;
+  // % of sale value that goes to the seller (current owner) of the nft
+  ZoraDecimal owner;
 }
