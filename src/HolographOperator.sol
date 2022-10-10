@@ -175,13 +175,13 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
   /**
    * @notice Execute an available operator job
    * @dev When making this call, if operating criteria is not met, the call will revert
-   * @param bridgeInRequesPayload the entire cross chain message payload
+   * @param bridgeInRequestPayload the entire cross chain message payload
    */
-  function executeJob(bytes calldata bridgeInRequesPayload) external payable {
+  function executeJob(bytes calldata bridgeInRequestPayload) external payable {
     /**
      * @dev derive the payload hash for use in mappings
      */
-    bytes32 hash = keccak256(bridgeInRequesPayload);
+    bytes32 hash = keccak256(bridgeInRequestPayload);
     /**
      * @dev check that job exists
      */
@@ -192,11 +192,11 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
       /**
        * @dev extract gasLimit
        */
-      gasLimit := calldataload(sub(add(bridgeInRequesPayload.offset, bridgeInRequesPayload.length), 0x40))
+      gasLimit := calldataload(sub(add(bridgeInRequestPayload.offset, bridgeInRequestPayload.length), 0x40))
       /**
        * @dev extract gasPrice
        */
-      gasPrice := calldataload(sub(add(bridgeInRequesPayload.offset, bridgeInRequesPayload.length), 0x20))
+      gasPrice := calldataload(sub(add(bridgeInRequestPayload.offset, bridgeInRequestPayload.length), 0x20))
     }
     /**
      * @dev unpack bitwise packed operator job details
@@ -295,11 +295,11 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
      */
     bool failed;
     assembly {
-      calldatacopy(0, bridgeInRequesPayload.offset, sub(bridgeInRequesPayload.length, 0x40))
+      calldatacopy(0, bridgeInRequestPayload.offset, sub(bridgeInRequestPayload.length, 0x40))
       /**
        * @dev gas limit is set to ensure that
        */
-      let result := call(gasLimit, sload(_bridgeSlot), callvalue(), 0, sub(bridgeInRequesPayload.length, 0x40), 0, 0)
+      let result := call(gasLimit, sload(_bridgeSlot), callvalue(), 0, sub(bridgeInRequestPayload.length, 0x40), 0, 0)
       if eq(result, 0) {
         /**
          * @dev get next free memory pointer
@@ -344,14 +344,14 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
    * @notice Receive a cross-chain message
    * @dev This function is restricted for use by Holograph Messaging Module only
    */
-  function crossChainMessage(bytes calldata bridgeInRequesPayload) external payable {
+  function crossChainMessage(bytes calldata bridgeInRequestPayload) external payable {
     require(msg.sender == address(_messagingModule()), "HOLOGRAPH: messaging only call");
     /**
      * @dev would be a good idea to check payload gas price here and if it is significantly lower than current amount
      *      to set zero address as operator to not lock-up an operator unnecessarily
      */
     unchecked {
-      bytes32 jobHash = keccak256(bridgeInRequesPayload);
+      bytes32 jobHash = keccak256(bridgeInRequestPayload);
       /**
        * @dev load and increment operator temp storage in one call
        */
@@ -397,7 +397,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
       /**
        * @dev emit event to signal to operators that a job has become available
        */
-      emit AvailableOperatorJob(jobHash, bridgeInRequesPayload);
+      emit AvailableOperatorJob(jobHash, bridgeInRequestPayload);
     }
   }
 
@@ -406,17 +406,17 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
    * @dev Use this function to estimate the amount of gas that will be used by the bridgeInRequest function
    *      Set a specific gas limit when making this call, subtract return value, to get total gas used
    *      Only use this with a static call
-   * @param bridgeInRequesPayload abi encoded bytes making up the bridgeInRequest payload
+   * @param bridgeInRequestPayload abi encoded bytes making up the bridgeInRequest payload
    * @return the gas amount remaining after the static call is returned
    */
-  function jobEstimator(bytes calldata bridgeInRequesPayload) external payable returns (uint256) {
+  function jobEstimator(bytes calldata bridgeInRequestPayload) external payable returns (uint256) {
     assembly {
-      calldatacopy(0, bridgeInRequesPayload.offset, sub(bridgeInRequesPayload.length, 0x40))
+      calldatacopy(0, bridgeInRequestPayload.offset, sub(bridgeInRequestPayload.length, 0x40))
       /**
        * @dev bridgeInRequest doNotRevert is purposefully set to false so a rever would happen
        */
       mstore8(0xE3, 0x00)
-      let result := call(gas(), sload(_bridgeSlot), callvalue(), 0, sub(bridgeInRequesPayload.length, 0x40), 0, 0)
+      let result := call(gas(), sload(_bridgeSlot), callvalue(), 0, sub(bridgeInRequestPayload.length, 0x40), 0, 0)
       /**
        * @dev if for some reason the call does not revert, it is force reverted
        */

@@ -117,7 +117,7 @@
     "inputs": [
       {
         "internalType": "bytes",
-        "name": "bridgeInRequesPayload",
+        "name": "bridgeInRequestPayload",
         "type": "bytes"
       }
     ],
@@ -130,7 +130,7 @@
     "inputs": [
       {
         "internalType": "bytes",
-        "name": "bridgeInRequesPayload",
+        "name": "bridgeInRequestPayload",
         "type": "bytes"
       }
     ],
@@ -427,7 +427,7 @@
     "inputs": [
       {
         "internalType": "bytes",
-        "name": "bridgeInRequesPayload",
+        "name": "bridgeInRequestPayload",
         "type": "bytes"
       }
     ],

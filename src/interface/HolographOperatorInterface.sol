@@ -23,25 +23,25 @@ interface HolographOperatorInterface {
   /**
    * @notice Execute an available operator job
    * @dev When making this call, if operating criteria is not met, the call will revert
-   * @param bridgeInRequesPayload the entire cross chain message payload
+   * @param bridgeInRequestPayload the entire cross chain message payload
    */
-  function executeJob(bytes calldata bridgeInRequesPayload) external payable;
+  function executeJob(bytes calldata bridgeInRequestPayload) external payable;
 
   /**
    * @notice Receive a cross-chain message
    * @dev This function is restricted for use by Holograph Messaging Module only
    */
-  function crossChainMessage(bytes calldata bridgeInRequesPayload) external payable;
+  function crossChainMessage(bytes calldata bridgeInRequestPayload) external payable;
 
   /**
    * @notice Calculate the amount of gas needed to execute a bridgeInRequest
    * @dev Use this function to estimate the amount of gas that will be used by the bridgeInRequest function
    *      Set a specific gas limit when making this call, subtract return value, to get total gas used
    *      Only use this with a static call
-   * @param bridgeInRequesPayload abi encoded bytes making up the bridgeInRequest payload
+   * @param bridgeInRequestPayload abi encoded bytes making up the bridgeInRequest payload
    * @return the gas amount remaining after the static call is returned
    */
-  function jobEstimator(bytes calldata bridgeInRequesPayload) external payable returns (uint256);
+  function jobEstimator(bytes calldata bridgeInRequestPayload) external payable returns (uint256);
 
   /**
    * @notice Send cross chain bridge request message
