@@ -23,13 +23,13 @@ describe('Holograph Interfaces Contract', async function () {
         it('should fail to allow inherited contract to call fn')
     })
 
-    describe('updateUriPrepend()', async function() {
+    describe('updateUriPrepend(uriTypes,string)', async function() {
         it('should allow admin to alter _prependURI')
         it('should fail to allow owner to alter _prependURI')
         it('should fail to allow non-owner to alter _prependURI')
     })
 
-    describe('updateUriPrepends()', async function() {
+    describe('updateUriPrepends(uriTypes, string[])', async function() {
         it('should allow admin to alter _prependURI')
         it('should fail to allow owner to alter _prependURI')
         it('should fail to allow non-owner to alter _prependURI')

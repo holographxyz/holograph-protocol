@@ -11,20 +11,19 @@ describe('Holograph Operator Contract', async function () {
         it('should fail to allow inherited contract to call fn')
     })
 
-
-    describe(`lzReceive()`, async function() {
-        it('Should successfully allow LZ address to call fn')
-        it('Should fail to allow deployer address to call fn')
-        it('Should fail to allow owner address to call fn')
-        it('Should fail to allow non-owner address to call fn')
-    })
-
     describe('executeJob()', async function() {
         it('Should fail if job hash is not in in _operatorJobs')
         it('Should fail non-operator address tries to execute job') // NOTE: "HOLOGRAPH: operator has time" error
         it('Should fail if there has been a gas spike')
         it('Should fail if fallback is invalid') // NOTE: "HOLOGRAPH: invalid fallback"
         it('Should fail if there is not enough gas')
+    })
+
+    describe(`crossChainMessage()`, async function() {
+        it('Should successfully allow messaging address to call fn')
+        it('Should fail to allow deployer address to call fn')
+        it('Should fail to allow owner address to call fn')
+        it('Should fail to allow non-owner address to call fn')
     })
 
     describe('jobEstimator()', async function() {
@@ -44,14 +43,23 @@ describe('Holograph Operator Contract', async function () {
         it('should return expected operatorJob from INVALID jobHash')
     })
 
-    describe('getPodOperators(pod)()', async function() {
+    describe('getTotalPods()', async function() {
+        it('should return expected number of pods')
+    })
+
+    describe('getPodOperatorsLength()', async function() {
+        it('should fail if pod does not exist')
+        it('should return expected pod length')
+    })
+
+    describe('getPodOperators(pod)', async function() {
         it('should return expected operators for a valid pod')
         it('should fail to return operators for an INVALID pod')
         it('Should allow external contract to call fn')
         it('should fail to allow inherited contract to call fn')
     })
 
-    describe('getPodOperators(pod, index, length)()', async function(){
+    describe('getPodOperators(pod, index, length)', async function(){
         it('should return expected operators for a valid pod')
         it('should fail to return operators for an INVALID pod')
         it('should fail if index out of bounds')
@@ -60,7 +68,7 @@ describe('Holograph Operator Contract', async function () {
         it('should fail to allow inherited contract to call fn')
     })
 
-    describe('getPodBondAmount()', async function() {
+    describe('getPodBondAmounts()', async function() {
         it('should return expected base and current value')
         it('Should allow external contract to call fn')
         it('should fail to allow inherited contract to call fn')
@@ -70,6 +78,11 @@ describe('Holograph Operator Contract', async function () {
         it('should return expected _bondedOperators')
         it('Should allow external contract to call fn')
         it('should fail to allow inherited contract to call fn')
+    })
+
+    describe('topupUtilityToken()', async function() {
+        it('should fail if operator is bonded')
+        it('successfully top up utility tokens')
     })
 
     describe('bondUtilityToken()', async function() {
@@ -92,24 +105,22 @@ describe('Holograph Operator Contract', async function () {
         it('should fail to allow inherited contract to call fn')
     })
 
-    describe(`getLZEndpoint()`, async function() {
-        it('Should return valid lZEndpoint')
+    describe(`getMessagingModule()`, async function() {
+        it('Should return valid _messagingModuleSlot')
         it('Should allow external contract to call fn')
         it('should fail to allow inherited contract to call fn')
     })
 
-    describe('setLZEndpoint()', async function() {
-        it('should allow admin to alter lZEndpoint')
-        it('should fail to allow owner to alter lZEndpoint')
-        it('should fail to allow non-owner to alter lZEndpoint')
+    describe('setMessagingModule()', async function() {
+        it('should allow admin to alter _messagingModuleSlot')
+        it('should fail to allow owner to alter _messagingModuleSlot')
+        it('should fail to allow non-owner to alter _messagingModuleSlot')
         it('Should allow external contract to call fn')
         it('should fail to allow inherited contract to call fn')
     })
 
     describe(`getBridge()`, async function() {
         it('Should return valid _bridgeSlot')
-        it('Should allow external contract to call fn')
-        it('should fail to allow inherited contract to call fn')
         it('Should allow external contract to call fn')
         it('should fail to allow inherited contract to call fn')
     })
@@ -122,10 +133,22 @@ describe('Holograph Operator Contract', async function () {
         it('should fail to allow inherited contract to call fn')
     })
 
-    describe(`getInterfaces()`, async function() {
-        it('Should return valid _interfacesSlot')
+    describe(`getHolograph()`, async function() {
+        it('Should return valid _holographSlot')
         it('Should allow external contract to call fn')
         it('should fail to allow inherited contract to call fn')
+    })
+
+    describe('setHolograph()', async function() {
+        it('should allow admin to alter _holographSlot')
+        it('should fail to allow owner to alter _holographSlot')
+        it('should fail to allow non-owner to alter _holographSlot')
+        it('Should allow external contract to call fn')
+        it('should fail to allow inherited contract to call fn')
+    })
+
+    describe(`getInterfaces()`, async function() {
+        it('Should return valid _interfacesSlot')
         it('Should allow external contract to call fn')
         it('should fail to allow inherited contract to call fn')
     })
@@ -172,7 +195,15 @@ describe('Holograph Operator Contract', async function () {
         it('is private function')
     })
 
+    describe('_holograph()', async function() {
+        it('is private function')
+    })
+
     describe('_interfaces()', async function() {
+        it('is private function')
+    })
+
+    describe('_messagingModule()', async function() {
         it('is private function')
     })
 
@@ -200,8 +231,12 @@ describe('Holograph Operator Contract', async function () {
         it('is private function')
     })
 
-    describe('_RBH()', async function() {
+    describe('_randomBlockHash()', async function() {
         it('is private function')
+    })
+
+    describe('_isContract()', async function() {
+        it('should not be callable from an external contract')
     })
 
 })

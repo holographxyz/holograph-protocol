@@ -15,7 +15,7 @@ describe('Holograph Factory Contract', async function () {
         it('should return selector and payload')
     })
 
-    describe('deployHolographableContract', async function() {
+    describe('deployHolographableContract()', async function() {
         it('should fail with invalid signature if config is incorrect')
         it('should fail with invalid signature if signature.r is incorrect')
         it('should fail with invalid signature if signature.s is incorrect')

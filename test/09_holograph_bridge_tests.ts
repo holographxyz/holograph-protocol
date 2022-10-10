@@ -9,7 +9,7 @@ describe('Holograph Bridge Contract', async function () {
         it('should fail to init if already initialized')
     })
 
-    describe('BridgeOutRequest(): ', async function () {
+    describe('bridgeOutRequest(): ', async function () {
         it('should fail if `toChainId` provided a string')
         it('should fail if `toChainId` provided a value larger than uint32')
         it('should fail if `holographableContract` is not a holographableContract v1')
@@ -25,6 +25,15 @@ describe('Holograph Bridge Contract', async function () {
         it('should fail if `holographableContract` is not a holographableContract v2')
         it('should revert if `doNotRevert=false`')
         it('should successfully process a BridgeIn TX')
+    })
+
+    describe('revertedBridgeOutRequest()', async function() {
+        it('should fail if `toChainId` provided a string')
+        it('should fail if `toChainId` provided a value larger than uint32')
+        it('should fail if the selector is not a bridgeOut.selector')
+        it('should fail with "HOLOGRAPH: unknown error"')
+        it('Should allow external contract to call fn')
+        it('should fail to allow inherited contract to call fn')
     })
 
     describe(`getBridgeOutRequestPayload():`, async function () {

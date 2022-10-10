@@ -49,6 +49,12 @@ describe('Holograph Registry Contract', async function () {
         it('should fail to allow inherited contract to call fn')
     })
 
+    describe(`setHolographedHashAddress`, async function() {
+        it('Should return fail to add contract because it does not have a factory')
+        it('Should allow external contract to call fn')
+        it('should fail to allow inherited contract to call fn')
+    })
+
     describe(`getHToken`, async function() {
         it('Should return valid _hTokens')
         it('should return 0x0 for invalid chainId')
@@ -108,16 +114,26 @@ describe('Holograph Registry Contract', async function () {
         it('should fail to allow non-owner to alter _hTokens')
     })
 
+    describe('getReservedContractTypeAddress()', async function() {
+        it('should return expected contract type address')
+    })
+
+    describe('setReservedContractTypeAddress()', async function() {
+        it('should allow admin to set contract type address')
+        it('should fail to allow owner to alter contract type address')
+        it('should fail to allow non-owner to alter contract type address')
+    })
+
+    describe('setReservedContractTypeAddresses()', async function() {
+        it('should allow admin to set _reservedTypes')
+        it('should fail to allow owner to alter _reservedTypes')
+        it('should fail to allow non-owner to alter _reservedTypes')
+    })
+
     describe('setUtilityToken()', async function() {
         it('should allow admin to alter _utilityTokenSlot')
         it('should fail to allow owner to alter _utilityTokenSlot')
         it('should fail to allow non-owner to alter _utilityTokenSlot')
-    })
-
-    describe('updateReservedContractTypes()', async function() {
-        it('should allow admin to alter _reservedTypes')
-        it('should fail to allow owner to alter _reservedTypes')
-        it('should fail to allow non-owner to alter _reservedTypes')
     })
 
 })
