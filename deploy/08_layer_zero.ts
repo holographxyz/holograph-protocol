@@ -16,7 +16,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
 
   const currentNetworkType: NetworkType = networks[hre.networkName].type;
 
-  let lzEndpoint = networks[hre.networkName].lzEndpoint;
+  let lzEndpoint = networks[hre.networkName].lzEndpoint.toLowerCase();
   if (currentNetworkType == NetworkType.local && lzEndpoint == zeroAddress()) {
     lzEndpoint = (await hre.getNamedAccounts()).lzEndpoint;
     const mockLZEndpoint = await deploy('MockLZEndpoint', {
@@ -26,7 +26,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       waitConfirmations: 1,
       nonce: await hre.ethers.provider.getTransactionCount(lzEndpoint),
     });
-    lzEndpoint = mockLZEndpoint.address;
+    lzEndpoint = mockLZEndpoint.address.toLowerCase();
   }
 
   const error = function (err: string) {
@@ -34,23 +34,20 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     process.exit();
   };
 
-  const holographOperatorProxy = await hre.ethers.getContract('HolographOperatorProxy');
-  const holographOperator = ((await hre.ethers.getContract('HolographOperator')) as Contract).attach(
-    holographOperatorProxy.address
-  );
+  const layerZeroModule = await hre.ethers.getContract('LayerZeroModule');
 
-  if ((await holographOperator.getLZEndpoint()) != lzEndpoint) {
-    const lzTx = await holographOperator
+  if ((await layerZeroModule.getLZEndpoint()).toLowerCase() != lzEndpoint) {
+    const lzTx = await layerZeroModule
       .setLZEndpoint(lzEndpoint, { nonce: await hre.ethers.provider.getTransactionCount(deployer) })
       .catch(error);
     hre.deployments.log('Transaction hash:', lzTx.hash);
     await lzTx.wait();
-    hre.deployments.log(`Registered lzEndpoint to: ${await holographOperator.getLZEndpoint()}`);
+    hre.deployments.log(`Registered lzEndpoint to: ${await layerZeroModule.getLZEndpoint()}`);
   } else {
-    hre.deployments.log(`lzEndpoint is already registered to: ${await holographOperator.getLZEndpoint()}`);
+    hre.deployments.log(`lzEndpoint is already registered to: ${await layerZeroModule.getLZEndpoint()}`);
   }
 };
 
 export default func;
 func.tags = ['MockLZEndpoint', 'LayerZero'];
-func.dependencies = ['HolographGenesis', 'DeploySources'];
+func.dependencies = ['HolographGenesis', 'DeploySources', 'LayerZeroModule'];

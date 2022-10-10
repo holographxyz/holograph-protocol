@@ -101,4 +101,13 @@
 
 pragma solidity 0.8.13;
 
-interface HolographTreasuryInterface {}
+interface CrossChainMessageInterface {
+  function send(
+    uint256 gasLimit,
+    uint256 gasPrice,
+    uint32 toChain,
+    address msgSender,
+    uint256 msgValue,
+    bytes calldata crossChainPayload
+  ) external payable;
+}

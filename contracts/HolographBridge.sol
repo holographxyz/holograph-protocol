@@ -509,7 +509,7 @@ contract HolographBridge is Admin, Initializable, HolographBridgeInterface {
   }
 
   /**
-   * @dev Internal nonce used for randomness. We increment it on each call
+   * @dev Internal nonce, that increments on each call, used for randomness
    */
   function _jobNonce() private returns (uint256 jobNonce) {
     assembly {

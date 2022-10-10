@@ -19,6 +19,38 @@
     "type": "event"
   },
   {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "messageHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "CrossChainMessageSent",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "jobHash",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes",
+        "name": "revertReason",
+        "type": "bytes"
+      }
+    ],
+    "name": "FailedOperatorJob",
+    "type": "event"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -45,7 +77,20 @@
     "inputs": [
       {
         "internalType": "bytes",
-        "name": "_payload",
+        "name": "bridgeInRequesPayload",
+        "type": "bytes"
+      }
+    ],
+    "name": "crossChainMessage",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "bridgeInRequesPayload",
         "type": "bytes"
       }
     ],
@@ -80,6 +125,19 @@
       {
         "internalType": "address",
         "name": "bridge",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getHolograph",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "holograph",
         "type": "address"
       }
     ],
@@ -152,11 +210,11 @@
   },
   {
     "inputs": [],
-    "name": "getLZEndpoint",
+    "name": "getMessagingModule",
     "outputs": [
       {
         "internalType": "address",
-        "name": "lZEndpoint",
+        "name": "messagingModule",
         "type": "address"
       }
     ],
@@ -171,7 +229,7 @@
         "type": "uint256"
       }
     ],
-    "name": "getPodBondAmount",
+    "name": "getPodBondAmounts",
     "outputs": [
       {
         "internalType": "uint256",
@@ -236,6 +294,25 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "pod",
+        "type": "uint256"
+      }
+    ],
+    "name": "getPodOperatorsLength",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "getRegistry",
     "outputs": [
@@ -278,7 +355,7 @@
     "inputs": [
       {
         "internalType": "bytes",
-        "name": "_payload",
+        "name": "bridgeInRequesPayload",
         "type": "bytes"
       }
     ],
@@ -286,38 +363,10 @@
     "outputs": [
       {
         "internalType": "uint256",
-        "name": "leftoverGas",
+        "name": "",
         "type": "uint256"
       }
     ],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint16",
-        "name": "_srcChainId",
-        "type": "uint16"
-      },
-      {
-        "internalType": "bytes",
-        "name": "_srcAddress",
-        "type": "bytes"
-      },
-      {
-        "internalType": "uint64",
-        "name": "_nonce",
-        "type": "uint64"
-      },
-      {
-        "internalType": "bytes",
-        "name": "_payload",
-        "type": "bytes"
-      }
-    ],
-    "name": "lzReceive",
-    "outputs": [],
     "stateMutability": "payable",
     "type": "function"
   },
@@ -381,6 +430,19 @@
     "inputs": [
       {
         "internalType": "address",
+        "name": "holograph",
+        "type": "address"
+      }
+    ],
+    "name": "setHolograph",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
         "name": "interfaces",
         "type": "address"
       }
@@ -394,11 +456,11 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "lZEndpoint",
+        "name": "messagingModule",
         "type": "address"
       }
     ],
-    "name": "setLZEndpoint",
+    "name": "setMessagingModule",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -425,6 +487,24 @@
       }
     ],
     "name": "setUtilityToken",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "topupUtilityToken",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

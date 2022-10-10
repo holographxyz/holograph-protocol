@@ -104,8 +104,7 @@ pragma solidity 0.8.13;
 import "./abstract/Admin.sol";
 import "./abstract/Initializable.sol";
 
-import "./enum/ChainIdType.sol";
-
+import "./interface/CrossChainMessageInterface.sol";
 import "./interface/HolographBridgeInterface.sol";
 import "./interface/HolographERC20Interface.sol";
 import "./interface/HolographInterface.sol";
@@ -113,7 +112,6 @@ import "./interface/HolographOperatorInterface.sol";
 import "./interface/HolographRegistryInterface.sol";
 import "./interface/InitializableInterface.sol";
 import "./interface/HolographInterfacesInterface.sol";
-import "./interface/LayerZeroEndpointInterface.sol";
 import "./interface/Ownable.sol";
 
 import "./struct/OperatorJob.sol";
@@ -142,9 +140,9 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
    */
   bytes32 constant _jobNonceSlot = 0x1cda64803f3b43503042e00863791e8d996666552d5855a78d53ee1dd4b3286d;
   /**
-   * @dev bytes32(uint256(keccak256('eip1967.Holograph.lZEndpoint')) - 1)
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.messagingModule')) - 1)
    */
-  bytes32 constant _lZEndpointSlot = 0x56825e447adf54cdde5f04815fcf9b1dd26ef9d5c053625147c18b7c13091686;
+  bytes32 constant _messagingModuleSlot = 0x54176250282e65985d205704ffce44a59efe61f7afd99e29fda50f55b48c061a;
   /**
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.registry')) - 1)
    */
@@ -185,9 +183,19 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
   uint256 private _operatorThresholdDivisor;
 
   /**
+   * @dev Internal counter of all cross-chain messages received
+   */
+  uint256 private _inboundMessageCounter;
+
+  /**
    * @dev Internal mapping of operator job details for a specific job hash
    */
   mapping(bytes32 => uint256) private _operatorJobs;
+
+  /**
+   * @dev Internal mapping of operator job details for a specific job hash
+   */
+  mapping(bytes32 => bool) private _failedJobs;
 
   /**
    * @dev Internal mapping of operator addresses, used for temp storage when defining an operator job
@@ -263,54 +271,211 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
     return InitializableInterface.init.selector;
   }
 
-  function lzReceive(
-    uint16, /* _srcChainId*/
-    bytes calldata _srcAddress,
-    uint64, /* _nonce*/
-    bytes calldata _payload
-  ) external payable {
+  /**
+   * @notice Execute an available operator job
+   * @dev When making this call, if operating criteria is not met, the call will revert
+   * @param bridgeInRequesPayload the entire cross chain message payload
+   */
+  function executeJob(bytes calldata bridgeInRequesPayload) external payable {
+    /**
+     * @dev derive the payload hash for use in mappings
+     */
+    bytes32 hash = keccak256(bridgeInRequesPayload);
+    /**
+     * @dev check that job exists
+     */
+    require(_operatorJobs[hash] > 0, "HOLOGRAPH: invalid job");
+    uint256 gasLimit = 0;
+    uint256 gasPrice = 0;
     assembly {
       /**
-       * @dev check if msg.sender is LayerZero Endpoint
+       * @dev extract gasLimit
        */
-      switch eq(sload(_lZEndpointSlot), caller())
-      case 0 {
-        // check if operator is calling self, used for job estimations
-        switch eq(address(), caller())
-        case 0 {
-          mstore(0x80, 0x08c379a000000000000000000000000000000000000000000000000000000000)
-          mstore(0xa0, 0x0000002000000000000000000000000000000000000000000000000000000000)
-          mstore(0xc0, 0x0000001b484f4c4f47524150483a204c5a206f6e6c7920656e64706f696e7400)
-          mstore(0xe0, 0x0000000000000000000000000000000000000000000000000000000000000000)
-          revert(0x80, 0xc4)
+      gasLimit := calldataload(sub(add(bridgeInRequesPayload.offset, bridgeInRequesPayload.length), 0x40))
+      /**
+       * @dev extract gasPrice
+       */
+      gasPrice := calldataload(sub(add(bridgeInRequesPayload.offset, bridgeInRequesPayload.length), 0x20))
+    }
+    /**
+     * @dev unpack bitwise packed operator job details
+     */
+    OperatorJob memory job = getJobDetails(hash);
+    /**
+     * @dev to prevent replay attacks, remove job from mapping
+     */
+    delete _operatorJobs[hash];
+    /**
+     * @dev check that a specific operator was selected for the job
+     */
+    if (job.operator != address(0)) {
+      /**
+       * @dev switch pod to index based value
+       */
+      uint256 pod = job.pod - 1;
+      /**
+       * @dev check if sender is not the selected primary operator
+       */
+      if (job.operator != msg.sender) {
+        /**
+         * @dev sender is not selected operator, need to check if allowed to do job
+         */
+        uint256 elapsedTime = block.timestamp - uint256(job.startTimestamp);
+        uint256 timeDifference = elapsedTime / job.blockTimes;
+        /**
+         * @dev validate that initial selected operator time slot is still active
+         */
+        require(timeDifference > 0, "HOLOGRAPH: operator has time");
+        /**
+         * @dev check that the selected missed the time slot due to a gas spike
+         */
+        require(gasPrice >= tx.gasprice, "HOLOGRAPH: gas spike detected");
+        /**
+         * @dev check if time is within fallback operator slots
+         */
+        if (timeDifference < 6) {
+          uint256 podIndex = uint256(job.fallbackOperators[timeDifference - 1]);
+          /**
+           * @dev do a quick sanity check to make sure operator did not leave from index or is a zero address
+           */
+          if (podIndex > 0 && podIndex < _operatorPods[pod].length) {
+            address fallbackOperator = _operatorPods[pod][podIndex];
+            /**
+             * @dev ensure that sender is currently valid backup operator
+             */
+            require(fallbackOperator == msg.sender, "HOLOGRAPH: invalid fallback");
+          }
         }
-      }
-      let ptr := mload(0x40)
-      calldatacopy(add(ptr, 0x0c), _srcAddress.offset, _srcAddress.length)
-      switch eq(mload(ptr), address())
-      case 0 {
-        mstore(0x80, 0x08c379a000000000000000000000000000000000000000000000000000000000)
-        mstore(0xa0, 0x0000002000000000000000000000000000000000000000000000000000000000)
-        mstore(0xc0, 0x0000001e484f4c4f47524150483a20756e617574686f72697a65642073656e64)
-        mstore(0xe0, 0x6572000000000000000000000000000000000000000000000000000000000000)
-        revert(0x80, 0xc4)
+        /**
+         * @dev time to reward the current operator
+         */
+        uint256 amount = _getBaseBondAmount(pod);
+        /**
+         * @dev select operator that failed to do the job, is slashed the pod base fee
+         */
+        _bondedAmounts[job.operator] -= amount;
+        /**
+         * @dev the slashed amount is sent to current operator
+         */
+        _bondedAmounts[msg.sender] += amount;
+        /**
+         * @dev check if slashed operator has enough tokens bonded to stay
+         */
+        if (amount >= _bondedAmounts[job.operator]) {
+          /**
+           * @dev enough bond amount leftover, put operator back in
+           */
+          _operatorPods[pod].push(job.operator);
+          _operatorPodIndex[job.operator] = _operatorPods[pod].length - 1;
+          _bondedOperators[job.operator] = job.pod;
+        } else {
+          /**
+           * @dev slashed operator does not have enough tokens bonded, return remaining tokens only
+           */
+          uint256 leftovers = _bondedAmounts[job.operator];
+          _bondedAmounts[job.operator] = 0;
+          _utilityToken().transfer(job.operator, leftovers);
+        }
+      } else {
+        /**
+         * @dev the selected operator is executing the job
+         */
+        _operatorPods[pod].push(msg.sender);
+        _operatorPodIndex[job.operator] = _operatorPods[pod].length - 1;
+        _bondedOperators[msg.sender] = job.pod;
       }
     }
-    // would be a good idea to check payload gas price here and if it is significantly lower than current amount, to set zero address as operator to not lock-up an operator unnecessarily
+    /**
+     * @dev ensure that there is enough has left for the job
+     */
+    require(gasleft() > gasLimit, "HOLOGRAPH: not enough gas left");
+    /**
+     * @dev execute the job
+     */
+    bool failed;
+    assembly {
+      calldatacopy(0, bridgeInRequesPayload.offset, sub(bridgeInRequesPayload.length, 0x40))
+      /**
+       * @dev gas limit is set to ensure that
+       */
+      let result := call(gasLimit, sload(_bridgeSlot), callvalue(), 0, sub(bridgeInRequesPayload.length, 0x40), 0, 0)
+      if eq(result, 0) {
+        /**
+         * @dev get next free memory pointer
+         */
+        let fmp := mload(0x40)
+        /**
+         * @dev update free memory pointer to reserve the about to be used memory
+         */
+        mstore(0x40, add(fmp, add(returndatasize(), 0x20)))
+        /**
+         * @dev store job payload hash as first value
+         */
+        mstore(fmp, mload(hash))
+        /**
+         * @dev add revert data to the rest of allocated memory
+         */
+        returndatacopy(add(fmp, 0x20), 0, returndatasize())
+        /**
+         * @dev emit event FailedOperatorJob with in-memory data
+         */
+        log1(fmp, add(returndatasize(), 0x20), 0x4749dc6d92b657f5c9164b5139572a187274812cb66d99aa4177b24ffc904124)
+        failed := 0x00000000000000000000000000000000000000000000000000000000000001
+      }
+    }
+    if (failed) {
+      /**
+       * @dev add job to list of failed/recoverable jobs
+       */
+      _failedJobs[hash] = true;
+    }
+    /**
+     * @dev reward operator (with HLG) for executing the job
+     */
+    ++_inboundMessageCounter;
+    //// we need to decide on a reward for operating here
+    // uint256 reward = ???;
+    //// operator gets sent the reward
+    // _bondedOperators[msg.sender] += reward;
+  }
+
+  /**
+   * @notice Receive a cross-chain message
+   * @dev This function is restricted for use by Holograph Messaging Module only
+   */
+  function crossChainMessage(bytes calldata bridgeInRequesPayload) external payable {
+    require(msg.sender == address(_messagingModule()), "HOLOGRAPH: messaging only call");
+    /**
+     * @dev would be a good idea to check payload gas price here and if it is significantly lower than current amount
+     *      to set zero address as operator to not lock-up an operator unnecessarily
+     */
     unchecked {
-      bytes32 jobHash = keccak256(_payload);
+      bytes32 jobHash = keccak256(bridgeInRequesPayload);
+      /**
+       * @dev load and increment operator temp storage in one call
+       */
       ++_operatorTempStorageCounter;
-      // use job hash, job nonce, block number, and block timestamp for generating a random number
+      /**
+       * @dev use job hash, job nonce, block number, and block timestamp for generating a random number
+       */
       uint256 random = uint256(keccak256(abi.encodePacked(jobHash, _jobNonce(), block.number, block.timestamp)));
-      // divide by total number of pods, use modulus/remainder
+      /**
+       * @dev divide by total number of pods, use modulus/remainder
+       */
       uint256 pod = random % _operatorPods.length;
-      // identify the total number of available operators in pod
+      /**
+       * @dev identify the total number of available operators in pod
+       */
       uint256 podSize = _operatorPods[pod].length;
-      // select a primary operator
+      /**
+       * @dev select a primary operator
+       */
       uint256 operatorIndex = random % podSize;
-      // If operator index is 0, then it's open season! Anyone can execute this job. First come first serve
-      // pop operator to ensure that they cannot be selected for any other job until this one completes
-      // decrease pod size to accomodate popped operator
+      /**
+       * @dev If operator index is 0, then it's open season! Anyone can execute this job. First come first serve
+       *      pop operator to ensure that they cannot be selected for any other job until this one completes
+       *      decrease pod size to accomodate popped operator
+       */
       _operatorTempStorage[_operatorTempStorageCounter] = _operatorPods[pod][operatorIndex];
       _popOperator(pod, operatorIndex);
       if (podSize > 1) {
@@ -320,115 +485,61 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
         ((pod + 1) << 248) |
           (uint256(_operatorTempStorageCounter) << 216) |
           (block.number << 176) |
-          (_RBH(random, podSize, 1) << 160) |
-          (_RBH(random, podSize, 2) << 144) |
-          (_RBH(random, podSize, 3) << 128) |
-          (_RBH(random, podSize, 4) << 112) |
-          (_RBH(random, podSize, 5) << 96) |
+          (_randomBlockHash(random, podSize, 1) << 160) |
+          (_randomBlockHash(random, podSize, 2) << 144) |
+          (_randomBlockHash(random, podSize, 3) << 128) |
+          (_randomBlockHash(random, podSize, 4) << 112) |
+          (_randomBlockHash(random, podSize, 5) << 96) |
           (block.timestamp << 16) |
           0
       ); // 80 next available bit position && so far 176 bits used with only 128 left
-      emit AvailableOperatorJob(jobHash, _payload);
+      /**
+       * @dev emit event to signal to operators that a job has become available
+       */
+      emit AvailableOperatorJob(jobHash, bridgeInRequesPayload);
     }
   }
 
-  function executeJob(bytes calldata _payload) external payable {
-    // we do our operator logic here
-    // we will also manage gas/value here
-    bytes32 hash = keccak256(_payload);
-    require(_operatorJobs[hash] > 0, "HOLOGRAPH: invalid job");
-    uint256 gasLimit = 0;
-    uint256 gasPrice = 0;
+  /**
+   * @notice Calculate the amount of gas needed to execute a bridgeInRequest
+   * @dev Use this function to estimate the amount of gas that will be used by the bridgeInRequest function
+   *      Set a specific gas limit when making this call, subtract return value, to get total gas used
+   *      Only use this with a static call
+   * @param bridgeInRequesPayload abi encoded bytes making up the bridgeInRequest payload
+   * @return the gas amount remaining after the static call is returned
+   */
+  function jobEstimator(bytes calldata bridgeInRequesPayload) external payable returns (uint256) {
     assembly {
-      gasLimit := calldataload(sub(add(_payload.offset, _payload.length), 0x40))
-      gasPrice := calldataload(sub(add(_payload.offset, _payload.length), 0x20))
-    }
-    OperatorJob memory job = getJobDetails(hash);
-    // first check if not default operator, or if zero address operator selected
-    if (job.operator != address(0)) {
-      uint256 pod = job.pod - 1;
-      if (job.operator != msg.sender) {
-        // we are at a point where operator failed to execute
-        // then check if time is still within limits
-        uint256 elapsedTime = block.timestamp - uint256(job.startTimestamp);
-        uint256 timeDifference = elapsedTime / job.blockTimes;
-        require(timeDifference > 0, "HOLOGRAPH: operator has time");
-        // at this point an operator failed to execute in given amount of time
-        // we need to check if gas price was a variable
-        require(gasPrice >= tx.gasprice, "HOLOGRAPH: gas spike detected");
-        // we now need to check if next operator is allowed
-        if (timeDifference < 6) {
-          uint256 podIndex = uint256(job.fallbackOperators[timeDifference - 1]);
-          // do a quick sanity check to make sure operator did not leave from index and does not result in revert
-          if (podIndex < _operatorPods[pod].length) {
-            // only do check if it is valid, otherwise allow anyone to do this
-            address fallbackOperator = _operatorPods[pod][podIndex];
-            require(fallbackOperator == msg.sender || fallbackOperator == address(0), "HOLOGRAPH: invalid fallback");
-          }
-        }
-        // reward the current operator
-        uint256 amount = _getBaseBondAmount(pod);
-        // this is where we slash default operator for missing the job
-        // for simplicity at this point, slashing pod base fee
-        _bondedAmounts[job.operator] -= amount;
-        // amount gets sent to msg.sender
-        _bondedAmounts[msg.sender] += amount;
-        uint256 currentBondAmount = _getCurrentBondAmount(pod);
-        // check leftover bonded amount
-        if (currentBondAmount >= _bondedAmounts[job.operator]) {
-          // if enough bond amount leftover, put operator back in
-          _operatorPods[pod].push(job.operator);
-          _operatorPodIndex[job.operator] = _operatorPods[pod].length - 1;
-          _bondedOperators[job.operator] = job.pod;
-        } else {
-          // return rest of bond amount to operator
-          // and do not re-instate the operator
-          // ... for now we just make that number disappear
-          _bondedAmounts[job.operator] = 0;
-        }
-      } else {
-        // put operator back in
-        _operatorPods[pod].push(msg.sender);
-        _operatorPodIndex[job.operator] = _operatorPods[pod].length - 1;
-        _bondedOperators[msg.sender] = job.pod;
-      }
-    }
-    //// we need to decide on a reward for operating here
-    // uint256 reward = ???;
-    //// operator gets sent the reward
-    // _bondedOperators[msg.sender] += reward;
-    // check that we have enough gas from operator to execute
-    require(gasleft() > gasLimit, "HOLOGRAPH: not enough gas left");
-    // now execute job
-    assembly {
-      calldatacopy(0, _payload.offset, sub(_payload.length, 0x40))
-      let result := call(gasLimit, sload(_bridgeSlot), callvalue(), 0, sub(_payload.length, 0x40), 0, 0)
-      if eq(result, 0) {
-        returndatacopy(0, 0, returndatasize())
-        revert(0, returndatasize())
-      }
-    }
-    delete _operatorJobs[hash];
-  }
-
-  function jobEstimator(bytes calldata _payload) external payable returns (uint256) {
-    assembly {
-      calldatacopy(0, _payload.offset, sub(_payload.length, 0x40))
-      // we purposefully trigger a revert to be made
+      calldatacopy(0, bridgeInRequesPayload.offset, sub(bridgeInRequesPayload.length, 0x40))
+      /**
+       * @dev bridgeInRequest doNotRevert is purposefully set to false so a rever would happen
+       */
       mstore8(0xE3, 0x00)
-      let result := call(gas(), sload(_bridgeSlot), callvalue(), 0, sub(_payload.length, 0x40), 0, 0)
-      // we purposefully revert if for some reason the call went through still
+      let result := call(gas(), sload(_bridgeSlot), callvalue(), 0, sub(bridgeInRequesPayload.length, 0x40), 0, 0)
+      /**
+       * @dev if for some reason the call does not revert, it is force reverted
+       */
       if eq(result, 1) {
         returndatacopy(0, 0, returndatasize())
         revert(0, returndatasize())
       }
+      /**
+       * @dev remaining gas is set as the return value
+       */
       mstore(0x00, gas())
       return(0x00, 0x20)
     }
   }
 
   /**
-   * @dev Need to add an extra function to get LZ gas amount needed for their internal cross-chain message verification
+   * @notice Send cross chain bridge request message
+   * @dev This function is restricted to only be callable by Holograph Bridge
+   * @param gasLimit maximum amount of gas to spend for executing the beam on destination chain
+   * @param gasPrice maximum amount of gas price (in destination chain native gas token) to pay on destination chain
+   * @param toChain Holograph Chain ID where the beam is being sent to
+   * @param nonce incremented number used to ensure job hashes are unique
+   * @param holographableContract address of the contract for which the bridge request is being made
+   * @param bridgeOutPayload bytes made up of the bridgeOutRequest payload
    */
   function send(
     uint256 gasLimit,
@@ -455,31 +566,52 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
        */
       holographableContract,
       /**
-       * @dev combine all the data to send to Holograph Operator
+       * @dev get the current chain's hToken for native gas token
        */
       _registry().getHToken(_holograph().getHolographChainId()),
+      /**
+       * @dev recipient will be defined when operator picks up the job
+       */
       address(0),
+      /**
+       * @dev value is set to zero for now
+       */
       0,
+      /**
+       * @dev specify that function call should not revert
+       */
       true,
+      /**
+       * @dev attach actual holographableContract function call
+       */
       bridgeOutPayload
     );
-    LayerZeroEndpointInterface lZEndpoint;
-    assembly {
-      lZEndpoint := sload(_lZEndpointSlot)
-    }
-    // need to recalculate the gas amounts for LZ to deliver message
-    lZEndpoint.send{value: msg.value}(
-      uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
-      abi.encodePacked(address(this), address(this)),
-      abi.encodePacked(encodedData, gasLimit, gasPrice),
-      payable(msgSender),
-      address(this),
-      abi.encodePacked(uint16(1), uint256(52000 + (encodedData.length * 25)))
-    );
+    /**
+     * @dev add gas variables to the back for later extraction
+     */
+    encodedData = abi.encodePacked(encodedData, gasLimit, gasPrice);
+    /**
+     * @dev Send the data to the current Holograph Messaging Module
+     *      This will be changed to dynamically select which messaging module to use based on destination network
+     */
+    _messagingModule().send(gasLimit, gasPrice, toChain, msgSender, msg.value, encodedData);
+    /**
+     * @dev for easy indexing, an event is emitted with the payload hash for status tracking
+     */
+    emit CrossChainMessageSent(keccak256(encodedData));
   }
 
+  /**
+   * @notice Get the details for an available operator job
+   * @dev The job hash is a keccak256 hash of the entire job payload
+   * @param jobHash keccak256 hash of the job
+   * @return an OperatorJob struct with details about a specific job
+   */
   function getJobDetails(bytes32 jobHash) public view returns (OperatorJob memory) {
     uint256 packed = _operatorJobs[jobHash];
+    /**
+     * @dev The job is bitwise packed into a single 32 byte slot, this unpacks it before returning the struct
+     */
     return
       OperatorJob(
         uint8(packed >> 248),
@@ -498,103 +630,219 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
       );
   }
 
+  /**
+   * @notice Get number of pods available
+   * @dev This returns number of pods that have been opened via bonding
+   */
   function getTotalPods() external view returns (uint256 totalPods) {
     return _operatorPods.length;
   }
 
+  /**
+   * @notice Get total number of operators in a pod
+   * @dev Use in conjunction with paginated getPodOperators function
+   * @param pod the pod to query
+   * @return total operators in a pod
+   */
+  function getPodOperatorsLength(uint256 pod) external view returns (uint256) {
+    require(_operatorPods.length >= pod, "HOLOGRAPH: pod does not exist");
+    return _operatorPods[pod - 1].length;
+  }
+
+  /**
+   * @notice Get list of operators in a pod
+   * @dev Use paginated getPodOperators function instead if list gets too long
+   * @param pod the pod to query
+   * @return operators array list of operators in a pod
+   */
   function getPodOperators(uint256 pod) external view returns (address[] memory operators) {
     require(_operatorPods.length >= pod, "HOLOGRAPH: pod does not exist");
     operators = _operatorPods[pod - 1];
   }
 
+  /**
+   * @notice Get paginated list of operators in a pod
+   * @dev Use in conjunction with getPodOperatorsLength to know the total length of results
+   * @param pod the pod to query
+   * @param index the array index to start from
+   * @param length the length of result set to be (will be shorter if reached end of array)
+   * @return operators a paginated array of operators
+   */
   function getPodOperators(
     uint256 pod,
     uint256 index,
     uint256 length
   ) external view returns (address[] memory operators) {
     require(_operatorPods.length >= pod, "HOLOGRAPH: pod does not exist");
-    // decrease by one for easy code usage
+    /**
+     * @dev if pod 0 is selected, this will create a revert
+     */
     pod--;
+    /**
+     * @dev get total length of pod operators
+     */
     uint256 supply = _operatorPods[pod].length;
+    /**
+     * @dev check if length is out of bounds for this result set
+     */
     if (index + length > supply) {
+      /**
+       * @dev adjust length to return remainder of the results
+       */
       length = supply - index;
     }
+    /**
+     * @dev create in-memory array
+     */
     operators = new address[](length);
+    /**
+     * @dev add operators to result set
+     */
     for (uint256 i = 0; i < length; i++) {
       operators[i] = _operatorPods[pod][index + i];
     }
   }
 
-  function getPodBondAmount(uint256 pod) external view returns (uint256 base, uint256 current) {
+  /**
+   * @notice Check the base and current price for bonding to a particular pod
+   * @dev Useful for understanding what is required for bonding to a pod
+   * @param pod the pod to get bonding amounts for
+   * @return base the base bond amount required for a pod
+   * @return current the current bond amount required for a pod
+   */
+  function getPodBondAmounts(uint256 pod) external view returns (uint256 base, uint256 current) {
     base = _getBaseBondAmount(pod - 1);
     current = _getCurrentBondAmount(pod - 1);
   }
 
+  /**
+   * @notice Get an operator's currently bonded pod
+   * @dev Useful for checking if an operator is currently bonded
+   * @param operator address of operator to check
+   * @return pod number that operator is bonded on, returns zero if not bonded
+   */
   function getBondedPod(address operator) external view returns (uint256 pod) {
     return _bondedOperators[operator];
   }
 
-  // add top-up option
+  /**
+   * @notice Topup a bonded operator with more utility tokens
+   * @dev Useful function if an operator got slashed and wants to add a safety buffer to not get unbonded
+   * @param operator address of operator to topup
+   * @param amount utility token amount to add
+   */
+  function topupUtilityToken(address operator, uint256 amount) external {
+    /**
+     * @dev check that an operator is currently bonded
+     */
+    require(_bondedOperators[operator] > 0, "HOLOGRAPH: operator not bonded");
+    unchecked {
+      /**
+       * @dev add the additional amount to operator
+       */
+      _bondedAmounts[operator] += amount;
+    }
+    /**
+     * @dev transfer tokens last, to prevent reentrancy attacks
+     */
+    require(_utilityToken().transferFrom(msg.sender, address(this), amount), "HOLOGRAPH: token transfer failed");
+  }
 
+  /**
+   * @notice Bond utility tokens and become an operator
+   * @dev An operator can only bond to one pod at a time, per network
+   * @param operator address of operator to bond (can be an ownable smart contract)
+   * @param amount utility token amount to bond (can be greater than minimum)
+   * @param pod number of pod to bond to (can be for one that does not exist yet)
+   */
   function bondUtilityToken(
     address operator,
     uint256 amount,
     uint256 pod
   ) external {
+    /**
+     * @dev an operator can only bond to one pod at any give time per network
+     */
     require(_bondedOperators[operator] == 0, "HOLOGRAPH: operator is bonded");
     unchecked {
+      /**
+       * @dev get the current bonding minimum for selected pod
+       */
       uint256 current = _getCurrentBondAmount(pod - 1);
       require(current <= amount, "HOLOGRAPH: bond amount too small");
-      // subtract difference and only keep bond amount
+      /**
+       * @dev check if selected pod is greater than currently existing pods
+       */
       if (_operatorPods.length < pod) {
+        /**
+         * @dev activate pod(s) up until the selected pod
+         */
         for (uint256 i = _operatorPods.length; i <= pod; i++) {
+          /**
+           * @dev add zero address into pod to mitigate empty pod issues
+           */
           _operatorPods.push([address(0)]);
         }
       }
+      /**
+       * @dev prevent bonding to a pod with more than uint16 max value
+       */
       require(_operatorPods[pod - 1].length < type(uint16).max, "HOLOGRAPH: too many operators");
-      // we extract utility token amount from msg sender
-      require(_utilityToken().transferFrom(msg.sender, address(this), amount), "HOLOGRAPH: token transfer failed");
       _operatorPods[pod - 1].push(operator);
       _operatorPodIndex[operator] = _operatorPods[pod - 1].length - 1;
       _bondedOperators[operator] = pod;
       _bondedAmounts[operator] = amount;
+      /**
+       * @dev transfer tokens last, to prevent reentrancy attacks
+       */
+      require(_utilityToken().transferFrom(msg.sender, address(this), amount), "HOLOGRAPH: token transfer failed");
     }
   }
 
+  /**
+   * @notice Unbond HLG utility tokens and stop being an operator
+   * @dev A bonded operator selected for a job cannot unbond until they complete the job, or are slashed
+   * @param operator address of operator to unbond
+   * @param recipient address where to send the bonded tokens
+   */
   function unbondUtilityToken(address operator, address recipient) external {
+    /**
+     * @dev validate that operator is currently bonded
+     */
     require(_bondedOperators[operator] != 0, "HOLOGRAPH: operator not bonded");
+    /**
+     * @dev check if sender is not actual operator
+     */
     if (msg.sender != operator) {
+      /**
+       * @dev check if operator is a smart contract
+       */
       require(_isContract(operator), "HOLOGRAPH: operator not contract");
-      // check that operator is ownable contract
+      /**
+       * @dev check if smart contract is owned by sender
+       */
       require(Ownable(operator).isOwner(msg.sender), "HOLOGRAPH: sender not owner");
     }
+    /**
+     * @dev get current bonded amount by operator
+     */
     uint256 amount = _bondedAmounts[operator];
-    // here we subtract our fee for unbonding
-    require(_utilityToken().transfer(recipient, amount), "HOLOGRAPH: token transfer failed");
-    //// we need to track operator pod index for easy removal
-    _popOperator(_bondedOperators[operator] - 1, _operatorPodIndex[operator]);
-    _bondedOperators[operator] = 0;
+    /**
+     * @dev unset operator bond amount before making a transfer
+     */
     _bondedAmounts[operator] = 0;
-  }
-
-  /**
-   * @notice Get the address of the approved LayerZero Endpoint
-   * @dev All lzReceive function calls allow only requests from this address
-   */
-  function getLZEndpoint() external view returns (address lZEndpoint) {
-    assembly {
-      lZEndpoint := sload(_lZEndpointSlot)
-    }
-  }
-
-  /**
-   * @notice Update the approved LayerZero Endpoint address
-   * @param lZEndpoint address of the LayerZero Endpoint to use
-   */
-  function setLZEndpoint(address lZEndpoint) external onlyAdmin {
-    assembly {
-      sstore(_lZEndpointSlot, lZEndpoint)
-    }
+    /**
+     * @dev remove all operator references
+     */
+    _popOperator(_bondedOperators[operator] - 1, _operatorPodIndex[operator]);
+    /**
+     * @dev transfer tokens to recipient
+     */
+    require(_utilityToken().transfer(recipient, amount), "HOLOGRAPH: token transfer failed");
+    /**
+     * @dev remove all operator references
+     */
+    _popOperator(_bondedOperators[operator] - 1, _operatorPodIndex[operator]);
   }
 
   /**
@@ -658,6 +906,26 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
   }
 
   /**
+   * @notice Get the address of the Holograph Messaging Module
+   * @dev All cross-chain message requests will get forwarded to this adress
+   */
+  function getMessagingModule() external view returns (address messagingModule) {
+    assembly {
+      messagingModule := sload(_messagingModuleSlot)
+    }
+  }
+
+  /**
+   * @notice Update the Holograph Messaging Module address
+   * @param messagingModule address of the LayerZero Endpoint to use
+   */
+  function setMessagingModule(address messagingModule) external onlyAdmin {
+    assembly {
+      sstore(_messagingModuleSlot, messagingModule)
+    }
+  }
+
+  /**
    * @notice Get the Holograph Registry module
    * @dev This module stores a reference for all deployed holographable smart contracts
    */
@@ -697,30 +965,54 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
     }
   }
 
+  /**
+   * @dev Internal function used for getting the Holograph Bridge Interface
+   */
   function _bridge() private view returns (address bridge) {
     assembly {
       bridge := sload(_bridgeSlot)
     }
   }
 
+  /**
+   * @dev Internal function used for getting the Holograph Interface
+   */
   function _holograph() private view returns (HolographInterface holograph) {
     assembly {
       holograph := sload(_holographSlot)
     }
   }
 
+  /**
+   * @dev Internal function used for getting the Holograph Interfaces Interface
+   */
   function _interfaces() private view returns (HolographInterfacesInterface interfaces) {
     assembly {
       interfaces := sload(_interfacesSlot)
     }
   }
 
+  /**
+   * @dev Internal function used for getting the Holograph Messaging Module Interface
+   */
+  function _messagingModule() private view returns (CrossChainMessageInterface messagingModule) {
+    assembly {
+      messagingModule := sload(_messagingModuleSlot)
+    }
+  }
+
+  /**
+   * @dev Internal function used for getting the Holograph Registry Interface
+   */
   function _registry() private view returns (HolographRegistryInterface registry) {
     assembly {
       registry := sload(_registrySlot)
     }
   }
 
+  /**
+   * @dev Internal function used for getting the Holograph Utility Token Interface
+   */
   function _utilityToken() private view returns (HolographERC20Interface utilityToken) {
     assembly {
       utilityToken := sload(_utilityTokenSlot)
@@ -728,8 +1020,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
   }
 
   /**
-   * @dev Internal nonce used for randomness
-   *      We increment it on each return
+   * @dev Internal nonce, that increments on each call, used for randomness
    */
   function _jobNonce() private returns (uint256 jobNonce) {
     assembly {
@@ -738,27 +1029,53 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
     }
   }
 
+  /**
+   * @dev Internal function used to remove an operator from a particular pod
+   */
   function _popOperator(uint256 pod, uint256 operatorIndex) private {
+    /**
+     * @dev only pop the operator if it's not a zero address
+     */
     if (operatorIndex > 0) {
       unchecked {
         address operator = _operatorPods[pod][operatorIndex];
-        // remove operator pod reference
+        /**
+         * @dev mark operator as no longer bonded
+         */
         _bondedOperators[operator] = 0;
+        /**
+         * @dev remove pod reference for operator
+         */
         _operatorPodIndex[operator] = 0;
         uint256 lastIndex = _operatorPods[pod].length - 1;
         if (lastIndex != operatorIndex) {
+          /**
+           * @dev if operator is not last index, move last index to operator's current index
+           */
           _operatorPods[pod][operatorIndex] = _operatorPods[pod][lastIndex];
         }
+        /**
+         * @dev delete last index
+         */
         delete _operatorPods[pod][lastIndex];
+        /**
+         * @dev shorten array length
+         */
         _operatorPods[pod].pop();
       }
     }
   }
 
+  /**
+   * @dev Internal function used for calculating the base bonding amount for a pod
+   */
   function _getBaseBondAmount(uint256 pod) private view returns (uint256) {
     return (_podMultiplier**pod) * _baseBondAmount;
   }
 
+  /**
+   * @dev Internal function used for calculating the current bonding amount for a pod
+   */
   function _getCurrentBondAmount(uint256 pod) private view returns (uint256) {
     uint256 current = (_podMultiplier**pod) * _baseBondAmount;
     if (_operatorPods.length < pod) {
@@ -774,7 +1091,10 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
     return current;
   }
 
-  function _RBH(
+  /**
+   * @dev Internal function used for generating a random pod operator selection by using previously mined blocks
+   */
+  function _randomBlockHash(
     uint256 random,
     uint256 podSize,
     uint256 n
@@ -784,6 +1104,9 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
     }
   }
 
+  /**
+   * @dev Internal function used for checking if a contract has been deployed at address
+   */
   function _isContract(address contractAddress) private view returns (bool) {
     bytes32 codehash;
     assembly {

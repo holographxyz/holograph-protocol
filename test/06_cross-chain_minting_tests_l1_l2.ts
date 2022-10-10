@@ -326,7 +326,7 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           .to.emit(l1.mockLZEndpoint, 'LzEvent')
           .withArgs(
             ChainId.hlg2lz(l2.network.holographId),
-            '0x' + remove0x(l1.operator.address.toLowerCase()).repeat(2),
+            '0x' + remove0x((await l1.operator.getMessagingModule()).toLowerCase()).repeat(2),
             payload
           );
 
@@ -334,8 +334,13 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           l2.mockLZEndpoint
             .connect(l2.lzEndpoint)
             .adminCall(
-              l2.operator.address,
-              lzReceive(l2.web3, [ChainId.hlg2lz(l1.network.holographId), l1.operator.address, 0, payload])
+              await l2.operator.getMessagingModule(),
+              lzReceive(l2.web3, [
+                ChainId.hlg2lz(l1.network.holographId),
+                await l1.operator.getMessagingModule(),
+                0,
+                payload,
+              ])
             )
         )
           .to.emit(l2.operator, 'AvailableOperatorJob')
@@ -450,7 +455,7 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           .to.emit(l2.mockLZEndpoint, 'LzEvent')
           .withArgs(
             ChainId.hlg2lz(l1.network.holographId),
-            '0x' + remove0x(l2.operator.address.toLowerCase()).repeat(2),
+            '0x' + remove0x((await l2.operator.getMessagingModule()).toLowerCase()).repeat(2),
             payload
           );
 
@@ -458,8 +463,13 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           l1.mockLZEndpoint
             .connect(l1.lzEndpoint)
             .adminCall(
-              l1.operator.address,
-              lzReceive(l1.web3, [ChainId.hlg2lz(l2.network.holographId), l2.operator.address, 0, payload])
+              await l1.operator.getMessagingModule(),
+              lzReceive(l1.web3, [
+                ChainId.hlg2lz(l2.network.holographId),
+                await l2.operator.getMessagingModule(),
+                0,
+                payload,
+              ])
             )
         )
           .to.emit(l1.operator, 'AvailableOperatorJob')
@@ -576,7 +586,7 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           .to.emit(l1.mockLZEndpoint, 'LzEvent')
           .withArgs(
             ChainId.hlg2lz(l2.network.holographId),
-            '0x' + remove0x(l1.operator.address.toLowerCase()).repeat(2),
+            '0x' + remove0x((await l1.operator.getMessagingModule()).toLowerCase()).repeat(2),
             payload
           );
 
@@ -584,8 +594,13 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           l2.mockLZEndpoint
             .connect(l2.lzEndpoint)
             .adminCall(
-              l2.operator.address,
-              lzReceive(l2.web3, [ChainId.hlg2lz(l1.network.holographId), l1.operator.address, 0, payload])
+              await l2.operator.getMessagingModule(),
+              lzReceive(l2.web3, [
+                ChainId.hlg2lz(l1.network.holographId),
+                await l1.operator.getMessagingModule(),
+                0,
+                payload,
+              ])
             )
         )
           .to.emit(l2.operator, 'AvailableOperatorJob')
@@ -700,7 +715,7 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           .to.emit(l2.mockLZEndpoint, 'LzEvent')
           .withArgs(
             ChainId.hlg2lz(l1.network.holographId),
-            '0x' + remove0x(l2.operator.address.toLowerCase()).repeat(2),
+            '0x' + remove0x((await l2.operator.getMessagingModule()).toLowerCase()).repeat(2),
             payload
           );
 
@@ -708,8 +723,13 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           l1.mockLZEndpoint
             .connect(l1.lzEndpoint)
             .adminCall(
-              l1.operator.address,
-              lzReceive(l1.web3, [ChainId.hlg2lz(l2.network.holographId), l2.operator.address, 0, payload])
+              await l1.operator.getMessagingModule(),
+              lzReceive(l1.web3, [
+                ChainId.hlg2lz(l2.network.holographId),
+                await l2.operator.getMessagingModule(),
+                0,
+                payload,
+              ])
             )
         )
           .to.emit(l1.operator, 'AvailableOperatorJob')
@@ -828,7 +848,7 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           .to.emit(l1.mockLZEndpoint, 'LzEvent')
           .withArgs(
             ChainId.hlg2lz(l2.network.holographId),
-            '0x' + remove0x(l1.operator.address.toLowerCase()).repeat(2),
+            '0x' + remove0x((await l1.operator.getMessagingModule()).toLowerCase()).repeat(2),
             payload
           );
 
@@ -836,8 +856,13 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           l2.mockLZEndpoint
             .connect(l2.lzEndpoint)
             .adminCall(
-              l2.operator.address,
-              lzReceive(l2.web3, [ChainId.hlg2lz(l1.network.holographId), l1.operator.address, 0, payload])
+              await l2.operator.getMessagingModule(),
+              lzReceive(l2.web3, [
+                ChainId.hlg2lz(l1.network.holographId),
+                await l1.operator.getMessagingModule(),
+                0,
+                payload,
+              ])
             )
         )
           .to.emit(l2.operator, 'AvailableOperatorJob')
@@ -954,7 +979,7 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           .to.emit(l2.mockLZEndpoint, 'LzEvent')
           .withArgs(
             ChainId.hlg2lz(l1.network.holographId),
-            '0x' + remove0x(l2.operator.address.toLowerCase()).repeat(2),
+            '0x' + remove0x((await l2.operator.getMessagingModule()).toLowerCase()).repeat(2),
             payload
           );
 
@@ -962,8 +987,13 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           l1.mockLZEndpoint
             .connect(l1.lzEndpoint)
             .adminCall(
-              l1.operator.address,
-              lzReceive(l1.web3, [ChainId.hlg2lz(l2.network.holographId), l2.operator.address, 0, payload])
+              await l1.operator.getMessagingModule(),
+              lzReceive(l1.web3, [
+                ChainId.hlg2lz(l2.network.holographId),
+                await l2.operator.getMessagingModule(),
+                0,
+                payload,
+              ])
             )
         )
           .to.emit(l1.operator, 'AvailableOperatorJob')
@@ -1089,7 +1119,7 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           .to.emit(l1.mockLZEndpoint, 'LzEvent')
           .withArgs(
             ChainId.hlg2lz(l2.network.holographId),
-            '0x' + remove0x(l1.operator.address.toLowerCase()).repeat(2),
+            '0x' + remove0x((await l1.operator.getMessagingModule()).toLowerCase()).repeat(2),
             payload
           );
 
@@ -1097,8 +1127,13 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           l2.mockLZEndpoint
             .connect(l2.lzEndpoint)
             .adminCall(
-              l2.operator.address,
-              lzReceive(l2.web3, [ChainId.hlg2lz(l1.network.holographId), l1.operator.address, 0, payload])
+              await l2.operator.getMessagingModule(),
+              lzReceive(l2.web3, [
+                ChainId.hlg2lz(l1.network.holographId),
+                await l1.operator.getMessagingModule(),
+                0,
+                payload,
+              ])
             )
         )
           .to.emit(l2.operator, 'AvailableOperatorJob')
@@ -1222,7 +1257,7 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           .to.emit(l2.mockLZEndpoint, 'LzEvent')
           .withArgs(
             ChainId.hlg2lz(l1.network.holographId),
-            '0x' + remove0x(l2.operator.address.toLowerCase()).repeat(2),
+            '0x' + remove0x((await l2.operator.getMessagingModule()).toLowerCase()).repeat(2),
             payload
           );
 
@@ -1230,8 +1265,13 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           l1.mockLZEndpoint
             .connect(l1.lzEndpoint)
             .adminCall(
-              l1.operator.address,
-              lzReceive(l1.web3, [ChainId.hlg2lz(l2.network.holographId), l2.operator.address, 0, payload])
+              await l1.operator.getMessagingModule(),
+              lzReceive(l1.web3, [
+                ChainId.hlg2lz(l2.network.holographId),
+                await l2.operator.getMessagingModule(),
+                0,
+                payload,
+              ])
             )
         )
           .to.emit(l1.operator, 'AvailableOperatorJob')
@@ -1396,7 +1436,7 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
             .to.emit(l1.mockLZEndpoint, 'LzEvent')
             .withArgs(
               ChainId.hlg2lz(l2.network.holographId),
-              '0x' + remove0x(l1.operator.address.toLowerCase()).repeat(2),
+              '0x' + remove0x((await l1.operator.getMessagingModule()).toLowerCase()).repeat(2),
               payload
             );
 
@@ -1410,8 +1450,13 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
             l2.mockLZEndpoint
               .connect(l2.lzEndpoint)
               .adminCall(
-                l2.operator.address,
-                lzReceive(l2.web3, [ChainId.hlg2lz(l1.network.holographId), l1.operator.address, 0, payload])
+                await l2.operator.getMessagingModule(),
+                lzReceive(l2.web3, [
+                  ChainId.hlg2lz(l1.network.holographId),
+                  await l1.operator.getMessagingModule(),
+                  0,
+                  payload,
+                ])
               )
           )
             .to.emit(l2.operator, 'AvailableOperatorJob')
@@ -1501,7 +1546,7 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
             .to.emit(l2.mockLZEndpoint, 'LzEvent')
             .withArgs(
               ChainId.hlg2lz(l1.network.holographId),
-              '0x' + remove0x(l2.operator.address.toLowerCase()).repeat(2),
+              '0x' + remove0x((await l2.operator.getMessagingModule()).toLowerCase()).repeat(2),
               payload
             );
 
@@ -1515,8 +1560,13 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
             l1.mockLZEndpoint
               .connect(l1.lzEndpoint)
               .adminCall(
-                l1.operator.address,
-                lzReceive(l1.web3, [ChainId.hlg2lz(l2.network.holographId), l2.operator.address, 0, payload])
+                await l1.operator.getMessagingModule(),
+                lzReceive(l1.web3, [
+                  ChainId.hlg2lz(l2.network.holographId),
+                  await l2.operator.getMessagingModule(),
+                  0,
+                  payload,
+                ])
               )
           )
             .to.emit(l1.operator, 'AvailableOperatorJob')
