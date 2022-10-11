@@ -99,7 +99,7 @@ describe.only('Holograph Genesis Contract', async function () {
     it('should allow inherited contract to call fn', async () => {
       let tx = await holographGenesisChild.approveDeployer(mockSigner.address, true);
       await tx.wait();
-      const isApprovedDeployer = await holographGenesis.isApprovedDeployer(newDeployer.address);
+      const isApprovedDeployer = await holographGenesisChild.isApprovedDeployer(newDeployer.address);
       expect(isApprovedDeployer).to.equal(true);
     });
   });
@@ -124,7 +124,7 @@ describe.only('Holograph Genesis Contract', async function () {
     });
 
     it('should allow inherited contract to call fn', async () => {
-      const isApprovedDeployer = await holographGenesisChild.IsApprovedDeployerMock(deployer.address);
+      const isApprovedDeployer = await holographGenesisChild.isApprovedDeployerMock(deployer.address);
       expect(isApprovedDeployer).to.equal(true);
     });
   });
