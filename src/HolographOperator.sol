@@ -172,6 +172,17 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
     return InitializableInterface.init.selector;
   }
 
+  function resetOperator(uint256 blockTime, uint256 baseBondAmount, uint256 podMultiplier, uint256 operatorThreshold, uint256 operatorThresholdStep, uint256 operatorThresholdDivisor) external onlyAdmin {
+    _blockTime = blockTime;
+    _baseBondAmount = baseBondAmount;
+    _podMultiplier = podMultiplier;
+    _operatorThreshold = operatorThreshold;
+    _operatorThresholdStep = operatorThresholdStep;
+    _operatorThresholdDivisor = operatorThresholdDivisor;
+    _operatorPods = [[address(0)]];
+    _bondedOperators[address(0)] = 1;
+  }
+
   /**
    * @notice Execute an available operator job
    * @dev When making this call, if operating criteria is not met, the call will revert
@@ -452,6 +463,12 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
     bytes calldata bridgeOutPayload
   ) external payable {
     require(msg.sender == _bridge(), "HOLOGRAPH: bridge only call");
+    CrossChainMessageInterface messagingModule = _messagingModule();
+    uint256 hlgFee = messagingModule.getHlgFee(toChain, gasLimit, gasPrice);
+    address hToken = _registry().getHToken(_holograph().getHolographChainId());
+    require(hlgFee < msg.value, "HOLOGRAPH: not enough value");
+    (bool success,) = hToken.call{value: hlgFee}("");
+    require(success, "HOLOGRAPH: hToken send failed");
     bytes memory encodedData = abi.encodeWithSelector(
       HolographBridgeInterface.bridgeInRequest.selector,
       /**
@@ -469,7 +486,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
       /**
        * @dev get the current chain's hToken for native gas token
        */
-      _registry().getHToken(_holograph().getHolographChainId()),
+      hToken,
       /**
        * @dev recipient will be defined when operator picks up the job
        */
@@ -477,7 +494,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
       /**
        * @dev value is set to zero for now
        */
-      0,
+      hlgFee,
       /**
        * @dev specify that function call should not revert
        */
@@ -495,7 +512,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
      * @dev Send the data to the current Holograph Messaging Module
      *      This will be changed to dynamically select which messaging module to use based on destination network
      */
-    _messagingModule().send(gasLimit, gasPrice, toChain, msgSender, msg.value, encodedData);
+    messagingModule.send(gasLimit, gasPrice, toChain, msgSender, msg.value - hlgFee, encodedData);
     /**
      * @dev for easy indexing, an event is emitted with the payload hash for status tracking
      */
@@ -979,7 +996,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
    */
   function _getCurrentBondAmount(uint256 pod) private view returns (uint256) {
     uint256 current = (_podMultiplier**pod) * _baseBondAmount;
-    if (_operatorPods.length < pod) {
+    if (pod >= _operatorPods.length) {
       return current;
     }
     uint256 threshold = _operatorThreshold / (2**pod);
