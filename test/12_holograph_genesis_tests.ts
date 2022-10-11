@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { generateInitCode, zeroAddress } from '../scripts/utils/helpers';
 
-describe.only('Holograph Genesis Contract', async function () {
+describe('Holograph Genesis Contract', async () => {
   let HolographGenesis: any;
   let holographGenesis: any;
   let HolographGenesisChild: any;
@@ -16,7 +16,7 @@ describe.only('Holograph Genesis Contract', async function () {
   let anotherNewDeployer: SignerWithAddress;
   let mockSigner: SignerWithAddress;
 
-  before(async function () {
+  before(async () => {
     accounts = await ethers.getSigners();
     deployer = accounts[0];
     newDeployer = accounts[1];
@@ -37,7 +37,7 @@ describe.only('Holograph Genesis Contract', async function () {
     mockSigner = await ethers.getSigner(mock.address);
   });
 
-  describe('constructor', async function () {
+  describe('constructor', async () => {
     it('should successfully deploy', async () => {
       const holographGenesisAddress = holographGenesis.address;
       const events = await holographGenesis.queryFilter('Message');
@@ -53,30 +53,68 @@ describe.only('Holograph Genesis Contract', async function () {
     });
   });
 
-  describe('deploy()', async function () {
+  describe('deploy()', async () => {
+    it('should succeed in deploying a contract', async () => {
+      const chainId = (await ethers.provider.getNetwork()).chainId;
+
+      await expect(
+        holographGenesis.deploy(
+          chainId,
+          // while running tests, keep in mind that the blockchain might retain some of this data
+          // because of that, keep incrementing/alternating salts for same contract types
+          `0x${'00'.repeat(11) + '01'}`,
+          Mock.bytecode,
+          generateInitCode(['bytes32'], ['0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd'])
+        )
+      ).to.not.be.reverted;
+    });
+
     it('should fail if chainId is not this blockchains chainId', async () => {
       const chainId = (await ethers.provider.getNetwork()).chainId;
 
-      await holographGenesis.deploy(
-        chainId,
-        // while running tests, keep in mind that the blockchain might retain some of this data
-        // because of that, keep incrementing/alternating salts for same contract types
-        `0x${'00'.repeat(11) + '01'}`,
-        //`0x${'00'.repeat(11) + '02'}`, // sample way to increment
-        Mock.bytecode,
-        generateInitCode(
-          ['bytes32'],
-          ['0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd']
+      await expect(
+        holographGenesis.deploy(
+          chainId + 1,
+          `0x${'00'.repeat(11) + '01'}`,
+          Mock.bytecode,
+          generateInitCode(['bytes32'], ['0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd'])
         )
-      );
+      ).to.revertedWith('HOLOGRAPH: incorrect chain id');
     });
 
-    it('should fail if contract was already deployed');
-    it('should fail if the deployment failed');
-    it('should fail if contract init code does not match the init selector');
+    it('should fail if contract was already deployed', async () => {
+      const chainId = (await ethers.provider.getNetwork()).chainId;
+      await expect(
+        holographGenesis.deploy(
+          chainId,
+          `0x${'00'.repeat(11) + '01'}`,
+          Mock.bytecode,
+          generateInitCode(['bytes32'], ['0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd'])
+        )
+      ).to.revertedWith('HOLOGRAPH: already deployed');
+    });
+
+    it('should fail if the deployment failed', async () => {
+      const chainId = (await ethers.provider.getNetwork()).chainId;
+      await expect(
+        holographGenesis.deploy(
+          chainId,
+          `0x${'00'.repeat(11) + '02'}`, // incrementing salt with last byte
+          '0x',
+          generateInitCode(['bytes32'], ['0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd'])
+        )
+      ).to.revertedWith('HOLOGRAPH: deployment failed');
+    });
+
+    it.skip('should fail if contract init code does not match the init selector', async () => {
+      const chainId = (await ethers.provider.getNetwork()).chainId;
+      await expect(
+        holographGenesisChild.deploy(chainId, `0x${'00'.repeat(11) + '03'}`, Mock.bytecode, '0x')
+      ).to.revertedWith('HOLOGRAPH: init code does not match init selector');
+    });
   });
 
-  describe(`approveDeployer()`, async function () {
+  describe(`approveDeployer()`, async () => {
     it('Should allow deployer wallet to add to approved deployers', async () => {
       const tx = await holographGenesis.approveDeployer(newDeployer.address, true);
       await tx.wait();
@@ -100,7 +138,7 @@ describe.only('Holograph Genesis Contract', async function () {
     });
 
     it('should allow inherited contract to call fn', async () => {
-      let tx = await holographGenesisChild.approveDeployer(mockSigner.address, true);
+      let tx = await holographGenesisChild.approveDeployer(newDeployer.address, true);
       await tx.wait();
       const isApprovedDeployer = await holographGenesisChild.isApprovedDeployer(newDeployer.address);
       expect(isApprovedDeployer).to.equal(true);
@@ -118,9 +156,6 @@ describe.only('Holograph Genesis Contract', async function () {
       expect(isApprovedDeployer).to.equal(false);
     });
 
-    // I believe this is a duplicate of the above test
-    it.skip('Should return false non-deployer wallet');
-
     it('Should allow external contract to call fn', async () => {
       const isApprovedDeployer = await holographGenesis.connect(mockSigner).isApprovedDeployer(deployer.address);
       expect(isApprovedDeployer).to.equal(true);
@@ -132,7 +167,7 @@ describe.only('Holograph Genesis Contract', async function () {
     });
   });
 
-  describe.skip('_isContract()', async function () {
+  describe.skip('_isContract()', async () => {
     it('should not be callable from an external contract', async () => {
       await expect(holographGenesis.connect(mock.address)['_isContract'](deployer.address)).to.be.revertedWith('TODO');
     });
