@@ -59,9 +59,12 @@ describe.only('Holograph Genesis Contract', async function () {
 
       await holographGenesis.deploy(
         chainId,
-        `0x${'ff'.repeat(12)}`,
-        `0x${'ff'.repeat(32)}`,
-        generateInitCode(['address', 'uint16'], [deployer.address, 0])
+        `0x${'00'.repeat(12)}`,
+        `0x${'00'.repeat(32)}`,
+        generateInitCode(
+          ['uint256', 'bytes12', 'bytes', 'bytes'],
+          [chainId, `0x${'00'.repeat(12)}`, `0x${'00'.repeat(32)}`, `0x${'00'.repeat(32)}`]
+        )
       );
     });
 
