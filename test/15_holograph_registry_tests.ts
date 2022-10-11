@@ -12,6 +12,8 @@ describe.only('Holograph Registry Contract', async function () {
   let deployer: SignerWithAddress;
   let newDeployer: SignerWithAddress;
   let anotherNewDeployer: SignerWithAddress;
+  let owner: SignerWithAddress;
+  let randUser: SignerWithAddress;
   let mockSigner: SignerWithAddress;
 
   before(async function () {
@@ -19,15 +21,12 @@ describe.only('Holograph Registry Contract', async function () {
     deployer = accounts[0];
     newDeployer = accounts[1];
     anotherNewDeployer = accounts[2];
+    owner = accounts[2];
+    randUser = accounts[10];
 
     HolographRegistry = await ethers.getContractFactory('HolographRegistry');
     holographRegistry = await HolographRegistry.deploy();
     await holographRegistry.deployed();
-
-    Mock = await ethers.getContractFactory('Mock');
-    mock = await Mock.deploy();
-    await mock.deployed();
-    mockSigner = await ethers.getSigner(mock.address);
   });
 
 
@@ -36,19 +35,16 @@ describe.only('Holograph Registry Contract', async function () {
   });
 
   describe('init()', async function () {
-    it.only('should successfully be initialized once', async function() {
-      try {
-        console.log(deployer)
-        await holographRegistry.connect(deployer).init(
-            generateInitCode(
-                ['address', 'bytes32'],
-                ['0xD6aE8250b8348C94847280928c79fb3b63cA453e', `0x${'00'.repeat(12)}`]
-            )
-        );
-      } catch (e) {
-        console.log(e)
-      }
+    it('should successfully be initialized once', async function() {
+      const initCode = generateInitCode(['address', 'bytes32[]'], [deployer.address, []]);
+      await expect(holographRegistry.connect(deployer).init(initCode)).to.not.be.reverted;
     }); // Validate hardcoded values are correct
+
+    it('should fail be initialized twice', async function() {
+      const initCode = generateInitCode(['address', 'bytes32[]'], [deployer.address, []]);
+      await expect(holographRegistry.connect(deployer).init(initCode)).to.be.reverted;
+    }); // Validate hardcoded values are correct
+
     it('should fail if already initialized');
     it('Should allow external contract to call fn');
     it('should fail to allow inherited contract to call fn');
@@ -69,16 +65,25 @@ describe.only('Holograph Registry Contract', async function () {
 
   describe('setHolograph()', async function () {
     it('should allow admin to alter _holographSlot', async function() {
-      await holographRegistry.connect(accounts[10]).setHolograph('0x000095E79eAC4d76aab57cB2c1f091d553b36ca0')
+      const expectedNewHolographAddr = '0x000095E79eAC4d76aab57cB2c1f091d553b36ca0'
+      await holographRegistry.connect(deployer).setHolograph(expectedNewHolographAddr)
+
+      const holographAddr = await holographRegistry.connect(deployer).getHolograph()
+      expect(holographAddr).to.equal(expectedNewHolographAddr)
     });
-    it('should fail to allow owner to alter _holographSlot');
-    it('should fail to allow non-owner to alter _holographSlot');
+
+    it('should fail to allow owner to alter _holographSlot', async function() {
+      await expect(holographRegistry.connect(owner).setHolograph()).to.be.reverted
+    });
+
+    it('should fail to allow non-owner to alter _holographSlot', async function(){
+      await expect(holographRegistry.connect(randUser).setHolograph()).to.be.reverted
+    });
   });
 
   describe(`getHolograph()`, async function () {
     it('Should return valid _holographSlot',  async function () {
-      const holographAddr = await holographRegistry.connect(mockSigner).getHolograph()
-      console.log(holographAddr)
+      const holographAddr = await holographRegistry.connect(deployer).getHolograph()
     });
     it('Should allow external contract to call fn');
     it('should fail to allow inherited contract to call fn');
