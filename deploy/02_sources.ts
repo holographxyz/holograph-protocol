@@ -137,8 +137,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     salt,
     'HolographOperator',
     generateInitCode(
-      ['address', 'address', 'address', 'address'],
-      [zeroAddress(), zeroAddress(), zeroAddress(), zeroAddress()]
+      ['address', 'address', 'address', 'address', 'address'],
+      [zeroAddress(), zeroAddress(), zeroAddress(), zeroAddress(), zeroAddress()]
     )
   );
   hre.deployments.log('the future "HolographOperator" address is', futureOperatorAddress);
@@ -152,8 +152,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       [
         zeroAddress(),
         generateInitCode(
-          ['address', 'address', 'address', 'address'],
-          [zeroAddress(), zeroAddress(), zeroAddress(), zeroAddress()]
+          ['address', 'address', 'address', 'address', 'address'],
+          [zeroAddress(), zeroAddress(), zeroAddress(), zeroAddress(), zeroAddress()]
         ),
       ]
     )
@@ -245,22 +245,17 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     'Holograph Utility Token',
     '1',
     18,
-    ConfigureEvents([HolographERC20Event.bridgeIn, HolographERC20Event.bridgeOut]),
+    ConfigureEvents([]),
     generateInitCode(['address'], [deployer.address]),
     salt
   );
 
   const holographerBytecode: BytesLike = (await hre.ethers.getContractFactory('Holographer')).bytecode;
-  const futureHlgAddress =
-    '0x' +
-    web3.utils
-      .keccak256(
-        '0xff' +
-          futureFactoryProxyAddress.substring(2) +
-          (erc20ConfigHash as string).substring(2) +
-          web3.utils.keccak256(holographerBytecode).substring(2)
-      )
-      .substring(26);
+  const futureHlgAddress = hre.ethers.utils.getCreate2Address(
+    futureFactoryProxyAddress,
+    erc20ConfigHash,
+    hre.ethers.utils.keccak256(holographerBytecode)
+  );
   hre.deployments.log('the future "HolographUtilityToken" address is', futureHlgAddress);
 
   // Holograph
@@ -505,8 +500,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       salt,
       'HolographOperator',
       generateInitCode(
-        ['address', 'address', 'address', 'address'],
-        [zeroAddress(), zeroAddress(), zeroAddress(), zeroAddress()]
+        ['address', 'address', 'address', 'address', 'address'],
+        [zeroAddress(), zeroAddress(), zeroAddress(), zeroAddress(), zeroAddress()]
       ),
       futureOperatorAddress
     );
@@ -530,8 +525,14 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
         [
           futureOperatorAddress,
           generateInitCode(
-            ['address', 'address', 'address', 'address'],
-            [futureBridgeProxyAddress, futureHolographInterfacesAddress, futureRegistryProxyAddress, futureHlgAddress]
+            ['address', 'address', 'address', 'address', 'address'],
+            [
+              futureBridgeProxyAddress,
+              futureHolographAddress,
+              futureHolographInterfacesAddress,
+              futureRegistryProxyAddress,
+              futureHlgAddress,
+            ]
           ),
         ]
       ),
@@ -557,6 +558,13 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     if ((await holographOperator.getBridge()) != futureBridgeProxyAddress) {
       hre.deployments.log('Updating Bridge reference');
       let tx = await holographOperator.setBridge(futureBridgeProxyAddress, {
+        nonce: await hre.ethers.provider.getTransactionCount(deployer.address),
+      });
+      await tx.wait();
+    }
+    if ((await holographOperator.getHolograph()) != futureHolographAddress) {
+      hre.deployments.log('Updating Holograph reference');
+      let tx = await holographOperator.setHolograph(futureHolographAddress, {
         nonce: await hre.ethers.provider.getTransactionCount(deployer.address),
       });
       await tx.wait();
@@ -771,8 +779,10 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       generateInitCode(['address'], [deployer.address]),
       futureHolographInterfacesAddress
     );
+    global.__deployedHolographInterfaces = true;
   } else {
     hre.deployments.log('"HolographInterfaces" is already deployed.');
+    global.__deployedHolographInterfaces = false;
   }
 
   // PA1D

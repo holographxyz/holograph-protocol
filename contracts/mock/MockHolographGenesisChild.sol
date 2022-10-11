@@ -110,7 +110,7 @@ contract MockHolographGenesisChild is HolographGenesis {
     return this.approveDeployer(newDeployer, approve);
   }
 
-  function IsApprovedDeployerMock(address deployer) external view returns (bool) {
+  function isApprovedDeployerMock(address deployer) external view returns (bool) {
     return this.isApprovedDeployer(deployer);
   }
 }

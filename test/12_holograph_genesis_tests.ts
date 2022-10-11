@@ -59,11 +59,14 @@ describe.only('Holograph Genesis Contract', async function () {
 
       await holographGenesis.deploy(
         chainId,
-        `0x${'00'.repeat(12)}`,
-        `0x${'00'.repeat(32)}`,
+        // while running tests, keep in mind that the blockchain might retain some of this data
+        // because of that, keep incrementing/alternating salts for same contract types
+        `0x${'00'.repeat(11) + '01'}`,
+        //`0x${'00'.repeat(11) + '02'}`, // sample way to increment
+        Mock.bytecode,
         generateInitCode(
-          ['uint256', 'bytes12', 'bytes', 'bytes'],
-          [chainId, `0x${'00'.repeat(12)}`, `0x${'00'.repeat(32)}`, `0x${'00'.repeat(32)}`]
+          ['bytes32'],
+          ['0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd']
         )
       );
     });
