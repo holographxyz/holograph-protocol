@@ -83,6 +83,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   } else {
     hre.deployments.log(`MessagingModule is already registered to: ${await holographOperator.getMessagingModule()}`);
   }
+  // TODO: check that getBaseGas and getGasPerByte are correctly set
 };
 
 export default func;
