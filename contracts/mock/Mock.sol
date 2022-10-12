@@ -110,11 +110,7 @@ contract Mock is Initializable {
 
   function init(bytes memory initPayload) external override returns (bytes4) {
     require(!_isInitialized(), "MOCK: already initialized");
-<<<<<<< HEAD
     bytes32 arbitraryData = abi.decode(initPayload, (bytes32));
-=======
-    (bytes32 arbitraryData) = abi.decode(initPayload, (bytes32));
->>>>>>> 509e0556cc2025f12044cfe788031b9073270dea
     setStorage(0, arbitraryData);
     _setInitialized();
     return InitializableInterface.init.selector;
@@ -146,8 +142,4 @@ contract Mock is Initializable {
       }
     }
   }
-<<<<<<< HEAD
-=======
-
->>>>>>> 509e0556cc2025f12044cfe788031b9073270dea
 }
