@@ -1,16 +1,20 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { generateInitCode, zeroAddress } from '../scripts/utils/helpers';
-import { HolographTreasury, MockExternalCall } from '../typechain-types';
+import {
+  HolographTreasury,
+  HolographTreasury__factory,
+  MockExternalCall,
+  MockExternalCall__factory,
+} from '../typechain-types';
+
+import { ONLY_ADMIN_ERROR_MSG, ALREADY_INITIALIZED_ERROR_MSG } from './utils/error_constants';
 
 describe('Holograph Treasury Contract', async function () {
   let holographTreasury: HolographTreasury;
   let mockExternalCall: MockExternalCall;
   let deployer: SignerWithAddress;
   let commonUser: SignerWithAddress;
-
-  const ONLY_ADMIN_ERROR_MSG = 'HOLOGRAPH: admin only function';
 
   function createRandomAddress() {
     return ethers.Wallet.createRandom().address;
@@ -29,12 +33,12 @@ describe('Holograph Treasury Contract', async function () {
   beforeEach(async () => {
     [deployer, commonUser] = await ethers.getSigners();
 
-    const holographTreasuryFactory = await ethers.getContractFactory('HolographTreasury');
-    holographTreasury = (await holographTreasuryFactory.deploy()) as HolographTreasury;
+    const holographTreasuryFactory = await ethers.getContractFactory<HolographTreasury__factory>('HolographTreasury');
+    holographTreasury = await holographTreasuryFactory.deploy();
     await holographTreasury.deployed();
 
-    const mockExternalCallFactory = await ethers.getContractFactory('MockExternalCall');
-    mockExternalCall = (await mockExternalCallFactory.deploy()) as MockExternalCall;
+    const mockExternalCallFactory = await ethers.getContractFactory<MockExternalCall__factory>('MockExternalCall');
+    mockExternalCall = await mockExternalCallFactory.deploy();
     await mockExternalCall.deployed();
   });
 
@@ -55,7 +59,7 @@ describe('Holograph Treasury Contract', async function () {
       const tx = await holographTreasury.connect(deployer).init(initPayload);
       await tx.wait();
       await expect(holographTreasury.connect(deployer).init(initPayload)).to.be.revertedWith(
-        'HOLOGRAPH: already initialized'
+        ALREADY_INITIALIZED_ERROR_MSG
       );
     });
 
