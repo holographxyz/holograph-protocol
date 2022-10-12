@@ -1,107 +1,168 @@
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { expect } from 'chai';
+import { ethers } from 'hardhat';
+import { generateInitCode, zeroAddress } from '../scripts/utils/helpers';
+
+
 describe('Holograph Bridge Contract', async function () {
+  let HolographBridge: any;
+  let holographBridge: any;
+  let Mock: any;
+  let mock: any;
+  let accounts: SignerWithAddress[];
+  let deployer: SignerWithAddress;
+  let newDeployer: SignerWithAddress;
+  let anotherNewDeployer: SignerWithAddress;
+  let mockSigner: SignerWithAddress;
 
-    it('Should successfully transfer token #3 from L1 to L2')
-    it('Should fail if we send a previously success bridge request.')
+  let bridgeAddr: string;
+  let holograph: string;
+  let interfaces: string;
+  let registry: string;
+  let utilityToken: string;
+
+  before(async () => {
+    accounts = await ethers.getSigners();
+    deployer = accounts[0];
+    newDeployer = accounts[1];
+    anotherNewDeployer = accounts[2];
+
+    bridgeAddr = '0x7F92c038d6d757e2e7F7c11BF4e4F5d959bA6Fc3'; // NOTE: sample Address
+    holograph = '0x0Ab35331cc5130DD52e51a9014069f18b8B5EDF9'; // NOTE: sample Address
+    interfaces = '0xb197381F633db828a10821Ab4B6827ed5d81BC95'; // NOTE: sample Address
+    registry = '0xeB721f3E4C45a41fBdF701c8143E52665e67c76b'; // NOTE: sample Address
+    utilityToken = '0x4b02422DC46bb21D657A701D02794cD3Caeb17d0'; // NOTE: sample Address
+
+    HolographBridge = await ethers.getContractFactory('HolographOperator');
+    holographBridge = await HolographBridge.deploy();
+    await holographBridge.deployed();
+
+    Mock = await ethers.getContractFactory('Mock');
+    mock = await Mock.deploy();
+    await mock.deployed();
+
+    mockSigner = await ethers.getSigner(mock.address);
+  });
 
 
-    describe('init():', async function () {
-        it('should successfully init once') // Validate hardcoded values are correct
-        it('should fail to init if already initialized')
-    })
+  it('Should successfully transfer token #3 from L1 to L2');
+  it('Should fail if we send a previously success bridge request.');
 
-    describe('bridgeOutRequest(): ', async function () {
-        it('should fail if `toChainId` provided a string')
-        it('should fail if `toChainId` provided a value larger than uint32')
-        it('should fail if `holographableContract` is not a holographableContract v1')
-        it('should fail if `holographableContract` is not a holographableContract v2')
-        it('should fail if callData Data param is invalid') // NOTE: Revert should be "HOLOGRAPH: bridge out failed"
-        it('should successfully submit a bridge TX')
-    })
+  describe('init()', async function () {
+    it('should successfully be initialized once', async function () {
+      const initCode = generateInitCode(['address', 'address', 'address', 'address', 'address'], [bridgeAddr, holograph, interfaces, registry, utilityToken]);
+      await expect(holographBridge.connect(deployer).init(initCode)).to.not.be.reverted;
+    }); // Validate hardcoded values are correct
 
-    describe(`bridgeInRequest():`, async function () {
-        it('should fail if `toChainId` provided a string')
-        it('should fail if `toChainId` provided a value larger than uint32')
-        it('should fail if `holographableContract` is not a holographableContract v1')
-        it('should fail if `holographableContract` is not a holographableContract v2')
-        it('should revert if `doNotRevert=false`')
-        it('should successfully process a BridgeIn TX')
-    })
+    it('should fail if already initialized', async function () {
+      const initCode = generateInitCode(['address', 'address', 'address', 'address', 'address'], [bridgeAddr, holograph, interfaces, registry, utilityToken]);
+      await expect(holographBridge.connect(deployer).init(initCode)).to.be.reverted;
+    });
 
-    describe('revertedBridgeOutRequest()', async function() {
-        it('should fail if `toChainId` provided a string')
-        it('should fail if `toChainId` provided a value larger than uint32')
-        it('should fail if the selector is not a bridgeOut.selector')
-        it('should fail with "HOLOGRAPH: unknown error"')
-        it('Should allow external contract to call fn')
-        it('should fail to allow inherited contract to call fn')
-    })
+  });
 
-    describe(`getBridgeOutRequestPayload():`, async function () {
-        it('should fail if `toChainId` provided a string')
-        it('should fail if `toChainId` provided a value larger than uint32')
-        it('should fail if `holographableContract` is not a holographableContract v1')
-        it('should fail if `holographableContract` is not a holographableContract v2')
-        it(`should fail with dynamic reason (aka the try section fo the code)`)
-        it('should successfully get payload given valid parameters on chain A') // NOTE: check for a specific input and output
-        it('should successfully get payload given valid parameters on chain B') // NOTE: check for a specific input and output
-        it('should successfully get payload given valid parameters on chain C') // NOTE: check for a specific input and output
-    })
+  describe('bridgeOutRequest(): ', async function () {
+    it('should fail if `toChainId` provided a string');
+    it('should fail if `toChainId` provided a value larger than uint32');
+    it('should fail if `holographableContract` is not a holographableContract v1');
+    it('should fail if `holographableContract` is not a holographableContract v2');
+    it('should fail if callData Data param is invalid'); // NOTE: Revert should be "HOLOGRAPH: bridge out failed"
+    it('should successfully submit a bridge TX');
+  });
 
-    describe('Slot values:', async function () {
-        describe('factory: ', async function () {
-            it('should get expected factory address')
-            it('should allow admin wallet to change factory slot')
-            it('should fail to allow owner wallet to change factory slot')
-            it('should fail to allow NON-admin to change factory slot')
-        })
+  describe(`bridgeInRequest():`, async function () {
+    it('should fail if `toChainId` provided a string');
+    it('should fail if `toChainId` provided a value larger than uint32');
+    it('should fail if `holographableContract` is not a holographableContract v1');
+    it('should fail if `holographableContract` is not a holographableContract v2');
+    it('should revert if `doNotRevert=false`');
+    it('should successfully process a BridgeIn TX');
+  });
 
-        describe('holograph: ', async function () {
-            it('should get expected holograph address')
-            it('should allow admin wallet to change holograph slot')
-            it('should fail to allow owner wallet to change holograph slot')
-            it('should fail to allow NON-admin to change holograph slot')
-        })
+  describe('revertedBridgeOutRequest()', async function () {
+    it('should fail if `toChainId` provided a string');
+    it('should fail if `toChainId` provided a value larger than uint32');
+    it('should fail if the selector is not a bridgeOut.selector');
+    it('should fail with "HOLOGRAPH: unknown error"');
+    it('Should allow external contract to call fn');
+    it('should fail to allow inherited contract to call fn');
+  });
 
-        describe('operator: ', async function () {
-            it('should get expected operator address')
-            it('should allow admin wallet to change operator slot')
-            it('should fail to allow owner wallet to change operator slot')
-            it('should fail to allow NON-admin to change operator slot')
-        })
+  describe(`getBridgeOutRequestPayload():`, async function () {
+    it('should fail if `toChainId` provided a string');
+    it('should fail if `toChainId` provided a value larger than uint32');
+    it('should fail if `holographableContract` is not a holographableContract v1');
+    it('should fail if `holographableContract` is not a holographableContract v2');
+    it(`should fail with dynamic reason (aka the try section fo the code)`);
+    it('should successfully get payload given valid parameters on chain A'); // NOTE: check for a specific input and output
+    it('should successfully get payload given valid parameters on chain B'); // NOTE: check for a specific input and output
+    it('should successfully get payload given valid parameters on chain C'); // NOTE: check for a specific input and output
+  });
 
-        describe('registry: ', async function () {
-            it('should get expected registry address')
-            it('should allow admin wallet to change registry slot')
-            it('should fail to allow owner wallet to change registry slot')
-            it('should fail to allow NON-admin to change registry slot')
-        })
+  describe('Slot values:', async function () {
+    describe('factory: ', async function () {
+      it('should get expected factory address');
+      it('should allow admin wallet to change factory slot');
+      it('should fail to allow owner wallet to change factory slot');
+      it('should fail to allow NON-admin to change factory slot');
+    });
 
-        describe('_holograph(): ', async function () {
-            it('should fail be be called by admin because fn is private')
-            it('should fail be be called by owner because fn is private')
-            it('should fail be be called by random user because fn is private')
-            it('should fail to allow smart contract to call fn because fn is private')
-        })
+    describe('holograph: ', async function () {
+      it('should get expected holograph address');
+      it('should allow admin wallet to change holograph slot');
+      it('should fail to allow owner wallet to change holograph slot');
+      it('should fail to allow NON-admin to change holograph slot');
+    });
 
-        describe('_jobNonce(): ', async function () {
-            it('should fail be be called by admin because fn is private')
-            it('should fail be be called by owner because fn is private')
-            it('should fail be be called by random user because fn is private')
-            it('should fail to allow smart contract to call fn because fn is private')
-        })
+    describe('operator: ', async function () {
+      it('should get expected operator address');
+      it('should allow admin wallet to change operator slot');
+      it('should fail to allow owner wallet to change operator slot');
+      it('should fail to allow NON-admin to change operator slot');
+    });
 
-        describe('_operator(): ', async function () {
-            it('should fail be be called by admin because fn is private')
-            it('should fail be be called by owner because fn is private')
-            it('should fail be be called by random user because fn is private')
-            it('should fail to allow smart contract to call fn because fn is private')
-        })
+    describe('registry: ', async function () {
+      it('should get expected registry address');
+      it('should allow admin wallet to change registry slot');
+      it('should fail to allow owner wallet to change registry slot');
+      it('should fail to allow NON-admin to change registry slot');
+    });
 
-        describe('_registry(): ', async function () {
-            it('should fail be be called by admin because fn is private')
-            it('should fail be be called by owner because fn is private')
-            it('should fail be be called by random user because fn is private')
-            it('should fail to allow smart contract to call fn because fn is private')
-        })
-    })
-})
+    describe('_holograph(): ', async function () {
+      it('should fail be be called by admin because fn is private');
+      it('should fail be be called by owner because fn is private');
+      it('should fail be be called by random user because fn is private');
+      it('should fail to allow smart contract to call fn because fn is private');
+    });
+
+    describe('_jobNonce(): ', async function () {
+      it('should fail be be called by admin because fn is private');
+      it('should fail be be called by owner because fn is private');
+      it('should fail be be called by random user because fn is private');
+      it('should fail to allow smart contract to call fn because fn is private');
+    });
+
+    describe('_operator(): ', async function () {
+      it('should fail be be called by admin because fn is private');
+      it('should fail be be called by owner because fn is private');
+      it('should fail be be called by random user because fn is private');
+      it('should fail to allow smart contract to call fn because fn is private');
+    });
+
+    describe('_registry(): ', async function () {
+      it('should fail be be called by admin because fn is private');
+      it('should fail be be called by owner because fn is private');
+      it('should fail be be called by random user because fn is private');
+      it('should fail to allow smart contract to call fn because fn is private');
+    });
+
+    describe(`receive()`, async function () {
+      it('should revert');
+    });
+
+    describe(`fallback()`, async function () {
+      it('should revert');
+    });
+
+  });
+});
