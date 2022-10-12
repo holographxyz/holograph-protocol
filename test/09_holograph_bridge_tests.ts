@@ -3,7 +3,6 @@ import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { generateInitCode, zeroAddress } from '../scripts/utils/helpers';
 
-
 describe('Holograph Bridge Contract', async function () {
   let HolographBridge: any;
   let holographBridge: any;
@@ -12,54 +11,65 @@ describe('Holograph Bridge Contract', async function () {
   let accounts: SignerWithAddress[];
   let deployer: SignerWithAddress;
   let newDeployer: SignerWithAddress;
-  let anotherNewDeployer: SignerWithAddress;
+  let owner: SignerWithAddress;
+  let randomUser: SignerWithAddress;
   let mockSigner: SignerWithAddress;
 
-  let bridgeAddr: string;
-  let holograph: string;
-  let interfaces: string;
-  let registry: string;
-  let utilityToken: string;
+  let bridgeAddress: string;
+  let holographAddress: string;
+  let interfacesAddress: string;
+  let registryAddress: string;
+  let utilityTokenAddress: string;
 
   before(async () => {
     accounts = await ethers.getSigners();
     deployer = accounts[0];
     newDeployer = accounts[1];
-    anotherNewDeployer = accounts[2];
+    owner = accounts[2];
+    randomUser = accounts[10];
 
-    bridgeAddr = '0x7F92c038d6d757e2e7F7c11BF4e4F5d959bA6Fc3'; // NOTE: sample Address
-    holograph = '0x0Ab35331cc5130DD52e51a9014069f18b8B5EDF9'; // NOTE: sample Address
-    interfaces = '0xb197381F633db828a10821Ab4B6827ed5d81BC95'; // NOTE: sample Address
-    registry = '0xeB721f3E4C45a41fBdF701c8143E52665e67c76b'; // NOTE: sample Address
-    utilityToken = '0x4b02422DC46bb21D657A701D02794cD3Caeb17d0'; // NOTE: sample Address
+    bridgeAddress = '0x7F92c038d6d757e2e7F7c11BF4e4F5d959bA6Fc3'; // NOTE: sample Address
+    holographAddress = '0x0Ab35331cc5130DD52e51a9014069f18b8B5EDF9'; // NOTE: sample Address
+    interfacesAddress = '0xb197381F633db828a10821Ab4B6827ed5d81BC95'; // NOTE: sample Address
+    registryAddress = '0xeB721f3E4C45a41fBdF701c8143E52665e67c76b'; // NOTE: sample Address
+    utilityTokenAddress = '0x4b02422DC46bb21D657A701D02794cD3Caeb17d0'; // NOTE: sample Address
 
     HolographBridge = await ethers.getContractFactory('HolographOperator');
     holographBridge = await HolographBridge.deploy();
     await holographBridge.deployed();
 
-    Mock = await ethers.getContractFactory('Mock');
-    mock = await Mock.deploy();
-    await mock.deployed();
+    // Mock = await ethers.getContractFactory('Mock');
+    // mock = await Mock.deploy();
+    // await mock.deployed();
 
-    mockSigner = await ethers.getSigner(mock.address);
+    // mockSigner = await ethers.getSigner(mock.address);
   });
-
 
   it('Should successfully transfer token #3 from L1 to L2');
   it('Should fail if we send a previously success bridge request.');
 
   describe('init()', async function () {
     it('should successfully be initialized once', async function () {
-      const initCode = generateInitCode(['address', 'address', 'address', 'address', 'address'], [bridgeAddr, holograph, interfaces, registry, utilityToken]);
+      const initCode = generateInitCode(
+        ['address', 'address', 'address', 'address', 'address'],
+        [bridgeAddress, holographAddress, interfacesAddress, registryAddress, utilityTokenAddress]
+      );
       await expect(holographBridge.connect(deployer).init(initCode)).to.not.be.reverted;
-    }); // Validate hardcoded values are correct
-
-    it('should fail if already initialized', async function () {
-      const initCode = generateInitCode(['address', 'address', 'address', 'address', 'address'], [bridgeAddr, holograph, interfaces, registry, utilityToken]);
-      await expect(holographBridge.connect(deployer).init(initCode)).to.be.reverted;
     });
 
+    it('should fail if already initialized', async function () {
+      const initCode = generateInitCode(
+        ['address', 'address', 'address', 'address', 'address'],
+        [bridgeAddress, holographAddress, interfacesAddress, registryAddress, utilityTokenAddress]
+      );
+      await expect(holographBridge.connect(deployer).init(initCode)).to.be.reverted;
+    });
   });
+
+  function testPrivateFunction(functionName: string, user: SignerWithAddress) {
+    expect(typeof holographBridge.connect(user)[functionName]).to.equal('undefined');
+    expect(holographBridge.connect(user)).to.not.have.property(functionName);
+  }
 
   describe('bridgeOutRequest(): ', async function () {
     it('should fail if `toChainId` provided a string');
@@ -84,8 +94,8 @@ describe('Holograph Bridge Contract', async function () {
     it('should fail if `toChainId` provided a value larger than uint32');
     it('should fail if the selector is not a bridgeOut.selector');
     it('should fail with "HOLOGRAPH: unknown error"');
-    it('Should allow external contract to call fn');
-    it('should fail to allow inherited contract to call fn');
+    // it('Should allow external contract to call fn');
+    // it('should fail to allow inherited contract to call fn');
   });
 
   describe(`getBridgeOutRequestPayload():`, async function () {
@@ -129,30 +139,54 @@ describe('Holograph Bridge Contract', async function () {
     });
 
     describe('_holograph(): ', async function () {
-      it('should fail be be called by admin because fn is private');
-      it('should fail be be called by owner because fn is private');
-      it('should fail be be called by random user because fn is private');
+      it('should fail to be called by admin because fn is private', function () {
+        testPrivateFunction('_holograph', deployer);
+      });
+      it('should fail to be called by owner because fn is private', function () {
+        testPrivateFunction('_holograph', owner);
+      });
+      it('should fail to be called by random user because fn is private', function () {
+        testPrivateFunction('_holograph', randomUser);
+      });
       it('should fail to allow smart contract to call fn because fn is private');
     });
 
     describe('_jobNonce(): ', async function () {
-      it('should fail be be called by admin because fn is private');
-      it('should fail be be called by owner because fn is private');
-      it('should fail be be called by random user because fn is private');
+      it('should fail to be called by admin because fn is private', function () {
+        testPrivateFunction('_jobNonce', deployer);
+      });
+      it('should fail to be called by owner because fn is private', function () {
+        testPrivateFunction('_jobNonce', owner);
+      });
+      it('should fail to be called by random user because fn is private', function () {
+        testPrivateFunction('_jobNonce', randomUser);
+      });
       it('should fail to allow smart contract to call fn because fn is private');
     });
 
     describe('_operator(): ', async function () {
-      it('should fail be be called by admin because fn is private');
-      it('should fail be be called by owner because fn is private');
-      it('should fail be be called by random user because fn is private');
+      it('should fail to be called by admin because fn is private', function () {
+        testPrivateFunction('_operator', deployer);
+      });
+      it('should fail to be called by owner because fn is private', function () {
+        testPrivateFunction('_operator', owner);
+      });
+      it('should fail to be called by random user because fn is private', function () {
+        testPrivateFunction('_operator', randomUser);
+      });
       it('should fail to allow smart contract to call fn because fn is private');
     });
 
     describe('_registry(): ', async function () {
-      it('should fail be be called by admin because fn is private');
-      it('should fail be be called by owner because fn is private');
-      it('should fail be be called by random user because fn is private');
+      it('should fail to be called by admin because fn is private', function () {
+        testPrivateFunction('_registry', deployer);
+      });
+      it('should fail to be called by owner because fn is private', function () {
+        testPrivateFunction('_registry', owner);
+      });
+      it('should fail to be called by random user because fn is private', function () {
+        testPrivateFunction('_registry', randomUser);
+      });
       it('should fail to allow smart contract to call fn because fn is private');
     });
 
@@ -163,6 +197,5 @@ describe('Holograph Bridge Contract', async function () {
     describe(`fallback()`, async function () {
       it('should revert');
     });
-
   });
 });
