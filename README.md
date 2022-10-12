@@ -20,7 +20,7 @@
 
 ## Description
 
-Holograph provides omnichain NFT infrastructure for the web3 ecosystem. Holograph Protocol enables the creation, deployment, minting, & bridging of omnichain NFTs with complete data integrity.
+Holograph provides omnichain NFT infrastructure for the web3 ecosystem. Holograph Protocol enables the creation, deployment, minting, and bridging of omnichain NFTs with complete data integrity.
 
 ## Specification
 
@@ -36,7 +36,7 @@ Genesis will be deployed on all blockchains that run and support Holograph Proto
 
 #### HolographFactory.sol
 
-Factory enables developers to submit a signed version of the following elements to deploy a “Holographed” smart contract on the blockchain:
+Factory enables developers to submit a signed version of the following elements to deploy a *Holographed* smart contract on the blockchain:
 
 - primary deployment chain
 - token type (ERC-20, ERC-721, etc.)
@@ -44,7 +44,7 @@ Factory enables developers to submit a signed version of the following elements 
 - custom smart contract bytecode
 - custom initialization code
 
-Any additional blockchains that developers want to support can have the same signed data submitted to Factory, allowing for the creation of an identical “Holographed” contract.
+Any additional blockchains that developers want to support can have the same signed data submitted to Factory, allowing for the creation of an identical *Holographed* contract.
 The primary job of Factory is to:
 
 - allow propagation of exact data across all blockchains
@@ -54,11 +54,11 @@ The primary job of Factory is to:
 
 #### HolographRegistry.sol
 
-Registry is a central on-chain location where all Holograph data is stored. Registry keeps a record of all currently supported standards. New standards can be introduced and enabled as well. Any properly deployed Holographed contracts are also stored as reference. This allows for a definitive way to identify whether a smart contract is secure and properly Holographed. Verifying entities will be able to identify a Holographed contract to ensure the highest level of security and standards.
+Registry is a central on-chain location where all Holograph data is stored. Registry keeps a record of all currently supported standards. New standards can be introduced and enabled as well. Any properly deployed *Holographed* contracts are also stored as reference. This allows for a definitive way to identify whether a smart contract is secure and properly *Holographed*. Verifying entities will be able to identify a *Holographed* contract to ensure the highest level of security and standards.
 
 #### HolographBridge.sol
 
-This contract is contains the code is responsible for the all the bridge out and bridge in logic required to enable bridging. Bridge is a universal smart contract that functions as the primary entry and exit point for any Holographed tokens to and from all supported blockchains. Bridge validates and ensures integrity and standard enforcement for every Bridge-In and Bridge-Out request. Additionally, Bridge implements a universal standard for sending tokens across blockchains by abstracting away complexities into sub-modules that remove the burden of management for developers. This allows for simple one-click/one-transaction native gas token payment-based interactions for all bridge requests.
+This contract is contains the code is responsible for the all the bridge out and bridge in logic required to enable bridging. Bridge is a universal smart contract that functions as the primary entry and exit point for any *Holographed* tokens to and from all supported blockchains. Bridge validates and ensures integrity and standard enforcement for every Bridge-In and Bridge-Out request. Additionally, Bridge implements a universal standard for sending tokens across blockchains by abstracting away complexities into sub-modules that remove the burden of management for developers. This allows for simple one-click/one-transaction native gas token payment-based interactions for all bridge requests.
 
 #### HolographOperator.sol
 
@@ -76,7 +76,7 @@ Holograph provides a reference to the name and ID of all supported blockchains. 
 
 #### Holographer.sol
 
-Holographer exists at the core of all Holographed smart contracts, which is applied whenever a Holographed smart contract is deployed. Holographer pieces together all components and routes all inbound function calls to their proper smart contracts, ensuring security and the enforcement of specified standards. Holographer is isolated on its own private layer and is essentially hard-coded into the blockchain.
+Holographer exists at the core of all *Holographed* smart contracts, which is applied whenever a *Holographed* smart contract is deployed. Holographer pieces together all components and routes all inbound function calls to their proper smart contracts, ensuring security and the enforcement of specified standards. Holographer is isolated on its own private layer and is essentially hard-coded into the blockchain.
 
 #### Enforcer.sol
 
@@ -94,22 +94,21 @@ The Interfaces contract is used to store and share standardized data. It acts as
 
 #### Custom Contract
 
-Custom contract is any type of smart contract that was developed outside of Holograph Protocol, and is used to create a Holographed contract. This empowers developers to build their projects however they want. The requirements for enabling a custom contract to be Holograph-able are minimal, and allow for even novice-level developers to implement. Any current and future fungible and non-fungible token type contracts can easily be made Holograph-able.
-
+Custom contract is any type of smart contract that was developed outside of Holograph Protocol, and is used to create a *Holographed* contract. This empowers developers to build their projects however they want. The requirements for enabling a custom contract to be Holograph-able are minimal, and allow for even novice-level developers to implement. Any current and future fungible and non-fungible token type contracts can easily be made Holograph-able.
 
 ## Important Flows
 
-### Bridge an NFT
+### Bridging NFTs
 
-To bridge an NFT the collection must be a holographed collection. Then you must deploy an NFT within the collection. This will allow the collection and NFT to maintain the same data on all chains. 
+To bridge NFTs, a *Holographed* contract must be deployed and NFTs minted from the contract. Doing so will ensure that the contract address and token IDs remain the same on all deployed blockchains. 
 
-### Estimate Gas
+### Estimating Gas
 
 TBD
 
-### Bridge out 
+### Bridging Out 
 
-The simplified code path for bridging out, is:
+The simplified code path for bridging out is:
 
 1. `HolographBridge.sol` - `bridgeOutRequest` method
 2. `HolographRegistery.sol` - `_isHolographedContract` method
@@ -119,60 +118,55 @@ The simplified code path for bridging out, is:
 
 At step 1, a user submits their bridge request with a valid payload using the estimatedGas value computed in the previous [Estimate Gas](#estimategas) section 
 
-At step 2, the code checks that the contract is a holographable contract. This means it has implemented the required functions for a holographable collection. See `contracts/enforcer/HolographERC721.sol` for an example.
+At step 2, the code checks that the contract is a *holographable* contract. This means it has implemented the required functions for a *Holographed* contract. See `contracts/enforcer/HolographERC721.sol` for an example.
 
-At step 3, we call the `_bridgeOut` function on the collection contract and apply various checks and generate a payload with information about bridge request.
+At step 3, we call the `_bridgeOut` function on the *Holographed* contract and apply various checks and generate a payload with information about the bridge request.
 
 At step 4, we call the `send` method on the `HolographOperator.sol` contract. This method does some final packaging of the payload that will be sent to the messaging layer.
 
-At step 5, we finally call the `send` method to messaging layer contract `/module/LayerZeroModule.sol`. From here the NFT has left the source network.
+At step 5, we finally call the `send` method to the messaging layer contract `/module/LayerZeroModule.sol`. At this point the NFT has left the source chain.
 
+### Bridging In
 
-### Bridge In
-
-The simplified code path for bridging in, is:
+The simplified code path for bridging in is:
 
 1. `module/LayerZeroModule.sol` - `lzReceive` method
 2. `HolographOperator.sol` - `crossChainMessage` method
 3. `HolographOperator.sol` - Emits event `AvailableOperatorJob(jobHash, bridgeInRequestPayload);` 
 
+At step 1, the configured messaging layer calls the method `lzReceive` in `module/LayerZeroModule.sol`. We do some checks to make sure only LayerZero call this method.
 
-At step 1, the configured messaging layer calls the method `lzReceive` in `module/LayerZeroModule.sol`. We do some checks to make sure only layer zero call this method.
-
-At step 2, call `crossChainMessage` on the `HolographOperator.sol` contract. We encode the job, select a primary operator, and 5 substitute operators.  
+At step 2, we call `crossChainMessage` on the `HolographOperator.sol` contract. We encode the job, select a primary operator, and 5 substitute operators.
 
 At step 3, the contract will emit a job event. This job event is being observed by our CLI that will then finalize a job. Only users who are in a pod are allowed to finalize jobs.
 
+### Operating
 
-### Operator 
+Operators execute destination chain bridge transaction. Operators must run the CLI, bond the protocol’s native token, and execute transactions. The probability of getting selected to perform this work is based on the number of tokens bonded.
 
-To process jobs from the above bridge flow, you must join a pod and run our CLI. Each pod has an increasing cost to join, but has a higher likely-hood of processing more jobs. 
+### Joining Pods
 
-### Join a pod
-
-Before you can join a pod, you have to check what pods are available and then check the required bond amount to enter the pod. Lastly you can bond into a selected pod and become an operator.
+To become an operator, you must view the pods available to join, select a pod, and bond at least the minimum bond requirement.
 
 1. `HolographOperator.sol` - `getTotalPods`
 2. `HolographOperator.sol` - `getPodBondAmounts`
 3. `HolographOperator.sol` - `bondUtilityToken`
 
+At step 1, you call `getTotalPods` method to get a list of available pods. If the length of pod is zero, then you can bond into pod `1`. 
 
-At step 1, you call the method `getTotalPods` to get a list of available pods. If the length of pod is zero, then you can bond into pod `1`. 
+At step 2, when you call `getPodBondAmounts`, you will get two values: [`_base`, `current`]. The `base` value represents the original minimum bond requirement to join the pod, while the `current` value is the current amount you must provide to join the pod. Please refer to here [TODO - ADD LINK] for more info.
 
-At step 2, when you call `getPodBondAmounts`, you will get two values: [`_base`, `current`]. The `base` value represents the original floor to enter the pod. While the `current` value is amount you must provide to join the pod. Please refer to here [TODO - ADD LINK] for more info.
+At step 3, you are now able to call the `bondUtilityToken` function with the pod and amounts you want to use to enter the pod. Please note, there is a minimum bond requirement to join but no maximum.
 
-At step 3, you are now able to call the `bondUtilityToken` function with the pod and amounts you want to use to enter the pod. Please note, there is minimum required to join but no maximum to join.
+You are now an 0perator. We will launch a CLI in the future that will process jobs on your behalf. 
 
-You are no an operator in the network. We will release a CLI in the future, that will process jobs on your behalf. 
-
-
-### Leave a pod
+### Leaving Pods
 
 To leave a pod, you have to call the `unbondUtilityToken` in `HolographOperator.sol`.
 
-### Process a job
+### Processing Jobs
 
-Again, you must join the pod to become a valid operator. The simplified code path for operating, is:
+You must join a pod to become an Oper ator. The simplified code path for operating is:
 
 1. Receive new Block from the network
 2. Iterate over block looking for event `AvailableOperatorJob(jobHash, bridgeInRequestPayload);`
@@ -184,16 +178,15 @@ At step 1, the CLI connected via websocket receives notification that new block 
 
 At step 2, the CLI makes a request for the full block information. It then iterates over transactions, looking for the `AvailableOperatorJob` event. 
 
-At step 3, the CLI then calls the `getJobDetails` method in `HolographOperator.sol`. This checks if the current wallet user is the selected operator or a backup operator. If it's the selected operator, then it will continue. Otherwise, the job is kept in memory for a short time and reviewed again in the future to check the job status. 
+At step 3, the CLI then calls `getJobDetails` in `HolographOperator.sol`. This checks if the current wallet user is the selected operator or a backup operator. If it is the selected operator, then it will continue. Otherwise, the job is kept in memory for a short time and reviewed again in the future to check the job status. 
  
-At step 4, the CLI will then estimate the cost of executing the job. This is used to make sure the tx sent has enough gas to complete.
+At step 4, the CLI will estimate the cost of executing the job. This is used to make sure the transaction sent has enough gas to complete.
 
-At step 5, the wallet sends a transaction to the `exectureJob` method on the `HolographOperator.sol` contract. In here, further checks are done to validate the job and wallet user. After this tx is mined on the blockchain, the NFT will become finalized and available on the new network. 
-
+At step 5, the wallet sends a transaction to the `exectureJob` method on the `HolographOperator.sol` contract. In here, further checks are done to validate the job and user's wallet. After this transaction is mined on the blockchain, the NFT will become finalized and available on the new blockchain. 
 
 ## Development
 
-### Getting started
+### Getting Started
 
 1. This project uses [asdf](https://asdf-vm.com/) for versions management. Install following plugins
    - Install [asdf Node plugin](https://github.com/asdf-vm/asdf-nodejs): `asdf plugin add nodejs https://github.com/asdf-vm/asdf-nodejs.git`
@@ -299,7 +292,6 @@ Out of Scope *
 11. `./proxy` (simple proxy contracts)
 12. `./struct` (no logic)
 13. `./token` (examples of custom Holographable contracts. Should be used as reference on how to create custom contracts that build on top of the protocol)
-
 
 ## Branching Model and Releases
 
