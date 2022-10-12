@@ -45,10 +45,6 @@ contract LayerZeroModule is Admin, Initializable, CrossChainMessageInterface, La
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.operator')) - 1)
    */
   bytes32 constant _gasPerByteSlot = precomputeslot("eip1967.Holograph.gasPerByte");
-  /**
-   * @dev bytes32(uint256(keccak256('eip1967.Holograph.executeJobGas')) - 1)
-   */
-  bytes32 constant _executeJobGasSlot = precomputeslot("eip1967.Holograph.executeJobGas");
 
   /**
    * @dev Constructor is left empty and init is used instead
@@ -62,14 +58,10 @@ contract LayerZeroModule is Admin, Initializable, CrossChainMessageInterface, La
    */
   function init(bytes memory initPayload) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
-    (
-      address bridge,
-      address interfaces,
-      address operator,
-      uint256 baseGas,
-      uint256 gasPerByte,
-      uint256 executeJobGas
-    ) = abi.decode(initPayload, (address, address, address, uint256, uint256, uint256));
+    (address bridge, address interfaces, address operator, uint256 baseGas, uint256 gasPerByte) = abi.decode(
+      initPayload,
+      (address, address, address, uint256, uint256)
+    );
     assembly {
       sstore(_adminSlot, origin())
       sstore(_bridgeSlot, bridge)
@@ -77,7 +69,6 @@ contract LayerZeroModule is Admin, Initializable, CrossChainMessageInterface, La
       sstore(_operatorSlot, operator)
       sstore(_baseGasSlot, baseGas)
       sstore(_gasPerByteSlot, gasPerByte)
-      sstore(_executeJobGasSlot, executeJobGas)
     }
     _setInitialized();
     return InitializableInterface.init.selector;
@@ -181,7 +172,7 @@ contract LayerZeroModule is Admin, Initializable, CrossChainMessageInterface, La
       uint256(_baseGas() + (crossChainPayload.length * _gasPerByte()))
     );
     (uint256 nativeFee, ) = lz.estimateFees(lzDestChain, address(this), crossChainPayload, false, adapterParams);
-    return (((gasPrice * (gasLimit + _executeJobGas())) * dstPriceRatio) / (10**10), nativeFee);
+    return (((gasPrice * (gasLimit + (gasLimit / 10))) * dstPriceRatio) / (10**10), nativeFee);
   }
 
   function getHlgFee(
@@ -200,7 +191,7 @@ contract LayerZeroModule is Admin, Initializable, CrossChainMessageInterface, La
     if (gasPrice == 0) {
       gasPrice = dstGasPriceInWei;
     }
-    return ((gasPrice * (gasLimit + _executeJobGas())) * dstPriceRatio) / (10**10);
+    return ((gasPrice * (gasLimit + (gasLimit / 10))) * dstPriceRatio) / (10**10);
   }
 
   function _getPricing(LayerZeroOverrides lz, uint16 lzDestChain)
@@ -389,35 +380,6 @@ contract LayerZeroModule is Admin, Initializable, CrossChainMessageInterface, La
   function _gasPerByte() private view returns (uint256 gasPerByte) {
     assembly {
       gasPerByte := sload(_gasPerByteSlot)
-    }
-  }
-
-  /**
-   * @notice Get the executeJobGas value
-   * @dev executeJob function requires at least this much gas to execute
-   */
-  function getExecuteJobGas() external view returns (uint256 executeJobGas) {
-    assembly {
-      executeJobGas := sload(_executeJobGasSlot)
-    }
-  }
-
-  /**
-   * @notice Update the executeJobGas value
-   * @param executeJobGas minimum gas amount needed for executeJob to execute
-   */
-  function setExecuteJobGas(uint256 executeJobGas) external onlyAdmin {
-    assembly {
-      sstore(_executeJobGasSlot, executeJobGas)
-    }
-  }
-
-  /**
-   * @dev Internal function used for getting the executeJobGas value
-   */
-  function _executeJobGas() private view returns (uint256 executeJobGas) {
-    assembly {
-      executeJobGas := sload(_executeJobGasSlot)
     }
   }
 }

@@ -58,8 +58,21 @@ import { DeploymentConfigStruct } from '../typechain-types/HolographFactory';
 
 type KeyOf<T extends object> = Extract<keyof T, string>;
 
+function executeJobGas(payload: string, verbose?: boolean): BigNumber {
+  const payloadBytes = Math.floor(remove0x(payload).length * 0.5);
+  const gasPerByte = 30;
+  const baseGas = 110000;
+  if (verbose) {
+    process.stdout.write('\n' + ' '.repeat(10) + 'payload length is ' + payloadBytes + '\n');
+    process.stdout.write(' '.repeat(10) + 'payload adds ' + payloadBytes * gasPerByte + '\n');
+  }
+  return BigNumber.from(payloadBytes * gasPerByte + baseGas);
+}
+
 describe.only('Testing cross-chain minting (L1 & L2)', async function () {
   const GWEI: BigNumber = BigNumber.from('1000000000');
+  const TESTGASLIMIT: BigNumber = BigNumber.from('10000000');
+  const GASPRICE: BigNumber = BigNumber.from('1000000000');
   const lzReceiveABI = {
     inputs: [
       {
@@ -219,12 +232,12 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
   beforeEach(async function () {});
 
   afterEach(async function () {});
-  /*
+
   describe('Enable operators for l1 and l2', async function () {
     it('should add 10 operator wallets for each chain', async function () {
-      let bondAmounts: BigNumber[] = await l1.operator.getPodBondAmount(1);
+      let bondAmounts: BigNumber[] = await l1.operator.getPodBondAmounts(1);
       let bondAmount: BigNumber = bondAmounts[0];
-      process.stdout.write('\n\n' + 'bondAmount: ' + bondAmount.toString());
+      process.stdout.write('\n' + ' '.repeat(6) + 'bondAmount: ' + bondAmount.toString() + '\n');
       //      process.stdout.write('\n' + 'currentBalance l1: ' + (await HLGL1.connect(l1.deployer).balanceOf(l1.deployer.address)).toString());
       //      process.stdout.write('\n' + 'currentBalance l2: ' + (await HLGL2.connect(l2.deployer).balanceOf(l2.deployer.address)).toString() + '\n');
       for (let i = 0, l = wallets.length; i < l; i++) {
@@ -243,7 +256,7 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
       }
     });
   });
-*/
+
   describe('Deploy cross-chain contracts via bridge deploy', async function () {
     describe('hToken', async function () {
       it('deploy l1 equivalent on l2', async function () {
@@ -298,10 +311,10 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
         );
         // process.stdout.write('\n' + 'estimatedPayload: ' + estimatedPayload + '\n');
 
-        let estimatedGas: BigNumber = BigNumber.from('10000000').sub(
+        let estimatedGas: BigNumber = TESTGASLIMIT.sub(
           await l2.operator.callStatic.jobEstimator(estimatedPayload, {
             gasPrice: GWEI,
-            gasLimit: BigNumber.from('10000000'),
+            gasLimit: TESTGASLIMIT,
           })
         );
         // process.stdout.write('\n' + 'gas estimation: ' + estimatedGas.toNumber() + '\n');
@@ -331,6 +344,8 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
             '0x' + remove0x((await l1.operator.getMessagingModule()).toLowerCase()).repeat(2),
             payload
           );
+
+        process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
         await expect(
           l2.mockLZEndpoint
             .connect(l2.lzEndpoint)
@@ -341,11 +356,16 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
                 await l1.operator.getMessagingModule(),
                 0,
                 payload,
-              ])
+              ]),
+              {
+                gasPrice: GASPRICE,
+                gasLimit: executeJobGas(payload),
+              }
             )
         )
           .to.emit(l2.operator, 'AvailableOperatorJob')
           .withArgs(l2.web3.utils.keccak256(payload), payload);
+        await getGasUsage(l2.hre, 'actual gas usage was', true);
 
         let jobDetails = await l2.operator.getJobDetails(l2.web3.utils.keccak256(payload));
         // process.stdout.write('\n\n' + JSON.stringify(jobDetails, undefined, 2) + '\n\n');
@@ -365,12 +385,14 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
 
         await expect(
           l2.operator.connect(operator).executeJob(payload, {
-            gasPrice: BigNumber.from('1'),
-            gasLimit: estimatedGas.add(BigNumber.from('600000')),
+            gasPrice: GASPRICE,
+            gasLimit: estimatedGas.add(estimatedGas.div(BigNumber.from('3'))),
           })
         )
           .to.emit(l2.factory, 'BridgeableContractDeployed')
           .withArgs(hTokenErc20Address, erc20ConfigHash);
+        process.stdout.write(' '.repeat(10) + 'estimatedGas for executeJob is ' + estimatedGas.toString());
+        await getGasUsage(l2.hre, 'actual gas usage was', true);
 
         expect(await l2.registry.getHolographedHashAddress(erc20ConfigHash)).to.equal(hTokenErc20Address);
       });
@@ -427,10 +449,10 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
         );
         // process.stdout.write('\n' + 'estimatedPayload: ' + estimatedPayload + '\n');
 
-        let estimatedGas: BigNumber = BigNumber.from('10000000').sub(
+        let estimatedGas: BigNumber = TESTGASLIMIT.sub(
           await l1.operator.callStatic.jobEstimator(estimatedPayload, {
             gasPrice: GWEI,
-            gasLimit: BigNumber.from('10000000'),
+            gasLimit: TESTGASLIMIT,
           })
         );
         // process.stdout.write('\n' + 'gas estimation: ' + estimatedGas.toNumber() + '\n');
@@ -461,6 +483,7 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
             payload
           );
 
+        process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
         await expect(
           l1.mockLZEndpoint
             .connect(l1.lzEndpoint)
@@ -471,11 +494,16 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
                 await l2.operator.getMessagingModule(),
                 0,
                 payload,
-              ])
+              ]),
+              {
+                gasPrice: GASPRICE,
+                gasLimit: executeJobGas(payload),
+              }
             )
         )
           .to.emit(l1.operator, 'AvailableOperatorJob')
           .withArgs(l1.web3.utils.keccak256(payload), payload);
+        await getGasUsage(l1.hre, 'actual gas usage was', true);
 
         let jobDetails = await l1.operator.getJobDetails(l1.web3.utils.keccak256(payload));
         // process.stdout.write('\n\n' + JSON.stringify(jobDetails, undefined, 2) + '\n\n');
@@ -495,12 +523,14 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
 
         await expect(
           l1.operator.connect(operator).executeJob(payload, {
-            gasPrice: BigNumber.from('1'),
-            gasLimit: estimatedGas.add(BigNumber.from('400000')),
+            gasPrice: GASPRICE,
+            gasLimit: estimatedGas.add(estimatedGas.div(BigNumber.from('3'))),
           })
         )
           .to.emit(l1.factory, 'BridgeableContractDeployed')
           .withArgs(hTokenErc20Address, erc20ConfigHash);
+        process.stdout.write(' '.repeat(10) + 'estimatedGas for executeJob is ' + estimatedGas.toString());
+        await getGasUsage(l1.hre, 'actual gas usage was', true);
 
         expect(await l1.registry.getHolographedHashAddress(erc20ConfigHash)).to.equal(hTokenErc20Address);
       });
@@ -559,10 +589,10 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
         );
         // process.stdout.write('\n' + 'estimatedPayload: ' + estimatedPayload + '\n');
 
-        let estimatedGas: BigNumber = BigNumber.from('10000000').sub(
+        let estimatedGas: BigNumber = TESTGASLIMIT.sub(
           await l2.operator.callStatic.jobEstimator(estimatedPayload, {
             gasPrice: GWEI,
-            gasLimit: BigNumber.from('10000000'),
+            gasLimit: TESTGASLIMIT,
           })
         );
         // process.stdout.write('\n' + 'gas estimation: ' + estimatedGas.toNumber() + '\n');
@@ -593,6 +623,7 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
             payload
           );
 
+        process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
         await expect(
           l2.mockLZEndpoint
             .connect(l2.lzEndpoint)
@@ -603,11 +634,16 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
                 await l1.operator.getMessagingModule(),
                 0,
                 payload,
-              ])
+              ]),
+              {
+                gasPrice: GASPRICE,
+                gasLimit: executeJobGas(payload),
+              }
             )
         )
           .to.emit(l2.operator, 'AvailableOperatorJob')
           .withArgs(l2.web3.utils.keccak256(payload), payload);
+        await getGasUsage(l2.hre, 'actual gas usage was', true);
 
         let jobDetails = await l2.operator.getJobDetails(l2.web3.utils.keccak256(payload));
         // process.stdout.write('\n\n' + JSON.stringify(jobDetails, undefined, 2) + '\n\n');
@@ -627,12 +663,14 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
 
         await expect(
           l2.operator.connect(operator).executeJob(payload, {
-            gasPrice: BigNumber.from('1'),
-            gasLimit: estimatedGas.add(BigNumber.from('400000')),
+            gasPrice: GASPRICE,
+            gasLimit: estimatedGas.add(estimatedGas.div(BigNumber.from('3'))),
           })
         )
           .to.emit(l2.factory, 'BridgeableContractDeployed')
           .withArgs(sampleErc20Address, erc20ConfigHash);
+        process.stdout.write(' '.repeat(10) + 'estimatedGas for executeJob is ' + estimatedGas.toString());
+        await getGasUsage(l2.hre, 'actual gas usage was', true);
 
         expect(await l2.registry.getHolographedHashAddress(erc20ConfigHash)).to.equal(sampleErc20Address);
       });
@@ -689,10 +727,10 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
         );
         // process.stdout.write('\n' + 'estimatedPayload: ' + estimatedPayload + '\n');
 
-        let estimatedGas: BigNumber = BigNumber.from('10000000').sub(
+        let estimatedGas: BigNumber = TESTGASLIMIT.sub(
           await l1.operator.callStatic.jobEstimator(estimatedPayload, {
             gasPrice: GWEI,
-            gasLimit: BigNumber.from('10000000'),
+            gasLimit: TESTGASLIMIT,
           })
         );
         // process.stdout.write('\n' + 'gas estimation: ' + estimatedGas.toNumber() + '\n');
@@ -723,6 +761,7 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
             payload
           );
 
+        process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
         await expect(
           l1.mockLZEndpoint
             .connect(l1.lzEndpoint)
@@ -733,11 +772,16 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
                 await l2.operator.getMessagingModule(),
                 0,
                 payload,
-              ])
+              ]),
+              {
+                gasPrice: GASPRICE,
+                gasLimit: executeJobGas(payload),
+              }
             )
         )
           .to.emit(l1.operator, 'AvailableOperatorJob')
           .withArgs(l1.web3.utils.keccak256(payload), payload);
+        await getGasUsage(l1.hre, 'actual gas usage was', true);
 
         let jobDetails = await l1.operator.getJobDetails(l1.web3.utils.keccak256(payload));
         // process.stdout.write('\n\n' + JSON.stringify(jobDetails, undefined, 2) + '\n\n');
@@ -757,12 +801,14 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
 
         await expect(
           l1.operator.connect(operator).executeJob(payload, {
-            gasPrice: BigNumber.from('1'),
-            gasLimit: estimatedGas.add(BigNumber.from('400000')),
+            gasPrice: GASPRICE,
+            gasLimit: estimatedGas.add(estimatedGas.div(BigNumber.from('3'))),
           })
         )
           .to.emit(l1.factory, 'BridgeableContractDeployed')
           .withArgs(sampleErc20Address, erc20ConfigHash);
+        process.stdout.write(' '.repeat(10) + 'estimatedGas for executeJob is ' + estimatedGas.toString());
+        await getGasUsage(l1.hre, 'actual gas usage was', true);
 
         expect(await l1.registry.getHolographedHashAddress(erc20ConfigHash)).to.equal(sampleErc20Address);
       });
@@ -823,10 +869,10 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
         );
         // process.stdout.write('\n' + 'estimatedPayload: ' + estimatedPayload + '\n');
 
-        let estimatedGas: BigNumber = BigNumber.from('10000000').sub(
+        let estimatedGas: BigNumber = TESTGASLIMIT.sub(
           await l2.operator.callStatic.jobEstimator(estimatedPayload, {
             gasPrice: GWEI,
-            gasLimit: BigNumber.from('10000000'),
+            gasLimit: TESTGASLIMIT,
           })
         );
         // process.stdout.write('\n' + 'gas estimation: ' + estimatedGas.toNumber() + '\n');
@@ -857,6 +903,7 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
             payload
           );
 
+        process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
         await expect(
           l2.mockLZEndpoint
             .connect(l2.lzEndpoint)
@@ -867,11 +914,16 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
                 await l1.operator.getMessagingModule(),
                 0,
                 payload,
-              ])
+              ]),
+              {
+                gasPrice: GASPRICE,
+                gasLimit: executeJobGas(payload),
+              }
             )
         )
           .to.emit(l2.operator, 'AvailableOperatorJob')
           .withArgs(l2.web3.utils.keccak256(payload), payload);
+        await getGasUsage(l2.hre, 'actual gas usage was', true);
 
         let jobDetails = await l2.operator.getJobDetails(l2.web3.utils.keccak256(payload));
         // process.stdout.write('\n\n' + JSON.stringify(jobDetails, undefined, 2) + '\n\n');
@@ -891,12 +943,14 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
 
         await expect(
           l2.operator.connect(operator).executeJob(payload, {
-            gasPrice: BigNumber.from('1'),
-            gasLimit: estimatedGas.add(BigNumber.from('400000')),
+            gasPrice: GASPRICE,
+            gasLimit: estimatedGas.add(estimatedGas.div(BigNumber.from('3'))),
           })
         )
           .to.emit(l2.factory, 'BridgeableContractDeployed')
           .withArgs(sampleErc721Address, erc721ConfigHash);
+        process.stdout.write(' '.repeat(10) + 'estimatedGas for executeJob is ' + estimatedGas.toString());
+        await getGasUsage(l2.hre, 'actual gas usage was', true);
 
         expect(await l2.registry.getHolographedHashAddress(erc721ConfigHash)).to.equal(sampleErc721Address);
       });
@@ -955,10 +1009,10 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
         );
         // process.stdout.write('\n' + 'estimatedPayload: ' + estimatedPayload + '\n');
 
-        let estimatedGas: BigNumber = BigNumber.from('10000000').sub(
+        let estimatedGas: BigNumber = TESTGASLIMIT.sub(
           await l1.operator.callStatic.jobEstimator(estimatedPayload, {
             gasPrice: GWEI,
-            gasLimit: BigNumber.from('10000000'),
+            gasLimit: TESTGASLIMIT,
           })
         );
         // process.stdout.write('\n' + 'gas estimation: ' + estimatedGas.toNumber() + '\n');
@@ -989,6 +1043,7 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
             payload
           );
 
+        process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
         await expect(
           l1.mockLZEndpoint
             .connect(l1.lzEndpoint)
@@ -999,11 +1054,16 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
                 await l2.operator.getMessagingModule(),
                 0,
                 payload,
-              ])
+              ]),
+              {
+                gasPrice: GASPRICE,
+                gasLimit: executeJobGas(payload),
+              }
             )
         )
           .to.emit(l1.operator, 'AvailableOperatorJob')
           .withArgs(l1.web3.utils.keccak256(payload), payload);
+        await getGasUsage(l1.hre, 'actual gas usage was', true);
 
         let jobDetails = await l1.operator.getJobDetails(l1.web3.utils.keccak256(payload));
         // process.stdout.write('\n\n' + JSON.stringify(jobDetails, undefined, 2) + '\n\n');
@@ -1023,12 +1083,14 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
 
         await expect(
           l1.operator.connect(operator).executeJob(payload, {
-            gasPrice: BigNumber.from('1'),
-            gasLimit: estimatedGas.add(BigNumber.from('400000')),
+            gasPrice: GASPRICE,
+            gasLimit: estimatedGas.add(estimatedGas.div(BigNumber.from('3'))),
           })
         )
           .to.emit(l1.factory, 'BridgeableContractDeployed')
           .withArgs(sampleErc721Address, erc721ConfigHash);
+        process.stdout.write(' '.repeat(10) + 'estimatedGas for executeJob is ' + estimatedGas.toString());
+        await getGasUsage(l1.hre, 'actual gas usage was', true);
 
         expect(await l1.registry.getHolographedHashAddress(erc721ConfigHash)).to.equal(sampleErc721Address);
       });
@@ -1096,10 +1158,10 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
         );
         // process.stdout.write('\n' + 'estimatedPayload: ' + estimatedPayload + '\n');
 
-        let estimatedGas: BigNumber = BigNumber.from('10000000').sub(
+        let estimatedGas: BigNumber = TESTGASLIMIT.sub(
           await l2.operator.callStatic.jobEstimator(estimatedPayload, {
             gasPrice: GWEI,
-            gasLimit: BigNumber.from('10000000'),
+            gasLimit: TESTGASLIMIT,
           })
         );
         // process.stdout.write('\n' + 'gas estimation: ' + estimatedGas.toNumber() + '\n');
@@ -1130,6 +1192,7 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
             payload
           );
 
+        process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
         await expect(
           l2.mockLZEndpoint
             .connect(l2.lzEndpoint)
@@ -1140,11 +1203,16 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
                 await l1.operator.getMessagingModule(),
                 0,
                 payload,
-              ])
+              ]),
+              {
+                gasPrice: GASPRICE,
+                gasLimit: executeJobGas(payload),
+              }
             )
         )
           .to.emit(l2.operator, 'AvailableOperatorJob')
           .withArgs(l2.web3.utils.keccak256(payload), payload);
+        await getGasUsage(l2.hre, 'actual gas usage was', true);
 
         let jobDetails = await l2.operator.getJobDetails(l2.web3.utils.keccak256(payload));
         // process.stdout.write('\n\n' + JSON.stringify(jobDetails, undefined, 2) + '\n\n');
@@ -1164,12 +1232,14 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
 
         await expect(
           l2.operator.connect(operator).executeJob(payload, {
-            gasPrice: BigNumber.from('1'),
-            gasLimit: estimatedGas.add(BigNumber.from('400000')),
+            gasPrice: GASPRICE,
+            gasLimit: estimatedGas.add(estimatedGas.div(BigNumber.from('3'))),
           })
         )
           .to.emit(l2.factory, 'BridgeableContractDeployed')
           .withArgs(cxipErc721Address, erc721ConfigHash);
+        process.stdout.write(' '.repeat(10) + 'estimatedGas for executeJob is ' + estimatedGas.toString());
+        await getGasUsage(l2.hre, 'actual gas usage was', true);
 
         expect(await l2.registry.getHolographedHashAddress(erc721ConfigHash)).to.equal(cxipErc721Address);
       });
@@ -1235,10 +1305,10 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
         );
         // process.stdout.write('\n' + 'estimatedPayload: ' + estimatedPayload + '\n');
 
-        let estimatedGas: BigNumber = BigNumber.from('10000000').sub(
+        let estimatedGas: BigNumber = TESTGASLIMIT.sub(
           await l1.operator.callStatic.jobEstimator(estimatedPayload, {
             gasPrice: GWEI,
-            gasLimit: BigNumber.from('10000000'),
+            gasLimit: TESTGASLIMIT,
           })
         );
         // process.stdout.write('\n' + 'gas estimation: ' + estimatedGas.toNumber() + '\n');
@@ -1269,6 +1339,7 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
             payload
           );
 
+        process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
         await expect(
           l1.mockLZEndpoint
             .connect(l1.lzEndpoint)
@@ -1279,11 +1350,16 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
                 await l2.operator.getMessagingModule(),
                 0,
                 payload,
-              ])
+              ]),
+              {
+                gasPrice: GASPRICE,
+                gasLimit: executeJobGas(payload),
+              }
             )
         )
           .to.emit(l1.operator, 'AvailableOperatorJob')
           .withArgs(l1.web3.utils.keccak256(payload), payload);
+        await getGasUsage(l1.hre, 'actual gas usage was', true);
 
         let jobDetails = await l1.operator.getJobDetails(l1.web3.utils.keccak256(payload));
         // process.stdout.write('\n\n' + JSON.stringify(jobDetails, undefined, 2) + '\n\n');
@@ -1303,12 +1379,14 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
 
         await expect(
           l1.operator.connect(operator).executeJob(payload, {
-            gasPrice: BigNumber.from('1'),
-            gasLimit: estimatedGas.add(BigNumber.from('400000')),
+            gasPrice: GASPRICE,
+            gasLimit: estimatedGas.add(estimatedGas.div(BigNumber.from('3'))),
           })
         )
           .to.emit(l1.factory, 'BridgeableContractDeployed')
           .withArgs(cxipErc721Address, erc721ConfigHash);
+        process.stdout.write(' '.repeat(10) + 'estimatedGas for executeJob is ' + estimatedGas.toString());
+        await getGasUsage(l1.hre, 'actual gas usage was', true);
 
         expect(await l1.registry.getHolographedHashAddress(erc721ConfigHash)).to.equal(cxipErc721Address);
       });
@@ -1411,10 +1489,10 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
             );
           // process.stdout.write('\n' + 'estimatedPayload: ' + estimatedPayload + '\n');
 
-          let estimatedGas: BigNumber = BigNumber.from('10000000').sub(
+          let estimatedGas: BigNumber = TESTGASLIMIT.sub(
             await l2.operator.callStatic.jobEstimator(estimatedPayload, {
-              gasPrice: BigNumber.from('1'),
-              gasLimit: BigNumber.from('10000000'),
+              gasPrice: GASPRICE,
+              gasLimit: TESTGASLIMIT,
             })
           );
           // process.stdout.write('\n' + 'gas estimation: ' + estimatedGas.toNumber() + '\n');
@@ -1455,6 +1533,7 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
             l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).ownerOf(thirdNFTl1.toHexString())
           ).to.be.revertedWith('ERC721: token does not exist');
 
+          process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
           await expect(
             l2.mockLZEndpoint
               .connect(l2.lzEndpoint)
@@ -1465,11 +1544,16 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
                   await l1.operator.getMessagingModule(),
                   0,
                   payload,
-                ])
+                ]),
+                {
+                  gasPrice: GASPRICE,
+                  gasLimit: executeJobGas(payload).mul(BigNumber.from('2')),
+                }
               )
           )
             .to.emit(l2.operator, 'AvailableOperatorJob')
             .withArgs(l2.web3.utils.keccak256(payload), payload);
+          await getGasUsage(l2.hre, 'actual gas usage was', true);
 
           gasUsage['#3 bridge from l1'] = gasUsage['#3 bridge from l1'].add(await getGasUsage(l2.hre));
 
@@ -1491,12 +1575,14 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
 
           await expect(
             l2.operator.connect(operator).executeJob(payload, {
-              gasPrice: BigNumber.from('1'),
-              gasLimit: estimatedGas.add(BigNumber.from('400000')),
+              gasPrice: GASPRICE,
+              gasLimit: estimatedGas.add(estimatedGas.div(BigNumber.from('3'))),
             })
           )
             .to.emit(l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
             .withArgs(zeroAddress(), l2.deployer.address, thirdNFTl1.toHexString());
+          process.stdout.write(' '.repeat(10) + 'estimatedGas for executeJob is ' + estimatedGas.toString());
+          await getGasUsage(l2.hre, 'actual gas usage was', true);
 
           gasUsage['#3 bridge from l1'] = gasUsage['#3 bridge from l1'].add(await getGasUsage(l2.hre));
 
@@ -1522,10 +1608,10 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
             );
           // process.stdout.write('\n' + 'estimatedPayload: ' + estimatedPayload + '\n');
 
-          let estimatedGas: BigNumber = BigNumber.from('10000000').sub(
+          let estimatedGas: BigNumber = TESTGASLIMIT.sub(
             await l1.operator.callStatic.jobEstimator(estimatedPayload, {
-              gasPrice: BigNumber.from('1'),
-              gasLimit: BigNumber.from('10000000'),
+              gasPrice: GASPRICE,
+              gasLimit: TESTGASLIMIT,
             })
           );
           // process.stdout.write('\n' + 'gas estimation: ' + estimatedGas.toNumber() + '\n');
@@ -1566,6 +1652,7 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
             l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).ownerOf(thirdNFTl2.toHexString())
           ).to.be.revertedWith('ERC721: token does not exist');
 
+          process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
           await expect(
             l1.mockLZEndpoint
               .connect(l1.lzEndpoint)
@@ -1576,11 +1663,16 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
                   await l2.operator.getMessagingModule(),
                   0,
                   payload,
-                ])
+                ]),
+                {
+                  gasPrice: GASPRICE,
+                  gasLimit: executeJobGas(payload).mul(BigNumber.from('2')),
+                }
               )
           )
             .to.emit(l1.operator, 'AvailableOperatorJob')
             .withArgs(l1.web3.utils.keccak256(payload), payload);
+          await getGasUsage(l1.hre, 'actual gas usage was', true);
 
           gasUsage['#3 bridge from l2'] = gasUsage['#3 bridge from l2'].add(await getGasUsage(l1.hre));
 
@@ -1602,12 +1694,14 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
 
           await expect(
             l1.operator.connect(operator).executeJob(payload, {
-              gasPrice: BigNumber.from('1'),
-              gasLimit: estimatedGas.add(BigNumber.from('400000')),
+              gasPrice: GASPRICE,
+              gasLimit: estimatedGas.add(estimatedGas.div(BigNumber.from('3'))),
             })
           )
             .to.emit(l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
             .withArgs(zeroAddress(), l1.deployer.address, thirdNFTl2.toHexString());
+          process.stdout.write(' '.repeat(10) + 'estimatedGas for executeJob is ' + estimatedGas.toString());
+          await getGasUsage(l1.hre, 'actual gas usage was', true);
 
           gasUsage['#3 bridge from l2'] = gasUsage['#3 bridge from l2'].add(await getGasUsage(l1.hre));
 
@@ -1704,6 +1798,22 @@ describe.only('Testing cross-chain minting (L1 & L2)', async function () {
           '          #3 bridge from l2 gas used: ' + gasUsage['#3 bridge from l2'].toString() + '\n'
         );
         assert(!gasUsage['#3 bridge from l2'].isZero(), 'zero sum returned');
+      });
+    });
+
+    describe('Get hToken balances', async function () {
+      it('l1 hToken should have more than 0', async function () {
+        let hToken = await l1.holographErc20.attach(await l1.registry.getHToken(l1.network.holographId));
+        let balance = await l1.hre.ethers.provider.getBalance(hToken.address);
+        process.stdout.write('          l1 hToken balance is: ' + balance + '\n');
+        assert(!balance.isZero(), 'zero sum returned');
+      });
+
+      it('l2 hToken should have more than 0', async function () {
+        let hToken = await l2.holographErc20.attach(await l2.registry.getHToken(l2.network.holographId));
+        let balance = await l2.hre.ethers.provider.getBalance(hToken.address);
+        process.stdout.write('          l2 hToken balance is: ' + balance + '\n');
+        assert(!balance.isZero(), 'zero sum returned');
       });
     });
   });

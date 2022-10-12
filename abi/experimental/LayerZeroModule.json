@@ -80,19 +80,6 @@
   },
   {
     "inputs": [],
-    "name": "getExecuteJobGas",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "executeJobGas",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "getGasPerByte",
     "outputs": [
       {
@@ -331,19 +318,6 @@
       }
     ],
     "name": "setBridge",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "executeJobGas",
-        "type": "uint256"
-      }
-    ],
-    "name": "setExecuteJobGas",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

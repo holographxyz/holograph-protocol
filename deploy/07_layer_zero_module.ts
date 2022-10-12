@@ -26,17 +26,16 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
 
   const holograph = await hre.ethers.getContract('Holograph');
 
-  const BASEGAS: string = BigNumber.from('52000').toHexString();
-  const GASPERBYTE: string = BigNumber.from('25').toHexString();
-  const GASLIMIT: string = BigNumber.from('1000000').toHexString();
+  const BASEGAS: string = BigNumber.from('110000').toHexString();
+  const GASPERBYTE: string = BigNumber.from('30').toHexString();
 
   const futureLayerZeroModuleAddress = await genesisDeriveFutureAddress(
     hre,
     salt,
     'LayerZeroModule',
     generateInitCode(
-      ['address', 'address', 'address', 'uint256', 'uint256', 'uint256'],
-      [zeroAddress(), zeroAddress(), zeroAddress(), 0, 0, 0]
+      ['address', 'address', 'address', 'uint256', 'uint256'],
+      [zeroAddress(), zeroAddress(), zeroAddress(), 0, 0]
     )
   );
   hre.deployments.log('the future "LayerZeroModule" address is', futureLayerZeroModuleAddress);
@@ -53,14 +52,13 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       salt,
       'LayerZeroModule',
       generateInitCode(
-        ['address', 'address', 'address', 'uint256', 'uint256', 'uint256'],
+        ['address', 'address', 'address', 'uint256', 'uint256'],
         [
           await holograph.getBridge(),
           await holograph.getInterfaces(),
           await holograph.getOperator(),
           BASEGAS,
           GASPERBYTE,
-          GASLIMIT,
         ]
       ),
       futureLayerZeroModuleAddress
