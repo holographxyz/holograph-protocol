@@ -38,6 +38,7 @@
   {
     "inputs": [
       {
+<<<<<<< HEAD
         "internalType": "address",
         "name": "newDeployer",
         "type": "address"
@@ -56,6 +57,8 @@
   {
     "inputs": [
       {
+=======
+>>>>>>> 509e0556cc2025f12044cfe788031b9073270dea
         "internalType": "uint256",
         "name": "chainId",
         "type": "uint256"
@@ -99,6 +102,7 @@
     ],
     "stateMutability": "view",
     "type": "function"
+<<<<<<< HEAD
   },
   {
     "inputs": [
@@ -118,5 +122,7 @@
     ],
     "stateMutability": "view",
     "type": "function"
+=======
+>>>>>>> 509e0556cc2025f12044cfe788031b9073270dea
   }
 ]
