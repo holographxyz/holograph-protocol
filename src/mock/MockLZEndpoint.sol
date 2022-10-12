@@ -51,7 +51,15 @@ contract MockLZEndpoint is Admin {
     dstGasPriceInWei = 1000000000;
   }
 
-  function dstConfigLookup(uint16, uint16) external pure returns (uint128 dstNativeAmtCap, uint64 baseGas, uint64 gasPerByte) {
+  function dstConfigLookup(uint16, uint16)
+    external
+    pure
+    returns (
+      uint128 dstNativeAmtCap,
+      uint64 baseGas,
+      uint64 gasPerByte
+    )
+  {
     dstNativeAmtCap = 10**18;
     baseGas = 50000;
     gasPerByte = 25;

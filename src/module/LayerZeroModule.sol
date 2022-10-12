@@ -45,6 +45,10 @@ contract LayerZeroModule is Admin, Initializable, CrossChainMessageInterface, La
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.operator')) - 1)
    */
   bytes32 constant _gasPerByteSlot = precomputeslot("eip1967.Holograph.gasPerByte");
+  /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.executeJobGas')) - 1)
+   */
+  bytes32 constant _executeJobGasSlot = precomputeslot("eip1967.Holograph.executeJobGas");
 
   /**
    * @dev Constructor is left empty and init is used instead
@@ -58,12 +62,22 @@ contract LayerZeroModule is Admin, Initializable, CrossChainMessageInterface, La
    */
   function init(bytes memory initPayload) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
-    (address bridge, address interfaces, address operator) = abi.decode(initPayload, (address, address, address));
+    (
+      address bridge,
+      address interfaces,
+      address operator,
+      uint256 baseGas,
+      uint256 gasPerByte,
+      uint256 executeJobGas
+    ) = abi.decode(initPayload, (address, address, address, uint256, uint256, uint256));
     assembly {
       sstore(_adminSlot, origin())
       sstore(_bridgeSlot, bridge)
       sstore(_interfacesSlot, interfaces)
       sstore(_operatorSlot, operator)
+      sstore(_baseGasSlot, baseGas)
+      sstore(_gasPerByteSlot, gasPerByte)
+      sstore(_executeJobGasSlot, executeJobGas)
     }
     _setInitialized();
     return InitializableInterface.init.selector;
@@ -144,8 +158,15 @@ contract LayerZeroModule is Admin, Initializable, CrossChainMessageInterface, La
     );
   }
 
-  function getMessageFee(uint32 toChain, uint256 gasLimit, uint256 gasPrice, bytes calldata crossChainPayload) external view returns (uint256 hlgFee, uint256 msgFee) {
-    uint16 lzDestChain = uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO));
+  function getMessageFee(
+    uint32 toChain,
+    uint256 gasLimit,
+    uint256 gasPrice,
+    bytes calldata crossChainPayload
+  ) external view returns (uint256 hlgFee, uint256 msgFee) {
+    uint16 lzDestChain = uint16(
+      _interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)
+    );
     LayerZeroOverrides lz;
     assembly {
       lz := sload(_lZEndpointSlot)
@@ -155,32 +176,41 @@ contract LayerZeroModule is Admin, Initializable, CrossChainMessageInterface, La
     if (gasPrice == 0) {
       gasPrice = dstGasPriceInWei;
     }
-    bytes memory adapterParams = abi.encodePacked(uint16(1), uint256(_baseGas() + (crossChainPayload.length * _gasPerByte())));
-    (uint256 nativeFee,) = lz.estimateFees(lzDestChain, address(this), crossChainPayload, false, adapterParams);
-    return (((gasPrice * gasLimit) * dstPriceRatio) / (10**10), nativeFee);
+    bytes memory adapterParams = abi.encodePacked(
+      uint16(1),
+      uint256(_baseGas() + (crossChainPayload.length * _gasPerByte()))
+    );
+    (uint256 nativeFee, ) = lz.estimateFees(lzDestChain, address(this), crossChainPayload, false, adapterParams);
+    return (((gasPrice * (gasLimit + _executeJobGas())) * dstPriceRatio) / (10**10), nativeFee);
   }
 
-  function getHlgFee(uint32 toChain, uint256 gasLimit, uint256 gasPrice) external view returns (uint256 hlgFee) {
+  function getHlgFee(
+    uint32 toChain,
+    uint256 gasLimit,
+    uint256 gasPrice
+  ) external view returns (uint256 hlgFee) {
     LayerZeroOverrides lz;
     assembly {
       lz := sload(_lZEndpointSlot)
     }
-    uint16 lzDestChain = uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO));
+    uint16 lzDestChain = uint16(
+      _interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)
+    );
     (uint128 dstPriceRatio, uint128 dstGasPriceInWei) = _getPricing(lz, lzDestChain);
     if (gasPrice == 0) {
       gasPrice = dstGasPriceInWei;
     }
-    return ((gasPrice * gasLimit) * dstPriceRatio) / (10**10);
+    return ((gasPrice * (gasLimit + _executeJobGas())) * dstPriceRatio) / (10**10);
   }
 
-  function _getPricing (LayerZeroOverrides lz, uint16 lzDestChain) private view returns (uint128 dstPriceRatio, uint128 dstGasPriceInWei) {
-    return LayerZeroOverrides(
-            LayerZeroOverrides(
-              lz.defaultSendLibrary()
-            )
-              .getAppConfig(lzDestChain, address(this)).relayer
-            )
-            .dstPriceLookup(lzDestChain);
+  function _getPricing(LayerZeroOverrides lz, uint16 lzDestChain)
+    private
+    view
+    returns (uint128 dstPriceRatio, uint128 dstGasPriceInWei)
+  {
+    return
+      LayerZeroOverrides(LayerZeroOverrides(lz.defaultSendLibrary()).getAppConfig(lzDestChain, address(this)).relayer)
+        .dstPriceLookup(lzDestChain);
   }
 
   /**
@@ -304,8 +334,6 @@ contract LayerZeroModule is Admin, Initializable, CrossChainMessageInterface, La
     revert();
   }
 
-
-
   /**
    * @notice Get the baseGas value
    * @dev Cross-chain messages require at least this much gas
@@ -364,4 +392,32 @@ contract LayerZeroModule is Admin, Initializable, CrossChainMessageInterface, La
     }
   }
 
+  /**
+   * @notice Get the executeJobGas value
+   * @dev executeJob function requires at least this much gas to execute
+   */
+  function getExecuteJobGas() external view returns (uint256 executeJobGas) {
+    assembly {
+      executeJobGas := sload(_executeJobGasSlot)
+    }
+  }
+
+  /**
+   * @notice Update the executeJobGas value
+   * @param executeJobGas minimum gas amount needed for executeJob to execute
+   */
+  function setExecuteJobGas(uint256 executeJobGas) external onlyAdmin {
+    assembly {
+      sstore(_executeJobGasSlot, executeJobGas)
+    }
+  }
+
+  /**
+   * @dev Internal function used for getting the executeJobGas value
+   */
+  function _executeJobGas() private view returns (uint256 executeJobGas) {
+    assembly {
+      executeJobGas := sload(_executeJobGasSlot)
+    }
+  }
 }

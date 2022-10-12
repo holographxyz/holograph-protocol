@@ -58,7 +58,8 @@ import { DeploymentConfigStruct } from '../typechain-types/HolographFactory';
 
 type KeyOf<T extends object> = Extract<keyof T, string>;
 
-describe('Testing cross-chain minting (L1 & L2)', async function () {
+describe.only('Testing cross-chain minting (L1 & L2)', async function () {
+  const GWEI: BigNumber = BigNumber.from('1000000000');
   const lzReceiveABI = {
     inputs: [
       {
@@ -299,7 +300,7 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
 
         let estimatedGas: BigNumber = BigNumber.from('10000000').sub(
           await l2.operator.callStatic.jobEstimator(estimatedPayload, {
-            gasPrice: BigNumber.from('1'),
+            gasPrice: GWEI,
             gasLimit: BigNumber.from('10000000'),
           })
         );
@@ -309,19 +310,20 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           l2.network.holographId,
           l2.factory.address,
           estimatedGas,
-          BigNumber.from('1'),
+          GWEI,
           data
         );
         // process.stdout.write('\n' + 'payload: ' + payload + '\n');
 
+        let fees = await l1.bridge.callStatic.getMessageFee(l2.network.holographId, estimatedGas, GWEI, payload);
+        let total: BigNumber = fees[0].add(fees[1]);
+
+        // process.stdout.write('\n' + 'fees: ' + JSON.stringify(fees,undefined,2) + '\n');
+
         await expect(
-          l1.bridge.bridgeOutRequest(
-            l2.network.holographId,
-            l2.factory.address,
-            estimatedGas,
-            BigNumber.from('1'),
-            data
-          )
+          l1.bridge.bridgeOutRequest(l2.network.holographId, l2.factory.address, estimatedGas, GWEI, data, {
+            value: total,
+          })
         )
           .to.emit(l1.mockLZEndpoint, 'LzEvent')
           .withArgs(
@@ -329,7 +331,6 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
             '0x' + remove0x((await l1.operator.getMessagingModule()).toLowerCase()).repeat(2),
             payload
           );
-
         await expect(
           l2.mockLZEndpoint
             .connect(l2.lzEndpoint)
@@ -365,7 +366,7 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
         await expect(
           l2.operator.connect(operator).executeJob(payload, {
             gasPrice: BigNumber.from('1'),
-            gasLimit: estimatedGas.add(BigNumber.from('400000')),
+            gasLimit: estimatedGas.add(BigNumber.from('600000')),
           })
         )
           .to.emit(l2.factory, 'BridgeableContractDeployed')
@@ -428,7 +429,7 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
 
         let estimatedGas: BigNumber = BigNumber.from('10000000').sub(
           await l1.operator.callStatic.jobEstimator(estimatedPayload, {
-            gasPrice: BigNumber.from('1'),
+            gasPrice: GWEI,
             gasLimit: BigNumber.from('10000000'),
           })
         );
@@ -438,19 +439,20 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           l1.network.holographId,
           l1.factory.address,
           estimatedGas,
-          BigNumber.from('1'),
+          GWEI,
           data
         );
         // process.stdout.write('\n' + 'payload: ' + payload + '\n');
 
+        let fees = await l2.bridge.callStatic.getMessageFee(l1.network.holographId, estimatedGas, GWEI, payload);
+        let total: BigNumber = fees[0].add(fees[1]);
+
+        // process.stdout.write('\n' + 'fees: ' + JSON.stringify(fees,undefined,2) + '\n');
+
         await expect(
-          l2.bridge.bridgeOutRequest(
-            l1.network.holographId,
-            l1.factory.address,
-            estimatedGas,
-            BigNumber.from('1'),
-            data
-          )
+          l2.bridge.bridgeOutRequest(l1.network.holographId, l1.factory.address, estimatedGas, GWEI, data, {
+            value: total,
+          })
         )
           .to.emit(l2.mockLZEndpoint, 'LzEvent')
           .withArgs(
@@ -559,7 +561,7 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
 
         let estimatedGas: BigNumber = BigNumber.from('10000000').sub(
           await l2.operator.callStatic.jobEstimator(estimatedPayload, {
-            gasPrice: BigNumber.from('1'),
+            gasPrice: GWEI,
             gasLimit: BigNumber.from('10000000'),
           })
         );
@@ -569,19 +571,20 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           l2.network.holographId,
           l2.factory.address,
           estimatedGas,
-          BigNumber.from('1'),
+          GWEI,
           data
         );
         //process.stdout.write('\n' + 'payload: ' + payload + '\n');
 
+        let fees = await l1.bridge.callStatic.getMessageFee(l2.network.holographId, estimatedGas, GWEI, payload);
+        let total: BigNumber = fees[0].add(fees[1]);
+
+        // process.stdout.write('\n' + 'fees: ' + JSON.stringify(fees,undefined,2) + '\n');
+
         await expect(
-          l1.bridge.bridgeOutRequest(
-            l2.network.holographId,
-            l2.factory.address,
-            estimatedGas,
-            BigNumber.from('1'),
-            data
-          )
+          l1.bridge.bridgeOutRequest(l2.network.holographId, l2.factory.address, estimatedGas, GWEI, data, {
+            value: total,
+          })
         )
           .to.emit(l1.mockLZEndpoint, 'LzEvent')
           .withArgs(
@@ -688,7 +691,7 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
 
         let estimatedGas: BigNumber = BigNumber.from('10000000').sub(
           await l1.operator.callStatic.jobEstimator(estimatedPayload, {
-            gasPrice: BigNumber.from('1'),
+            gasPrice: GWEI,
             gasLimit: BigNumber.from('10000000'),
           })
         );
@@ -698,19 +701,20 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           l1.network.holographId,
           l1.factory.address,
           estimatedGas,
-          BigNumber.from('1'),
+          GWEI,
           data
         );
         // process.stdout.write('\n' + 'payload: ' + payload + '\n');
 
+        let fees = await l2.bridge.callStatic.getMessageFee(l1.network.holographId, estimatedGas, GWEI, payload);
+        let total: BigNumber = fees[0].add(fees[1]);
+
+        // process.stdout.write('\n' + 'fees: ' + JSON.stringify(fees,undefined,2) + '\n');
+
         await expect(
-          l2.bridge.bridgeOutRequest(
-            l1.network.holographId,
-            l1.factory.address,
-            estimatedGas,
-            BigNumber.from('1'),
-            data
-          )
+          l2.bridge.bridgeOutRequest(l1.network.holographId, l1.factory.address, estimatedGas, GWEI, data, {
+            value: total,
+          })
         )
           .to.emit(l2.mockLZEndpoint, 'LzEvent')
           .withArgs(
@@ -821,7 +825,7 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
 
         let estimatedGas: BigNumber = BigNumber.from('10000000').sub(
           await l2.operator.callStatic.jobEstimator(estimatedPayload, {
-            gasPrice: BigNumber.from('1'),
+            gasPrice: GWEI,
             gasLimit: BigNumber.from('10000000'),
           })
         );
@@ -831,19 +835,20 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           l2.network.holographId,
           l2.factory.address,
           estimatedGas,
-          BigNumber.from('1'),
+          GWEI,
           data
         );
         // process.stdout.write('\n' + 'payload: ' + payload + '\n');
 
+        let fees = await l1.bridge.callStatic.getMessageFee(l2.network.holographId, estimatedGas, GWEI, payload);
+        let total: BigNumber = fees[0].add(fees[1]);
+
+        // process.stdout.write('\n' + 'fees: ' + JSON.stringify(fees,undefined,2) + '\n');
+
         await expect(
-          l1.bridge.bridgeOutRequest(
-            l2.network.holographId,
-            l2.factory.address,
-            estimatedGas,
-            BigNumber.from('1'),
-            data
-          )
+          l1.bridge.bridgeOutRequest(l2.network.holographId, l2.factory.address, estimatedGas, GWEI, data, {
+            value: total,
+          })
         )
           .to.emit(l1.mockLZEndpoint, 'LzEvent')
           .withArgs(
@@ -952,7 +957,7 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
 
         let estimatedGas: BigNumber = BigNumber.from('10000000').sub(
           await l1.operator.callStatic.jobEstimator(estimatedPayload, {
-            gasPrice: BigNumber.from('1'),
+            gasPrice: GWEI,
             gasLimit: BigNumber.from('10000000'),
           })
         );
@@ -962,19 +967,20 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           l1.network.holographId,
           l1.factory.address,
           estimatedGas,
-          BigNumber.from('1'),
+          GWEI,
           data
         );
         // process.stdout.write('\n' + 'payload: ' + payload + '\n');
 
+        let fees = await l2.bridge.callStatic.getMessageFee(l1.network.holographId, estimatedGas, GWEI, payload);
+        let total: BigNumber = fees[0].add(fees[1]);
+
+        // process.stdout.write('\n' + 'fees: ' + JSON.stringify(fees,undefined,2) + '\n');
+
         await expect(
-          l2.bridge.bridgeOutRequest(
-            l1.network.holographId,
-            l1.factory.address,
-            estimatedGas,
-            BigNumber.from('1'),
-            data
-          )
+          l2.bridge.bridgeOutRequest(l1.network.holographId, l1.factory.address, estimatedGas, GWEI, data, {
+            value: total,
+          })
         )
           .to.emit(l2.mockLZEndpoint, 'LzEvent')
           .withArgs(
@@ -1092,7 +1098,7 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
 
         let estimatedGas: BigNumber = BigNumber.from('10000000').sub(
           await l2.operator.callStatic.jobEstimator(estimatedPayload, {
-            gasPrice: BigNumber.from('1'),
+            gasPrice: GWEI,
             gasLimit: BigNumber.from('10000000'),
           })
         );
@@ -1102,19 +1108,20 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           l2.network.holographId,
           l2.factory.address,
           estimatedGas,
-          BigNumber.from('1'),
+          GWEI,
           data
         );
         // process.stdout.write('\n' + 'payload: ' + payload + '\n');
 
+        let fees = await l1.bridge.callStatic.getMessageFee(l2.network.holographId, estimatedGas, GWEI, payload);
+        let total: BigNumber = fees[0].add(fees[1]);
+
+        // process.stdout.write('\n' + 'fees: ' + JSON.stringify(fees,undefined,2) + '\n');
+
         await expect(
-          l1.bridge.bridgeOutRequest(
-            l2.network.holographId,
-            l2.factory.address,
-            estimatedGas,
-            BigNumber.from('1'),
-            data
-          )
+          l1.bridge.bridgeOutRequest(l2.network.holographId, l2.factory.address, estimatedGas, GWEI, data, {
+            value: total,
+          })
         )
           .to.emit(l1.mockLZEndpoint, 'LzEvent')
           .withArgs(
@@ -1230,7 +1237,7 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
 
         let estimatedGas: BigNumber = BigNumber.from('10000000').sub(
           await l1.operator.callStatic.jobEstimator(estimatedPayload, {
-            gasPrice: BigNumber.from('1'),
+            gasPrice: GWEI,
             gasLimit: BigNumber.from('10000000'),
           })
         );
@@ -1240,19 +1247,20 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           l1.network.holographId,
           l1.factory.address,
           estimatedGas,
-          BigNumber.from('1'),
+          GWEI,
           data
         );
         // process.stdout.write('\n' + 'payload: ' + payload + '\n');
 
+        let fees = await l2.bridge.callStatic.getMessageFee(l1.network.holographId, estimatedGas, GWEI, payload);
+        let total: BigNumber = fees[0].add(fees[1]);
+
+        // process.stdout.write('\n' + 'fees: ' + JSON.stringify(fees,undefined,2) + '\n');
+
         await expect(
-          l2.bridge.bridgeOutRequest(
-            l1.network.holographId,
-            l1.factory.address,
-            estimatedGas,
-            BigNumber.from('1'),
-            data
-          )
+          l2.bridge.bridgeOutRequest(l1.network.holographId, l1.factory.address, estimatedGas, GWEI, data, {
+            value: total,
+          })
         )
           .to.emit(l2.mockLZEndpoint, 'LzEvent')
           .withArgs(
@@ -1417,21 +1425,22 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
               l2.network.holographId,
               l1.sampleErc721Holographer.address,
               estimatedGas,
-              BigNumber.from('1'),
+              GWEI,
               data
             );
           // process.stdout.write('\n' + 'payload: ' + payload + '\n');
 
+          let fees = await l1.bridge.callStatic.getMessageFee(l2.network.holographId, estimatedGas, GWEI, payload);
+          let total: BigNumber = fees[0].add(fees[1]);
+
+          // process.stdout.write('\n' + 'fees: ' + JSON.stringify(fees,undefined,2) + '\n');
+
           await expect(
             l1.bridge
               .connect(l1.deployer)
-              .bridgeOutRequest(
-                l2.network.holographId,
-                l1.sampleErc721Holographer.address,
-                estimatedGas,
-                BigNumber.from('1'),
-                data
-              )
+              .bridgeOutRequest(l2.network.holographId, l1.sampleErc721Holographer.address, estimatedGas, GWEI, data, {
+                value: total,
+              })
           )
             .to.emit(l1.mockLZEndpoint, 'LzEvent')
             .withArgs(
@@ -1527,21 +1536,22 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
               l1.network.holographId,
               l1.sampleErc721Holographer.address,
               estimatedGas,
-              BigNumber.from('1'),
+              GWEI,
               data
             );
           // process.stdout.write('\n' + 'payload: ' + payload + '\n');
 
+          let fees = await l2.bridge.callStatic.getMessageFee(l1.network.holographId, estimatedGas, GWEI, payload);
+          let total: BigNumber = fees[0].add(fees[1]);
+
+          // process.stdout.write('\n' + 'fees: ' + JSON.stringify(fees,undefined,2) + '\n');
+
           await expect(
             l2.bridge
               .connect(l2.deployer)
-              .bridgeOutRequest(
-                l1.network.holographId,
-                l1.sampleErc721Holographer.address,
-                estimatedGas,
-                BigNumber.from('1'),
-                data
-              )
+              .bridgeOutRequest(l1.network.holographId, l1.sampleErc721Holographer.address, estimatedGas, GWEI, data, {
+                value: total,
+              })
           )
             .to.emit(l2.mockLZEndpoint, 'LzEvent')
             .withArgs(

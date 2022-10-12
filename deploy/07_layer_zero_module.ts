@@ -1,5 +1,5 @@
 declare var global: any;
-import { Contract } from 'ethers';
+import { BigNumber, Contract } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from '@holographxyz/hardhat-deploy-holographed/types';
 import {
@@ -26,11 +26,18 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
 
   const holograph = await hre.ethers.getContract('Holograph');
 
+  const BASEGAS: string = BigNumber.from('52000').toHexString();
+  const GASPERBYTE: string = BigNumber.from('25').toHexString();
+  const GASLIMIT: string = BigNumber.from('1000000').toHexString();
+
   const futureLayerZeroModuleAddress = await genesisDeriveFutureAddress(
     hre,
     salt,
     'LayerZeroModule',
-    generateInitCode(['address', 'address', 'address'], [zeroAddress(), zeroAddress(), zeroAddress()])
+    generateInitCode(
+      ['address', 'address', 'address', 'uint256', 'uint256', 'uint256'],
+      [zeroAddress(), zeroAddress(), zeroAddress(), 0, 0, 0]
+    )
   );
   hre.deployments.log('the future "LayerZeroModule" address is', futureLayerZeroModuleAddress);
 
@@ -46,8 +53,15 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       salt,
       'LayerZeroModule',
       generateInitCode(
-        ['address', 'address', 'address'],
-        [await holograph.getBridge(), await holograph.getInterfaces(), await holograph.getOperator()]
+        ['address', 'address', 'address', 'uint256', 'uint256', 'uint256'],
+        [
+          await holograph.getBridge(),
+          await holograph.getInterfaces(),
+          await holograph.getOperator(),
+          BASEGAS,
+          GASPERBYTE,
+          GASLIMIT,
+        ]
       ),
       futureLayerZeroModuleAddress
     );
