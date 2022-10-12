@@ -101,6 +101,8 @@
 
 pragma solidity 0.8.13;
 
-interface HolographTreasuryInterface {
+import "../HolographTreasury.sol";
 
+contract MockHolographTreasuryChild is HolographTreasury {
+  constructor() {}
 }

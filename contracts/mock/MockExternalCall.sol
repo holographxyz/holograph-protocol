@@ -101,6 +101,9 @@
 
 pragma solidity 0.8.13;
 
-interface HolographTreasuryInterface {
-
+contract MockExternalCall {
+  function callExternalFn(address contractAddress, bytes calldata encodedSignature) public {
+    (bool success, ) = address(contractAddress).call(encodedSignature);
+    require(success, "Failed");
+  }
 }
