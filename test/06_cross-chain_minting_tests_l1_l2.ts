@@ -306,21 +306,16 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
 
         process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
         await expect(
-          adminCall(
-            l2.mockLZEndpoint.connect(l2.lzEndpoint),
-            l2.lzModule,
-            'lzReceive',
-            [
-              ChainId.hlg2lz(l1.network.holographId),
-              await l1.operator.getMessagingModule(),
-              0,
-              payload,
-              {
-                gasPrice: GASPRICE,
-                gasLimit: executeJobGas(payload),
-              }
-            ],
-          )
+          adminCall(l2.mockLZEndpoint.connect(l2.lzEndpoint), l2.lzModule, 'lzReceive', [
+            ChainId.hlg2lz(l1.network.holographId),
+            await l1.operator.getMessagingModule(),
+            0,
+            payload,
+            {
+              gasPrice: GASPRICE,
+              gasLimit: executeJobGas(payload),
+            },
+          ])
         )
           .to.emit(l2.operator, 'AvailableOperatorJob')
           .withArgs(l2.web3.utils.keccak256(payload), payload);
@@ -444,21 +439,16 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
 
         process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
         await expect(
-          adminCall(
-            l1.mockLZEndpoint.connect(l1.lzEndpoint),
-            l1.lzModule,
-            'lzReceive',
-            [
-              ChainId.hlg2lz(l2.network.holographId),
-              await l2.operator.getMessagingModule(),
-              0,
-              payload,
-              {
-                gasPrice: GASPRICE,
-                gasLimit: executeJobGas(payload),
-              }
-            ],
-          )
+          adminCall(l1.mockLZEndpoint.connect(l1.lzEndpoint), l1.lzModule, 'lzReceive', [
+            ChainId.hlg2lz(l2.network.holographId),
+            await l2.operator.getMessagingModule(),
+            0,
+            payload,
+            {
+              gasPrice: GASPRICE,
+              gasLimit: executeJobGas(payload),
+            },
+          ])
         )
           .to.emit(l1.operator, 'AvailableOperatorJob')
           .withArgs(l1.web3.utils.keccak256(payload), payload);
@@ -584,21 +574,16 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
 
         process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
         await expect(
-          adminCall(
-            l2.mockLZEndpoint.connect(l2.lzEndpoint),
-            l2.lzModule,
-            'lzReceive',
-            [
-              ChainId.hlg2lz(l1.network.holographId),
-              await l1.operator.getMessagingModule(),
-              0,
-              payload,
-              {
-                gasPrice: GASPRICE,
-                gasLimit: executeJobGas(payload),
-              }
-            ],
-          )
+          adminCall(l2.mockLZEndpoint.connect(l2.lzEndpoint), l2.lzModule, 'lzReceive', [
+            ChainId.hlg2lz(l1.network.holographId),
+            await l1.operator.getMessagingModule(),
+            0,
+            payload,
+            {
+              gasPrice: GASPRICE,
+              gasLimit: executeJobGas(payload),
+            },
+          ])
         )
           .to.emit(l2.operator, 'AvailableOperatorJob')
           .withArgs(l2.web3.utils.keccak256(payload), payload);
@@ -722,21 +707,16 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
 
         process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
         await expect(
-          adminCall(
-            l1.mockLZEndpoint.connect(l1.lzEndpoint),
-            l1.lzModule,
-            'lzReceive',
-            [
-              ChainId.hlg2lz(l2.network.holographId),
-              await l2.operator.getMessagingModule(),
-              0,
-              payload,
-              {
-                gasPrice: GASPRICE,
-                gasLimit: executeJobGas(payload),
-              }
-            ],
-          )
+          adminCall(l1.mockLZEndpoint.connect(l1.lzEndpoint), l1.lzModule, 'lzReceive', [
+            ChainId.hlg2lz(l2.network.holographId),
+            await l2.operator.getMessagingModule(),
+            0,
+            payload,
+            {
+              gasPrice: GASPRICE,
+              gasLimit: executeJobGas(payload),
+            },
+          ])
         )
           .to.emit(l1.operator, 'AvailableOperatorJob')
           .withArgs(l1.web3.utils.keccak256(payload), payload);
@@ -864,21 +844,16 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
 
         process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
         await expect(
-          adminCall(
-            l2.mockLZEndpoint.connect(l2.lzEndpoint),
-            l2.lzModule,
-            'lzReceive',
-            [
-              ChainId.hlg2lz(l1.network.holographId),
-              await l1.operator.getMessagingModule(),
-              0,
-              payload,
-              {
-                gasPrice: GASPRICE,
-                gasLimit: executeJobGas(payload),
-              }
-            ],
-          )
+          adminCall(l2.mockLZEndpoint.connect(l2.lzEndpoint), l2.lzModule, 'lzReceive', [
+            ChainId.hlg2lz(l1.network.holographId),
+            await l1.operator.getMessagingModule(),
+            0,
+            payload,
+            {
+              gasPrice: GASPRICE,
+              gasLimit: executeJobGas(payload),
+            },
+          ])
         )
           .to.emit(l2.operator, 'AvailableOperatorJob')
           .withArgs(l2.web3.utils.keccak256(payload), payload);
@@ -1004,21 +979,16 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
 
         process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
         await expect(
-          adminCall(
-            l1.mockLZEndpoint.connect(l1.lzEndpoint),
-            l1.lzModule,
-            'lzReceive',
-            [
-              ChainId.hlg2lz(l2.network.holographId),
-              await l2.operator.getMessagingModule(),
-              0,
-              payload,
-              {
-                gasPrice: GASPRICE,
-                gasLimit: executeJobGas(payload),
-              }
-            ],
-          )
+          adminCall(l1.mockLZEndpoint.connect(l1.lzEndpoint), l1.lzModule, 'lzReceive', [
+            ChainId.hlg2lz(l2.network.holographId),
+            await l2.operator.getMessagingModule(),
+            0,
+            payload,
+            {
+              gasPrice: GASPRICE,
+              gasLimit: executeJobGas(payload),
+            },
+          ])
         )
           .to.emit(l1.operator, 'AvailableOperatorJob')
           .withArgs(l1.web3.utils.keccak256(payload), payload);
@@ -1153,21 +1123,16 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
 
         process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
         await expect(
-          adminCall(
-            l2.mockLZEndpoint.connect(l2.lzEndpoint),
-            l2.lzModule,
-            'lzReceive',
-            [
-              ChainId.hlg2lz(l1.network.holographId),
-              await l1.operator.getMessagingModule(),
-              0,
-              payload,
-              {
-                gasPrice: GASPRICE,
-                gasLimit: executeJobGas(payload),
-              }
-            ],
-          )
+          adminCall(l2.mockLZEndpoint.connect(l2.lzEndpoint), l2.lzModule, 'lzReceive', [
+            ChainId.hlg2lz(l1.network.holographId),
+            await l1.operator.getMessagingModule(),
+            0,
+            payload,
+            {
+              gasPrice: GASPRICE,
+              gasLimit: executeJobGas(payload),
+            },
+          ])
         )
           .to.emit(l2.operator, 'AvailableOperatorJob')
           .withArgs(l2.web3.utils.keccak256(payload), payload);
@@ -1300,21 +1265,16 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
 
         process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
         await expect(
-          adminCall(
-            l1.mockLZEndpoint.connect(l1.lzEndpoint),
-            l1.lzModule,
-            'lzReceive',
-            [
-              ChainId.hlg2lz(l2.network.holographId),
-              await l2.operator.getMessagingModule(),
-              0,
-              payload,
-              {
-                gasPrice: GASPRICE,
-                gasLimit: executeJobGas(payload),
-              }
-            ],
-          )
+          adminCall(l1.mockLZEndpoint.connect(l1.lzEndpoint), l1.lzModule, 'lzReceive', [
+            ChainId.hlg2lz(l2.network.holographId),
+            await l2.operator.getMessagingModule(),
+            0,
+            payload,
+            {
+              gasPrice: GASPRICE,
+              gasLimit: executeJobGas(payload),
+            },
+          ])
         )
           .to.emit(l1.operator, 'AvailableOperatorJob')
           .withArgs(l1.web3.utils.keccak256(payload), payload);
@@ -1494,21 +1454,16 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
 
           process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
           await expect(
-            adminCall(
-              l2.mockLZEndpoint.connect(l2.lzEndpoint),
-              l2.lzModule,
-              'lzReceive',
-              [
-                ChainId.hlg2lz(l1.network.holographId),
-                await l1.operator.getMessagingModule(),
-                0,
-                payload,
-                {
-                  gasPrice: GASPRICE,
-                  gasLimit: executeJobGas(payload),
-                }
-              ],
-            )
+            adminCall(l2.mockLZEndpoint.connect(l2.lzEndpoint), l2.lzModule, 'lzReceive', [
+              ChainId.hlg2lz(l1.network.holographId),
+              await l1.operator.getMessagingModule(),
+              0,
+              payload,
+              {
+                gasPrice: GASPRICE,
+                gasLimit: executeJobGas(payload),
+              },
+            ])
           )
             .to.emit(l2.operator, 'AvailableOperatorJob')
             .withArgs(l2.web3.utils.keccak256(payload), payload);
@@ -1613,21 +1568,16 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
 
           process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
           await expect(
-            adminCall(
-              l1.mockLZEndpoint.connect(l1.lzEndpoint),
-              l1.lzModule,
-              'lzReceive',
-              [
-                ChainId.hlg2lz(l2.network.holographId),
-                await l2.operator.getMessagingModule(),
-                0,
-                payload,
-                {
-                  gasPrice: GASPRICE,
-                  gasLimit: executeJobGas(payload),
-                }
-              ],
-            )
+            adminCall(l1.mockLZEndpoint.connect(l1.lzEndpoint), l1.lzModule, 'lzReceive', [
+              ChainId.hlg2lz(l2.network.holographId),
+              await l2.operator.getMessagingModule(),
+              0,
+              payload,
+              {
+                gasPrice: GASPRICE,
+                gasLimit: executeJobGas(payload),
+              },
+            ])
           )
             .to.emit(l1.operator, 'AvailableOperatorJob')
             .withArgs(l1.web3.utils.keccak256(payload), payload);

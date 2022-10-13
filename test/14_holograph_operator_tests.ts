@@ -117,7 +117,13 @@ describe('Holograph Operator Contract', async () => {
     it('should successfully be initialized once', async () => {
       let initPayload = generateInitCode(
         ['address', 'address', 'address', 'address', 'address'],
-        [await l1.operator.getBridge(), await l1.operator.getHolograph(), await l1.operator.getInterfaces(), await l1.operator.getRegistry(), await l1.operator.getUtilityToken()]
+        [
+          await l1.operator.getBridge(),
+          await l1.operator.getHolograph(),
+          await l1.operator.getInterfaces(),
+          await l1.operator.getRegistry(),
+          await l1.operator.getUtilityToken(),
+        ]
       );
       let tx = await mockOperator.init(initPayload);
       await tx.wait();
@@ -366,7 +372,7 @@ describe('Holograph Operator Contract', async () => {
     it.skip('should not be callable from an external contract', async () => {});
   });
 
-/*
+  /*
   describe('Enable operators for l1 and l2', async () => {
     it('should add 10 operator wallets for each chain', async () => {
       let bondAmounts: BigNumber[] = await l1.operator.getPodBondAmounts(1);

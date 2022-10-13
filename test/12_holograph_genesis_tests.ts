@@ -110,7 +110,12 @@ describe('Holograph Genesis Contract', async () => {
     it('should fail if contract init code does not match the init selector', async () => {
       const chainId = (await ethers.provider.getNetwork()).chainId;
       await expect(
-        holographGenesisChild.deploy(chainId, `0x${'00'.repeat(11) + '03'}`, Mock.bytecode, generateInitCode(['bytes32'], ['0x00000000000000000000000000000000000000000000000000000000000000']))
+        holographGenesisChild.deploy(
+          chainId,
+          `0x${'00'.repeat(11) + '03'}`,
+          Mock.bytecode,
+          generateInitCode(['bytes32'], ['0x00000000000000000000000000000000000000000000000000000000000000'])
+        )
       ).to.revertedWith('HOLOGRAPH: initialization failed');
     });
   });
@@ -133,7 +138,14 @@ describe('Holograph Genesis Contract', async () => {
       let tx = await holographGenesis.approveDeployer(mock.address, true);
       await tx.wait();
       expect(await holographGenesis.isApprovedDeployer(mock.address)).to.equal(true);
-      await expect(mock.mockCall(holographGenesis.address, (await holographGenesis.populateTransaction.approveDeployer(anotherNewDeployer.address, true)).data)).to.not.be.reverted;
+      await expect(
+        mock.mockCall(
+          holographGenesis.address,
+          (
+            await holographGenesis.populateTransaction.approveDeployer(anotherNewDeployer.address, true)
+          ).data
+        )
+      ).to.not.be.reverted;
       expect(await holographGenesis.isApprovedDeployer(anotherNewDeployer.address)).to.equal(true);
     });
 

@@ -86,10 +86,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     hre,
     salt,
     'HolographBridge',
-    generateInitCode(
-      ['address', 'address', 'address', 'address'],
-      [zeroAddress, zeroAddress, zeroAddress, zeroAddress]
-    )
+    generateInitCode(['address', 'address', 'address', 'address'], [zeroAddress, zeroAddress, zeroAddress, zeroAddress])
   );
   hre.deployments.log('the future "HolographBridge" address is', futureBridgeAddress);
 
@@ -124,10 +121,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     'HolographFactoryProxy',
     generateInitCode(
       ['address', 'bytes'],
-      [
-        zeroAddress,
-        generateInitCode(['address', 'address', 'address'], [zeroAddress, zeroAddress, zeroAddress]),
-      ]
+      [zeroAddress, generateInitCode(['address', 'address', 'address'], [zeroAddress, zeroAddress, zeroAddress])]
     )
   );
   hre.deployments.log('the future "HolographFactoryProxy" address is', futureFactoryProxyAddress);
@@ -172,10 +166,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     hre,
     salt,
     'HolographRegistryProxy',
-    generateInitCode(
-      ['address', 'bytes'],
-      [zeroAddress, generateInitCode(['address', 'bytes32[]'], [zeroAddress, []])]
-    )
+    generateInitCode(['address', 'bytes'], [zeroAddress, generateInitCode(['address', 'bytes32[]'], [zeroAddress, []])])
   );
   hre.deployments.log('the future "HolographRegistryProxy" address is', futureRegistryProxyAddress);
 
@@ -183,10 +174,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     hre,
     salt,
     'HolographTreasury',
-    generateInitCode(
-      ['address', 'address', 'address', 'address'],
-      [zeroAddress, zeroAddress, zeroAddress, zeroAddress]
-    )
+    generateInitCode(['address', 'address', 'address', 'address'], [zeroAddress, zeroAddress, zeroAddress, zeroAddress])
   );
   hre.deployments.log('the future "HolographTreasury" address is', futureTreasuryAddress);
 

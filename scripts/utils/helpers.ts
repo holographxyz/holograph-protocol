@@ -787,7 +787,7 @@ const executeJobGas = function (payload: string, verbose?: boolean): BigNumber {
     process.stdout.write(' '.repeat(10) + 'payload adds ' + payloadBytes * gasPerByte + '\n');
   }
   return BigNumber.from(payloadBytes * gasPerByte + baseGas);
-}
+};
 
 export {
   executeJobGas,

@@ -110,7 +110,7 @@ contract Mock is Initializable {
 
   function init(bytes memory initPayload) external override returns (bytes4) {
     require(!_isInitialized(), "MOCK: already initialized");
-    (bytes32 arbitraryData) = abi.decode(initPayload, (bytes32));
+    bytes32 arbitraryData = abi.decode(initPayload, (bytes32));
     bool shouldFail = false;
     assembly {
       // we leave slot 0 available for delegate calls
