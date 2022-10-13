@@ -7,7 +7,7 @@ import { Signature, StrictECDSA, generateInitCode, generateErc20Config } from '.
 import { ONLY_ADMIN_ERROR_MSG } from './utils/error_constants';
 import { ConfigureEvents } from '../scripts/utils/events';
 
-describe('Holograph Factory Contract', async () => {
+describe.only('Holograph Factory Contract', async () => {
   let l1: PreTest;
 
   let Mock: any;
@@ -20,6 +20,12 @@ describe('Holograph Factory Contract', async () => {
   let chainId: number;
 
   const randomAddress = () => ethers.Wallet.createRandom().address;
+
+  let configObj: any;
+  let erc20Config: any;
+  let erc20ConfigHash: string;
+  let erc20ConfigHashBytes: any;
+  let signature: Signature;
 
   before(async () => {
     l1 = await setup();
@@ -35,6 +41,34 @@ describe('Holograph Factory Contract', async () => {
     await mock.deployed();
 
     mockSigner = await ethers.getSigner(mock.address);
+
+    configObj = await generateErc20Config(
+      l1.network,
+      l1.deployer.address,
+      'hToken',
+      l1.network.tokenName + ' (Holographed #' + l1.network.holographId.toString() + ')',
+      'h' + l1.network.tokenSymbol,
+      l1.network.tokenName + ' (Holographed #' + l1.network.holographId.toString() + ')',
+      '1',
+      18,
+      ConfigureEvents([]),
+      generateInitCode(['address', 'uint16'], [l1.deployer.address, 0]),
+      l1.salt
+    );
+
+    erc20Config = configObj.erc20Config;
+    erc20ConfigHash = configObj.erc20ConfigHash;
+    erc20ConfigHashBytes = configObj.erc20ConfigHashBytes;
+
+    let hTokenErc20Address = await l1.registry.getHolographedHashAddress(erc20ConfigHash);
+    hTokenErc20Address = await l1.registry.getHolographedHashAddress(erc20ConfigHash);
+
+    let sig = await l1.deployer.signMessage(erc20ConfigHashBytes);
+    signature = StrictECDSA({
+      r: '0x' + sig.substring(2, 66),
+      s: '0x' + sig.substring(66, 130),
+      v: '0x' + sig.substring(130, 132),
+    } as Signature);
   });
 
   describe('init():', async () => {
@@ -54,30 +88,6 @@ describe('Holograph Factory Contract', async () => {
 
   describe('deployHolographableContract()', async () => {
     it('should fail with invalid signature if config is incorrect', async () => {
-      let { erc20Config, erc20ConfigHash, erc20ConfigHashBytes } = await generateErc20Config(
-        l1.network,
-        l1.deployer.address,
-        'hToken',
-        l1.network.tokenName + ' (Holographed #' + l1.network.holographId.toString() + ')',
-        'h' + l1.network.tokenSymbol,
-        l1.network.tokenName + ' (Holographed #' + l1.network.holographId.toString() + ')',
-        '1',
-        18,
-        ConfigureEvents([]),
-        generateInitCode(['address', 'uint16'], [l1.deployer.address, 0]),
-        l1.salt
-      );
-
-      let hTokenErc20Address = await l1.registry.getHolographedHashAddress(erc20ConfigHash);
-      hTokenErc20Address = await l1.registry.getHolographedHashAddress(erc20ConfigHash);
-
-      let sig = await l1.deployer.signMessage(erc20ConfigHashBytes);
-      let signature: Signature = StrictECDSA({
-        r: '0x' + sig.substring(2, 66),
-        s: '0x' + sig.substring(66, 130),
-        v: '0x' + sig.substring(130, 132),
-      } as Signature);
-
       await expect(
         l1.holographFactory.connect(deployer).deployHolographableContract(erc20Config, signature, owner.address)
       ).to.be.revertedWith('HOLOGRAPH: invalid signature');
@@ -89,60 +99,12 @@ describe('Holograph Factory Contract', async () => {
     it.skip('should fail with invalid signature if signature.v is incorrect');
 
     it('should fail with invalid signature if signer is incorrect', async () => {
-      let { erc20Config, erc20ConfigHash, erc20ConfigHashBytes } = await generateErc20Config(
-        l1.network,
-        l1.deployer.address,
-        'hToken',
-        l1.network.tokenName + ' (Holographed #' + l1.network.holographId.toString() + ')',
-        'h' + l1.network.tokenSymbol,
-        l1.network.tokenName + ' (Holographed #' + l1.network.holographId.toString() + ')',
-        '1',
-        18,
-        ConfigureEvents([]),
-        generateInitCode(['address', 'uint16'], [l1.deployer.address, 0]),
-        l1.salt
-      );
-
-      let hTokenErc20Address = await l1.registry.getHolographedHashAddress(erc20ConfigHash);
-      hTokenErc20Address = await l1.registry.getHolographedHashAddress(erc20ConfigHash);
-
-      let sig = await l1.deployer.signMessage(erc20ConfigHashBytes);
-      let signature: Signature = StrictECDSA({
-        r: '0x' + sig.substring(2, 66),
-        s: '0x' + sig.substring(66, 130),
-        v: '0x' + sig.substring(130, 132),
-      } as Signature);
-
       await expect(l1.factory.deployHolographableContract(erc20Config, signature, nonOwner.address)).to.be.revertedWith(
         'HOLOGRAPH: invalid signature'
       );
     });
 
     it('should fail contract was already deployed', async () => {
-      let { erc20Config, erc20ConfigHash, erc20ConfigHashBytes } = await generateErc20Config(
-        l1.network,
-        l1.deployer.address,
-        'hToken',
-        l1.network.tokenName + ' (Holographed #' + l1.network.holographId.toString() + ')',
-        'h' + l1.network.tokenSymbol,
-        l1.network.tokenName + ' (Holographed #' + l1.network.holographId.toString() + ')',
-        '1',
-        18,
-        ConfigureEvents([]),
-        generateInitCode(['address', 'uint16'], [l1.deployer.address, 0]),
-        l1.salt
-      );
-
-      let hTokenErc20Address = await l1.registry.getHolographedHashAddress(erc20ConfigHash);
-      hTokenErc20Address = await l1.registry.getHolographedHashAddress(erc20ConfigHash);
-
-      let sig = await l1.deployer.signMessage(erc20ConfigHashBytes);
-      let signature: Signature = StrictECDSA({
-        r: '0x' + sig.substring(2, 66),
-        s: '0x' + sig.substring(66, 130),
-        v: '0x' + sig.substring(130, 132),
-      } as Signature);
-
       await expect(
         l1.factory.deployHolographableContract(erc20Config, signature, l1.deployer.address)
       ).to.be.revertedWith('HOLOGRAPH: already deployed');
