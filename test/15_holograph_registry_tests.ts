@@ -6,6 +6,13 @@ import web3 from 'web3';
 import { generateInitCode, zeroAddress } from '../scripts/utils/helpers';
 import { MockExternalCall, MockExternalCall__factory } from '../typechain-types';
 import setup, { PreTest } from './utils';
+import {
+  ALREADY_INITIALIZED_ERROR_MSG,
+  CONTRACT_ALREADY_SET_ERROR_MSG,
+  EMPTY_CONTRACT_ERROR_MSG,
+  FACTORY_ONLY_ERROR_MSG,
+  ONLY_ADMIN_ERROR_MSG,
+} from './utils/error_constants';
 
 describe('Holograph Registry Contract', async function () {
   let HolographRegistry: any;
@@ -70,7 +77,7 @@ describe('Holograph Registry Contract', async function () {
     it('should fail be initialized twice', async function () {
       const initCode = generateInitCode(['address', 'bytes32[]'], [deployer.address, []]);
       await expect(holographRegistry.connect(deployer).init(initCode)).to.be.revertedWith(
-        'HOLOGRAPH: already initialized'
+        ALREADY_INITIALIZED_ERROR_MSG
       );
     });
     // it('should fail to allow inherited contract to call fn');
@@ -81,7 +88,7 @@ describe('Holograph Registry Contract', async function () {
       const contractHash = getContractType();
       await expect(
         l1.registry.connect(l1.deployer).setHolographedHashAddress(contractHash, l1.holographErc721.address)
-      ).to.be.revertedWith('HOLOGRAPH: factory only function');
+      ).to.be.revertedWith(FACTORY_ONLY_ERROR_MSG);
     });
     it('Should allow external contract to call fn');
     // it('should fail to allow inherited contract to call fn');
@@ -249,12 +256,12 @@ describe('Holograph Registry Contract', async function () {
     it('should fail if contract is empty', async function () {
       const contractAddress = createRandomAddress();
       await expect(l1.registry.referenceContractTypeAddress(contractAddress)).to.be.revertedWith(
-        'HOLOGRAPH: empty contract'
+        EMPTY_CONTRACT_ERROR_MSG
       );
     });
     it('should fail if contract is already set', async function () {
       await expect(l1.registry.referenceContractTypeAddress(l1.holographErc20.address)).to.revertedWith(
-        'HOLOGRAPH: contract already set'
+        CONTRACT_ALREADY_SET_ERROR_MSG
       );
     });
     it('should fail if the address type is reserved already');
@@ -276,14 +283,12 @@ describe('Holograph Registry Contract', async function () {
     });
 
     it('should fail to allow owner to alter _holographSlot', async function () {
-      await expect(holographRegistry.connect(owner).setHolograph(mockAddress)).to.be.revertedWith(
-        'HOLOGRAPH: admin only function'
-      );
+      await expect(holographRegistry.connect(owner).setHolograph(mockAddress)).to.be.revertedWith(ONLY_ADMIN_ERROR_MSG);
     });
 
     it('should fail to allow non-owner to alter _holographSlot', async function () {
       await expect(holographRegistry.connect(randUser).setHolograph(mockAddress)).to.be.revertedWith(
-        'HOLOGRAPH: admin only function'
+        ONLY_ADMIN_ERROR_MSG
       );
     });
   });
@@ -310,12 +315,12 @@ describe('Holograph Registry Contract', async function () {
     });
     it('should fail to allow owner to alter _hTokens', async function () {
       await expect(holographRegistry.connect(owner).setHToken(validChainId, hTokenAddress)).to.be.revertedWith(
-        'HOLOGRAPH: admin only function'
+        ONLY_ADMIN_ERROR_MSG
       );
     });
     it('should fail to allow non-owner to alter _hTokens', async function () {
       await expect(holographRegistry.connect(randUser).setHToken(validChainId, hTokenAddress)).to.be.revertedWith(
-        'HOLOGRAPH: admin only function'
+        ONLY_ADMIN_ERROR_MSG
       );
     });
   });
@@ -347,12 +352,12 @@ describe('Holograph Registry Contract', async function () {
     });
     it('should fail to allow owner to alter _utilityTokenSlot', async function () {
       await expect(holographRegistry.connect(owner).setUtilityToken(utilityTokenAddress)).to.be.revertedWith(
-        'HOLOGRAPH: admin only function'
+        ONLY_ADMIN_ERROR_MSG
       );
     });
     it('should fail to allow non-owner to alter _utilityTokenSlot', async function () {
       await expect(holographRegistry.connect(randUser).setUtilityToken(utilityTokenAddress)).to.be.revertedWith(
-        'HOLOGRAPH: admin only function'
+        ONLY_ADMIN_ERROR_MSG
       );
     });
   });
