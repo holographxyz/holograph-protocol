@@ -133,6 +133,7 @@ export interface PreTest {
   cxipErc721Holographer: Holographer;
   cxipErc721Enforcer: HolographERC721;
   faucet: Faucet;
+  sampleErc721Hash: Erc721Config;
   lzModule: LayerZeroModule;
 }
 
@@ -499,5 +500,6 @@ export default async function (l2?: boolean): Promise<PreTest> {
     cxipErc721Enforcer,
     faucet,
     lzModule,
+    sampleErc721Hash,
   } as PreTest;
 }
