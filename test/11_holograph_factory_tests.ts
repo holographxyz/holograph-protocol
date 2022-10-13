@@ -8,7 +8,6 @@ import {
   StrictECDSA,
   generateInitCode,
   generateErc20Config,
-  remove0x,
   generateErc721Config,
 } from '../scripts/utils/helpers';
 import { ALREADY_DEPLOYED_ERROR_MSG, INVALID_SIGNATURE_ERROR_MSG, ONLY_ADMIN_ERROR_MSG } from './utils/error_constants';
@@ -26,8 +25,6 @@ describe('Holograph Factory Contract', async () => {
   let nonOwner: SignerWithAddress;
   let mockSigner: SignerWithAddress;
   let chainId: number;
-
-  const randomAddress = () => ethers.Wallet.createRandom().address;
 
   let configObj: any;
   let erc20Config: any;
@@ -180,10 +177,8 @@ describe('Holograph Factory Contract', async () => {
         ]
       );
 
-      const tx = await l1.factory.connect(deployer).bridgeIn(chainId, payload);
-      const receipt = await tx.wait();
-
-      console.log(receipt.events);
+      const selector = await l1.factory.connect(deployer).callStatic.bridgeIn(chainId, payload);
+      expect(selector).to.equal('0x08a1eb20');
     });
 
     it('should revert if payload data is invalid', async () => {
