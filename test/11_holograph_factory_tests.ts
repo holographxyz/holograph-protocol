@@ -3,28 +3,31 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import setup from './utils';
-import { generateInitCode, zeroAddress } from '../scripts/utils/helpers';
+import { Signature, StrictECDSA, generateInitCode, generateErc20Config } from '../scripts/utils/helpers';
+import { ONLY_ADMIN_ERROR_MSG } from './utils/error_constants';
+import { ConfigureEvents } from '../scripts/utils/events';
 
-describe.only('Holograph Factory Contract', async () => {
+describe('Holograph Factory Contract', async () => {
   let l1: PreTest;
-  let HolographRegistry: any;
-  let holographRegistry: any;
 
   let Mock: any;
   let mock: any;
   let accounts: SignerWithAddress[];
   let deployer: SignerWithAddress;
-  let newDeployer: SignerWithAddress;
-  let anotherNewDeployer: SignerWithAddress;
+  let owner: SignerWithAddress;
+  let nonOwner: SignerWithAddress;
   let mockSigner: SignerWithAddress;
   let chainId: number;
+
+  const randomAddress = () => ethers.Wallet.createRandom().address;
 
   before(async () => {
     l1 = await setup();
     accounts = await ethers.getSigners();
     deployer = accounts[0];
-    newDeployer = accounts[1];
-    anotherNewDeployer = accounts[2];
+    owner = accounts[1];
+    nonOwner = accounts[2];
+
     chainId = (await ethers.provider.getNetwork()).chainId;
 
     Mock = await ethers.getContractFactory('Mock');
@@ -49,6 +52,106 @@ describe.only('Holograph Factory Contract', async () => {
     });
   });
 
+  describe('deployHolographableContract()', async () => {
+    it('should fail with invalid signature if config is incorrect', async () => {
+      let { erc20Config, erc20ConfigHash, erc20ConfigHashBytes } = await generateErc20Config(
+        l1.network,
+        l1.deployer.address,
+        'hToken',
+        l1.network.tokenName + ' (Holographed #' + l1.network.holographId.toString() + ')',
+        'h' + l1.network.tokenSymbol,
+        l1.network.tokenName + ' (Holographed #' + l1.network.holographId.toString() + ')',
+        '1',
+        18,
+        ConfigureEvents([]),
+        generateInitCode(['address', 'uint16'], [l1.deployer.address, 0]),
+        l1.salt
+      );
+
+      let hTokenErc20Address = await l1.registry.getHolographedHashAddress(erc20ConfigHash);
+      hTokenErc20Address = await l1.registry.getHolographedHashAddress(erc20ConfigHash);
+
+      let sig = await l1.deployer.signMessage(erc20ConfigHashBytes);
+      let signature: Signature = StrictECDSA({
+        r: '0x' + sig.substring(2, 66),
+        s: '0x' + sig.substring(66, 130),
+        v: '0x' + sig.substring(130, 132),
+      } as Signature);
+
+      await expect(
+        l1.holographFactory.connect(deployer).deployHolographableContract(erc20Config, signature, owner.address)
+      ).to.be.revertedWith('HOLOGRAPH: invalid signature');
+    });
+
+    // TODO: Not sure how to test if each value of signature is correct
+    it.skip('should fail with invalid signature if signature.r is incorrect');
+    it.skip('should fail with invalid signature if signature.s is incorrect');
+    it.skip('should fail with invalid signature if signature.v is incorrect');
+
+    it('should fail with invalid signature if signer is incorrect', async () => {
+      let { erc20Config, erc20ConfigHash, erc20ConfigHashBytes } = await generateErc20Config(
+        l1.network,
+        l1.deployer.address,
+        'hToken',
+        l1.network.tokenName + ' (Holographed #' + l1.network.holographId.toString() + ')',
+        'h' + l1.network.tokenSymbol,
+        l1.network.tokenName + ' (Holographed #' + l1.network.holographId.toString() + ')',
+        '1',
+        18,
+        ConfigureEvents([]),
+        generateInitCode(['address', 'uint16'], [l1.deployer.address, 0]),
+        l1.salt
+      );
+
+      let hTokenErc20Address = await l1.registry.getHolographedHashAddress(erc20ConfigHash);
+      hTokenErc20Address = await l1.registry.getHolographedHashAddress(erc20ConfigHash);
+
+      let sig = await l1.deployer.signMessage(erc20ConfigHashBytes);
+      let signature: Signature = StrictECDSA({
+        r: '0x' + sig.substring(2, 66),
+        s: '0x' + sig.substring(66, 130),
+        v: '0x' + sig.substring(130, 132),
+      } as Signature);
+
+      await expect(l1.factory.deployHolographableContract(erc20Config, signature, nonOwner.address)).to.be.revertedWith(
+        'HOLOGRAPH: invalid signature'
+      );
+    });
+
+    it('should fail contract was already deployed', async () => {
+      let { erc20Config, erc20ConfigHash, erc20ConfigHashBytes } = await generateErc20Config(
+        l1.network,
+        l1.deployer.address,
+        'hToken',
+        l1.network.tokenName + ' (Holographed #' + l1.network.holographId.toString() + ')',
+        'h' + l1.network.tokenSymbol,
+        l1.network.tokenName + ' (Holographed #' + l1.network.holographId.toString() + ')',
+        '1',
+        18,
+        ConfigureEvents([]),
+        generateInitCode(['address', 'uint16'], [l1.deployer.address, 0]),
+        l1.salt
+      );
+
+      let hTokenErc20Address = await l1.registry.getHolographedHashAddress(erc20ConfigHash);
+      hTokenErc20Address = await l1.registry.getHolographedHashAddress(erc20ConfigHash);
+
+      let sig = await l1.deployer.signMessage(erc20ConfigHashBytes);
+      let signature: Signature = StrictECDSA({
+        r: '0x' + sig.substring(2, 66),
+        s: '0x' + sig.substring(66, 130),
+        v: '0x' + sig.substring(130, 132),
+      } as Signature);
+
+      await expect(
+        l1.factory.deployHolographableContract(erc20Config, signature, l1.deployer.address)
+      ).to.be.revertedWith('HOLOGRAPH: already deployed');
+    });
+
+    it('Should allow external contract to call fn');
+    it('should fail to allow inherited contract to call fn');
+  });
+
   describe.skip(`bridgeIn()`, async () => {
     it('should return the expected selector from the input payload', async () => {
       const payload = '0x0000000000000000000000000000000000000000000000000000000000000000';
@@ -62,21 +165,8 @@ describe.only('Holograph Factory Contract', async () => {
     });
   });
 
-  describe('bridgeOut()', async () => {
+  describe.skip('bridgeOut()', async () => {
     it('should return selector and payload');
-  });
-
-  describe('deployHolographableContract()', async () => {
-    it('should fail with invalid signature if config is incorrect');
-    it('should fail with invalid signature if signature.r is incorrect');
-    it('should fail with invalid signature if signature.s is incorrect');
-    it('should fail with invalid signature if signature.v is incorrect');
-    it('should fail with invalid signature if signer is incorrect');
-
-    it('should fail contract was already deployed');
-
-    it('Should allow external contract to call fn');
-    it('should fail to allow inherited contract to call fn');
   });
 
   describe('setHolograph() / getHolograph()', async () => {
@@ -86,8 +176,17 @@ describe.only('Holograph Factory Contract', async () => {
       expect(_holographSlot).to.equal(l1.holograph.address);
     });
 
-    it('should fail to allow owner to alter _holographSlot');
-    it('should fail to allow non-owner to alter _holographSlot');
+    it('should fail to allow owner to alter _holographSlot', async () => {
+      await expect(l1.holographFactory.connect(nonOwner).setHolograph(l1.holograph.address)).to.be.revertedWith(
+        ONLY_ADMIN_ERROR_MSG
+      );
+    });
+
+    it('should fail to allow non-owner to alter _holographSlot', async () => {
+      await expect(l1.holographFactory.connect(nonOwner).setHolograph(l1.holographRegistry.address)).to.be.revertedWith(
+        ONLY_ADMIN_ERROR_MSG
+      );
+    });
   });
 
   describe('setRegistry() / getRegistry()', async () => {
@@ -98,25 +197,46 @@ describe.only('Holograph Factory Contract', async () => {
     });
 
     it('should fail to allow owner to alter _registrySlot', async () => {
-      await expect(l1.holographFactory.connect(deployer).setRegistry(l1.holographRegistry.address)).to.be.reverted;
+      await expect(l1.holographFactory.connect(nonOwner).setRegistry(l1.holographRegistry.address)).to.be.revertedWith(
+        ONLY_ADMIN_ERROR_MSG
+      );
     });
 
-    it('should fail to allow non-owner to alter _registrySlot');
+    it('should fail to allow non-owner to alter _registrySlot', async () => {
+      await expect(l1.holographFactory.connect(nonOwner).setRegistry(l1.holographRegistry.address)).to.be.revertedWith(
+        ONLY_ADMIN_ERROR_MSG
+      );
+    });
   });
 
-  describe('_isContract()', async () => {
-    it('should not be callable');
+  describe.skip('_isContract()', async () => {
+    it('should not be callable', async () => {
+      // await expect(l1.holographFactory._isContract()).to.be.throw;
+    });
   });
 
-  describe('_verifySigner()', async () => {
+  describe.skip('_verifySigner()', async () => {
     it('should not be callable');
   });
 
   describe(`receive()`, async () => {
-    it('should revert');
+    it('should revert', async () => {
+      await expect(
+        deployer.sendTransaction({
+          to: l1.holographFactory.address,
+          value: 1,
+        })
+      ).to.be.reverted;
+    });
   });
 
   describe(`fallback()`, async () => {
-    it('should revert');
+    it('should revert', async () => {
+      await expect(
+        deployer.sendTransaction({
+          to: l1.holographFactory.address,
+        })
+      ).to.be.reverted;
+    });
   });
 });
