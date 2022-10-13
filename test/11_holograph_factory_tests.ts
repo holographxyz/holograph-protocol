@@ -145,12 +145,42 @@ describe('Holograph Factory Contract', async () => {
     it('should fail to allow inherited contract to call fn');
   });
 
-  describe.skip(`bridgeIn()`, async () => {
+  describe.only(`bridgeIn()`, async () => {
     it('should return the expected selector from the input payload', async () => {
-      const payload = '0x0000000000000000000000000000000000000000000000000000000000000000';
-      const expectedSelector = '0x00000000';
-      const selector = await l1.holographFactory.bridgeIn(chainId, payload);
-      expect(selector).to.equal(expectedSelector);
+      let { erc721Config, erc721ConfigHash, erc721ConfigHashBytes } = await generateErc721Config(
+        l1.network,
+        l1.deployer.address,
+        'SampleERC721',
+        'Sample ERC721 Contract (' + l1.hre.networkName + ')',
+        'SMPLR',
+        1000,
+        `0x${'00'.repeat(32)}`,
+        generateInitCode(['address'], [l1.deployer.address]),
+        '0x' + '00'.repeat(31) + 'ff'
+      );
+      let sig = await l1.deployer.signMessage(erc721ConfigHashBytes);
+      signature = StrictECDSA({
+        r: '0x' + sig.substring(2, 66),
+        s: '0x' + sig.substring(66, 130),
+        v: '0x' + sig.substring(130, 132),
+      } as Signature);
+
+      const payload = generateInitCode(
+        ['tuple(bytes32,uint32,bytes32,bytes,bytes)', 'tuple(bytes32,bytes32,uint8)', 'address'],
+        [
+          [
+            erc721Config.contractType,
+            erc721Config.chainType,
+            erc721Config.salt,
+            erc721Config.byteCode,
+            erc721Config.initCode,
+          ],
+          [signature.r, signature.s, signature.v],
+          deployer.address,
+        ]
+      );
+
+      const selector = await l1.holographFactory.connect(deployer).bridgeIn(chainId, payload);
     });
 
     it('should return bad data if payload data is invalid', async () => {
@@ -158,9 +188,9 @@ describe('Holograph Factory Contract', async () => {
     });
   });
 
-  describe.only('bridgeOut()', async () => {
+  describe('bridgeOut()', async () => {
     it('should return selector and payload', async function () {
-      let { erc721Config, erc721ConfigHash, erc721ConfigHashBytes } = await generateErc721Config(
+      let { erc721Config } = await generateErc721Config(
         l1.network,
         l1.deployer.address,
         'SampleERC721',
@@ -180,11 +210,21 @@ describe('Holograph Factory Contract', async () => {
 
       const payload = generateInitCode(
         ['tuple(bytes32,uint32,bytes32,bytes,bytes)', 'tuple(bytes32,bytes32,uint8)', 'address'],
-        [[erc721Config.contractType, erc721Config.chainType, erc721Config.salt, erc721Config.byteCode, erc721Config.initCode], [signature.r, signature.s, signature.v], deployer.address]
+        [
+          [
+            erc721Config.contractType,
+            erc721Config.chainType,
+            erc721Config.salt,
+            erc721Config.byteCode,
+            erc721Config.initCode,
+          ],
+          [signature.r, signature.s, signature.v],
+          deployer.address,
+        ]
       );
 
       const selector = await l1.holographFactory.connect(owner).bridgeOut(1, deployer.address, payload);
-      console.log('selector', selector);
+      expect(selector[0]).to.equal('0xb7e03661');
     });
   });
 
