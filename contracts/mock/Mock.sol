@@ -113,7 +113,7 @@ contract Mock is Initializable {
     bytes32 arbitraryData = abi.decode(initPayload, (bytes32));
     bool shouldFail = false;
     assembly {
-      // we leave slot 0 available for delegate calls
+      // we leave slot 0 available for fallback calls
       sstore(0x01, arbitraryData)
       switch arbitraryData
       case 0 {
@@ -159,6 +159,21 @@ contract Mock is Initializable {
     assembly {
       calldatacopy(0, data.offset, data.length)
       let result := staticcall(gas(), target, 0, data.length, 0, 0)
+      returndatacopy(0, 0, returndatasize())
+      switch result
+      case 0 {
+        revert(0, returndatasize())
+      }
+      default {
+        return(0, returndatasize())
+      }
+    }
+  }
+
+  function mockDelegateCall(address target, bytes calldata data) public returns (bytes memory) {
+    assembly {
+      calldatacopy(0, data.offset, data.length)
+      let result := delegatecall(gas(), target, 0, data.length, 0, 0)
       returndatacopy(0, 0, returndatasize())
       switch result
       case 0 {
