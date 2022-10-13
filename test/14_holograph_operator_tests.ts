@@ -1,240 +1,1913 @@
-describe('Holograph Operator Contract', async function () {
-  describe('constructor', async function () {
-    it('should successfully deploy');
+declare var global: any;
+import Web3 from 'web3';
+import { AbiItem } from 'web3-utils';
+import { expect, assert } from 'chai';
+import { PreTest } from './utils';
+import setup from './utils';
+import { BigNumberish, BytesLike, BigNumber, ContractFactory } from 'ethers';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import {
+  Signature,
+  StrictECDSA,
+  zeroAddress,
+  functionHash,
+  XOR,
+  hexToBytes,
+  stringToHex,
+  buildDomainSeperator,
+  randomHex,
+  generateInitCode,
+  generateErc20Config,
+  generateErc721Config,
+  LeanHardhatRuntimeEnvironment,
+  getGasUsage,
+  remove0x,
+  KeyOf,
+  executeJobGas,
+  adminCall,
+} from '../scripts/utils/helpers';
+import {
+  HolographERC20Event,
+  HolographERC721Event,
+  HolographERC1155Event,
+  ConfigureEvents,
+} from '../scripts/utils/events';
+import ChainId from '../scripts/utils/chain';
+import {
+  Admin,
+  CxipERC721,
+  ERC20Mock,
+  Holograph,
+  HolographBridge,
+  HolographBridgeProxy,
+  Holographer,
+  HolographERC20,
+  HolographERC721,
+  HolographFactory,
+  HolographFactoryProxy,
+  HolographGenesis,
+  HolographOperator,
+  HolographRegistry,
+  HolographRegistryProxy,
+  HToken,
+  HolographUtilityToken,
+  HolographInterfaces,
+  MockERC721Receiver,
+  Owner,
+  PA1D,
+  SampleERC20,
+  SampleERC721,
+} from '../typechain-types';
+import { DeploymentConfigStruct } from '../typechain-types/HolographFactory';
+
+describe('Holograph Operator Contract', async () => {
+  const GWEI: BigNumber = BigNumber.from('1000000000');
+  const TESTGASLIMIT: BigNumber = BigNumber.from('10000000');
+  const GASPRICE: BigNumber = BigNumber.from('1000000000');
+
+  let l1: PreTest;
+  let l2: PreTest;
+
+  let HLGL1: HolographERC20;
+  let HLGL2: HolographERC20;
+
+  let mockOperator: HolographOperator;
+
+  let wallets: KeyOf<PreTest>[];
+
+  before(async function () {
+    l1 = await setup();
+    l2 = await setup(true);
+
+    HLGL1 = await l1.holographErc20.attach(l1.utilityTokenHolographer.address);
+    HLGL2 = await l2.holographErc20.attach(l2.utilityTokenHolographer.address);
+
+    wallets = [
+      'wallet1',
+      'wallet2',
+      'wallet3',
+      'wallet4',
+      'wallet5',
+      'wallet6',
+      'wallet7',
+      'wallet8',
+      'wallet9',
+      'wallet10',
+    ];
   });
 
-  describe('init()', async function () {
-    it('should successfully be initialized once'); // Validate hardcoded values are correct
-    it('should fail if already initialized');
-    it('Should allow external contract to call fn');
-    it('should fail to allow inherited contract to call fn');
+  after(async () => {});
+
+  beforeEach(async () => {});
+
+  afterEach(async () => {});
+
+  describe('constructor', async () => {
+    it('should successfully deploy', async () => {
+      let operatorFactory: ContractFactory = await l1.hre.ethers.getContractFactory('HolographOperator');
+      mockOperator = (await operatorFactory.deploy()) as HolographOperator;
+      await mockOperator.deployed();
+      assert(mockOperator.address != zeroAddress, 'zero address');
+      let deployedCode = await l1.hre.ethers.provider.getCode(mockOperator.address);
+      assert(deployedCode != '0x' && deployedCode != '', 'code not deployed');
+    });
   });
 
-  describe('executeJob()', async function () {
-    it('Should fail if job hash is not in in _operatorJobs');
-    it('Should fail non-operator address tries to execute job'); // NOTE: "HOLOGRAPH: operator has time" error
-    it('Should fail if there has been a gas spike');
-    it('Should fail if fallback is invalid'); // NOTE: "HOLOGRAPH: invalid fallback"
-    it('Should fail if there is not enough gas');
+  describe('init()', async () => {
+    it('should successfully be initialized once', async () => {
+      let initPayload = generateInitCode(
+        ['address', 'address', 'address', 'address', 'address'],
+        [await l1.operator.getBridge(), await l1.operator.getHolograph(), await l1.operator.getInterfaces(), await l1.operator.getRegistry(), await l1.operator.getUtilityToken()]
+      );
+      let tx = await mockOperator.init(initPayload);
+      await tx.wait();
+      expect(await mockOperator.getBridge()).to.equal(await l1.operator.getBridge());
+      expect(await mockOperator.getHolograph()).to.equal(await l1.operator.getHolograph());
+      expect(await mockOperator.getInterfaces()).to.equal(await l1.operator.getInterfaces());
+      expect(await mockOperator.getRegistry()).to.equal(await l1.operator.getRegistry());
+      expect(await mockOperator.getUtilityToken()).to.equal(await l1.operator.getUtilityToken());
+    });
+    it('should fail if already initialized', async () => {
+      let initPayload = generateInitCode(
+        ['address', 'address', 'address', 'address', 'address'],
+        [zeroAddress, zeroAddress, zeroAddress, zeroAddress, zeroAddress]
+      );
+      await expect(mockOperator.init(initPayload)).to.be.revertedWith('HOLOGRAPH: already initialized');
+    });
+    it.skip('Should allow external contract to call fn', async () => {});
+    it.skip('should fail to allow inherited contract to call fn', async () => {});
   });
 
-  describe(`crossChainMessage()`, async function () {
-    it('Should successfully allow messaging address to call fn');
-    it('Should fail to allow deployer address to call fn');
-    it('Should fail to allow owner address to call fn');
-    it('Should fail to allow non-owner address to call fn');
+  describe('executeJob()', async () => {
+    it.skip('Should fail if job hash is not in in _operatorJobs', async () => {});
+    it.skip('Should fail non-operator address tries to execute job', async () => {}); // NOTE: "HOLOGRAPH: operator has time" error
+    it.skip('Should fail if there has been a gas spike', async () => {});
+    it.skip('Should fail if fallback is invalid', async () => {}); // NOTE: "HOLOGRAPH: invalid fallback"
+    it.skip('Should fail if there is not enough gas', async () => {});
   });
 
-  describe('jobEstimator()', async function () {
-    it('should return expected estimated value');
-    it('Should allow external contract to call fn');
-    it('should fail to allow inherited contract to call fn');
-    it('should be payable');
+  describe(`crossChainMessage()`, async () => {
+    it.skip('Should successfully allow messaging address to call fn', async () => {});
+    it.skip('Should fail to allow deployer address to call fn', async () => {});
+    it.skip('Should fail to allow owner address to call fn', async () => {});
+    it.skip('Should fail to allow non-owner address to call fn', async () => {});
   });
 
-  describe('send()', async function () {
-    it('should fail if `toChainId` provided a string');
-    it('should fail if `toChainId` provided a value larger than uint32');
+  describe('jobEstimator()', async () => {
+    it.skip('should return expected estimated value', async () => {});
+    it.skip('Should allow external contract to call fn', async () => {});
+    it.skip('should fail to allow inherited contract to call fn', async () => {});
+    it.skip('should be payable', async () => {});
   });
 
-  describe('getJobDetails()', async function () {
-    it('should return expected operatorJob from valid jobHash');
-    it('should return expected operatorJob from INVALID jobHash');
+  describe('send()', async () => {
+    it.skip('should fail if `toChainId` provided a string', async () => {});
+    it.skip('should fail if `toChainId` provided a value larger than uint32', async () => {});
   });
 
-  describe('getTotalPods()', async function () {
-    it('should return expected number of pods');
+  describe('getJobDetails()', async () => {
+    it.skip('should return expected operatorJob from valid jobHash', async () => {});
+    it.skip('should return expected operatorJob from INVALID jobHash', async () => {});
   });
 
-  describe('getPodOperatorsLength()', async function () {
-    it('should fail if pod does not exist');
-    it('should return expected pod length');
+  describe('getTotalPods()', async () => {
+    it.skip('should return expected number of pods', async () => {});
   });
 
-  describe('getPodOperators(pod)', async function () {
-    it('should return expected operators for a valid pod');
-    it('should fail to return operators for an INVALID pod');
-    it('Should allow external contract to call fn');
-    it('should fail to allow inherited contract to call fn');
+  describe('getPodOperatorsLength()', async () => {
+    it.skip('should fail if pod does not exist', async () => {});
+    it.skip('should return expected pod length', async () => {});
   });
 
-  describe('getPodOperators(pod, index, length)', async function () {
-    it('should return expected operators for a valid pod');
-    it('should fail to return operators for an INVALID pod');
-    it('should fail if index out of bounds');
-    it('should fail if length is out of bounds');
-    it('Should allow external contract to call fn');
-    it('should fail to allow inherited contract to call fn');
+  describe('getPodOperators(pod)', async () => {
+    it.skip('should return expected operators for a valid pod', async () => {});
+    it.skip('should fail to return operators for an INVALID pod', async () => {});
+    it.skip('Should allow external contract to call fn', async () => {});
+    it.skip('should fail to allow inherited contract to call fn', async () => {});
   });
 
-  describe('getPodBondAmounts()', async function () {
-    it('should return expected base and current value');
-    it('Should allow external contract to call fn');
-    it('should fail to allow inherited contract to call fn');
+  describe('getPodOperators(pod, index, length)', async () => {
+    it.skip('should return expected operators for a valid pod', async () => {});
+    it.skip('should fail to return operators for an INVALID pod', async () => {});
+    it.skip('should fail if index out of bounds', async () => {});
+    it.skip('should fail if length is out of bounds', async () => {});
+    it.skip('Should allow external contract to call fn', async () => {});
+    it.skip('should fail to allow inherited contract to call fn', async () => {});
   });
 
-  describe('getBondedPod()', async function () {
-    it('should return expected _bondedOperators');
-    it('Should allow external contract to call fn');
-    it('should fail to allow inherited contract to call fn');
+  describe('getPodBondAmounts()', async () => {
+    it.skip('should return expected base and current value', async () => {});
+    it.skip('Should allow external contract to call fn', async () => {});
+    it.skip('should fail to allow inherited contract to call fn', async () => {});
   });
 
-  describe('topupUtilityToken()', async function () {
-    it('should fail if operator is bonded');
-    it('successfully top up utility tokens');
+  describe('getBondedPod()', async () => {
+    it.skip('should return expected _bondedOperators', async () => {});
+    it.skip('Should allow external contract to call fn', async () => {});
+    it.skip('should fail to allow inherited contract to call fn', async () => {});
   });
 
-  describe('bondUtilityToken()', async function () {
-    it('should fail if the operator is already bonded');
-    it('Should fail if the provided bond amount is too low');
-    it('should fail if the pod operator limit has been reached');
-    it('should fail if the token transfer failed');
-    it('should successfully allow bonding');
-    it('Should allow external contract to call fn');
-    it('should fail to allow inherited contract to call fn');
+  describe('topupUtilityToken()', async () => {
+    it.skip('should fail if operator is bonded', async () => {});
+    it.skip('successfully top up utility tokens', async () => {});
   });
 
-  describe('unbondUtilityToken()', async function () {
-    it('should fail if the operator has not bonded');
-    it('Should fail if operator address is a contract');
-    it('should fail if sender is not the owner');
-    it('should fail if the token transfer failed');
-    it('should successfully allow unbonding');
-    it('Should allow external contract to call fn');
-    it('should fail to allow inherited contract to call fn');
+  describe('bondUtilityToken()', async () => {
+    it.skip('should fail if the operator is already bonded', async () => {});
+    it.skip('Should fail if the provided bond amount is too low', async () => {});
+    it.skip('should fail if the pod operator limit has been reached', async () => {});
+    it.skip('should fail if the token transfer failed', async () => {});
+    it.skip('should successfully allow bonding', async () => {});
+    it.skip('Should allow external contract to call fn', async () => {});
+    it.skip('should fail to allow inherited contract to call fn', async () => {});
   });
 
-  describe(`getMessagingModule()`, async function () {
-    it('Should return valid _messagingModuleSlot');
-    it('Should allow external contract to call fn');
-    it('should fail to allow inherited contract to call fn');
+  describe('unbondUtilityToken()', async () => {
+    it.skip('should fail if the operator has not bonded', async () => {});
+    it.skip('Should fail if operator address is a contract', async () => {});
+    it.skip('should fail if sender is not the owner', async () => {});
+    it.skip('should fail if the token transfer failed', async () => {});
+    it.skip('should successfully allow unbonding', async () => {});
+    it.skip('Should allow external contract to call fn', async () => {});
+    it.skip('should fail to allow inherited contract to call fn', async () => {});
   });
 
-  describe('setMessagingModule()', async function () {
-    it('should allow admin to alter _messagingModuleSlot');
-    it('should fail to allow owner to alter _messagingModuleSlot');
-    it('should fail to allow non-owner to alter _messagingModuleSlot');
-    it('Should allow external contract to call fn');
-    it('should fail to allow inherited contract to call fn');
+  describe(`getMessagingModule()`, async () => {
+    it.skip('Should return valid _messagingModuleSlot', async () => {});
+    it.skip('Should allow external contract to call fn', async () => {});
+    it.skip('should fail to allow inherited contract to call fn', async () => {});
   });
 
-  describe(`getBridge()`, async function () {
-    it('Should return valid _bridgeSlot');
-    it('Should allow external contract to call fn');
-    it('should fail to allow inherited contract to call fn');
+  describe('setMessagingModule()', async () => {
+    it.skip('should allow admin to alter _messagingModuleSlot', async () => {});
+    it.skip('should fail to allow owner to alter _messagingModuleSlot', async () => {});
+    it.skip('should fail to allow non-owner to alter _messagingModuleSlot', async () => {});
+    it.skip('Should allow external contract to call fn', async () => {});
+    it.skip('should fail to allow inherited contract to call fn', async () => {});
   });
 
-  describe('setBridge()', async function () {
-    it('should allow admin to alter _bridgeSlot');
-    it('should fail to allow owner to alter _bridgeSlot');
-    it('should fail to allow non-owner to alter _bridgeSlot');
-    it('Should allow external contract to call fn');
-    it('should fail to allow inherited contract to call fn');
+  describe(`getBridge()`, async () => {
+    it.skip('Should return valid _bridgeSlot', async () => {});
+    it.skip('Should allow external contract to call fn', async () => {});
+    it.skip('should fail to allow inherited contract to call fn', async () => {});
   });
 
-  describe(`getHolograph()`, async function () {
-    it('Should return valid _holographSlot');
-    it('Should allow external contract to call fn');
-    it('should fail to allow inherited contract to call fn');
+  describe('setBridge()', async () => {
+    it.skip('should allow admin to alter _bridgeSlot', async () => {});
+    it.skip('should fail to allow owner to alter _bridgeSlot', async () => {});
+    it.skip('should fail to allow non-owner to alter _bridgeSlot', async () => {});
+    it.skip('Should allow external contract to call fn', async () => {});
+    it.skip('should fail to allow inherited contract to call fn', async () => {});
   });
 
-  describe('setHolograph()', async function () {
-    it('should allow admin to alter _holographSlot');
-    it('should fail to allow owner to alter _holographSlot');
-    it('should fail to allow non-owner to alter _holographSlot');
-    it('Should allow external contract to call fn');
-    it('should fail to allow inherited contract to call fn');
+  describe(`getHolograph()`, async () => {
+    it.skip('Should return valid _holographSlot', async () => {});
+    it.skip('Should allow external contract to call fn', async () => {});
+    it.skip('should fail to allow inherited contract to call fn', async () => {});
   });
 
-  describe(`getInterfaces()`, async function () {
-    it('Should return valid _interfacesSlot');
-    it('Should allow external contract to call fn');
-    it('should fail to allow inherited contract to call fn');
+  describe('setHolograph()', async () => {
+    it.skip('should allow admin to alter _holographSlot', async () => {});
+    it.skip('should fail to allow owner to alter _holographSlot', async () => {});
+    it.skip('should fail to allow non-owner to alter _holographSlot', async () => {});
+    it.skip('Should allow external contract to call fn', async () => {});
+    it.skip('should fail to allow inherited contract to call fn', async () => {});
   });
 
-  describe('setInterfaces()', async function () {
-    it('should allow admin to alter _interfacesSlot');
-    it('should fail to allow owner to alter _interfacesSlot');
-    it('should fail to allow non-owner to alter _interfacesSlot');
+  describe(`getInterfaces()`, async () => {
+    it.skip('Should return valid _interfacesSlot', async () => {});
+    it.skip('Should allow external contract to call fn', async () => {});
+    it.skip('should fail to allow inherited contract to call fn', async () => {});
   });
 
-  describe(`getRegistry()`, async function () {
-    it('Should return valid _registrySlot');
-    it('Should allow external contract to call fn');
-    it('should fail to allow inherited contract to call fn');
-    it('Should allow external contract to call fn');
-    it('should fail to allow inherited contract to call fn');
+  describe('setInterfaces()', async () => {
+    it.skip('should allow admin to alter _interfacesSlot', async () => {});
+    it.skip('should fail to allow owner to alter _interfacesSlot', async () => {});
+    it.skip('should fail to allow non-owner to alter _interfacesSlot', async () => {});
   });
 
-  describe('setRegistry()', async function () {
-    it('should allow admin to alter _registrySlot');
-    it('should fail to allow owner to alter _registrySlot');
-    it('should fail to allow non-owner to alter _registrySlot');
-    it('Should allow external contract to call fn');
-    it('should fail to allow inherited contract to call fn');
+  describe(`getRegistry()`, async () => {
+    it.skip('Should return valid _registrySlot', async () => {});
+    it.skip('Should allow external contract to call fn', async () => {});
+    it.skip('should fail to allow inherited contract to call fn', async () => {});
+    it.skip('Should allow external contract to call fn', async () => {});
+    it.skip('should fail to allow inherited contract to call fn', async () => {});
   });
 
-  describe(`getUtilityToken()`, async function () {
-    it('Should return valid _utilityTokenSlot');
-    it('Should allow external contract to call fn');
-    it('should fail to allow inherited contract to call fn');
-    it('Should allow external contract to call fn');
-    it('should fail to allow inherited contract to call fn');
+  describe('setRegistry()', async () => {
+    it.skip('should allow admin to alter _registrySlot', async () => {});
+    it.skip('should fail to allow owner to alter _registrySlot', async () => {});
+    it.skip('should fail to allow non-owner to alter _registrySlot', async () => {});
+    it.skip('Should allow external contract to call fn', async () => {});
+    it.skip('should fail to allow inherited contract to call fn', async () => {});
   });
 
-  describe('setUtilityToken()', async function () {
-    it('should allow admin to alter _utilityTokenSlot');
-    it('should fail to allow owner to alter _utilityTokenSlot');
-    it('should fail to allow non-owner to alter _utilityTokenSlot');
-    it('Should allow external contract to call fn');
-    it('should fail to allow inherited contract to call fn');
+  describe(`getUtilityToken()`, async () => {
+    it.skip('Should return valid _utilityTokenSlot', async () => {});
+    it.skip('Should allow external contract to call fn', async () => {});
+    it.skip('should fail to allow inherited contract to call fn', async () => {});
+    it.skip('Should allow external contract to call fn', async () => {});
+    it.skip('should fail to allow inherited contract to call fn', async () => {});
   });
 
-  describe('_bridge()', async function () {
-    it('is private function');
+  describe('setUtilityToken()', async () => {
+    it.skip('should allow admin to alter _utilityTokenSlot', async () => {});
+    it.skip('should fail to allow owner to alter _utilityTokenSlot', async () => {});
+    it.skip('should fail to allow non-owner to alter _utilityTokenSlot', async () => {});
+    it.skip('Should allow external contract to call fn', async () => {});
+    it.skip('should fail to allow inherited contract to call fn', async () => {});
   });
 
-  describe('_holograph()', async function () {
-    it('is private function');
+  describe('_bridge()', async () => {
+    it.skip('is private function', async () => {});
   });
 
-  describe('_interfaces()', async function () {
-    it('is private function');
+  describe('_holograph()', async () => {
+    it.skip('is private function', async () => {});
   });
 
-  describe('_messagingModule()', async function () {
-    it('is private function');
+  describe('_interfaces()', async () => {
+    it.skip('is private function', async () => {});
   });
 
-  describe('_registry()', async function () {
-    it('is private function');
+  describe('_messagingModule()', async () => {
+    it.skip('is private function', async () => {});
   });
 
-  describe('_utilityToken()', async function () {
-    it('is private function');
+  describe('_registry()', async () => {
+    it.skip('is private function', async () => {});
   });
 
-  describe('_jobNonce()', async function () {
-    it('is private function');
+  describe('_utilityToken()', async () => {
+    it.skip('is private function', async () => {});
   });
 
-  describe('_popOperator()', async function () {
-    it('is private function');
+  describe('_jobNonce()', async () => {
+    it.skip('is private function', async () => {});
   });
 
-  describe('_getBaseBondAmount()', async function () {
-    it('is private function');
+  describe('_popOperator()', async () => {
+    it.skip('is private function', async () => {});
   });
 
-  describe('_getCurrentBondAmount()', async function () {
-    it('is private function');
+  describe('_getBaseBondAmount()', async () => {
+    it.skip('is private function', async () => {});
   });
 
-  describe('_randomBlockHash()', async function () {
-    it('is private function');
+  describe('_getCurrentBondAmount()', async () => {
+    it.skip('is private function', async () => {});
   });
 
-  describe('_isContract()', async function () {
-    it('should not be callable from an external contract');
+  describe('_randomBlockHash()', async () => {
+    it.skip('is private function', async () => {});
   });
+
+  describe('_isContract()', async () => {
+    it.skip('should not be callable from an external contract', async () => {});
+  });
+
+/*
+  describe('Enable operators for l1 and l2', async () => {
+    it('should add 10 operator wallets for each chain', async () => {
+      let bondAmounts: BigNumber[] = await l1.operator.getPodBondAmounts(1);
+      let bondAmount: BigNumber = bondAmounts[0];
+      process.stdout.write('\n' + ' '.repeat(6) + 'bondAmount: ' + bondAmount.toString() + '\n');
+      //      process.stdout.write('\n' + 'currentBalance l1: ' + (await HLGL1.connect(l1.deployer).balanceOf(l1.deployer.address)).toString());
+      //      process.stdout.write('\n' + 'currentBalance l2: ' + (await HLGL2.connect(l2.deployer).balanceOf(l2.deployer.address)).toString() + '\n');
+      for (let i = 0, l = wallets.length; i < l; i++) {
+        let l1wallet: SignerWithAddress = l1[wallets[i]] as SignerWithAddress;
+        let l2wallet: SignerWithAddress = l2[wallets[i]] as SignerWithAddress;
+        //        process.stdout.write('working on wallet: ' + l1wallet.address + '\n');
+        await HLGL1.connect(l1.deployer).transfer(l1wallet.address, bondAmount);
+        await HLGL1.connect(l1wallet).approve(l1.operator.address, bondAmount);
+        await expect(l1.operator.connect(l1wallet).bondUtilityToken(l1wallet.address, bondAmount, 1)).to.not.be
+          .reverted;
+        await HLGL2.connect(l2.deployer).transfer(l2wallet.address, bondAmount);
+        await HLGL2.connect(l2wallet).approve(l2.operator.address, bondAmount);
+        await expect(l2.operator.connect(l2wallet).bondUtilityToken(l2wallet.address, bondAmount, 1)).to.not.be
+          .reverted;
+        //        process.stdout.write('finished wallet: ' + l2wallet.address + '\n');
+      }
+    });
+  });
+
+  describe('Deploy cross-chain contracts via bridge deploy', async () => {
+    describe('hToken', async () => {
+      it('deploy l1 equivalent on l2', async () => {
+        let { erc20Config, erc20ConfigHash, erc20ConfigHashBytes } = await generateErc20Config(
+          l1.network,
+          l1.deployer.address,
+          'hToken',
+          l1.network.tokenName + ' (Holographed #' + l1.network.holographId.toString() + ')',
+          'h' + l1.network.tokenSymbol,
+          l1.network.tokenName + ' (Holographed #' + l1.network.holographId.toString() + ')',
+          '1',
+          18,
+          ConfigureEvents([]),
+          generateInitCode(['address', 'uint16'], [l1.deployer.address, 0]),
+          l1.salt
+        );
+
+        let hTokenErc20Address = await l2.registry.getHolographedHashAddress(erc20ConfigHash);
+
+        expect(hTokenErc20Address).to.equal(zeroAddress);
+
+        hTokenErc20Address = await l1.registry.getHolographedHashAddress(erc20ConfigHash);
+
+        let sig = await l1.deployer.signMessage(erc20ConfigHashBytes);
+        let signature: Signature = StrictECDSA({
+          r: '0x' + sig.substring(2, 66),
+          s: '0x' + sig.substring(66, 130),
+          v: '0x' + sig.substring(130, 132),
+        } as Signature);
+
+        let data: BytesLike = generateInitCode(
+          ['tuple(bytes32,uint32,bytes32,bytes,bytes)', 'tuple(bytes32,bytes32,uint8)', 'address'],
+          [
+            [
+              erc20Config.contractType,
+              erc20Config.chainType,
+              erc20Config.salt,
+              erc20Config.byteCode,
+              erc20Config.initCode,
+            ],
+            [signature.r, signature.s, signature.v],
+            l1.deployer.address,
+          ]
+        );
+
+        let estimatedPayload: BytesLike = await l1.bridge.callStatic.getBridgeOutRequestPayload(
+          l2.network.holographId,
+          l2.factory.address,
+          '0x' + 'ff'.repeat(32),
+          '0x' + 'ff'.repeat(32),
+          data
+        );
+        // process.stdout.write('\n' + 'estimatedPayload: ' + estimatedPayload + '\n');
+
+        let estimatedGas: BigNumber = TESTGASLIMIT.sub(
+          await l2.operator.callStatic.jobEstimator(estimatedPayload, {
+            gasPrice: GWEI,
+            gasLimit: TESTGASLIMIT,
+          })
+        );
+        // process.stdout.write('\n' + 'gas estimation: ' + estimatedGas.toNumber() + '\n');
+
+        let payload: BytesLike = await l1.bridge.callStatic.getBridgeOutRequestPayload(
+          l2.network.holographId,
+          l2.factory.address,
+          estimatedGas,
+          GWEI,
+          data
+        );
+        // process.stdout.write('\n' + 'payload: ' + payload + '\n');
+
+        let fees = await l1.bridge.callStatic.getMessageFee(l2.network.holographId, estimatedGas, GWEI, payload);
+        let total: BigNumber = fees[0].add(fees[1]);
+
+        // process.stdout.write('\n' + 'fees: ' + JSON.stringify(fees,undefined,2) + '\n');
+
+        await expect(
+          l1.bridge.bridgeOutRequest(l2.network.holographId, l2.factory.address, estimatedGas, GWEI, data, {
+            value: total,
+          })
+        )
+          .to.emit(l1.mockLZEndpoint, 'LzEvent')
+          .withArgs(
+            ChainId.hlg2lz(l2.network.holographId),
+            '0x' + remove0x((await l1.operator.getMessagingModule()).toLowerCase()).repeat(2),
+            payload
+          );
+
+        process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
+        await expect(
+          adminCall(
+            l2.mockLZEndpoint.connect(l2.lzEndpoint),
+            l2.lzModule,
+            'lzReceive',
+            [
+              ChainId.hlg2lz(l1.network.holographId),
+              await l1.operator.getMessagingModule(),
+              0,
+              payload,
+              {
+                gasPrice: GASPRICE,
+                gasLimit: executeJobGas(payload),
+              }
+            ],
+          )
+        )
+          .to.emit(l2.operator, 'AvailableOperatorJob')
+          .withArgs(l2.web3.utils.keccak256(payload), payload);
+        await getGasUsage(l2.hre, 'actual gas usage was', true);
+
+        let jobDetails = await l2.operator.getJobDetails(l2.web3.utils.keccak256(payload));
+        // process.stdout.write('\n\n' + JSON.stringify(jobDetails, undefined, 2) + '\n\n');
+        let operator: SignerWithAddress = l2.deployer;
+        let targetOperator = jobDetails[2].toLowerCase();
+        if (targetOperator != zeroAddress) {
+          // we need to specify an operator
+          let wallet: SignerWithAddress;
+          for (let i = 0, l = wallets.length; i < l; i++) {
+            wallet = l2[wallets[i]] as SignerWithAddress;
+            if (wallet.address.toLowerCase() == targetOperator) {
+              operator = wallet;
+              break;
+            }
+          }
+        }
+
+        await expect(
+          l2.operator.connect(operator).executeJob(payload, {
+            gasPrice: GASPRICE,
+            gasLimit: estimatedGas.add(estimatedGas.div(BigNumber.from('3'))),
+          })
+        )
+          .to.emit(l2.factory, 'BridgeableContractDeployed')
+          .withArgs(hTokenErc20Address, erc20ConfigHash);
+        process.stdout.write(' '.repeat(10) + 'estimatedGas for executeJob is ' + estimatedGas.toString());
+        await getGasUsage(l2.hre, 'actual gas usage was', true);
+
+        expect(await l2.registry.getHolographedHashAddress(erc20ConfigHash)).to.equal(hTokenErc20Address);
+      });
+
+      it('deploy l2 equivalent on l1', async () => {
+        let { erc20Config, erc20ConfigHash, erc20ConfigHashBytes } = await generateErc20Config(
+          l2.network,
+          l2.deployer.address,
+          'hToken',
+          l2.network.tokenName + ' (Holographed #' + l2.network.holographId.toString() + ')',
+          'h' + l2.network.tokenSymbol,
+          l2.network.tokenName + ' (Holographed #' + l2.network.holographId.toString() + ')',
+          '1',
+          18,
+          ConfigureEvents([]),
+          generateInitCode(['address', 'uint16'], [l2.deployer.address, 0]),
+          l2.salt
+        );
+
+        let hTokenErc20Address = await l1.registry.getHolographedHashAddress(erc20ConfigHash);
+
+        expect(hTokenErc20Address).to.equal(zeroAddress);
+
+        hTokenErc20Address = await l2.registry.getHolographedHashAddress(erc20ConfigHash);
+
+        let sig = await l2.deployer.signMessage(erc20ConfigHashBytes);
+        let signature: Signature = StrictECDSA({
+          r: '0x' + sig.substring(2, 66),
+          s: '0x' + sig.substring(66, 130),
+          v: '0x' + sig.substring(130, 132),
+        } as Signature);
+
+        let data: BytesLike = generateInitCode(
+          ['tuple(bytes32,uint32,bytes32,bytes,bytes)', 'tuple(bytes32,bytes32,uint8)', 'address'],
+          [
+            [
+              erc20Config.contractType,
+              erc20Config.chainType,
+              erc20Config.salt,
+              erc20Config.byteCode,
+              erc20Config.initCode,
+            ],
+            [signature.r, signature.s, signature.v],
+            l2.deployer.address,
+          ]
+        );
+
+        let estimatedPayload: BytesLike = await l2.bridge.callStatic.getBridgeOutRequestPayload(
+          l1.network.holographId,
+          l1.factory.address,
+          '0x' + 'ff'.repeat(32),
+          '0x' + 'ff'.repeat(32),
+          data
+        );
+        // process.stdout.write('\n' + 'estimatedPayload: ' + estimatedPayload + '\n');
+
+        let estimatedGas: BigNumber = TESTGASLIMIT.sub(
+          await l1.operator.callStatic.jobEstimator(estimatedPayload, {
+            gasPrice: GWEI,
+            gasLimit: TESTGASLIMIT,
+          })
+        );
+        // process.stdout.write('\n' + 'gas estimation: ' + estimatedGas.toNumber() + '\n');
+
+        let payload: BytesLike = await l2.bridge.callStatic.getBridgeOutRequestPayload(
+          l1.network.holographId,
+          l1.factory.address,
+          estimatedGas,
+          GWEI,
+          data
+        );
+        // process.stdout.write('\n' + 'payload: ' + payload + '\n');
+
+        let fees = await l2.bridge.callStatic.getMessageFee(l1.network.holographId, estimatedGas, GWEI, payload);
+        let total: BigNumber = fees[0].add(fees[1]);
+
+        // process.stdout.write('\n' + 'fees: ' + JSON.stringify(fees,undefined,2) + '\n');
+
+        await expect(
+          l2.bridge.bridgeOutRequest(l1.network.holographId, l1.factory.address, estimatedGas, GWEI, data, {
+            value: total,
+          })
+        )
+          .to.emit(l2.mockLZEndpoint, 'LzEvent')
+          .withArgs(
+            ChainId.hlg2lz(l1.network.holographId),
+            '0x' + remove0x((await l2.operator.getMessagingModule()).toLowerCase()).repeat(2),
+            payload
+          );
+
+        process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
+        await expect(
+          adminCall(
+            l1.mockLZEndpoint.connect(l1.lzEndpoint),
+            l1.lzModule,
+            'lzReceive',
+            [
+              ChainId.hlg2lz(l2.network.holographId),
+              await l2.operator.getMessagingModule(),
+              0,
+              payload,
+              {
+                gasPrice: GASPRICE,
+                gasLimit: executeJobGas(payload),
+              }
+            ],
+          )
+        )
+          .to.emit(l1.operator, 'AvailableOperatorJob')
+          .withArgs(l1.web3.utils.keccak256(payload), payload);
+        await getGasUsage(l1.hre, 'actual gas usage was', true);
+
+        let jobDetails = await l1.operator.getJobDetails(l1.web3.utils.keccak256(payload));
+        // process.stdout.write('\n\n' + JSON.stringify(jobDetails, undefined, 2) + '\n\n');
+        let operator: SignerWithAddress = l1.deployer;
+        let targetOperator = jobDetails[2].toLowerCase();
+        if (targetOperator != zeroAddress) {
+          // we need to specify an operator
+          let wallet: SignerWithAddress;
+          for (let i = 0, l = wallets.length; i < l; i++) {
+            wallet = l1[wallets[i]] as SignerWithAddress;
+            if (wallet.address.toLowerCase() == targetOperator) {
+              operator = wallet;
+              break;
+            }
+          }
+        }
+
+        await expect(
+          l1.operator.connect(operator).executeJob(payload, {
+            gasPrice: GASPRICE,
+            gasLimit: estimatedGas.add(estimatedGas.div(BigNumber.from('3'))),
+          })
+        )
+          .to.emit(l1.factory, 'BridgeableContractDeployed')
+          .withArgs(hTokenErc20Address, erc20ConfigHash);
+        process.stdout.write(' '.repeat(10) + 'estimatedGas for executeJob is ' + estimatedGas.toString());
+        await getGasUsage(l1.hre, 'actual gas usage was', true);
+
+        expect(await l1.registry.getHolographedHashAddress(erc20ConfigHash)).to.equal(hTokenErc20Address);
+      });
+    });
+
+    describe('SampleERC20', async () => {
+      it('deploy l1 equivalent on l2', async () => {
+        let { erc20Config, erc20ConfigHash, erc20ConfigHashBytes } = await generateErc20Config(
+          l1.network,
+          l1.deployer.address,
+          'SampleERC20',
+          'Sample ERC20 Token (' + l1.hre.networkName + ')',
+          'SMPL',
+          'Sample ERC20 Token',
+          '1',
+          18,
+          ConfigureEvents([HolographERC20Event.bridgeIn, HolographERC20Event.bridgeOut]),
+          generateInitCode(['address', 'uint16'], [l1.deployer.address, 0]),
+          l1.salt
+        );
+
+        let sampleErc20Address = await l2.registry.getHolographedHashAddress(erc20ConfigHash);
+
+        expect(sampleErc20Address).to.equal(zeroAddress);
+
+        sampleErc20Address = await l1.registry.getHolographedHashAddress(erc20ConfigHash);
+
+        let sig = await l1.deployer.signMessage(erc20ConfigHashBytes);
+        let signature: Signature = StrictECDSA({
+          r: '0x' + sig.substring(2, 66),
+          s: '0x' + sig.substring(66, 130),
+          v: '0x' + sig.substring(130, 132),
+        } as Signature);
+
+        let data: BytesLike = generateInitCode(
+          ['tuple(bytes32,uint32,bytes32,bytes,bytes)', 'tuple(bytes32,bytes32,uint8)', 'address'],
+          [
+            [
+              erc20Config.contractType,
+              erc20Config.chainType,
+              erc20Config.salt,
+              erc20Config.byteCode,
+              erc20Config.initCode,
+            ],
+            [signature.r, signature.s, signature.v],
+            l1.deployer.address,
+          ]
+        );
+
+        let estimatedPayload: BytesLike = await l1.bridge.callStatic.getBridgeOutRequestPayload(
+          l2.network.holographId,
+          l2.factory.address,
+          '0x' + 'ff'.repeat(32),
+          '0x' + 'ff'.repeat(32),
+          data
+        );
+        // process.stdout.write('\n' + 'estimatedPayload: ' + estimatedPayload + '\n');
+
+        let estimatedGas: BigNumber = TESTGASLIMIT.sub(
+          await l2.operator.callStatic.jobEstimator(estimatedPayload, {
+            gasPrice: GWEI,
+            gasLimit: TESTGASLIMIT,
+          })
+        );
+        // process.stdout.write('\n' + 'gas estimation: ' + estimatedGas.toNumber() + '\n');
+
+        let payload: BytesLike = await l1.bridge.callStatic.getBridgeOutRequestPayload(
+          l2.network.holographId,
+          l2.factory.address,
+          estimatedGas,
+          GWEI,
+          data
+        );
+        //process.stdout.write('\n' + 'payload: ' + payload + '\n');
+
+        let fees = await l1.bridge.callStatic.getMessageFee(l2.network.holographId, estimatedGas, GWEI, payload);
+        let total: BigNumber = fees[0].add(fees[1]);
+
+        // process.stdout.write('\n' + 'fees: ' + JSON.stringify(fees,undefined,2) + '\n');
+
+        await expect(
+          l1.bridge.bridgeOutRequest(l2.network.holographId, l2.factory.address, estimatedGas, GWEI, data, {
+            value: total,
+          })
+        )
+          .to.emit(l1.mockLZEndpoint, 'LzEvent')
+          .withArgs(
+            ChainId.hlg2lz(l2.network.holographId),
+            '0x' + remove0x((await l1.operator.getMessagingModule()).toLowerCase()).repeat(2),
+            payload
+          );
+
+        process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
+        await expect(
+          adminCall(
+            l2.mockLZEndpoint.connect(l2.lzEndpoint),
+            l2.lzModule,
+            'lzReceive',
+            [
+              ChainId.hlg2lz(l1.network.holographId),
+              await l1.operator.getMessagingModule(),
+              0,
+              payload,
+              {
+                gasPrice: GASPRICE,
+                gasLimit: executeJobGas(payload),
+              }
+            ],
+          )
+        )
+          .to.emit(l2.operator, 'AvailableOperatorJob')
+          .withArgs(l2.web3.utils.keccak256(payload), payload);
+        await getGasUsage(l2.hre, 'actual gas usage was', true);
+
+        let jobDetails = await l2.operator.getJobDetails(l2.web3.utils.keccak256(payload));
+        // process.stdout.write('\n\n' + JSON.stringify(jobDetails, undefined, 2) + '\n\n');
+        let operator: SignerWithAddress = l2.deployer;
+        let targetOperator = jobDetails[2].toLowerCase();
+        if (targetOperator != zeroAddress) {
+          // we need to specify an operator
+          let wallet: SignerWithAddress;
+          for (let i = 0, l = wallets.length; i < l; i++) {
+            wallet = l2[wallets[i]] as SignerWithAddress;
+            if (wallet.address.toLowerCase() == targetOperator) {
+              operator = wallet;
+              break;
+            }
+          }
+        }
+
+        await expect(
+          l2.operator.connect(operator).executeJob(payload, {
+            gasPrice: GASPRICE,
+            gasLimit: estimatedGas.add(estimatedGas.div(BigNumber.from('3'))),
+          })
+        )
+          .to.emit(l2.factory, 'BridgeableContractDeployed')
+          .withArgs(sampleErc20Address, erc20ConfigHash);
+        process.stdout.write(' '.repeat(10) + 'estimatedGas for executeJob is ' + estimatedGas.toString());
+        await getGasUsage(l2.hre, 'actual gas usage was', true);
+
+        expect(await l2.registry.getHolographedHashAddress(erc20ConfigHash)).to.equal(sampleErc20Address);
+      });
+
+      it('deploy l2 equivalent on l1', async () => {
+        let { erc20Config, erc20ConfigHash, erc20ConfigHashBytes } = await generateErc20Config(
+          l2.network,
+          l2.deployer.address,
+          'SampleERC20',
+          'Sample ERC20 Token (' + l2.hre.networkName + ')',
+          'SMPL',
+          'Sample ERC20 Token',
+          '1',
+          18,
+          ConfigureEvents([HolographERC20Event.bridgeIn, HolographERC20Event.bridgeOut]),
+          generateInitCode(['address', 'uint16'], [l1.deployer.address, 0]),
+          l2.salt
+        );
+
+        let sampleErc20Address = await l1.registry.getHolographedHashAddress(erc20ConfigHash);
+
+        expect(sampleErc20Address).to.equal(zeroAddress);
+
+        sampleErc20Address = await l2.registry.getHolographedHashAddress(erc20ConfigHash);
+
+        let sig = await l2.deployer.signMessage(erc20ConfigHashBytes);
+        let signature: Signature = StrictECDSA({
+          r: '0x' + sig.substring(2, 66),
+          s: '0x' + sig.substring(66, 130),
+          v: '0x' + sig.substring(130, 132),
+        } as Signature);
+
+        let data: BytesLike = generateInitCode(
+          ['tuple(bytes32,uint32,bytes32,bytes,bytes)', 'tuple(bytes32,bytes32,uint8)', 'address'],
+          [
+            [
+              erc20Config.contractType,
+              erc20Config.chainType,
+              erc20Config.salt,
+              erc20Config.byteCode,
+              erc20Config.initCode,
+            ],
+            [signature.r, signature.s, signature.v],
+            l2.deployer.address,
+          ]
+        );
+
+        let estimatedPayload: BytesLike = await l2.bridge.callStatic.getBridgeOutRequestPayload(
+          l1.network.holographId,
+          l1.factory.address,
+          '0x' + 'ff'.repeat(32),
+          '0x' + 'ff'.repeat(32),
+          data
+        );
+        // process.stdout.write('\n' + 'estimatedPayload: ' + estimatedPayload + '\n');
+
+        let estimatedGas: BigNumber = TESTGASLIMIT.sub(
+          await l1.operator.callStatic.jobEstimator(estimatedPayload, {
+            gasPrice: GWEI,
+            gasLimit: TESTGASLIMIT,
+          })
+        );
+        // process.stdout.write('\n' + 'gas estimation: ' + estimatedGas.toNumber() + '\n');
+
+        let payload: BytesLike = await l2.bridge.callStatic.getBridgeOutRequestPayload(
+          l1.network.holographId,
+          l1.factory.address,
+          estimatedGas,
+          GWEI,
+          data
+        );
+        // process.stdout.write('\n' + 'payload: ' + payload + '\n');
+
+        let fees = await l2.bridge.callStatic.getMessageFee(l1.network.holographId, estimatedGas, GWEI, payload);
+        let total: BigNumber = fees[0].add(fees[1]);
+
+        // process.stdout.write('\n' + 'fees: ' + JSON.stringify(fees,undefined,2) + '\n');
+
+        await expect(
+          l2.bridge.bridgeOutRequest(l1.network.holographId, l1.factory.address, estimatedGas, GWEI, data, {
+            value: total,
+          })
+        )
+          .to.emit(l2.mockLZEndpoint, 'LzEvent')
+          .withArgs(
+            ChainId.hlg2lz(l1.network.holographId),
+            '0x' + remove0x((await l2.operator.getMessagingModule()).toLowerCase()).repeat(2),
+            payload
+          );
+
+        process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
+        await expect(
+          adminCall(
+            l1.mockLZEndpoint.connect(l1.lzEndpoint),
+            l1.lzModule,
+            'lzReceive',
+            [
+              ChainId.hlg2lz(l2.network.holographId),
+              await l2.operator.getMessagingModule(),
+              0,
+              payload,
+              {
+                gasPrice: GASPRICE,
+                gasLimit: executeJobGas(payload),
+              }
+            ],
+          )
+        )
+          .to.emit(l1.operator, 'AvailableOperatorJob')
+          .withArgs(l1.web3.utils.keccak256(payload), payload);
+        await getGasUsage(l1.hre, 'actual gas usage was', true);
+
+        let jobDetails = await l1.operator.getJobDetails(l1.web3.utils.keccak256(payload));
+        // process.stdout.write('\n\n' + JSON.stringify(jobDetails, undefined, 2) + '\n\n');
+        let operator: SignerWithAddress = l1.deployer;
+        let targetOperator = jobDetails[2].toLowerCase();
+        if (targetOperator != zeroAddress) {
+          // we need to specify an operator
+          let wallet: SignerWithAddress;
+          for (let i = 0, l = wallets.length; i < l; i++) {
+            wallet = l1[wallets[i]] as SignerWithAddress;
+            if (wallet.address.toLowerCase() == targetOperator) {
+              operator = wallet;
+              break;
+            }
+          }
+        }
+
+        await expect(
+          l1.operator.connect(operator).executeJob(payload, {
+            gasPrice: GASPRICE,
+            gasLimit: estimatedGas.add(estimatedGas.div(BigNumber.from('3'))),
+          })
+        )
+          .to.emit(l1.factory, 'BridgeableContractDeployed')
+          .withArgs(sampleErc20Address, erc20ConfigHash);
+        process.stdout.write(' '.repeat(10) + 'estimatedGas for executeJob is ' + estimatedGas.toString());
+        await getGasUsage(l1.hre, 'actual gas usage was', true);
+
+        expect(await l1.registry.getHolographedHashAddress(erc20ConfigHash)).to.equal(sampleErc20Address);
+      });
+    });
+
+    describe('SampleERC721', async () => {
+      it('deploy l1 equivalent on l2', async () => {
+        let { erc721Config, erc721ConfigHash, erc721ConfigHashBytes } = await generateErc721Config(
+          l1.network,
+          l1.deployer.address,
+          'SampleERC721',
+          'Sample ERC721 Contract (' + l1.hre.networkName + ')',
+          'SMPLR',
+          1000,
+          ConfigureEvents([
+            HolographERC721Event.bridgeIn,
+            HolographERC721Event.bridgeOut,
+            HolographERC721Event.afterBurn,
+          ]),
+          generateInitCode(['address'], [l1.deployer.address]),
+          l1.salt
+        );
+
+        let sampleErc721Address = await l2.registry.getHolographedHashAddress(erc721ConfigHash);
+
+        expect(sampleErc721Address).to.equal(zeroAddress);
+
+        sampleErc721Address = await l1.registry.getHolographedHashAddress(erc721ConfigHash);
+
+        let sig = await l1.deployer.signMessage(erc721ConfigHashBytes);
+        let signature: Signature = StrictECDSA({
+          r: '0x' + sig.substring(2, 66),
+          s: '0x' + sig.substring(66, 130),
+          v: '0x' + sig.substring(130, 132),
+        } as Signature);
+
+        let data: BytesLike = generateInitCode(
+          ['tuple(bytes32,uint32,bytes32,bytes,bytes)', 'tuple(bytes32,bytes32,uint8)', 'address'],
+          [
+            [
+              erc721Config.contractType,
+              erc721Config.chainType,
+              erc721Config.salt,
+              erc721Config.byteCode,
+              erc721Config.initCode,
+            ],
+            [signature.r, signature.s, signature.v],
+            l1.deployer.address,
+          ]
+        );
+
+        let estimatedPayload: BytesLike = await l1.bridge.callStatic.getBridgeOutRequestPayload(
+          l2.network.holographId,
+          l2.factory.address,
+          '0x' + 'ff'.repeat(32),
+          '0x' + 'ff'.repeat(32),
+          data
+        );
+        // process.stdout.write('\n' + 'estimatedPayload: ' + estimatedPayload + '\n');
+
+        let estimatedGas: BigNumber = TESTGASLIMIT.sub(
+          await l2.operator.callStatic.jobEstimator(estimatedPayload, {
+            gasPrice: GWEI,
+            gasLimit: TESTGASLIMIT,
+          })
+        );
+        // process.stdout.write('\n' + 'gas estimation: ' + estimatedGas.toNumber() + '\n');
+
+        let payload: BytesLike = await l1.bridge.callStatic.getBridgeOutRequestPayload(
+          l2.network.holographId,
+          l2.factory.address,
+          estimatedGas,
+          GWEI,
+          data
+        );
+        // process.stdout.write('\n' + 'payload: ' + payload + '\n');
+
+        let fees = await l1.bridge.callStatic.getMessageFee(l2.network.holographId, estimatedGas, GWEI, payload);
+        let total: BigNumber = fees[0].add(fees[1]);
+
+        // process.stdout.write('\n' + 'fees: ' + JSON.stringify(fees,undefined,2) + '\n');
+
+        await expect(
+          l1.bridge.bridgeOutRequest(l2.network.holographId, l2.factory.address, estimatedGas, GWEI, data, {
+            value: total,
+          })
+        )
+          .to.emit(l1.mockLZEndpoint, 'LzEvent')
+          .withArgs(
+            ChainId.hlg2lz(l2.network.holographId),
+            '0x' + remove0x((await l1.operator.getMessagingModule()).toLowerCase()).repeat(2),
+            payload
+          );
+
+        process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
+        await expect(
+          adminCall(
+            l2.mockLZEndpoint.connect(l2.lzEndpoint),
+            l2.lzModule,
+            'lzReceive',
+            [
+              ChainId.hlg2lz(l1.network.holographId),
+              await l1.operator.getMessagingModule(),
+              0,
+              payload,
+              {
+                gasPrice: GASPRICE,
+                gasLimit: executeJobGas(payload),
+              }
+            ],
+          )
+        )
+          .to.emit(l2.operator, 'AvailableOperatorJob')
+          .withArgs(l2.web3.utils.keccak256(payload), payload);
+        await getGasUsage(l2.hre, 'actual gas usage was', true);
+
+        let jobDetails = await l2.operator.getJobDetails(l2.web3.utils.keccak256(payload));
+        // process.stdout.write('\n\n' + JSON.stringify(jobDetails, undefined, 2) + '\n\n');
+        let operator: SignerWithAddress = l2.deployer;
+        let targetOperator = jobDetails[2].toLowerCase();
+        if (targetOperator != zeroAddress) {
+          // we need to specify an operator
+          let wallet: SignerWithAddress;
+          for (let i = 0, l = wallets.length; i < l; i++) {
+            wallet = l2[wallets[i]] as SignerWithAddress;
+            if (wallet.address.toLowerCase() == targetOperator) {
+              operator = wallet;
+              break;
+            }
+          }
+        }
+
+        await expect(
+          l2.operator.connect(operator).executeJob(payload, {
+            gasPrice: GASPRICE,
+            gasLimit: estimatedGas.add(estimatedGas.div(BigNumber.from('3'))),
+          })
+        )
+          .to.emit(l2.factory, 'BridgeableContractDeployed')
+          .withArgs(sampleErc721Address, erc721ConfigHash);
+        process.stdout.write(' '.repeat(10) + 'estimatedGas for executeJob is ' + estimatedGas.toString());
+        await getGasUsage(l2.hre, 'actual gas usage was', true);
+
+        expect(await l2.registry.getHolographedHashAddress(erc721ConfigHash)).to.equal(sampleErc721Address);
+      });
+
+      it('deploy l2 equivalent on l1', async () => {
+        let { erc721Config, erc721ConfigHash, erc721ConfigHashBytes } = await generateErc721Config(
+          l2.network,
+          l2.deployer.address,
+          'SampleERC721',
+          'Sample ERC721 Contract (' + l2.hre.networkName + ')',
+          'SMPLR',
+          1000,
+          ConfigureEvents([
+            HolographERC721Event.bridgeIn,
+            HolographERC721Event.bridgeOut,
+            HolographERC721Event.afterBurn,
+          ]),
+          generateInitCode(['address'], [l2.deployer.address]),
+          l2.salt
+        );
+
+        let sampleErc721Address = await l1.registry.getHolographedHashAddress(erc721ConfigHash);
+
+        expect(sampleErc721Address).to.equal(zeroAddress);
+
+        sampleErc721Address = await l2.registry.getHolographedHashAddress(erc721ConfigHash);
+
+        let sig = await l2.deployer.signMessage(erc721ConfigHashBytes);
+        let signature: Signature = StrictECDSA({
+          r: '0x' + sig.substring(2, 66),
+          s: '0x' + sig.substring(66, 130),
+          v: '0x' + sig.substring(130, 132),
+        } as Signature);
+
+        let data: BytesLike = generateInitCode(
+          ['tuple(bytes32,uint32,bytes32,bytes,bytes)', 'tuple(bytes32,bytes32,uint8)', 'address'],
+          [
+            [
+              erc721Config.contractType,
+              erc721Config.chainType,
+              erc721Config.salt,
+              erc721Config.byteCode,
+              erc721Config.initCode,
+            ],
+            [signature.r, signature.s, signature.v],
+            l2.deployer.address,
+          ]
+        );
+
+        let estimatedPayload: BytesLike = await l2.bridge.callStatic.getBridgeOutRequestPayload(
+          l1.network.holographId,
+          l1.factory.address,
+          '0x' + 'ff'.repeat(32),
+          '0x' + 'ff'.repeat(32),
+          data
+        );
+        // process.stdout.write('\n' + 'estimatedPayload: ' + estimatedPayload + '\n');
+
+        let estimatedGas: BigNumber = TESTGASLIMIT.sub(
+          await l1.operator.callStatic.jobEstimator(estimatedPayload, {
+            gasPrice: GWEI,
+            gasLimit: TESTGASLIMIT,
+          })
+        );
+        // process.stdout.write('\n' + 'gas estimation: ' + estimatedGas.toNumber() + '\n');
+
+        let payload: BytesLike = await l2.bridge.callStatic.getBridgeOutRequestPayload(
+          l1.network.holographId,
+          l1.factory.address,
+          estimatedGas,
+          GWEI,
+          data
+        );
+        // process.stdout.write('\n' + 'payload: ' + payload + '\n');
+
+        let fees = await l2.bridge.callStatic.getMessageFee(l1.network.holographId, estimatedGas, GWEI, payload);
+        let total: BigNumber = fees[0].add(fees[1]);
+
+        // process.stdout.write('\n' + 'fees: ' + JSON.stringify(fees,undefined,2) + '\n');
+
+        await expect(
+          l2.bridge.bridgeOutRequest(l1.network.holographId, l1.factory.address, estimatedGas, GWEI, data, {
+            value: total,
+          })
+        )
+          .to.emit(l2.mockLZEndpoint, 'LzEvent')
+          .withArgs(
+            ChainId.hlg2lz(l1.network.holographId),
+            '0x' + remove0x((await l2.operator.getMessagingModule()).toLowerCase()).repeat(2),
+            payload
+          );
+
+        process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
+        await expect(
+          adminCall(
+            l1.mockLZEndpoint.connect(l1.lzEndpoint),
+            l1.lzModule,
+            'lzReceive',
+            [
+              ChainId.hlg2lz(l2.network.holographId),
+              await l2.operator.getMessagingModule(),
+              0,
+              payload,
+              {
+                gasPrice: GASPRICE,
+                gasLimit: executeJobGas(payload),
+              }
+            ],
+          )
+        )
+          .to.emit(l1.operator, 'AvailableOperatorJob')
+          .withArgs(l1.web3.utils.keccak256(payload), payload);
+        await getGasUsage(l1.hre, 'actual gas usage was', true);
+
+        let jobDetails = await l1.operator.getJobDetails(l1.web3.utils.keccak256(payload));
+        // process.stdout.write('\n\n' + JSON.stringify(jobDetails, undefined, 2) + '\n\n');
+        let operator: SignerWithAddress = l1.deployer;
+        let targetOperator = jobDetails[2].toLowerCase();
+        if (targetOperator != zeroAddress) {
+          // we need to specify an operator
+          let wallet: SignerWithAddress;
+          for (let i = 0, l = wallets.length; i < l; i++) {
+            wallet = l1[wallets[i]] as SignerWithAddress;
+            if (wallet.address.toLowerCase() == targetOperator) {
+              operator = wallet;
+              break;
+            }
+          }
+        }
+
+        await expect(
+          l1.operator.connect(operator).executeJob(payload, {
+            gasPrice: GASPRICE,
+            gasLimit: estimatedGas.add(estimatedGas.div(BigNumber.from('3'))),
+          })
+        )
+          .to.emit(l1.factory, 'BridgeableContractDeployed')
+          .withArgs(sampleErc721Address, erc721ConfigHash);
+        process.stdout.write(' '.repeat(10) + 'estimatedGas for executeJob is ' + estimatedGas.toString());
+        await getGasUsage(l1.hre, 'actual gas usage was', true);
+
+        expect(await l1.registry.getHolographedHashAddress(erc721ConfigHash)).to.equal(sampleErc721Address);
+      });
+    });
+
+    describe('CxipERC721', async () => {
+      it('deploy l1 equivalent on l2', async () => {
+        let { erc721Config, erc721ConfigHash, erc721ConfigHashBytes } = await generateErc721Config(
+          l1.network,
+          l1.deployer.address,
+          'CxipERC721Proxy',
+          'CXIP ERC721 Collection (' + l1.hre.networkName + ')',
+          'CXIP',
+          1000,
+          ConfigureEvents([
+            HolographERC721Event.bridgeIn,
+            HolographERC721Event.bridgeOut,
+            HolographERC721Event.afterBurn,
+          ]),
+          generateInitCode(
+            ['bytes32', 'address', 'bytes'],
+            [
+              '0x' + l1.web3.utils.asciiToHex('CxipERC721').substring(2).padStart(64, '0'),
+              l1.registry.address,
+              generateInitCode(['address'], [l1.deployer.address]),
+            ]
+          ),
+          l1.salt
+        );
+
+        let cxipErc721Address = await l2.registry.getHolographedHashAddress(erc721ConfigHash);
+
+        expect(cxipErc721Address).to.equal(zeroAddress);
+
+        cxipErc721Address = await l1.registry.getHolographedHashAddress(erc721ConfigHash);
+
+        let sig = await l1.deployer.signMessage(erc721ConfigHashBytes);
+        let signature: Signature = StrictECDSA({
+          r: '0x' + sig.substring(2, 66),
+          s: '0x' + sig.substring(66, 130),
+          v: '0x' + sig.substring(130, 132),
+        } as Signature);
+
+        let data: BytesLike = generateInitCode(
+          ['tuple(bytes32,uint32,bytes32,bytes,bytes)', 'tuple(bytes32,bytes32,uint8)', 'address'],
+          [
+            [
+              erc721Config.contractType,
+              erc721Config.chainType,
+              erc721Config.salt,
+              erc721Config.byteCode,
+              erc721Config.initCode,
+            ],
+            [signature.r, signature.s, signature.v],
+            l1.deployer.address,
+          ]
+        );
+
+        let estimatedPayload: BytesLike = await l1.bridge.callStatic.getBridgeOutRequestPayload(
+          l2.network.holographId,
+          l2.factory.address,
+          '0x' + 'ff'.repeat(32),
+          '0x' + 'ff'.repeat(32),
+          data
+        );
+        // process.stdout.write('\n' + 'estimatedPayload: ' + estimatedPayload + '\n');
+
+        let estimatedGas: BigNumber = TESTGASLIMIT.sub(
+          await l2.operator.callStatic.jobEstimator(estimatedPayload, {
+            gasPrice: GWEI,
+            gasLimit: TESTGASLIMIT,
+          })
+        );
+        // process.stdout.write('\n' + 'gas estimation: ' + estimatedGas.toNumber() + '\n');
+
+        let payload: BytesLike = await l1.bridge.callStatic.getBridgeOutRequestPayload(
+          l2.network.holographId,
+          l2.factory.address,
+          estimatedGas,
+          GWEI,
+          data
+        );
+        // process.stdout.write('\n' + 'payload: ' + payload + '\n');
+
+        let fees = await l1.bridge.callStatic.getMessageFee(l2.network.holographId, estimatedGas, GWEI, payload);
+        let total: BigNumber = fees[0].add(fees[1]);
+
+        // process.stdout.write('\n' + 'fees: ' + JSON.stringify(fees,undefined,2) + '\n');
+
+        await expect(
+          l1.bridge.bridgeOutRequest(l2.network.holographId, l2.factory.address, estimatedGas, GWEI, data, {
+            value: total,
+          })
+        )
+          .to.emit(l1.mockLZEndpoint, 'LzEvent')
+          .withArgs(
+            ChainId.hlg2lz(l2.network.holographId),
+            '0x' + remove0x((await l1.operator.getMessagingModule()).toLowerCase()).repeat(2),
+            payload
+          );
+
+        process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
+        await expect(
+          adminCall(
+            l2.mockLZEndpoint.connect(l2.lzEndpoint),
+            l2.lzModule,
+            'lzReceive',
+            [
+              ChainId.hlg2lz(l1.network.holographId),
+              await l1.operator.getMessagingModule(),
+              0,
+              payload,
+              {
+                gasPrice: GASPRICE,
+                gasLimit: executeJobGas(payload),
+              }
+            ],
+          )
+        )
+          .to.emit(l2.operator, 'AvailableOperatorJob')
+          .withArgs(l2.web3.utils.keccak256(payload), payload);
+        await getGasUsage(l2.hre, 'actual gas usage was', true);
+
+        let jobDetails = await l2.operator.getJobDetails(l2.web3.utils.keccak256(payload));
+        // process.stdout.write('\n\n' + JSON.stringify(jobDetails, undefined, 2) + '\n\n');
+        let operator: SignerWithAddress = l2.deployer;
+        let targetOperator = jobDetails[2].toLowerCase();
+        if (targetOperator != zeroAddress) {
+          // we need to specify an operator
+          let wallet: SignerWithAddress;
+          for (let i = 0, l = wallets.length; i < l; i++) {
+            wallet = l2[wallets[i]] as SignerWithAddress;
+            if (wallet.address.toLowerCase() == targetOperator) {
+              operator = wallet;
+              break;
+            }
+          }
+        }
+
+        await expect(
+          l2.operator.connect(operator).executeJob(payload, {
+            gasPrice: GASPRICE,
+            gasLimit: estimatedGas.add(estimatedGas.div(BigNumber.from('3'))),
+          })
+        )
+          .to.emit(l2.factory, 'BridgeableContractDeployed')
+          .withArgs(cxipErc721Address, erc721ConfigHash);
+        process.stdout.write(' '.repeat(10) + 'estimatedGas for executeJob is ' + estimatedGas.toString());
+        await getGasUsage(l2.hre, 'actual gas usage was', true);
+
+        expect(await l2.registry.getHolographedHashAddress(erc721ConfigHash)).to.equal(cxipErc721Address);
+      });
+
+      it('deploy l2 equivalent on l1', async () => {
+        let { erc721Config, erc721ConfigHash, erc721ConfigHashBytes } = await generateErc721Config(
+          l2.network,
+          l2.deployer.address,
+          'CxipERC721Proxy',
+          'CXIP ERC721 Collection (' + l2.hre.networkName + ')',
+          'CXIP',
+          1000,
+          ConfigureEvents([
+            HolographERC721Event.bridgeIn,
+            HolographERC721Event.bridgeOut,
+            HolographERC721Event.afterBurn,
+          ]),
+          generateInitCode(
+            ['bytes32', 'address', 'bytes'],
+            [
+              '0x' + l2.web3.utils.asciiToHex('CxipERC721').substring(2).padStart(64, '0'),
+              l2.registry.address,
+              generateInitCode(['address'], [l2.deployer.address]),
+            ]
+          ),
+          l2.salt
+        );
+
+        let cxipErc721Address = await l1.registry.getHolographedHashAddress(erc721ConfigHash);
+
+        expect(cxipErc721Address).to.equal(zeroAddress);
+
+        cxipErc721Address = await l2.registry.getHolographedHashAddress(erc721ConfigHash);
+
+        let sig = await l2.deployer.signMessage(erc721ConfigHashBytes);
+        let signature: Signature = StrictECDSA({
+          r: '0x' + sig.substring(2, 66),
+          s: '0x' + sig.substring(66, 130),
+          v: '0x' + sig.substring(130, 132),
+        } as Signature);
+
+        let data: BytesLike = generateInitCode(
+          ['tuple(bytes32,uint32,bytes32,bytes,bytes)', 'tuple(bytes32,bytes32,uint8)', 'address'],
+          [
+            [
+              erc721Config.contractType,
+              erc721Config.chainType,
+              erc721Config.salt,
+              erc721Config.byteCode,
+              erc721Config.initCode,
+            ],
+            [signature.r, signature.s, signature.v],
+            l2.deployer.address,
+          ]
+        );
+
+        let estimatedPayload: BytesLike = await l2.bridge.callStatic.getBridgeOutRequestPayload(
+          l1.network.holographId,
+          l1.factory.address,
+          '0x' + 'ff'.repeat(32),
+          '0x' + 'ff'.repeat(32),
+          data
+        );
+        // process.stdout.write('\n' + 'estimatedPayload: ' + estimatedPayload + '\n');
+
+        let estimatedGas: BigNumber = TESTGASLIMIT.sub(
+          await l1.operator.callStatic.jobEstimator(estimatedPayload, {
+            gasPrice: GWEI,
+            gasLimit: TESTGASLIMIT,
+          })
+        );
+        // process.stdout.write('\n' + 'gas estimation: ' + estimatedGas.toNumber() + '\n');
+
+        let payload: BytesLike = await l2.bridge.callStatic.getBridgeOutRequestPayload(
+          l1.network.holographId,
+          l1.factory.address,
+          estimatedGas,
+          GWEI,
+          data
+        );
+        // process.stdout.write('\n' + 'payload: ' + payload + '\n');
+
+        let fees = await l2.bridge.callStatic.getMessageFee(l1.network.holographId, estimatedGas, GWEI, payload);
+        let total: BigNumber = fees[0].add(fees[1]);
+
+        // process.stdout.write('\n' + 'fees: ' + JSON.stringify(fees,undefined,2) + '\n');
+
+        await expect(
+          l2.bridge.bridgeOutRequest(l1.network.holographId, l1.factory.address, estimatedGas, GWEI, data, {
+            value: total,
+          })
+        )
+          .to.emit(l2.mockLZEndpoint, 'LzEvent')
+          .withArgs(
+            ChainId.hlg2lz(l1.network.holographId),
+            '0x' + remove0x((await l2.operator.getMessagingModule()).toLowerCase()).repeat(2),
+            payload
+          );
+
+        process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
+        await expect(
+          adminCall(
+            l1.mockLZEndpoint.connect(l1.lzEndpoint),
+            l1.lzModule,
+            'lzReceive',
+            [
+              ChainId.hlg2lz(l2.network.holographId),
+              await l2.operator.getMessagingModule(),
+              0,
+              payload,
+              {
+                gasPrice: GASPRICE,
+                gasLimit: executeJobGas(payload),
+              }
+            ],
+          )
+        )
+          .to.emit(l1.operator, 'AvailableOperatorJob')
+          .withArgs(l1.web3.utils.keccak256(payload), payload);
+        await getGasUsage(l1.hre, 'actual gas usage was', true);
+
+        let jobDetails = await l1.operator.getJobDetails(l1.web3.utils.keccak256(payload));
+        // process.stdout.write('\n\n' + JSON.stringify(jobDetails, undefined, 2) + '\n\n');
+        let operator: SignerWithAddress = l1.deployer;
+        let targetOperator = jobDetails[2].toLowerCase();
+        if (targetOperator != zeroAddress) {
+          // we need to specify an operator
+          let wallet: SignerWithAddress;
+          for (let i = 0, l = wallets.length; i < l; i++) {
+            wallet = l1[wallets[i]] as SignerWithAddress;
+            if (wallet.address.toLowerCase() == targetOperator) {
+              operator = wallet;
+              break;
+            }
+          }
+        }
+
+        await expect(
+          l1.operator.connect(operator).executeJob(payload, {
+            gasPrice: GASPRICE,
+            gasLimit: estimatedGas.add(estimatedGas.div(BigNumber.from('3'))),
+          })
+        )
+          .to.emit(l1.factory, 'BridgeableContractDeployed')
+          .withArgs(cxipErc721Address, erc721ConfigHash);
+        process.stdout.write(' '.repeat(10) + 'estimatedGas for executeJob is ' + estimatedGas.toString());
+        await getGasUsage(l1.hre, 'actual gas usage was', true);
+
+        expect(await l1.registry.getHolographedHashAddress(erc721ConfigHash)).to.equal(cxipErc721Address);
+      });
+    });
+
+    describe('SampleERC721', async () => {
+      describe('check current state', async () => {
+        it('l1 should have a total supply of 0 on l1', async () => {
+          expect(await l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).totalSupply()).to.equal(0);
+        });
+
+        it('l1 should have a total supply of 0 on l2', async () => {
+          expect(await l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).totalSupply()).to.equal(0);
+        });
+
+        it('l2 should have a total supply of 0 on l2', async () => {
+          expect(await l2.sampleErc721Enforcer.attach(l2.sampleErc721Holographer.address).totalSupply()).to.equal(0);
+        });
+
+        it('l2 should have a total supply of 0 on l1', async () => {
+          expect(await l1.sampleErc721Enforcer.attach(l2.sampleErc721Holographer.address).totalSupply()).to.equal(0);
+        });
+      });
+
+      describe('validate mint functionality', async () => {
+        it('l1 should mint token #1 as #1 on l1', async () => {
+          await expect(
+            l1.sampleErc721
+              .attach(l1.sampleErc721Holographer.address)
+              .mint(l1.deployer.address, firstNFTl1, tokenURIs[1])
+          )
+            .to.emit(l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
+            .withArgs(zeroAddress, l1.deployer.address, firstNFTl1);
+
+          gasUsage['#1 mint on l1'] = gasUsage['#1 mint on l1'].add(await getGasUsage(l1.hre));
+        });
+
+        it('l1 should mint token #1 not as #1 on l2', async () => {
+          await expect(
+            l2.sampleErc721
+              .attach(l1.sampleErc721Holographer.address)
+              .mint(l1.deployer.address, firstNFTl1, tokenURIs[1])
+          )
+            .to.emit(l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
+            .withArgs(zeroAddress, l1.deployer.address, firstNFTl2);
+
+          gasUsage['#1 mint on l2'] = gasUsage['#1 mint on l2'].add(await getGasUsage(l1.hre));
+        });
+
+        it('mint tokens #2 and #3 on l1 and l2', async () => {
+          await expect(
+            l1.sampleErc721
+              .attach(l1.sampleErc721Holographer.address)
+              .mint(l1.deployer.address, secondNFTl1, tokenURIs[2])
+          )
+            .to.emit(l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
+            .withArgs(zeroAddress, l1.deployer.address, secondNFTl1);
+
+          await expect(
+            l2.sampleErc721
+              .attach(l1.sampleErc721Holographer.address)
+              .mint(l1.deployer.address, secondNFTl1, tokenURIs[2])
+          )
+            .to.emit(l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
+            .withArgs(zeroAddress, l1.deployer.address, secondNFTl2);
+
+          await expect(
+            l1.sampleErc721
+              .attach(l1.sampleErc721Holographer.address)
+              .mint(l1.deployer.address, thirdNFTl1, tokenURIs[3])
+          )
+            .to.emit(l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
+            .withArgs(zeroAddress, l1.deployer.address, thirdNFTl1);
+
+          await expect(
+            l2.sampleErc721
+              .attach(l1.sampleErc721Holographer.address)
+              .mint(l1.deployer.address, thirdNFTl1, tokenURIs[3])
+          )
+            .to.emit(l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
+            .withArgs(zeroAddress, l1.deployer.address, thirdNFTl2);
+        });
+      });
+
+      describe('validate bridge functionality', async () => {
+        it('token #3 beaming from l1 to l2 should succeed', async () => {
+          let data: BytesLike = generateInitCode(
+            ['address', 'address', 'uint256'],
+            [l1.deployer.address, l2.deployer.address, thirdNFTl1.toHexString()]
+          );
+
+          let estimatedPayload: BytesLike = await l1.bridge
+            .connect(l1.deployer)
+            .callStatic.getBridgeOutRequestPayload(
+              l2.network.holographId,
+              l1.sampleErc721Holographer.address,
+              '0x' + 'ff'.repeat(32),
+              '0x' + 'ff'.repeat(32),
+              data
+            );
+          // process.stdout.write('\n' + 'estimatedPayload: ' + estimatedPayload + '\n');
+
+          let estimatedGas: BigNumber = TESTGASLIMIT.sub(
+            await l2.operator.callStatic.jobEstimator(estimatedPayload, {
+              gasPrice: GASPRICE,
+              gasLimit: TESTGASLIMIT,
+            })
+          );
+          // process.stdout.write('\n' + 'gas estimation: ' + estimatedGas.toNumber() + '\n');
+
+          let payload: BytesLike = await l1.bridge
+            .connect(l1.deployer)
+            .callStatic.getBridgeOutRequestPayload(
+              l2.network.holographId,
+              l1.sampleErc721Holographer.address,
+              estimatedGas,
+              GWEI,
+              data
+            );
+          // process.stdout.write('\n' + 'payload: ' + payload + '\n');
+
+          let fees = await l1.bridge.callStatic.getMessageFee(l2.network.holographId, estimatedGas, GWEI, payload);
+          let total: BigNumber = fees[0].add(fees[1]);
+
+          // process.stdout.write('\n' + 'fees: ' + JSON.stringify(fees,undefined,2) + '\n');
+
+          await expect(
+            l1.bridge
+              .connect(l1.deployer)
+              .bridgeOutRequest(l2.network.holographId, l1.sampleErc721Holographer.address, estimatedGas, GWEI, data, {
+                value: total,
+              })
+          )
+            .to.emit(l1.mockLZEndpoint, 'LzEvent')
+            .withArgs(
+              ChainId.hlg2lz(l2.network.holographId),
+              '0x' + remove0x((await l1.operator.getMessagingModule()).toLowerCase()).repeat(2),
+              payload
+            );
+
+          gasUsage['#3 bridge from l1'] = gasUsage['#3 bridge from l1'].add(await getGasUsage(l1.hre));
+
+          await expect(
+            l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).ownerOf(thirdNFTl1.toHexString())
+          ).to.be.revertedWith('ERC721: token does not exist');
+
+          process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
+          await expect(
+            adminCall(
+              l2.mockLZEndpoint.connect(l2.lzEndpoint),
+              l2.lzModule,
+              'lzReceive',
+              [
+                ChainId.hlg2lz(l1.network.holographId),
+                await l1.operator.getMessagingModule(),
+                0,
+                payload,
+                {
+                  gasPrice: GASPRICE,
+                  gasLimit: executeJobGas(payload),
+                }
+              ],
+            )
+          )
+            .to.emit(l2.operator, 'AvailableOperatorJob')
+            .withArgs(l2.web3.utils.keccak256(payload), payload);
+          await getGasUsage(l2.hre, 'actual gas usage was', true);
+
+          gasUsage['#3 bridge from l1'] = gasUsage['#3 bridge from l1'].add(await getGasUsage(l2.hre));
+
+          let jobDetails = await l2.operator.getJobDetails(l2.web3.utils.keccak256(payload));
+          // process.stdout.write('\n\n' + JSON.stringify(jobDetails, undefined, 2) + '\n\n');
+          let operator: SignerWithAddress = l2.deployer;
+          let targetOperator = jobDetails[2].toLowerCase();
+          if (targetOperator != zeroAddress) {
+            // we need to specify an operator
+            let wallet: SignerWithAddress;
+            for (let i = 0, l = wallets.length; i < l; i++) {
+              wallet = l2[wallets[i]] as SignerWithAddress;
+              if (wallet.address.toLowerCase() == targetOperator) {
+                operator = wallet;
+                break;
+              }
+            }
+          }
+
+          await expect(
+            l2.operator.connect(operator).executeJob(payload, {
+              gasPrice: GASPRICE,
+              gasLimit: estimatedGas.add(estimatedGas.div(BigNumber.from('3'))),
+            })
+          )
+            .to.emit(l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
+            .withArgs(zeroAddress, l2.deployer.address, thirdNFTl1.toHexString());
+          process.stdout.write(' '.repeat(10) + 'estimatedGas for executeJob is ' + estimatedGas.toString());
+          await getGasUsage(l2.hre, 'actual gas usage was', true);
+
+          gasUsage['#3 bridge from l1'] = gasUsage['#3 bridge from l1'].add(await getGasUsage(l2.hre));
+
+          expect(await l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).ownerOf(thirdNFTl1)).to.equal(
+            l2.deployer.address
+          );
+        });
+
+        it('token #3 beaming from l2 to l1 should succeed', async () => {
+          let data: BytesLike = generateInitCode(
+            ['address', 'address', 'uint256'],
+            [l2.deployer.address, l1.deployer.address, thirdNFTl2.toHexString()]
+          );
+
+          let estimatedPayload: BytesLike = await l2.bridge
+            .connect(l2.deployer)
+            .callStatic.getBridgeOutRequestPayload(
+              l1.network.holographId,
+              l1.sampleErc721Holographer.address,
+              '0x' + 'ff'.repeat(32),
+              '0x' + 'ff'.repeat(32),
+              data
+            );
+          // process.stdout.write('\n' + 'estimatedPayload: ' + estimatedPayload + '\n');
+
+          let estimatedGas: BigNumber = TESTGASLIMIT.sub(
+            await l1.operator.callStatic.jobEstimator(estimatedPayload, {
+              gasPrice: GASPRICE,
+              gasLimit: TESTGASLIMIT,
+            })
+          );
+          // process.stdout.write('\n' + 'gas estimation: ' + estimatedGas.toNumber() + '\n');
+
+          let payload: BytesLike = await l2.bridge
+            .connect(l2.deployer)
+            .callStatic.getBridgeOutRequestPayload(
+              l1.network.holographId,
+              l1.sampleErc721Holographer.address,
+              estimatedGas,
+              GWEI,
+              data
+            );
+          // process.stdout.write('\n' + 'payload: ' + payload + '\n');
+
+          let fees = await l2.bridge.callStatic.getMessageFee(l1.network.holographId, estimatedGas, GWEI, payload);
+          let total: BigNumber = fees[0].add(fees[1]);
+
+          // process.stdout.write('\n' + 'fees: ' + JSON.stringify(fees,undefined,2) + '\n');
+
+          await expect(
+            l2.bridge
+              .connect(l2.deployer)
+              .bridgeOutRequest(l1.network.holographId, l1.sampleErc721Holographer.address, estimatedGas, GWEI, data, {
+                value: total,
+              })
+          )
+            .to.emit(l2.mockLZEndpoint, 'LzEvent')
+            .withArgs(
+              ChainId.hlg2lz(l1.network.holographId),
+              '0x' + remove0x((await l2.operator.getMessagingModule()).toLowerCase()).repeat(2),
+              payload
+            );
+
+          gasUsage['#3 bridge from l2'] = gasUsage['#3 bridge from l2'].add(await getGasUsage(l2.hre));
+
+          await expect(
+            l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).ownerOf(thirdNFTl2.toHexString())
+          ).to.be.revertedWith('ERC721: token does not exist');
+
+          process.stdout.write(' '.repeat(10) + 'expected lz gas to be ' + executeJobGas(payload, true).toString());
+          await expect(
+            adminCall(
+              l1.mockLZEndpoint.connect(l1.lzEndpoint),
+              l1.lzModule,
+              'lzReceive',
+              [
+                ChainId.hlg2lz(l2.network.holographId),
+                await l2.operator.getMessagingModule(),
+                0,
+                payload,
+                {
+                  gasPrice: GASPRICE,
+                  gasLimit: executeJobGas(payload),
+                }
+              ],
+            )
+          )
+            .to.emit(l1.operator, 'AvailableOperatorJob')
+            .withArgs(l1.web3.utils.keccak256(payload), payload);
+          await getGasUsage(l1.hre, 'actual gas usage was', true);
+
+          gasUsage['#3 bridge from l2'] = gasUsage['#3 bridge from l2'].add(await getGasUsage(l1.hre));
+
+          let jobDetails = await l1.operator.getJobDetails(l1.web3.utils.keccak256(payload));
+          // process.stdout.write('\n\n' + JSON.stringify(jobDetails, undefined, 2) + '\n\n');
+          let operator: SignerWithAddress = l1.deployer;
+          let targetOperator = jobDetails[2].toLowerCase();
+          if (targetOperator != zeroAddress) {
+            // we need to specify an operator
+            let wallet: SignerWithAddress;
+            for (let i = 0, l = wallets.length; i < l; i++) {
+              wallet = l1[wallets[i]] as SignerWithAddress;
+              if (wallet.address.toLowerCase() == targetOperator) {
+                operator = wallet;
+                break;
+              }
+            }
+          }
+
+          await expect(
+            l1.operator.connect(operator).executeJob(payload, {
+              gasPrice: GASPRICE,
+              gasLimit: estimatedGas.add(estimatedGas.div(BigNumber.from('3'))),
+            })
+          )
+            .to.emit(l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
+            .withArgs(zeroAddress, l1.deployer.address, thirdNFTl2.toHexString());
+          process.stdout.write(' '.repeat(10) + 'estimatedGas for executeJob is ' + estimatedGas.toString());
+          await getGasUsage(l1.hre, 'actual gas usage was', true);
+
+          gasUsage['#3 bridge from l2'] = gasUsage['#3 bridge from l2'].add(await getGasUsage(l1.hre));
+
+          expect(
+            await l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).ownerOf(thirdNFTl2.toHexString())
+          ).to.equal(l1.deployer.address);
+        });
+
+      });
+    });
+
+    describe('Get gas calculations', async () => {
+      it('SampleERC721 #1 mint on l1', async () => {
+        process.stdout.write('          #1 mint on l1 gas used: ' + gasUsage['#1 mint on l1'].toString() + '\n');
+        assert(!gasUsage['#1 mint on l1'].isZero(), 'zero sum returned');
+      });
+
+      it('SampleERC721 #1 mint on l2', async () => {
+        process.stdout.write('          #1 mint on l2 gas used: ' + gasUsage['#1 mint on l2'].toString() + '\n');
+        assert(!gasUsage['#1 mint on l2'].isZero(), 'zero sum returned');
+      });
+
+      it('SampleERC721 #1 transfer on l1', async () => {
+        await expect(
+          l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).transfer(l1.wallet1.address, firstNFTl1)
+        )
+          .to.emit(l1.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
+          .withArgs(l1.deployer.address, l1.wallet1.address, firstNFTl1);
+
+        process.stdout.write('          #1 transfer on l1 gas used: ' + (await getGasUsage(l1.hre)).toString() + '\n');
+      });
+
+      it('SampleERC721 #1 transfer on l2', async () => {
+        await expect(
+          l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address).transfer(l2.wallet1.address, firstNFTl2)
+        )
+          .to.emit(l2.sampleErc721Enforcer.attach(l1.sampleErc721Holographer.address), 'Transfer')
+          .withArgs(l2.deployer.address, l2.wallet1.address, firstNFTl2);
+
+        process.stdout.write('          #1 transfer on l2 gas used: ' + (await getGasUsage(l2.hre)).toString() + '\n');
+      });
+
+      it('SampleERC721 #3 bridge from l1', async () => {
+        process.stdout.write(
+          '          #3 bridge from l1 gas used: ' + gasUsage['#3 bridge from l1'].toString() + '\n'
+        );
+        assert(!gasUsage['#3 bridge from l1'].isZero(), 'zero sum returned');
+      });
+
+      it('SampleERC721 #3 bridge from l2', async () => {
+        process.stdout.write(
+          '          #3 bridge from l2 gas used: ' + gasUsage['#3 bridge from l2'].toString() + '\n'
+        );
+        assert(!gasUsage['#3 bridge from l2'].isZero(), 'zero sum returned');
+      });
+    });
+
+    describe('Get hToken balances', async () => {
+      it('l1 hToken should have more than 0', async () => {
+        let hToken = await l1.holographErc20.attach(await l1.registry.getHToken(l1.network.holographId));
+        let balance = await l1.hre.ethers.provider.getBalance(hToken.address);
+        process.stdout.write('          l1 hToken balance is: ' + balance + '\n');
+        assert(!balance.isZero(), 'zero sum returned');
+      });
+
+      it('l2 hToken should have more than 0', async () => {
+        let hToken = await l2.holographErc20.attach(await l2.registry.getHToken(l2.network.holographId));
+        let balance = await l2.hre.ethers.provider.getBalance(hToken.address);
+        process.stdout.write('          l2 hToken balance is: ' + balance + '\n');
+        assert(!balance.isZero(), 'zero sum returned');
+      });
+    });
+  });
+*/
 });
