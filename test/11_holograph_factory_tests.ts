@@ -13,9 +13,6 @@ import {
 } from '../scripts/utils/helpers';
 import { ALREADY_DEPLOYED_ERROR_MSG, INVALID_SIGNATURE_ERROR_MSG, ONLY_ADMIN_ERROR_MSG } from './utils/error_constants';
 import { ConfigureEvents } from '../scripts/utils/events';
-import { BigNumber, BytesLike } from 'ethers';
-import Web3 from 'web3';
-import { AbiItem } from 'web3-utils';
 
 describe('Holograph Factory Contract', async () => {
   let l1: PreTest;
@@ -161,36 +158,36 @@ describe('Holograph Factory Contract', async () => {
     });
   });
 
-  describe('bridgeOut()', async () => {
-    it('should return selector and payload', async () => {
-      it('should return selector and payload', async function () {
-        let { erc721Config } = await generateErc721Config(
-          l1.network,
-          l1.deployer.address,
-          'SampleERC721-Factory',
-          'Sample ERC721 Contract  - Factory Test (' + l1.hre.networkName + ')',
-          'SMPLR',
-          1000,
-          `0x${'00'.repeat(32)}`,
-          generateInitCode(['address'], [l1.deployer.address]),
-          l1.salt
-        );
+  describe.only('bridgeOut()', async () => {
+    it('should return selector and payload', async function () {
+      let { erc721Config, erc721ConfigHash, erc721ConfigHashBytes } = await generateErc721Config(
+        l1.network,
+        l1.deployer.address,
+        'SampleERC721',
+        'Sample ERC721 Contract (' + l1.hre.networkName + ')',
+        'SMPLR',
+        1000,
+        `0x${'00'.repeat(32)}`,
+        generateInitCode(['address'], [l1.deployer.address]),
+        l1.salt
+      );
+      let sig = await l1.deployer.signMessage(erc20ConfigHashBytes);
+      signature = StrictECDSA({
+        r: '0x' + sig.substring(2, 66),
+        s: '0x' + sig.substring(66, 130),
+        v: '0x' + sig.substring(130, 132),
+      } as Signature);
 
-        let sig = await l1.deployer.signMessage(erc20ConfigHashBytes);
-        signature = StrictECDSA({
-          r: '0x' + sig.substring(2, 66),
-          s: '0x' + sig.substring(66, 130),
-          v: '0x' + sig.substring(130, 132),
-        } as Signature);
+      console.log('erc721Config', erc721Config);
+      console.log('signature', signature);
+      console.log('address', deployer.address);
 
-        const address = deployer.address;
-
-        const payload = generateInitCode(
-          ['tuple(bytes32,uint32,bytes32,bytes,bytes)', 'tuple(bytes32,bytes32,uint8)', 'address'],
-          [erc721Config, signature, address]
-        );
-        await l1.holographFactory.connect(owner).bridgeOut(1, address, payload);
-      });
+      const payload = generateInitCode(
+        ['tuple(bytes32,uint32,bytes32,bytes,bytes)', 'tuple(bytes32,bytes32,uint8)', 'address'],
+        [erc721Config, signature, deployer.address]
+      ); // <<------ This call is failing with TypeError: Cannot read properties of undefined (reading 'substring')
+      const selector = await l1.holographFactory.connect(owner).bridgeOut(1, deployer.address, payload);
+      console.log('selector', selector);
     });
   });
 
