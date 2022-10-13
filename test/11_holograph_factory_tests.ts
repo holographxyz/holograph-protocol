@@ -178,14 +178,11 @@ describe('Holograph Factory Contract', async () => {
         v: '0x' + sig.substring(130, 132),
       } as Signature);
 
-      console.log('erc721Config', erc721Config);
-      console.log('signature', signature);
-      console.log('address', deployer.address);
-
       const payload = generateInitCode(
         ['tuple(bytes32,uint32,bytes32,bytes,bytes)', 'tuple(bytes32,bytes32,uint8)', 'address'],
-        [erc721Config, signature, deployer.address]
-      ); // <<------ This call is failing with TypeError: Cannot read properties of undefined (reading 'substring')
+        [[erc721Config.contractType, erc721Config.chainType, erc721Config.salt, erc721Config.byteCode, erc721Config.initCode], [signature.r, signature.s, signature.v], deployer.address]
+      );
+
       const selector = await l1.holographFactory.connect(owner).bridgeOut(1, deployer.address, payload);
       console.log('selector', selector);
     });
