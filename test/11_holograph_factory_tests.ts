@@ -4,7 +4,7 @@ import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import setup from './utils';
 import { Signature, StrictECDSA, generateInitCode, generateErc20Config } from '../scripts/utils/helpers';
-import { ONLY_ADMIN_ERROR_MSG } from './utils/error_constants';
+import { ALREADY_DEPLOYED_ERROR_MSG, INVALID_SIGNATURE_ERROR_MSG, ONLY_ADMIN_ERROR_MSG } from './utils/error_constants';
 import { ConfigureEvents } from '../scripts/utils/events';
 
 describe.only('Holograph Factory Contract', async () => {
@@ -90,24 +90,46 @@ describe.only('Holograph Factory Contract', async () => {
     it('should fail with invalid signature if config is incorrect', async () => {
       await expect(
         l1.holographFactory.connect(deployer).deployHolographableContract(erc20Config, signature, owner.address)
-      ).to.be.revertedWith('HOLOGRAPH: invalid signature');
-    });
-
-    // TODO: Not sure how to test if each value of signature is correct
-    it.skip('should fail with invalid signature if signature.r is incorrect');
-    it.skip('should fail with invalid signature if signature.s is incorrect');
-    it.skip('should fail with invalid signature if signature.v is incorrect');
-
-    it('should fail with invalid signature if signer is incorrect', async () => {
-      await expect(l1.factory.deployHolographableContract(erc20Config, signature, nonOwner.address)).to.be.revertedWith(
-        'HOLOGRAPH: invalid signature'
-      );
+      ).to.be.revertedWith(INVALID_SIGNATURE_ERROR_MSG);
     });
 
     it('should fail contract was already deployed', async () => {
       await expect(
         l1.factory.deployHolographableContract(erc20Config, signature, l1.deployer.address)
-      ).to.be.revertedWith('HOLOGRAPH: already deployed');
+      ).to.be.revertedWith(ALREADY_DEPLOYED_ERROR_MSG);
+    });
+
+    it('should fail contract was already deployed', async () => {
+      await expect(
+        l1.factory.deployHolographableContract(erc20Config, signature, l1.deployer.address)
+      ).to.be.revertedWith(ALREADY_DEPLOYED_ERROR_MSG);
+    });
+
+    it('should fail with invalid signature if signature.r is incorrect', async () => {
+      signature.r = `0x${'00'.repeat(32)}`;
+      await expect(
+        l1.holographFactory.connect(deployer).deployHolographableContract(erc20Config, signature, owner.address)
+      ).to.be.revertedWith(INVALID_SIGNATURE_ERROR_MSG);
+    });
+
+    it('should fail with invalid signature if signature.s is incorrect', async () => {
+      signature.s = `0x${'00'.repeat(32)}`;
+      await expect(
+        l1.holographFactory.connect(deployer).deployHolographableContract(erc20Config, signature, owner.address)
+      ).to.be.revertedWith(INVALID_SIGNATURE_ERROR_MSG);
+    });
+
+    it('should fail with invalid signature if signature.v is incorrect', async () => {
+      signature.v = `0x${'00'.repeat(32)}`;
+      await expect(
+        l1.holographFactory.connect(deployer).deployHolographableContract(erc20Config, signature, owner.address)
+      ).to.be.revertedWith(INVALID_SIGNATURE_ERROR_MSG);
+    });
+
+    it('should fail with invalid signature if signer is incorrect', async () => {
+      await expect(l1.factory.deployHolographableContract(erc20Config, signature, nonOwner.address)).to.be.revertedWith(
+        INVALID_SIGNATURE_ERROR_MSG
+      );
     });
 
     it('Should allow external contract to call fn');
