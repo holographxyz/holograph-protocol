@@ -71,7 +71,7 @@ contract Mock is Initializable {
     }
   }
 
-  function mockDelegateCall(address target, bytes calldata data) public view returns (bytes memory) {
+  function mockDelegateCall(address target, bytes calldata data) public returns (bytes memory) {
     assembly {
       calldatacopy(0, data.offset, data.length)
       let result := delegatecall(gas(), target, 0, data.length, 0, 0)
