@@ -7,7 +7,7 @@ import { generateInitCode, zeroAddress } from '../scripts/utils/helpers';
 import { MockExternalCall, MockExternalCall__factory } from '../typechain-types';
 import setup, { PreTest } from './utils';
 
-describe.only('Holograph Registry Contract', async function () {
+describe('Holograph Registry Contract', async function () {
   let HolographRegistry: any;
   let holographRegistry: any;
   let accounts: SignerWithAddress[];
