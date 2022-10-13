@@ -145,16 +145,16 @@ describe('Holograph Factory Contract', async () => {
     it('should fail to allow inherited contract to call fn');
   });
 
-  describe.only(`bridgeIn()`, async () => {
+  describe(`bridgeIn()`, async () => {
     it('should return the expected selector from the input payload', async () => {
-      let { erc721Config, erc721ConfigHash, erc721ConfigHashBytes } = await generateErc721Config(
+      let { erc721Config, erc721ConfigHashBytes } = await generateErc721Config(
         l1.network,
         l1.deployer.address,
         'SampleERC721',
         'Sample ERC721 Contract (' + l1.hre.networkName + ')',
         'SMPLR',
         1000,
-        `0x${'00'.repeat(32)}`,
+        `0x${'00'.repeat(31)}` + 'ff',
         generateInitCode(['address'], [l1.deployer.address]),
         '0x' + '00'.repeat(31) + 'ff'
       );
@@ -180,11 +180,34 @@ describe('Holograph Factory Contract', async () => {
         ]
       );
 
-      const selector = await l1.holographFactory.connect(deployer).bridgeIn(chainId, payload);
+      const tx = await l1.factory.connect(deployer).bridgeIn(chainId, payload);
+      const receipt = await tx.wait();
+
+      console.log(receipt.events);
     });
 
-    it('should return bad data if payload data is invalid', async () => {
-      const payload = '0x0000000000000000000000000000000000000000000000000000000000000000';
+    it('should revert if payload data is invalid', async () => {
+      let { erc721ConfigHashBytes } = await generateErc721Config(
+        l1.network,
+        l1.deployer.address,
+        'SampleERC721',
+        'Sample ERC721 Contract (' + l1.hre.networkName + ')',
+        'SMPLR',
+        1000,
+        `0x${'00'.repeat(31)}` + 'ff',
+        generateInitCode(['address'], [l1.deployer.address]),
+        '0x' + '00'.repeat(31) + 'ff'
+      );
+      let sig = await l1.deployer.signMessage(erc721ConfigHashBytes);
+      signature = StrictECDSA({
+        r: '0x' + sig.substring(2, 66),
+        s: '0x' + sig.substring(66, 130),
+        v: '0x' + sig.substring(130, 132),
+      } as Signature);
+
+      const payload = '0x' + '00'.repeat(32);
+
+      await expect(l1.factory.connect(deployer).bridgeIn(chainId, payload)).to.be.reverted;
     });
   });
 
@@ -223,7 +246,7 @@ describe('Holograph Factory Contract', async () => {
         ]
       );
 
-      const selector = await l1.holographFactory.connect(owner).bridgeOut(1, deployer.address, payload);
+      const selector = await l1.factory.connect(owner).bridgeOut(1, deployer.address, payload);
       expect(selector[0]).to.equal('0xb7e03661');
     });
   });
