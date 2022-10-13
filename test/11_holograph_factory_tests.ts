@@ -7,7 +7,7 @@ import { Signature, StrictECDSA, generateInitCode, generateErc20Config } from '.
 import { ALREADY_DEPLOYED_ERROR_MSG, INVALID_SIGNATURE_ERROR_MSG, ONLY_ADMIN_ERROR_MSG } from './utils/error_constants';
 import { ConfigureEvents } from '../scripts/utils/events';
 
-describe.only('Holograph Factory Contract', async () => {
+describe('Holograph Factory Contract', async () => {
   let l1: PreTest;
 
   let Mock: any;

@@ -33,6 +33,7 @@ import {
   HToken,
   HolographUtilityToken,
   HolographInterfaces,
+  LayerZeroModule,
   MockERC721Receiver,
   MockLZEndpoint,
   Owner,
@@ -132,6 +133,8 @@ export interface PreTest {
   cxipErc721Holographer: Holographer;
   cxipErc721Enforcer: HolographERC721;
   faucet: Faucet;
+  sampleErc721Hash: Erc721Config;
+  lzModule: LayerZeroModule;
 }
 
 const animatedLoader = function (text: string) {
@@ -245,6 +248,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
   let sampleErc20: SampleERC20;
   let sampleErc721: SampleERC721;
   let faucet: Faucet;
+  let lzModule: LayerZeroModule;
 
   let treasury: HolographTreasury;
   let registry: HolographRegistry;
@@ -296,6 +300,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
   // sampleErc20 = (await hre.ethers.getContractOrNull('SampleERC20')) as SampleERC20;
   // sampleErc721 = (await hre.ethers.getContractOrNull('SampleERC721')) as SampleERC721;
   faucet = await hre.ethers.getContract<Faucet>('Faucet');
+  lzModule = await hre.ethers.getContract<LayerZeroModule>('LayerZeroModule');
 
   bridge = holographBridge.attach(await holograph.getBridge()) as HolographBridge;
   factory = holographFactory.attach(await holograph.getFactory()) as HolographFactory;
@@ -494,5 +499,7 @@ export default async function (l2?: boolean): Promise<PreTest> {
     cxipErc721Holographer,
     cxipErc721Enforcer,
     faucet,
+    lzModule,
+    sampleErc721Hash,
   } as PreTest;
 }
