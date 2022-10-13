@@ -3,12 +3,23 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import setup from './utils';
-import { Signature, StrictECDSA, generateInitCode, generateErc20Config } from '../scripts/utils/helpers';
+import {
+  Signature,
+  StrictECDSA,
+  generateInitCode,
+  generateErc20Config,
+  remove0x,
+  generateErc721Config,
+} from '../scripts/utils/helpers';
 import { ALREADY_DEPLOYED_ERROR_MSG, INVALID_SIGNATURE_ERROR_MSG, ONLY_ADMIN_ERROR_MSG } from './utils/error_constants';
 import { ConfigureEvents } from '../scripts/utils/events';
+import { BigNumber, BytesLike } from 'ethers';
+import Web3 from 'web3';
+import { AbiItem } from 'web3-utils';
 
 describe('Holograph Factory Contract', async () => {
   let l1: PreTest;
+  let l2: PreTest;
 
   let Mock: any;
   let mock: any;
@@ -29,6 +40,7 @@ describe('Holograph Factory Contract', async () => {
 
   before(async () => {
     l1 = await setup();
+    l2 = await setup(true);
     accounts = await ethers.getSigners();
     deployer = accounts[0];
     owner = accounts[1];
@@ -149,8 +161,37 @@ describe('Holograph Factory Contract', async () => {
     });
   });
 
-  describe.skip('bridgeOut()', async () => {
-    it('should return selector and payload');
+  describe('bridgeOut()', async () => {
+    it('should return selector and payload', async () => {
+      it('should return selector and payload', async function () {
+        let { erc721Config } = await generateErc721Config(
+          l1.network,
+          l1.deployer.address,
+          'SampleERC721-Factory',
+          'Sample ERC721 Contract  - Factory Test (' + l1.hre.networkName + ')',
+          'SMPLR',
+          1000,
+          `0x${'00'.repeat(32)}`,
+          generateInitCode(['address'], [l1.deployer.address]),
+          l1.salt
+        );
+
+        let sig = await l1.deployer.signMessage(erc20ConfigHashBytes);
+        signature = StrictECDSA({
+          r: '0x' + sig.substring(2, 66),
+          s: '0x' + sig.substring(66, 130),
+          v: '0x' + sig.substring(130, 132),
+        } as Signature);
+
+        const address = deployer.address;
+
+        const payload = generateInitCode(
+          ['tuple(bytes32,uint32,bytes32,bytes,bytes)', 'tuple(bytes32,bytes32,uint8)', 'address'],
+          [erc721Config, signature, address]
+        );
+        await l1.holographFactory.connect(owner).bridgeOut(1, address, payload);
+      });
+    });
   });
 
   describe('setHolograph() / getHolograph()', async () => {
