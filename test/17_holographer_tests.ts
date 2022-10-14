@@ -37,20 +37,21 @@ describe('Holograph Holographer Contract', function () {
   let signature: Signature;
   let l1: PreTest;
   before(async () => {
-    let { hre, hre2 } = await hreSplit(hre1, true);
+    // let { hre, hre2 } = await hreSplit(hre1, true);
     [deployer, commonUser] = await ethers.getSigners();
-    // l1 = await setup();
+    l1 = await setup();
+    const l2 = await setup(true);
 
-    await deployments.fixture(['DeploySources', 'DeployERC721', 'HolographERC721', 'RegisterTemplates']);
+    // await deployments.fixture(['DeploySources', 'DeployERC721', 'HolographERC721', 'RegisterTemplates']);
 
     // holograph = await ethers.getContract('Holograph');
-    const holographFactory = await ethers.getContract('HolographFactory');
+    // const holographFactory = await ethers.getContract('HolographFactory');
 
     let { erc721Config, erc721ConfigHash, erc721ConfigHashBytes } = await generateErc721Config(
-      networks[hre.networkName], // reference to hardhat network object
-      deployer.address, // address of creator of contract
+      l1.network, // reference to hardhat network object
+      l1.deployer.address, // address of creator of contract
       'SampleERC721', // contract bytecode to use
-      'Sample ERC721 Contract', // name of contract
+      'Sample ERC721 Contract (' + l1.hre.networkName + ')', // name of contract
       'SMPLR', // token symbol of contract
       1000, // royalties to use (bps 10%) <- erc721 specific
       ConfigureEvents([
@@ -60,7 +61,7 @@ describe('Holograph Holographer Contract', function () {
         HolographERC721Event.afterBurn,
       ]),
       generateInitCode(['address'], [deployer.address]), // init code for SampleERC721 itself
-      hre.deploymentSalt // random bytes32 salt that you decide to assign this config, used again on other chains to guarantee uniqueness if all above vars are same for another contract for some reason
+      l1.salt // random bytes32 salt that you decide to assign this config, used again on other chains to guarantee uniqueness if all above vars are same for another contract for some reason
     );
 
     const sig = await deployer.signMessage(erc721ConfigHashBytes);
@@ -70,9 +71,13 @@ describe('Holograph Holographer Contract', function () {
       v: '0x' + sig.substring(130, 132),
     } as Signature);
 
-    const depoyTx = await holographFactory.deployHolographableContract(erc721Config, signature, deployer.address, {
-      nonce: await ethers.provider.getTransactionCount(deployer.address),
-    });
+    const depoyTx = await l1.holographFactory
+      .connect(deployer)
+      .deployHolographableContract(erc721Config, signature, deployer.address);
+
+    // const depoyTx = await holographFactory.deployHolographableContract(erc721Config, signature, deployer.address, {
+    //   nonce: await ethers.provider.getTransactionCount(deployer.address),
+    // });
     const deployResult = await depoyTx.wait();
 
     const event = deployResult.events?.find((event: any) => event.event === 'BridgeableContractDeployed');
