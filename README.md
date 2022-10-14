@@ -36,7 +36,7 @@ Genesis will be deployed on all blockchains that run and support Holograph Proto
 
 #### HolographFactory.sol
 
-Factory enables developers to submit a signed version of the following elements to deploy a *Holographed* smart contract on the blockchain:
+Factory enables developers to submit a signed version of the following elements to deploy a _Holographed_ smart contract on the blockchain:
 
 - primary deployment chain
 - token type (ERC-20, ERC-721, etc.)
@@ -44,7 +44,7 @@ Factory enables developers to submit a signed version of the following elements 
 - custom smart contract bytecode
 - custom initialization code
 
-Any additional blockchains that developers want to support can have the same signed data submitted to Factory, allowing for the creation of an identical *Holographed* contract.
+Any additional blockchains that developers want to support can have the same signed data submitted to Factory, allowing for the creation of an identical _Holographed_ contract.
 The primary job of Factory is to:
 
 - allow propagation of exact data across all blockchains
@@ -54,11 +54,11 @@ The primary job of Factory is to:
 
 #### HolographRegistry.sol
 
-Registry is a central on-chain location where all Holograph data is stored. Registry keeps a record of all currently supported standards. New standards can be introduced and enabled as well. Any properly deployed *Holographed* contracts are also stored as reference. This allows for a definitive way to identify whether a smart contract is secure and properly *Holographed*. Verifying entities will be able to identify a *Holographed* contract to ensure the highest level of security and standards.
+Registry is a central on-chain location where all Holograph data is stored. Registry keeps a record of all currently supported standards. New standards can be introduced and enabled as well. Any properly deployed _Holographed_ contracts are also stored as reference. This allows for a definitive way to identify whether a smart contract is secure and properly _Holographed_. Verifying entities will be able to identify a _Holographed_ contract to ensure the highest level of security and standards.
 
 #### HolographBridge.sol
 
-This contract is contains the code is responsible for the all the bridge out and bridge in logic required to enable bridging. Bridge is a universal smart contract that functions as the primary entry and exit point for any *Holographed* tokens to and from all supported blockchains. Bridge validates and ensures integrity and standard enforcement for every Bridge-In and Bridge-Out request. Additionally, Bridge implements a universal standard for sending tokens across blockchains by abstracting away complexities into sub-modules that remove the burden of management for developers. This allows for simple one-click/one-transaction native gas token payment-based interactions for all bridge requests.
+This contract is contains the code is responsible for the all the bridge out and bridge in logic required to enable bridging. Bridge is a universal smart contract that functions as the primary entry and exit point for any _Holographed_ tokens to and from all supported blockchains. Bridge validates and ensures integrity and standard enforcement for every Bridge-In and Bridge-Out request. Additionally, Bridge implements a universal standard for sending tokens across blockchains by abstracting away complexities into sub-modules that remove the burden of management for developers. This allows for simple one-click/one-transaction native gas token payment-based interactions for all bridge requests.
 
 #### HolographOperator.sol
 
@@ -76,7 +76,7 @@ Holograph provides a reference to the name and ID of all supported blockchains. 
 
 #### Holographer.sol
 
-Holographer exists at the core of all *Holographed* smart contracts, which is applied whenever a *Holographed* smart contract is deployed. Holographer pieces together all components and routes all inbound function calls to their proper smart contracts, ensuring security and the enforcement of specified standards. Holographer is isolated on its own private layer and is essentially hard-coded into the blockchain.
+Holographer exists at the core of all _Holographed_ smart contracts, which is applied whenever a _Holographed_ smart contract is deployed. Holographer pieces together all components and routes all inbound function calls to their proper smart contracts, ensuring security and the enforcement of specified standards. Holographer is isolated on its own private layer and is essentially hard-coded into the blockchain.
 
 #### Enforcer.sol
 
@@ -94,19 +94,19 @@ The Interfaces contract is used to store and share standardized data. It acts as
 
 #### Custom Contract
 
-Custom contract is any type of smart contract that was developed outside of Holograph Protocol, and is used to create a *Holographed* contract. This empowers developers to build their projects however they want. The requirements for enabling a custom contract to be Holograph-able are minimal, and allow for even novice-level developers to implement. Any current and future fungible and non-fungible token type contracts can easily be made Holograph-able.
+Custom contract is any type of smart contract that was developed outside of Holograph Protocol, and is used to create a _Holographed_ contract. This empowers developers to build their projects however they want. The requirements for enabling a custom contract to be Holograph-able are minimal, and allow for even novice-level developers to implement. Any current and future fungible and non-fungible token type contracts can easily be made Holograph-able.
 
 ## Important Flows
 
 ### Bridging NFTs
 
-To bridge NFTs, a *Holographed* contract must be deployed and NFTs minted from the contract. Doing so will ensure that the contract address and token IDs remain the same on all deployed blockchains. 
+To bridge NFTs, a _Holographed_ contract must be deployed and NFTs minted from the contract. Doing so will ensure that the contract address and token IDs remain the same on all deployed blockchains.
 
 ### Estimating Gas
 
 TBD
 
-### Bridging Out 
+### Bridging Out
 
 The simplified code path for bridging out is:
 
@@ -116,11 +116,11 @@ The simplified code path for bridging out is:
 4. `HolographOperator.sol` - `send` method
 5. `Holograph/LayerZeroModule.sol` - `send` method
 
-At step 1, a user submits their bridge request with a valid payload using the estimatedGas value computed in the previous [Estimate Gas](#estimategas) section 
+At step 1, a user submits their bridge request with a valid payload using the estimatedGas value computed in the previous [Estimate Gas](#estimategas) section
 
-At step 2, the code checks that the contract is a *holographable* contract. This means it has implemented the required functions for a *Holographed* contract. See `contracts/enforcer/HolographERC721.sol` for an example.
+At step 2, the code checks that the contract is a _holographable_ contract. This means it has implemented the required functions for a _Holographed_ contract. See `contracts/enforcer/HolographERC721.sol` for an example.
 
-At step 3, we call the `_bridgeOut` function on the *Holographed* contract and apply various checks and generate a payload with information about the bridge request.
+At step 3, we call the `_bridgeOut` function on the _Holographed_ contract and apply various checks and generate a payload with information about the bridge request.
 
 At step 4, we call the `send` method on the `HolographOperator.sol` contract. This method does some final packaging of the payload that will be sent to the messaging layer.
 
@@ -132,7 +132,7 @@ The simplified code path for bridging in is:
 
 1. `module/LayerZeroModule.sol` - `lzReceive` method
 2. `HolographOperator.sol` - `crossChainMessage` method
-3. `HolographOperator.sol` - Emits event `AvailableOperatorJob(jobHash, bridgeInRequestPayload);` 
+3. `HolographOperator.sol` - Emits event `AvailableOperatorJob(jobHash, bridgeInRequestPayload);`
 
 At step 1, the configured messaging layer calls the method `lzReceive` in `module/LayerZeroModule.sol`. We do some checks to make sure only LayerZero call this method.
 
@@ -152,13 +152,13 @@ To become an operator, you must view the pods available to join, select a pod, a
 2. `HolographOperator.sol` - `getPodBondAmounts`
 3. `HolographOperator.sol` - `bondUtilityToken`
 
-At step 1, you call `getTotalPods` method to get a list of available pods. If the length of pod is zero, then you can bond into pod `1`. 
+At step 1, you call `getTotalPods` method to get a list of available pods. If the length of pod is zero, then you can bond into pod `1`.
 
 At step 2, when you call `getPodBondAmounts`, you will get two values: [`_base`, `current`]. The `base` value represents the original minimum bond requirement to join the pod, while the `current` value is the current amount you must provide to join the pod. Please refer to here [TODO - ADD LINK] for more info.
 
 At step 3, you are now able to call the `bondUtilityToken` function with the pod and amounts you want to use to enter the pod. Please note, there is a minimum bond requirement to join but no maximum.
 
-You are now an 0perator. We will launch a CLI in the future that will process jobs on your behalf. 
+You are now an 0perator. We will launch a CLI in the future that will process jobs on your behalf.
 
 ### Leaving Pods
 
@@ -176,13 +176,13 @@ You must join a pod to become an Oper ator. The simplified code path for operati
 
 At step 1, the CLI connected via websocket receives notification that new block was mined.
 
-At step 2, the CLI makes a request for the full block information. It then iterates over transactions, looking for the `AvailableOperatorJob` event. 
+At step 2, the CLI makes a request for the full block information. It then iterates over transactions, looking for the `AvailableOperatorJob` event.
 
-At step 3, the CLI then calls `getJobDetails` in `HolographOperator.sol`. This checks if the current wallet user is the selected operator or a backup operator. If it is the selected operator, then it will continue. Otherwise, the job is kept in memory for a short time and reviewed again in the future to check the job status. 
- 
+At step 3, the CLI then calls `getJobDetails` in `HolographOperator.sol`. This checks if the current wallet user is the selected operator or a backup operator. If it is the selected operator, then it will continue. Otherwise, the job is kept in memory for a short time and reviewed again in the future to check the job status.
+
 At step 4, the CLI will estimate the cost of executing the job. This is used to make sure the transaction sent has enough gas to complete.
 
-At step 5, the wallet sends a transaction to the `exectureJob` method on the `HolographOperator.sol` contract. In here, further checks are done to validate the job and user's wallet. After this transaction is mined on the blockchain, the NFT will become finalized and available on the new blockchain. 
+At step 5, the wallet sends a transaction to the `exectureJob` method on the `HolographOperator.sol` contract. In here, further checks are done to validate the job and user's wallet. After this transaction is mined on the blockchain, the NFT will become finalized and available on the new blockchain.
 
 ## Development
 
@@ -195,53 +195,11 @@ At step 5, the wallet sends a transaction to the `exectureJob` method on the `Ho
 1. Install dependencies with `yarn install`.
 1. Initialize the project with `yarn run init` _(this will copy sample environment configs)_.
 
-### Building 
+### Building
 
 When the project is built, the code in the `src` folder gets written to the `contracts` folder. The files in the `contracts` folder are the "real" files that are used for testing and code verification on all the scanners.
 
 Again, files from the `src` directory are automatically transpiled into the `contracts` directory each time that **hardhat** compiles the contracts.
-
-### Compiling, Testing, and Deploying (Locally)
-
-1. Build the latest version of the contracts via `yarn run clean-compile` _(alternatively you can just run `yarn run compile`)_.
-2. Start the localhost ganache instances via `yarn run ganache-x2` _(this will run two instances simultaneously inside of one command)_. **_Make sure to run this command in a separate terminal window._**
-3. Deploy the smart contracts via `yarn run deploy`.
-4. Run all tests via `yarn run test`.
-
-_If you need the smart contracts ABI files for dApp integrations, use `yarn run abi` to get a complete list of all ABI's inside of the `abi` directory._
-
-### Development with live interaction & manual testing (supports Metamask)
-
-Alternatively you can do live development & testing with Ganache GUI and Remix IDE.  
-This solution also supports connecting Metamask to the Ganache's "Custom RPC Provider" and Remix IDE can then use "Injected Provider - Metamask".
-
-Prerequisites
-
-- Ganache https://trufflesuite.com/ganache/
-- Remix daemon https://www.npmjs.com/package/@remix-project/remixd
-- Remix IDE https://remix.ethereum.org/
-- (optional) Metamask browser extension
-
-#### How
-
-1. Run `remixd` daemon on the built `/contracts` folder (not `/src/contracts`)
-
-   ```
-   remixd -s contracts
-   ```
-
-2. Run Ganache GUI and spin up a local blockchain (using workspace)
-3. Open Remix IDE
-   1. On the "**File explorer**" card change "Workspaces" -> "- connect to localhost -"
-   2. On the "**Deploy & Run Transactions**" card pick "Environment" -> "Ganache Provider"  
-      The localhost port is usually `7545` or `8545`
-4. After making changes to the contracts in `/src/contracts` run `yarn dev:iterate` to update `/contracts`  
-   _(Watch script is coming later)_
-5. Development
-   1. In "**File Explorer**" card open each relevant contract as a tab
-   2. Enable "**Auto compile**" in "Solidity Compiler" card
-   3. Interact with the contracts on "Deploy & run transactions" tab  
-      To deploy a contract, first focus its tab in the IDE as this changes the "CONTRACT" dropdown.
 
 ### Making Changes
 
@@ -265,8 +223,8 @@ root
 
 ## For C4 Wardens
 
-In Scope *
-------------------
+## In Scope \*
+
 1. `HolographBridge.sol` (primary use for FE user to make cross-chain beam request)
 2. `HolographOperator.sol` (finalizes cross-chain beam)
 3. `Holographer.sol` (wrapper for custom user contract and standards enforcer contract)
@@ -277,8 +235,8 @@ In Scope *
 8. `abstract/ERC20H.sol` (helper contract to use as base when creating custom ERC20 holographable contracts)
 9. `abstract/ERC721H.sol` (helper contract to use as base when creating custom ERC721 holographable contracts)
 
-Out of Scope *
-------------------
+## Out of Scope \*
+
 1. `Holograph.sol` (simple getter/setter contract)
 2. `HolographGenesis.sol` (simple getter/setter and one CREATE2 function)
 3. `HolographRegistry.sol` (simple getter/setter contract)
