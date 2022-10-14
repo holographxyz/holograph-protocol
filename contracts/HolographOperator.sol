@@ -468,6 +468,10 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
         0,
         0
       )
+      if eq(result, 0) {
+        revert(0, 0)
+      }
+      return(0, 0)
     }
   }
 
@@ -790,10 +794,20 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
   }
 
   /**
+   * @notice Get an operator's currently bonded amount
+   * @dev Useful for checking how much an operator has bonded
+   * @param operator address of operator to check
+   * @return amount total number of utility token bonded
+   */
+  function getBondedAmount(address operator) external view returns (uint256 amount) {
+    return _bondedAmounts[operator];
+  }
+
+  /**
    * @notice Get an operator's currently bonded pod
    * @dev Useful for checking if an operator is currently bonded
    * @param operator address of operator to check
-   * @return pod number that operator is bonded on, returns zero if not bonded
+   * @return pod number that operator is bonded on, returns zero if not bonded or selected for job
    */
   function getBondedPod(address operator) external view returns (uint256 pod) {
     return _bondedOperators[operator];
@@ -802,6 +816,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
   /**
    * @notice Topup a bonded operator with more utility tokens
    * @dev Useful function if an operator got slashed and wants to add a safety buffer to not get unbonded
+   *      This function will not work if operator has currently been selected for a job
    * @param operator address of operator to topup
    * @param amount utility token amount to add
    */
@@ -837,7 +852,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
     /**
      * @dev an operator can only bond to one pod at any give time per network
      */
-    require(_bondedOperators[operator] == 0, "HOLOGRAPH: operator is bonded");
+    require(_bondedOperators[operator] == 0 && _bondedAmounts[operator] == 0, "HOLOGRAPH: operator is bonded");
     unchecked {
       /**
        * @dev get the current bonding minimum for selected pod
@@ -913,10 +928,6 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
      * @dev transfer tokens to recipient
      */
     require(_utilityToken().transfer(recipient, amount), "HOLOGRAPH: token transfer failed");
-    /**
-     * @dev remove all operator references
-     */
-    _popOperator(_bondedOperators[operator] - 1, _operatorPodIndex[operator]);
   }
 
   /**
@@ -1127,6 +1138,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
            * @dev if operator is not last index, move last index to operator's current index
            */
           _operatorPods[pod][operatorIndex] = _operatorPods[pod][lastIndex];
+          _operatorPodIndex[_operatorPods[pod][operatorIndex]] = operatorIndex;
         }
         /**
          * @dev delete last index
