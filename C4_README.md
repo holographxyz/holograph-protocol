@@ -50,7 +50,7 @@ yarn test
 | `abstract/ERC721H.sol`         | helper contract to use as base when creating custom ERC721 holographable contracts | 82            |
 | `abstract/ERC20H.sol`          | helper contract to use as base when creating custom ERC20 holographable contracts  | 82            |
 
-## Areas Of Concern
+## 🤔 Areas Of Concern
 
 1. Bridging NFTs
    - Can bridge tokens be sent out to a secondary network?
@@ -74,13 +74,13 @@ yarn test
    - Can an operator remove their bond?
    - Can an operator remove their bond after being slashed?
 
-## Directory Structure
+## 📁 Directory Structure
 
 <pre>
 root
 
 ├── <a href="./config">config</a>: Network configuration files
-├── <a href="./contracts">contracts</a>: Smart contracts that power the Holograph protocol
+├── <a href="./contracts">contracts</a>: Smart contracts that power Holograph Protocol
 ├── <a href="./deploy">deploy</a>: Deployment scripts for the smart contracts uses <a href="https://hardhat.org/">Hardhat</a> and <a href="https://github.com/wighawag/hardhat-deploy">Hardhat Deploy</a>
 ├── <a href="./deployments">deployments</a>: Deployment build files that include contract addresses on each network
 ├── <a href="./scripts">scripts</a>: Scripts and helper utilities
