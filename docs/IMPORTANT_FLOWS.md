@@ -75,7 +75,7 @@ At step 1, you call `getTotalPods` method to get a list of available pods. If th
 
 At step 2, when you call `getPodBondAmounts`, you will get two values: [`_base`, `current`]. The `base` value represents the original minimum bond requirement to join the pod, while the `current` value is the current amount you must provide to join the pod. 
 
-Minimum bond amounts are dynamically calculated based on some initial variables. These variables can be changed or set differently for each blockchain. A graphical representation is [available here](https://observablehq.com/@vitto/operator_bonding)
+*Minimum Bond Amounts* are dynamically calculated based on some initial variables. These variables can be changed or set differently for each blockchain. A graphical representation is [available here](https://observablehq.com/@vitto/operator_bonding)
 
 - baseBondAmount = `100 * (10^18)`
 - podMultiplier = `2`
@@ -89,21 +89,19 @@ Minimum bond amounts are dynamically calculated based on some initial variables.
 
 Using the above variables and selecting for `Pod 1` (or `0` in array language), this would result in the number `1000`.
 
-
 ![threshold_calculation.gif](threshold_calculation.gif)
 
-*Minimum Bond* *Amounts* are calculated by running this formula with a pod number in question: `baseBondAmount * (podMultiplier^pod)`.
+*Minimum Bond Amounts* are calculated by running this formula with a pod number in question: `baseBondAmount * (podMultiplier^pod)`.
 
 Using the above variables and selecting for `Pod 1` (or `0` in array language), this would result in the number `100000000000000000000`, or `100 HLG` (using 18 decimal places).
 
 ![base_bond_amount.gif](base_bond_amount.gif)
 
-*Current Bond Amount* is calculated by running the *Minimum Bond* *Amount* formula above. If the current number of Operators in a specific Pod is greater than the *Pod Threshold,* then the *Minimum Bond* *Amount* needs to be added with `(bondAmount * operatorThresholdMultiplier) * ((position - threshold) / operatorThresholdStep)`
+*Current Bond Amount* is calculated by running the *Minimum Bond Amount* formula above. If the current number of Operators in a specific Pod is greater than the *Pod Threshold,* then the *Minimum Bond Amount* needs to be added with `(bondAmount * operatorThresholdMultiplier) * ((position - threshold) / operatorThresholdStep)`
 
 Using the above variables and selecting for `Pod 1` (or `0` in array language) and getting into position `1500`, this would result in the number `150000000000000000000`, or `150 HLG`.
 
 ![current_bond_amount.gif](current_bond_amount.gif)
-
 
 At step 3, you are now able to call the `bondUtilityToken` function with the pod and amounts you want to use to enter the pod. Please note, there is a minimum bond requirement to join but no maximum.
 
@@ -111,7 +109,7 @@ You are now an operator. We will launch a CLI in the future that will process jo
 
 ## Leaving Pods
 
-To leave a pod, you have to call the `unbondUtilityToken` method in `HolographOperator.sol`. What is withdrawn depends on the slashing state of the operator. An operator is slashed if they fail to complete the job and a secondary operator completed it instead.
+To leave a pod, you have to call the `unbondUtilityToken` method in `HolographOperator.sol`. The amount withdrawn depends on the slashing state of the operator. An operator is slashed if they fail to complete a job.
 
 | Number of Slashes | Percentage of Bond |
 |-------------------|--------------------|
