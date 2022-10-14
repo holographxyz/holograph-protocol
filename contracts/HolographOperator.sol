@@ -251,7 +251,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
       sstore(_registrySlot, registry)
       sstore(_utilityTokenSlot, utilityToken)
     }
-    _blockTime = 10; // 10 blocks allowed for execution
+    _blockTime = 60; // 60 seconds allowed for execution
     unchecked {
       _baseBondAmount = 100 * (10**18); // one single token unit * 100
     }
@@ -383,7 +383,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
         /**
          * @dev check if slashed operator has enough tokens bonded to stay
          */
-        if (amount >= _bondedAmounts[job.operator]) {
+        if (_bondedAmounts[job.operator] >= amount) {
           /**
            * @dev enough bond amount leftover, put operator back in
            */
@@ -395,8 +395,10 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
            * @dev slashed operator does not have enough tokens bonded, return remaining tokens only
            */
           uint256 leftovers = _bondedAmounts[job.operator];
-          _bondedAmounts[job.operator] = 0;
-          _utilityToken().transfer(job.operator, leftovers);
+          if (leftovers > 0) {
+            _bondedAmounts[job.operator] = 0;
+            _utilityToken().transfer(job.operator, leftovers);
+          }
         }
       } else {
         /**
@@ -824,7 +826,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
     /**
      * @dev check that an operator is currently bonded
      */
-    require(_bondedOperators[operator] > 0, "HOLOGRAPH: operator not bonded");
+    require(_bondedOperators[operator] != 0, "HOLOGRAPH: operator not bonded");
     unchecked {
       /**
        * @dev add the additional amount to operator
