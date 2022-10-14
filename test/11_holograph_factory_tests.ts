@@ -1,4 +1,4 @@
-import { PreTest } from './utils';
+import { generateRandomSalt, PreTest } from './utils';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
@@ -13,7 +13,7 @@ import {
 import { ALREADY_DEPLOYED_ERROR_MSG, INVALID_SIGNATURE_ERROR_MSG, ONLY_ADMIN_ERROR_MSG } from './utils/error_constants';
 import { ConfigureEvents } from '../scripts/utils/events';
 
-describe('Holograph Factory Contract', async () => {
+describe.only('Holograph Factory Contract', async () => {
   let l1: PreTest;
   let l2: PreTest;
 
@@ -151,9 +151,9 @@ describe('Holograph Factory Contract', async () => {
         'Sample ERC721 Contract (' + l1.hre.networkName + ')',
         'SMPLR',
         1000,
-        `0x${'00'.repeat(31)}` + 'ff',
+        generateRandomSalt(),
         generateInitCode(['address'], [l1.deployer.address]),
-        '0x' + '00'.repeat(31) + 'ff'
+        generateRandomSalt()
       );
       let sig = await l1.deployer.signMessage(erc721ConfigHashBytes);
       signature = StrictECDSA({
@@ -189,9 +189,9 @@ describe('Holograph Factory Contract', async () => {
         'Sample ERC721 Contract (' + l1.hre.networkName + ')',
         'SMPLR',
         1000,
-        `0x${'00'.repeat(31)}` + 'ff',
+        generateRandomSalt(),
         generateInitCode(['address'], [l1.deployer.address]),
-        '0x' + '00'.repeat(31) + 'ff'
+        generateRandomSalt()
       );
       let sig = await l1.deployer.signMessage(erc721ConfigHashBytes);
       signature = StrictECDSA({
