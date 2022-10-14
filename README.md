@@ -146,7 +146,7 @@ Operators execute destination chain bridge transaction. Operators must run the C
 
 ### Bonding tokens
 
-There is a testnet faucet available for getting testnet tokens. These are the tokens you need to be able to bond to a pod and operate. Currently deployed Fauce address can be found in the `deployments` dir. Choose the environment/branch, network, and the file will be `Faucet.json`.
+There is a testnet faucet available for getting testnet tokens. These are the tokens you need to be able to bond to a pod and operate. Currently deployed Faucet address can be found in the `deployments` dir. Choose the environment/branch, network, and the file will be `Faucet.json`.
 
 ### Joining Pods
 
