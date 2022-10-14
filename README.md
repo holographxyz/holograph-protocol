@@ -144,6 +144,10 @@ At step 3, the contract will emit a job event. This job event is being observed 
 
 Operators execute destination chain bridge transaction. Operators must run the CLI, bond the protocol’s native token, and execute transactions. The probability of getting selected to perform this work is based on the number of tokens bonded.
 
+### Bonding tokens
+
+There is a testnet faucet available for getting testnet tokens. These are the tokens you need to be able to bond to a pod and operate. Currently deployed Fauce address can be found in the `deployments` dir. Choose the environment/branch, network, and the file will be `Faucet.json`.
+
 ### Joining Pods
 
 To become an operator, you must view the pods available to join, select a pod, and bond at least the minimum bond requirement.
