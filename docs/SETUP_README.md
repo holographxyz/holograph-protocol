@@ -34,15 +34,31 @@ To run the tests you have to have 2 terminal windows open. One window will launc
 1. Terminal window 1: `yarn ganache-x2`
 2. Terminal window 2: `yarn test`
 
+### Running Tests Multiple Times
+
+If you run the entire test suit, you will have to close and restart the `yarn ganache-x2` before running the tests again. 
+
+For test files 09_ and above, you can add the `.only` modifier and not have to restart `yarn ganache-x2`.
+
+
+### Important test files
+
+Here are some of the more important test files to look at for the core functionality.
+
+1. `05_cross-chain_configuation_tests.ts`
+2. `06_cross-chain_miniting_tests_l1_l2.ts`
+3. `14_holograph_operator_tests.ts`
 
 ### Test Specifics
 
-We run two instances of ganache to simulate the two chains. To do the heavy lifting, we run the setup command in the `/tests/utils/index.ts` file by importing it `import setup from './utils';`. From there we can get access to chain 1 and chain 2 viea:
+We run two instances of ganache to simulate the two chains. To do the heavy lifting, we run the setup command in the `/tests/utils/index.ts` file by importing it `import setup from './utils';`. From there we can get access to chain 1 and chain 2 via:
 
 1. Chain 1: `l1 = await setup();`
 2. Chain 2: `l2 = await setup(true);`
 
-Within any tests you will have access to the contracts by calling `l1.registry` for example.
+Within any tests you will have access the contract: `l1.registry`. 
+
+
 
 
 

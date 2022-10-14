@@ -13,9 +13,9 @@ Holograph provides omnichain NFT infrastructure for the web3 ecosystem. Holograp
 
 ## 🧙 Setup Instructions and Codebase Overview:
 - [Holograph Protocol Specification](https://docs.holograph.xyz/holograph-protocol/technical-specification)
-- [Holograph Code Setup](./SETUP_README.md)
-- [Holograph Contract Descriptions](./CONTRACT_DESCRIPTIONS.md)
-- [Holograph Flows (Bridge / Operator / Pods)](./IMPORTANT_FLOWS.md)
+- [Holograph Code Setup](docs/SETUP_README.md)
+- [Holograph Contract Descriptions](docs/CONTRACT_DESCRIPTIONS.md)
+- [Holograph Flows (Bridge / Operator / Pods)](docs/IMPORTANT_FLOWS.md)
 
 
 ## 🛫 Quick Start
@@ -50,6 +50,30 @@ yarn test
 | `abstract/ERC721H.sol`         | helper contract to use as base when creating custom ERC721 holographable contracts | 82            |
 | `abstract/ERC20H.sol`          | helper contract to use as base when creating custom ERC20 holographable contracts  | 82            |
 
+## Areas Of Concern
+
+1. Bridging NFTs
+   - Can bridge tokens be sent out to a secondary network?
+   - Can bridge tokens be received on the secondary network?
+   - Can someone bridge an NFT while not being the owner of the NFT?
+   - Can a payload be constructed to exploit or spoof a bridge request?
+2. Jobs
+   - Can a bridge job be created to manually select an operator?
+   - Can a bridge job be created to manually select a pod?
+   - Can a bridge job be completed by the primary operator?
+   - Can a bridge job be completed by a secondary operator, if the primary operator has not completed the job?
+   - Can a bridge job be completed by ANYONE after primary and secondary operators fail to complete a job?
+   - Are job operators who fail to complete jobs slashed correctly?
+3. Operator
+   - Can an operator bond to a pod?
+   - Can an operator bond to a pod that does not exist?
+   - Can an operator join a pod without bonding?
+   - Are the bond amounts computed correct?
+   - Can the bond amount be exploited? spoofed?
+   - Are operators
+   - Can an operator remove their bond?
+   - Can an operator remove their bond after being slashed?
+
 ## Directory Structure
 
 <pre>
@@ -63,3 +87,4 @@ root
 ├── <a href="./src">src</a>: Source contracts that get dynamically transpiled down into the finalized output <a href="./contracts">contracts</a>
 └── <a href="./test">test</a>: Hardhat tests for the smart contracts
 </pre>
+
