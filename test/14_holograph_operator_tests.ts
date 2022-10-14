@@ -1,67 +1,24 @@
-declare var global: any;
-import Web3 from 'web3';
-import { AbiItem } from 'web3-utils';
 import { expect, assert } from 'chai';
 import { PreTest } from './utils';
 import setup from './utils';
-import { BigNumberish, BytesLike, BigNumber, ContractFactory } from 'ethers';
+import { BytesLike, BigNumber, ContractFactory } from 'ethers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
   Signature,
   StrictECDSA,
   zeroAddress,
   functionHash,
-  XOR,
-  hexToBytes,
-  stringToHex,
-  buildDomainSeperator,
   randomHex,
   generateInitCode,
-  generateErc20Config,
   generateErc721Config,
-  LeanHardhatRuntimeEnvironment,
-  getGasUsage,
   remove0x,
   KeyOf,
-  executeJobGas,
-  adminCall,
   HASH,
   sleep,
 } from '../scripts/utils/helpers';
-import {
-  HolographERC20Event,
-  HolographERC721Event,
-  HolographERC1155Event,
-  ConfigureEvents,
-} from '../scripts/utils/events';
-import ChainId from '../scripts/utils/chain';
-import {
-  Admin,
-  CxipERC721,
-  ERC20Mock,
-  Holograph,
-  HolographBridge,
-  HolographBridgeProxy,
-  Holographer,
-  HolographERC20,
-  HolographERC721,
-  HolographFactory,
-  HolographFactoryProxy,
-  HolographGenesis,
-  HolographOperator,
-  HolographRegistry,
-  HolographRegistryProxy,
-  HToken,
-  HolographUtilityToken,
-  HolographInterfaces,
-  MockERC721Receiver,
-  Mock,
-  Owner,
-  PA1D,
-  SampleERC20,
-  SampleERC721,
-} from '../typechain-types';
-import { DeploymentConfigStruct } from '../typechain-types/HolographFactory';
+import { HolographERC721Event, ConfigureEvents } from '../scripts/utils/events';
+import { HolographERC20, HolographOperator, Mock } from '../typechain-types';
+import { ONLY_ADMIN_ERROR_MSG } from './utils/error_constants';
 
 const bnHEX = function (n: number, bytes: number, prepend: boolean = true): BytesLike {
   return (prepend ? '0x' : '') + remove0x(BigNumber.from(n).toHexString()).padStart(bytes * 2, '0');
@@ -989,60 +946,123 @@ describe('Holograph Operator Contract', async () => {
     it.skip('should fail to allow inherited contract to call fn', async () => {});
   });
 
+  describe('getRegistry()', async () => {
+    it('Should return valid _registrySlot', async () => {
+      expect(await l1.operator.getRegistry()).to.equal(l1.registry.address);
+    });
+    it('Should allow external contract to call fn', async () => {
+      const registryAddress = await l1.operator.attach(MOCKL1.address).callStatic.getRegistry();
+      assert.deepEqual(registryAddress, l1.registry.address);
+    });
+    it.skip('should fail to allow inherited contract to call fn', async () => {});
+  });
+
+  describe('setRegistry()', async () => {
+    it('should allow admin to alter _registrySlot', async () => {
+      const randomAddress = '0x' + '1'.repeat(40);
+      await l1.operator.connect(l1.deployer).setRegistry(randomAddress);
+      expect(await l1.operator.getRegistry()).to.equal(randomAddress);
+    });
+    it('should fail to allow owner to alter _registrySlot', async () => {
+      const randomAddress = '0x' + '1'.repeat(40);
+      await expect(l1.operator.connect(l1.wallet1).setRegistry(randomAddress)).to.be.revertedWith(ONLY_ADMIN_ERROR_MSG);
+    });
+    it('should fail to allow non-owner to alter _registrySlot', async () => {
+      const randomAddress = '0x' + '1'.repeat(40);
+      await expect(l1.operator.connect(l1.wallet10).setRegistry(randomAddress)).to.be.revertedWith(
+        ONLY_ADMIN_ERROR_MSG
+      );
+    });
+    it.skip('Should allow external contract to call fn');
+    it.skip('should fail to allow inherited contract to call fn', async () => {});
+  });
+
   describe('getHolograph()', async () => {
-    it.skip('Should return valid _holographSlot', async () => {});
-    it.skip('Should allow external contract to call fn', async () => {});
+    it('Should return valid _holographSlot', async () => {
+      expect(await l1.operator.getHolograph()).to.equal(l1.holograph.address);
+    });
+    it('Should allow external contract to call fn', async () => {
+      const holographAddress = await l1.operator.attach(MOCKL1.address).callStatic.getHolograph();
+      assert.deepEqual(holographAddress, l1.holograph.address);
+    });
     it.skip('should fail to allow inherited contract to call fn', async () => {});
   });
 
   describe('setHolograph()', async () => {
-    it.skip('should allow admin to alter _holographSlot', async () => {});
-    it.skip('should fail to allow owner to alter _holographSlot', async () => {});
-    it.skip('should fail to allow non-owner to alter _holographSlot', async () => {});
+    it('should allow admin to alter _holographSlot', async () => {
+      const randomAddress = '0x' + '1'.repeat(40);
+      await l1.operator.connect(l1.deployer).setHolograph(randomAddress);
+      expect(await l1.operator.getHolograph()).to.equal(randomAddress);
+    });
+    it('should fail to allow owner to alter _holographSlot', async () => {
+      const randomAddress = '0x' + '1'.repeat(40);
+      await expect(l1.operator.connect(l1.wallet1).setHolograph(randomAddress)).to.be.revertedWith(
+        ONLY_ADMIN_ERROR_MSG
+      );
+    });
+    it('should fail to allow non-owner to alter _holographSlot', async () => {
+      const randomAddress = '0x' + '1'.repeat(40);
+      await expect(l1.operator.connect(l1.wallet10).setHolograph(randomAddress)).to.be.revertedWith(
+        ONLY_ADMIN_ERROR_MSG
+      );
+    });
     it.skip('Should allow external contract to call fn', async () => {});
     it.skip('should fail to allow inherited contract to call fn', async () => {});
   });
 
   describe('getInterfaces()', async () => {
-    it.skip('Should return valid _interfacesSlot', async () => {});
-    it.skip('Should allow external contract to call fn', async () => {});
-    it.skip('should fail to allow inherited contract to call fn', async () => {});
+    it('Should return valid _interfacesSlot', async () => {
+      expect(await l1.operator.getInterfaces()).to.equal(l1.holographInterfaces.address);
+    });
+    it('Should allow external contract to call fn', async () => {
+      const interfacesAddress = await l1.operator.attach(MOCKL1.address).callStatic.getInterfaces();
+      assert.deepEqual(interfacesAddress, l1.holographInterfaces.address);
+    });
+    it('should fail to allow inherited contract to call fn', async () => {});
   });
 
   describe('setInterfaces()', async () => {
-    it.skip('should allow admin to alter _interfacesSlot', async () => {});
-    it.skip('should fail to allow owner to alter _interfacesSlot', async () => {});
-    it.skip('should fail to allow non-owner to alter _interfacesSlot', async () => {});
-  });
-
-  describe('getRegistry()', async () => {
-    it.skip('Should return valid _registrySlot', async () => {});
-    it.skip('Should allow external contract to call fn', async () => {});
-    it.skip('should fail to allow inherited contract to call fn', async () => {});
-    it.skip('Should allow external contract to call fn', async () => {});
-    it.skip('should fail to allow inherited contract to call fn', async () => {});
-  });
-
-  describe('setRegistry()', async () => {
-    it.skip('should allow admin to alter _registrySlot', async () => {});
-    it.skip('should fail to allow owner to alter _registrySlot', async () => {});
-    it.skip('should fail to allow non-owner to alter _registrySlot', async () => {});
-    it.skip('Should allow external contract to call fn', async () => {});
-    it.skip('should fail to allow inherited contract to call fn', async () => {});
+    it('should allow admin to alter _interfacesSlot', async () => {
+      const randomAddress = '0x' + '1'.repeat(40);
+      await l1.operator.connect(l1.deployer).setInterfaces(randomAddress);
+      expect(await l1.operator.getInterfaces()).to.equal(randomAddress);
+    });
+    it('should fail to allow owner to alter _interfacesSlot', async () => {
+      const randomAddress = '0x' + '1'.repeat(40);
+      await expect(l1.operator.connect(l1.wallet1).setInterfaces(randomAddress)).to.be.revertedWith(
+        ONLY_ADMIN_ERROR_MSG
+      );
+    });
+    it('should fail to allow non-owner to alter _interfacesSlot', async () => {
+      const randomAddress = '0x' + '1'.repeat(40);
+      await expect(l1.operator.connect(l1.wallet10).setInterfaces(randomAddress)).to.be.revertedWith(
+        ONLY_ADMIN_ERROR_MSG
+      );
+    });
   });
 
   describe('getUtilityToken()', async () => {
-    it.skip('Should return valid _utilityTokenSlot', async () => {});
-    it.skip('Should allow external contract to call fn', async () => {});
-    it.skip('should fail to allow inherited contract to call fn', async () => {});
-    it.skip('Should allow external contract to call fn', async () => {});
+    it.skip('Should return valid _utilityTokenSlot');
+    it('Should allow external contract to call fn', async () => {
+      await expect(l1.operator.attach(MOCKL1.address).callStatic.getUtilityToken()).to.not.be.reverted;
+    });
     it.skip('should fail to allow inherited contract to call fn', async () => {});
   });
 
   describe('setUtilityToken()', async () => {
-    it.skip('should allow admin to alter _utilityTokenSlot', async () => {});
-    it.skip('should fail to allow owner to alter _utilityTokenSlot', async () => {});
-    it.skip('should fail to allow non-owner to alter _utilityTokenSlot', async () => {});
+    it('should allow admin to alter _utilityTokenSlot');
+    it('should fail to allow owner to alter _utilityTokenSlot', async () => {
+      const randomAddress = '0x' + '1'.repeat(40);
+      await expect(l1.operator.connect(l1.wallet1).setUtilityToken(randomAddress)).to.be.revertedWith(
+        ONLY_ADMIN_ERROR_MSG
+      );
+    });
+    it('should fail to allow non-owner to alter _utilityTokenSlot', async () => {
+      const randomAddress = '0x' + '1'.repeat(40);
+      await expect(l1.operator.connect(l1.wallet10).setUtilityToken(randomAddress)).to.be.revertedWith(
+        ONLY_ADMIN_ERROR_MSG
+      );
+    });
     it.skip('Should allow external contract to call fn', async () => {});
     it.skip('should fail to allow inherited contract to call fn', async () => {});
   });
@@ -1114,6 +1134,8 @@ describe('Holograph Operator Contract', async () => {
   });
 
   describe('_isContract()', async () => {
-    it.skip('should not be callable from an external contract', async () => {});
+    it('is private function', async () => {
+      testPrivateFunction('_isContract');
+    });
   });
 });
