@@ -283,6 +283,14 @@ describe('Holograph Operator Contract', async () => {
       .mint(l1.deployer.address, bnHEX(1, 32), 'IPFSURIHERE');
   });
 
+  function testPrivateFunction(functionName: string, user?: SignerWithAddress) {
+    const sender = user ?? l1.deployer;
+    const operator = l1.operator.connect(sender) as any;
+    const method = operator[functionName];
+    expect(typeof method).to.equal('undefined');
+    expect(l1.operator.connect(sender)).to.not.have.property(functionName);
+  }
+
   after(async () => {});
 
   beforeEach(async () => {});
@@ -1040,47 +1048,69 @@ describe('Holograph Operator Contract', async () => {
   });
 
   describe('_bridge()', async () => {
-    it.skip('is private function', async () => {});
+    it('is private function', async () => {
+      testPrivateFunction('_bridge');
+    });
   });
 
   describe('_holograph()', async () => {
-    it.skip('is private function', async () => {});
+    it('is private function', async () => {
+      testPrivateFunction('_holograph');
+    });
   });
 
   describe('_interfaces()', async () => {
-    it.skip('is private function', async () => {});
+    it('is private function', async () => {
+      testPrivateFunction('_interfaces');
+    });
   });
 
   describe('_messagingModule()', async () => {
-    it.skip('is private function', async () => {});
+    it('is private function', async () => {
+      testPrivateFunction('_messagingModule');
+    });
   });
 
   describe('_registry()', async () => {
-    it.skip('is private function', async () => {});
+    it('is private function', async () => {
+      testPrivateFunction('_registry');
+    });
   });
 
   describe('_utilityToken()', async () => {
-    it.skip('is private function', async () => {});
+    it('is private function', async () => {
+      testPrivateFunction('_utilityToken');
+    });
   });
 
   describe('_jobNonce()', async () => {
-    it.skip('is private function', async () => {});
+    it('is private function', async () => {
+      testPrivateFunction('_jobNonce');
+    });
   });
 
   describe('_popOperator()', async () => {
-    it.skip('is private function', async () => {});
+    it('is private function', async () => {
+      testPrivateFunction('_popOperator');
+    });
   });
 
   describe('_getBaseBondAmount()', async () => {
-    it.skip('is private function', async () => {});
+    it('is private function', async () => {
+      testPrivateFunction('_getBaseBondAmount');
+    });
   });
 
   describe('_getCurrentBondAmount()', async () => {
-    it.skip('is private function', async () => {});
+    it('is private function', async () => {
+      testPrivateFunction('_getCurrentBondAmount');
+    });
   });
 
   describe('_randomBlockHash()', async () => {
-    it.skip('is private function', async () => {});
+    it('is private function', async () => {
+      testPrivateFunction('_randomBlockHash');
+    });
   });
 
   describe('_isContract()', async () => {
