@@ -1,58 +1,103 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
-import { ethers, deployments } from 'hardhat';
+import { ethers, deployments, network } from 'hardhat';
+import * as hre1 from 'hardhat';
 import { Holographer, Holographer__factory, MockExternalCall, MockExternalCall__factory } from '../typechain-types';
 import Web3 from 'web3';
+import setup, { PreTest } from './utils';
+import networks from '../config/networks';
 
 import { ALREADY_INITIALIZED_ERROR_MSG } from './utils/error_constants';
+import { generateErc721Config, generateInitCode, hreSplit, Signature, StrictECDSA } from '../scripts/utils/helpers';
+import { ConfigureEvents, HolographERC721Event } from '../scripts/utils/events';
+declare var global: any;
 
-describe('Holograph Holographer Contract', async function () {
+describe('Holograph Holographer Contract', function () {
   let holographer: Holographer;
   let mockExternalCall: MockExternalCall;
   let deployer: SignerWithAddress;
   let commonUser: SignerWithAddress;
   let holograph: any;
 
-  function createRandomAddress() {
-    return ethers.Wallet.createRandom().address;
-  }
+  const createRandomAddress = () => ethers.Wallet.createRandom().address;
 
-  /** Testing */
   const web3 = new Web3();
-  let erc721Hash: string = '0x' + web3.utils.asciiToHex('HolographERC721').substring(2).padStart(64, '0');
-  /** Testing */
-
   let deployedBlock: number;
   const originChainMock = 1;
   let holographMock = createRandomAddress();
   const sourceContractMock = createRandomAddress();
-  const contractTypeMock = erc721Hash;
-  // '0x4552433732310000000000000000000000000000000000000000000000000000';
+  const contractTypeMock = '0x' + web3.utils.asciiToHex('HolographERC721').substring(2).padStart(64, '0');
 
-  const initPayload = ethers.utils.defaultAbiCoder.encode(
-    ['uint32', 'address', 'bytes32', 'address'],
-    [originChainMock, holographMock, contractTypeMock, sourceContractMock]
-  );
+  // const encoded = ethers.utils.defaultAbiCoder.encode(
+  //   ['uint32', 'address', 'bytes32', 'address'],
+  //   [originChainMock, holographMock, contractTypeMock, sourceContractMock]
+  // );
+  let initPayload: string;
 
-  beforeEach(async () => {
+  let signature: Signature;
+  let l1: PreTest;
+  before(async () => {
+    let { hre, hre2 } = await hreSplit(hre1, true);
     [deployer, commonUser] = await ethers.getSigners();
+    // l1 = await setup();
 
-    await deployments.fixture(['Holograph']);
-    holograph = await ethers.getContract('Holograph');
+    await deployments.fixture(['DeploySources', 'DeployERC721', 'HolographERC721', 'RegisterTemplates']);
 
-    holographMock = holograph.address;
+    // holograph = await ethers.getContract('Holograph');
+    const holographFactory = await ethers.getContract('HolographFactory');
 
-    const HolographerFactory = await ethers.getContractFactory<Holographer__factory>('Holographer');
-    holographer = await HolographerFactory.deploy();
-    await holographer.deployed();
+    let { erc721Config, erc721ConfigHash, erc721ConfigHashBytes } = await generateErc721Config(
+      networks[hre.networkName], // reference to hardhat network object
+      deployer.address, // address of creator of contract
+      'SampleERC721', // contract bytecode to use
+      'Sample ERC721 Contract', // name of contract
+      'SMPLR', // token symbol of contract
+      1000, // royalties to use (bps 10%) <- erc721 specific
+      ConfigureEvents([
+        // events to connect / capture for SampleERC721
+        HolographERC721Event.bridgeIn,
+        HolographERC721Event.bridgeOut,
+        HolographERC721Event.afterBurn,
+      ]),
+      generateInitCode(['address'], [deployer.address]), // init code for SampleERC721 itself
+      hre.deploymentSalt // random bytes32 salt that you decide to assign this config, used again on other chains to guarantee uniqueness if all above vars are same for another contract for some reason
+    );
+
+    const sig = await deployer.signMessage(erc721ConfigHashBytes);
+    const signature: Signature = StrictECDSA({
+      r: '0x' + sig.substring(2, 66),
+      s: '0x' + sig.substring(66, 130),
+      v: '0x' + sig.substring(130, 132),
+    } as Signature);
+
+    const depoyTx = await holographFactory.deployHolographableContract(erc721Config, signature, deployer.address, {
+      nonce: await ethers.provider.getTransactionCount(deployer.address),
+    });
+    const deployResult = await depoyTx.wait();
+
+    const event = deployResult.events?.find((event: any) => event.event === 'BridgeableContractDeployed');
+    const [holographerAddress, hash] = event?.args || ['', ''];
+    console.log('=====> ', holographerAddress);
+
+    // holographMock = holograph.address;
+
+    // const HolographerFactory = await ethers.getContractFactory<Holographer__factory>('Holographer');
+    // holographer = await HolographerFactory.deploy();
+    // await holographer.deployed();
 
     const mockExternalCallFactory = await ethers.getContractFactory<MockExternalCall__factory>('MockExternalCall');
     mockExternalCall = await mockExternalCallFactory.deploy();
     await mockExternalCall.deployed();
   });
 
-  describe('init()', async function () {
-    it.only('should successfully be initialized once', async () => {
+  describe('constructor', async function () {
+    it('should successfully deploy', async function () {
+      expect(holographer.address).to.not.equal(ethers.constants.AddressZero);
+    });
+  });
+
+  describe.only('init()', () => {
+    it.skip('should successfully be initialized once', async () => {
       console.log('block before: ', (await ethers.provider.getBlock('latest')).number);
 
       const tx = await holographer.connect(deployer).init(initPayload);
@@ -64,21 +109,18 @@ describe('Holograph Holographer Contract', async function () {
       deployedBlock = (await ethers.provider.getBlock('latest')).number;
 
       //TODO: _contractTypeSlot using getStorageAt
-      // expect(await holographer.getHolograph()).to.equal(holographMock);
-      // expect(await holographer.getOriginChain()).to.equal(originChainMock);
-      // expect(await holographer.getSourceContract()).to.equal(sourceContractMock);
-      // expect(await holographer.getDeploymentBlock()).to.equal(deployedBlock);
-      // expect(await holographer.getAdmin()).to.equal(deployer.address);
+      expect(await holographer.getHolograph()).to.equal(holographMock);
+      expect(await holographer.getOriginChain()).to.equal(originChainMock);
+      expect(await holographer.getSourceContract()).to.equal(sourceContractMock);
+      expect(await holographer.getDeploymentBlock()).to.equal(deployedBlock);
+      expect(await holographer.getAdmin()).to.equal(deployer.address);
     }); // Validate hardcoded values are correct
 
-    it('should fail if already initialized', async () => {
-      const tx = await holographer.connect(deployer).init(initPayload);
-      await tx.wait();
-
+    it.skip('should fail if already initialized', async () => {
       await expect(holographer.connect(deployer).init(initPayload)).to.be.revertedWith(ALREADY_INITIALIZED_ERROR_MSG);
     });
 
-    it('Should allow external contract to call fn', async () => {
+    it.skip('Should allow external contract to call fn', async () => {
       let ABI = ['function init(bytes memory initPayload) external'];
       let iface = new ethers.utils.Interface(ABI);
       let encodedFunctionData = iface.encodeFunctionData('init', [initPayload]);
@@ -96,12 +138,12 @@ describe('Holograph Holographer Contract', async function () {
   });
 
   describe('After initialized', () => {
-    beforeEach(async () => {
-      deployedBlock = (await ethers.provider.getBlock('latest')).number;
+    // beforeEach(async () => {
+    //   deployedBlock = (await ethers.provider.getBlock('latest')).number;
 
-      const tx = await holographer.connect(deployer).init(initPayload);
-      await tx.wait();
-    });
+    //   const tx = await holographer.connect(deployer).init(initPayload);
+    //   await tx.wait();
+    // });
 
     describe(`getDeploymentBlock()`, async function () {
       it('Should return valid _blockHeightSlot', async () => {
