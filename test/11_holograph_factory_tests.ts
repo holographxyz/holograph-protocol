@@ -13,7 +13,7 @@ import {
 import { ALREADY_DEPLOYED_ERROR_MSG, INVALID_SIGNATURE_ERROR_MSG, ONLY_ADMIN_ERROR_MSG } from './utils/error_constants';
 import { ConfigureEvents } from '../scripts/utils/events';
 
-describe.only('Holograph Factory Contract', async () => {
+describe('Holograph Factory Contract', async () => {
   let l1: PreTest;
   let l2: PreTest;
 
@@ -78,17 +78,15 @@ describe.only('Holograph Factory Contract', async () => {
   });
 
   describe('init():', async () => {
-    // TODO: Check initialized
-    // it.only('should check that contract was successfully initialized once', async () => {
-    //   await expect(l1.holographFactory.connect(deployer)._isInitialized().to.equal(true);
-    // });
-
+    // Contracts are initialized in the PreTest setup
     it('should fail if already initialized', async () => {
       const initCode = generateInitCode(
         ['address', 'address'],
         [l1.holographFactory.address, l1.holographRegistry.address]
       );
-      await expect(l1.holographFactory.connect(deployer).init(initCode)).to.be.reverted;
+      await expect(l1.holographFactory.connect(deployer).init(initCode)).to.be.revertedWith(
+        'HOLOGRAPH: already initialized'
+      );
     });
   });
 
