@@ -10,6 +10,8 @@ To work within the holograph ecosystem, the collection contract must be holograp
 
 Again, to bridge NFT, the contract collection must be a holographed contract! Doing so will ensure that the contract address and token IDs remain the same on all deployed blockchains. 
 
+![img_4.png](img_4.png)
+
 ## Estimating Gas
 
 To estimate gas, you have to make a requests to an onchain function with a payload of the message.
