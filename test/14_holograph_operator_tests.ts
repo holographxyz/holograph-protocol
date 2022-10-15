@@ -105,7 +105,7 @@ function shuffleWallets(array: KeyOf<PreTest>[]) {
   return array;
 }
 
-describe.only('Holograph Operator Contract', async () => {
+describe('Holograph Operator Contract', async () => {
   let l1: PreTest;
   let l2: PreTest;
 
