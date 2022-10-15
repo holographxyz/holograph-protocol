@@ -3,34 +3,59 @@
 Holograph provides omnichain NFT infrastructure for the web3 ecosystem. Holograph Protocol enables the creation, deployment, minting, & bridging of omnichain NFTs with complete data integrity.
 
 ## 🧙 Setup Instructions and Codebase Overview:
+
 - [Holograph Protocol Specification](https://docs.holograph.xyz/holograph-protocol/technical-specification)
 - [Holograph Code REPO - Specific branch and commit](https://github.com/holographxyz/holograph-protocol/tree/c4_audit)
 - [Holograph Code Setup](docs/SETUP_README.md)
 - [Holograph Contract Descriptions](docs/CONTRACT_DESCRIPTIONS.md)
 - [Holograph Flows (Bridge / Operator / Pods)](docs/IMPORTANT_FLOWS.md)
 
-
 ## 🛫 Quick Start
+
+### Install dependencies
+
 ```bash
 yarn install
 ```
+
+### Setup sample env
+
 ```bash
-yarn build
+yarn run init
 ```
+
+### Compile contracts
+
+```bash
+yarn clean-compile
+```
+
+### Run local chains
+
 Terminal 1
+
 ```bash
 yarn ganache-x2
 ```
+
+### Run the tests
+
 Terminal 2
+
 ```bash
 yarn test
 ```
 
+### Building
+
+When the project is built, the code in the `src` folder gets written to the `contracts` folder. The files in the `contracts` folder are the "real" files that are used for testing and code verification on all the scanners.
+
+Again, files from the `src` directory are automatically transpiled into the `contracts` directory each time that **hardhat** compiles the contracts.
 
 ## 🔎 Contracts in Scope
 
 | File                           | Description                                                                        | Lines Of Code |
-|--------------------------------|------------------------------------------------------------------------------------|---------------|
+| ------------------------------ | ---------------------------------------------------------------------------------- | ------------- |
 | `HolographBridge.sol`          | primary use for FE user to make cross-chain beam request                           | 226           |
 | `HolographOperator.sol`        | finalizes cross-chain beam                                                         | 434           |
 | `HolographFactory.sol`         | combines deployment config and deploys holographable contracts                     | 135           |
@@ -71,12 +96,11 @@ yarn test
 <pre>
 root
 
-├── <a href="./config">config</a>: Network configuration files
-├── <a href="./contracts">contracts</a>: Smart contracts that power Holograph Protocol
-├── <a href="./deploy">deploy</a>: Deployment scripts for the smart contracts uses <a href="https://hardhat.org/">Hardhat</a> and <a href="https://github.com/wighawag/hardhat-deploy">Hardhat Deploy</a>
-├── <a href="./deployments">deployments</a>: Deployment build files that include contract addresses on each network
-├── <a href="./scripts">scripts</a>: Scripts and helper utilities
-├── <a href="./src">src</a>: Source contracts that get dynamically transpiled down into the finalized output <a href="./contracts">contracts</a>
-└── <a href="./test">test</a>: Hardhat tests for the smart contracts
+├── <a href="https://github.com/code-423n4/2022-10-holograph/blob/main/config">config</a>: Network configuration files
+├── <a href="https://github.com/code-423n4/2022-10-holograph/blob/main/contracts">contracts</a>: Smart contracts that power the Holograph protocol
+├── <a href="https://github.com/code-423n4/2022-10-holograph/blob/main/deploy">deploy</a>: Deployment scripts for the smart contracts uses <a href="https://hardhat.org/">Hardhat</a> and <a href="https://github.com/wighawag/hardhat-deploy">Hardhat Deploy</a>
+├── <a href="https://github.com/code-423n4/2022-10-holograph/blob/main/deployments">deployments</a>: Deployment build files that include contract addresses on each network
+├── <a href="https://github.com/code-423n4/2022-10-holograph/blob/main/scripts">scripts</a>: Scripts and helper utilities
+├── <a href="https://github.com/code-423n4/2022-10-holograph/blob/main/src">src</a>: Source contracts that get dynamically transpiled down into the finalized output <a href="./contracts">contracts</a>
+└── <a href="https://github.com/code-423n4/2022-10-holograph/blob/main/test">test</a>: Hardhat tests for the smart contracts
 </pre>
-
