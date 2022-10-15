@@ -197,7 +197,8 @@ At step 5, the wallet sends a transaction to the `exectureJob` method on the `Ho
    - Install [asdf yarn plugin](https://github.com/twuni/asdf-yarn): `asdf plugin-add yarn`
 1. Run `asdf install` after to have the correct tool versions.
 1. Install dependencies with `yarn install`.
-1. Initialize the project with `yarn run init` _(this will copy sample environment configs)_.
+
+   _"This project uses environment variables that are stored in `.env`"_
 
 ### Building
 
@@ -216,55 +217,26 @@ Please make use of the `yarn run prettier:fix` command to format the codebase in
 <pre>
 root
 
-├── <a href="https://github.com/code-423n4/2022-10-holograph/blob/main/config">config</a>: Network configuration files
-├── <a href="https://github.com/code-423n4/2022-10-holograph/blob/main/contracts">contracts</a>: Smart contracts that power the Holograph protocol
-├── <a href="https://github.com/code-423n4/2022-10-holograph/blob/main/deploy">deploy</a>: Deployment scripts for the smart contracts uses <a href="https://hardhat.org/">Hardhat</a> and <a href="https://github.com/wighawag/hardhat-deploy">Hardhat Deploy</a>
-├── <a href="https://github.com/code-423n4/2022-10-holograph/blob/main/deployments">deployments</a>: Deployment build files that include contract addresses on each network
-├── <a href="https://github.com/code-423n4/2022-10-holograph/blob/main/scripts">scripts</a>: Scripts and helper utilities
-├── <a href="https://github.com/code-423n4/2022-10-holograph/blob/main/src">src</a>: Source contracts that get dynamically transpiled down into the finalized output <a href="./contracts">contracts</a>
-└── <a href="https://github.com/code-423n4/2022-10-holograph/blob/main/test">test</a>: Hardhat tests for the smart contracts
+├── <a href="./config">config</a>: Network configuration files
+├── <a href="./contracts">contracts</a>: Smart contracts that power the Holograph protocol
+├── <a href="./deploy">deploy</a>: Deployment scripts for the smart contracts uses <a href="https://hardhat.org/">Hardhat</a> and <a href="https://github.com/wighawag/hardhat-deploy">Hardhat Deploy</a>
+├── <a href="./deployments">deployments</a>: Deployment build files that include contract addresses on each network
+├── <a href="./scripts">scripts</a>: Scripts and helper utilities
+├── <a href="./src">src</a>: Source contracts that get dynamically transpiled down into the finalized output <a href="./contracts">contracts</a>
+└── <a href="./test">test</a>: Hardhat tests for the smart contracts
 </pre>
-
-## For C4 Wardens
-
-## In Scope \*
-
-1. `HolographBridge.sol` (primary use for FE user to make cross-chain beam request)
-2. `HolographOperator.sol` (finalizes cross-chain beam)
-3. `Holographer.sol` (wrapper for custom user contract and standards enforcer contract)
-4. `HolographERC20.sol` (ERC20 standards enforcer)
-5. `HolographERC721.sol` (ERC721 standards enforcer)
-6. `HolographFactory.sol` (combines deployment config and deploys holographable contracts)
-7. `PA1D.sol` (responds to royalty info for ERC721 contracts)
-8. `abstract/ERC20H.sol` (helper contract to use as base when creating custom ERC20 holographable contracts)
-9. `abstract/ERC721H.sol` (helper contract to use as base when creating custom ERC721 holographable contracts)
-
-## Out of Scope \*
-
-1. `Holograph.sol` (simple getter/setter contract)
-2. `HolographGenesis.sol` (simple getter/setter and one CREATE2 function)
-3. `HolographRegistry.sol` (simple getter/setter contract)
-4. `HolographTreasury.sol` (not implemented/used/finished)
-5. `Interfaces.sol` (simple getter/setter contract)
-6. `./abstract` (well known primitives. ERC20H.sol and ERC721H.sol are excluded)
-7. `./enums` (no logic)
-8. `./interface` (no logic)
-9. `./library` (libraries are mostly not used. those that are, are well known/ubiquitous libraries)
-10. `./mock` (mock contracts to return fake data for tests)
-11. `./proxy` (simple proxy contracts)
-12. `./struct` (no logic)
-13. `./token` (examples of custom Holographable contracts. Should be used as reference on how to create custom contracts that build on top of the protocol)
 
 ## Branching Model and Releases
 
 ### Active Branches
 
-| Branch                                                                     | Status                                                                             |
-| -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| [mainnet](https://github.com/holographxyz/holograph-protocol/tree/mainnet) | Accepts PRs from `testnet` or `release/x.x.x` when we intend to deploy to mainnet. |
-| [testnet](https://github.com/holographxyz/holograph-protocol/tree/testnet) | Accepts PRs from `develop` that are ready to be deployed to testnet.               |
-| [develop](https://github.com/holographxyz/holograph-protocol/tree/develop) | Accepts PRs from `feature/xyz` branches that are experimental or in testing stage. |
-| release/x.x.x                                                              | Accepts PRs from `testnet`.                                                        |
+| Branch                                                                               | Status                                                                             |
+| ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| [mainnet](https://github.com/holographxyz/holograph-protocol/tree/mainnet)           | Accepts PRs from `testnet` or `release/x.x.x` when we intend to deploy to mainnet. |
+| [testnet](https://github.com/holographxyz/holograph-protocol/tree/testnet)           | Accepts PRs from `develop` that are ready to be deployed to testnet.               |
+| [develop](https://github.com/holographxyz/holograph-protocol/tree/develop)           | Accepts PRs from `feature/xyz` branches that are experimental or in testing stage. |
+| [experimental](https://github.com/holographxyz/holograph-protocol/tree/experimental) | Accepts PRs from any branches.                                                     |
+| release/x.x.x                                                                        | Accepts PRs from `testnet`.                                                        |
 
 ### Overview
 
@@ -284,8 +256,13 @@ The `testnet` branch continas the code that is the latest stable testnet release
 
 ### The `develop` branch
 
-Our primary development branch is [`develop`](https://github.com/holographxyz/holograph-protocol/tree/testnet).
+Our primary development branch is [`develop`](https://github.com/holographxyz/holograph-protocol/tree/develo).
 `develop` contains the most up-to-date software that is being tested via experimental network deployments.
+
+### The `experimental` branch
+
+Our primary experimentation branch is [`experimental`](https://github.com/holographxyz/holograph-protocol/tree/experimental).
+`experimental` contains the software that is not stable and is trying out new code.
 
 ## Contributing
 
