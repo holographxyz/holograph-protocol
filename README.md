@@ -9,6 +9,7 @@ Holograph provides omnichain NFT infrastructure for the web3 ecosystem. Holograp
 - [Holograph Code Setup](docs/SETUP_README.md)
 - [Holograph Contract Descriptions](docs/CONTRACT_DESCRIPTIONS.md)
 - [Holograph Flows (Bridge / Operator / Pods)](docs/IMPORTANT_FLOWS.md)
+- [Holograph Full Detailed README](README_DETAILS.md)
 
 ## 🛫 Quick Start
 
