@@ -5,19 +5,33 @@ Holograph provides omnichain NFT infrastructure for the web3 ecosystem. Holograp
 ## 🧙 Setup Instructions and Codebase Overview:
 
 - [Holograph Protocol Specification](https://docs.holograph.xyz/holograph-protocol/technical-specification)
+- [Holograph Code REPO - Specific branch and commit](https://github.com/holographxyz/holograph-protocol/tree/c4_audit)
 - [Holograph Code Setup](docs/SETUP_README.md)
 - [Holograph Contract Descriptions](docs/CONTRACT_DESCRIPTIONS.md)
 - [Holograph Flows (Bridge / Operator / Pods)](docs/IMPORTANT_FLOWS.md)
+- [Holograph Full Detailed README](README_DETAILS.md)
 
 ## 🛫 Quick Start
+
+### Install dependencies
 
 ```bash
 yarn install
 ```
 
+### Setup sample env
+
 ```bash
-yarn build
+yarn run init
 ```
+
+### Compile contracts
+
+```bash
+yarn clean-compile
+```
+
+### Run local chains
 
 Terminal 1
 
@@ -25,11 +39,19 @@ Terminal 1
 yarn ganache-x2
 ```
 
+### Run the tests
+
 Terminal 2
 
 ```bash
 yarn test
 ```
+
+### Building
+
+When the project is built, the code in the `src` folder gets written to the `contracts` folder. The files in the `contracts` folder are the "real" files that are used for testing and code verification on all the scanners.
+
+Again, files from the `src` directory are automatically transpiled into the `contracts` directory each time that **hardhat** compiles the contracts.
 
 ## 🔎 Contracts in Scope
 
@@ -75,11 +97,11 @@ yarn test
 <pre>
 root
 
-├── <a href="./config">config</a>: Network configuration files
-├── <a href="./contracts">contracts</a>: Smart contracts that power Holograph Protocol
-├── <a href="./deploy">deploy</a>: Deployment scripts for the smart contracts uses <a href="https://hardhat.org/">Hardhat</a> and <a href="https://github.com/wighawag/hardhat-deploy">Hardhat Deploy</a>
-├── <a href="./deployments">deployments</a>: Deployment build files that include contract addresses on each network
-├── <a href="./scripts">scripts</a>: Scripts and helper utilities
-├── <a href="./src">src</a>: Source contracts that get dynamically transpiled down into the finalized output <a href="./contracts">contracts</a>
-└── <a href="./test">test</a>: Hardhat tests for the smart contracts
+├── <a href="https://github.com/code-423n4/2022-10-holograph/blob/main/config">config</a>: Network configuration files
+├── <a href="https://github.com/code-423n4/2022-10-holograph/blob/main/contracts">contracts</a>: Smart contracts that power the Holograph protocol
+├── <a href="https://github.com/code-423n4/2022-10-holograph/blob/main/deploy">deploy</a>: Deployment scripts for the smart contracts uses <a href="https://hardhat.org/">Hardhat</a> and <a href="https://github.com/wighawag/hardhat-deploy">Hardhat Deploy</a>
+├── <a href="https://github.com/code-423n4/2022-10-holograph/blob/main/deployments">deployments</a>: Deployment build files that include contract addresses on each network
+├── <a href="https://github.com/code-423n4/2022-10-holograph/blob/main/scripts">scripts</a>: Scripts and helper utilities
+├── <a href="https://github.com/code-423n4/2022-10-holograph/blob/main/src">src</a>: Source contracts that get dynamically transpiled down into the finalized output <a href="./contracts">contracts</a>
+└── <a href="https://github.com/code-423n4/2022-10-holograph/blob/main/test">test</a>: Hardhat tests for the smart contracts
 </pre>
