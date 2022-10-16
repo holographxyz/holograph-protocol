@@ -33,7 +33,7 @@ yarn clean-compile
 
 ### Run local chains
 
-Terminal 1
+Terminal 1 (restart ganache after every full test run)
 
 ```bash
 yarn ganache-x2
@@ -46,6 +46,8 @@ Terminal 2
 ```bash
 yarn test
 ```
+
+After this completes, don't forget to restart ganache. Some tests may fail upon running a second time.
 
 ### Building
 
