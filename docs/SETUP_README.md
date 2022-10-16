@@ -23,7 +23,7 @@ If you are going to write tests or use modify any scripts locally, then we recom
 
 ### Compiling (IMPORTANT)
 
-We compile the code from the `/src` folder into the `/contracts` folder. As a reviewer you only need to worry about the files in the `/contracts` folder. They have already been compiled and working as expected. But if you do modify the contracts in the `/src` folder, you will have to do this step and then call `yarn build` command afterwards.
+We compile the code from the `/src` folder into the `/contracts` folder. As a reviewer you only need to worry about the files in the `/contracts` folder. They have already been compiled and working as expected. But if you do modify the contracts in the `/src` folder, you will have to run ``yarn clean-compile` for things to work as expected.
 
 1. `yarn clean-compile`
 
