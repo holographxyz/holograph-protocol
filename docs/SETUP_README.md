@@ -11,6 +11,12 @@ Using `npm` will work but we use `yarn`. If you have `asdf` installed, then you 
 
 1. `yarn install` or `npm install`
 
+## Initializing repo (IMPORTANT)
+
+Run `yarn run init` to copy the sample env into `.env` .
+
+If you skip this step the following steps can fail!
+
 ### Building types
 
 If you are going to write tests or use modify any scripts locally, then we recommend running `yarn typechain` to generate the `typechains-type` folder.
@@ -18,6 +24,9 @@ If you are going to write tests or use modify any scripts locally, then we recom
 ### Compiling (IMPORTANT)
 
 We compile the code from the `/src` folder into the `/contracts` folder. As a reviewer you only need to worry about the files in the `/contracts` folder. They have already been compiled and working as expected. But if you do modify the contracts in the `/src` folder, you will have to do this step and then call `yarn build` command afterwards.
+
+1. `yarn clean-compile`
+
 
 ### Building
 
