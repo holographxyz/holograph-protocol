@@ -61,11 +61,7 @@ import {
   HolographERC1155Event,
   ConfigureEvents,
 } from '../../scripts/utils/events';
-import {
-  Network,
-  Networks,
-  networks,
-} from '@holographxyz/networks';
+import { Network, Networks, networks } from '@holographxyz/networks';
 
 let hre1: HardhatRuntimeEnvironment = require('hardhat');
 

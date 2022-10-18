@@ -667,7 +667,15 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
     uint256,
     uint256,
     bytes calldata
-  ) external view returns (uint256, uint256, uint256) {
+  )
+    external
+    view
+    returns (
+      uint256,
+      uint256,
+      uint256
+    )
+  {
     assembly {
       calldatacopy(0, 0, calldatasize())
       let result := staticcall(gas(), sload(_messagingModuleSlot), 0, calldatasize(), 0, 0)

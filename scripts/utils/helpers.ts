@@ -36,12 +36,7 @@ import {
   getUnnamedSigners,
 } from '@nomiclabs/hardhat-ethers/internal/helpers';
 import type * as ProviderProxyT from '@nomiclabs/hardhat-ethers/internal/provider-proxy';
-import {
-  NetworkType,
-  Network,
-  Networks,
-  networks,
-} from '@holographxyz/networks';
+import { NetworkType, Network, Networks, networks } from '@holographxyz/networks';
 import { PreTest } from '../../test/utils/index';
 
 export type DeploymentConfigStruct = {

@@ -280,8 +280,15 @@ contract HolographBridge is Admin, Initializable, HolographBridgeInterface {
      */
     uint256 fee = 0;
     if (gasPrice < type(uint256).max && gasLimit < type(uint256).max) {
-      (uint256 hlgFee, , uint256 dstGasPrice) = _operator().getMessageFee(toChain, gasLimit, gasPrice, bridgeOutPayload);
-      gasPrice = dstGasPrice;
+      (uint256 hlgFee, , uint256 dstGasPrice) = _operator().getMessageFee(
+        toChain,
+        gasLimit,
+        gasPrice,
+        bridgeOutPayload
+      );
+      if (gasPrice == 0) {
+        gasPrice = dstGasPrice;
+      }
       fee = hlgFee;
     }
     /**
@@ -323,7 +330,15 @@ contract HolographBridge is Admin, Initializable, HolographBridgeInterface {
     uint256,
     uint256,
     bytes calldata
-  ) external view returns (uint256, uint256, uint256) {
+  )
+    external
+    view
+    returns (
+      uint256,
+      uint256,
+      uint256
+    )
+  {
     assembly {
       calldatacopy(0, 0, calldatasize())
       let result := staticcall(gas(), sload(_operatorSlot), 0, calldatasize(), 0, 0)

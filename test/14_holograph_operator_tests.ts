@@ -2,7 +2,7 @@ import { expect, assert } from 'chai';
 import { PreTest } from './utils';
 import setup from './utils';
 import { BytesLike, BigNumber, ContractFactory } from 'ethers';
-import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider'
+import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
   Signature,
@@ -435,8 +435,8 @@ describe('Holograph Operator Contract', async () => {
         data,
         payload,
         true
-      ); // returns: gasLimit, nativeFee, hlgFee, msgFee
-      assert((gasEstimates[1] as BigNumber).gt(BigNumber.from('0x38d7ea4c68000')), 'unexpectedly low gas estimation'); // 0.001 ETH
+      ); // returns: payload, gasLimit, nativeFee, hlgFee, msgFee
+      assert((gasEstimates[1] as BigNumber).gt(BigNumber.from('100000')), 'unexpectedly low gas estimation'); // 100k gas units
     });
   });
 
@@ -945,7 +945,9 @@ describe('Holograph Operator Contract', async () => {
         let payload: string = targetArray.shift() as string;
         let operatorJob = await l1.operator.getJobDetails(payloadHash);
         let jobOperator = pickOperator(l1, operatorJob[2]);
-        await expect(l1.operator.connect(jobOperator).executeJob(payload)).to.not.be.reverted;
+        await expect(
+          l1.operator.connect(jobOperator).executeJob(payload, { gasPrice: GASPRICE, gasLimit: TESTGASLIMIT })
+        ).to.not.be.reverted;
         process.stdout.write(
           ' '.repeat(8) + '[' + (i + 1).toString().padStart(3, '0') + '] executed by ' + jobOperator.address + '\n'
         );
