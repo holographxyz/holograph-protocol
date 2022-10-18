@@ -36,7 +36,12 @@ import {
   getUnnamedSigners,
 } from '@nomiclabs/hardhat-ethers/internal/helpers';
 import type * as ProviderProxyT from '@nomiclabs/hardhat-ethers/internal/provider-proxy';
-import networks from '../../config/networks';
+import {
+  NetworkType,
+  Network,
+  Networks,
+  networks,
+} from '@holographxyz/networks';
 import { PreTest } from '../../test/utils/index';
 
 export type DeploymentConfigStruct = {
@@ -59,29 +64,6 @@ export interface LeanHardhatRuntimeEnvironment {
   ethers: typeof ethers & HardhatEthersHelpers;
   artifacts: Artifacts;
   deploymentSalt: string;
-}
-
-export enum NetworkType {
-  local = 'local',
-  testnet = 'testnet',
-  mainnet = 'mainnet',
-}
-
-export interface Network {
-  type: NetworkType;
-  chain: number;
-  rpc: string;
-  holographId: number;
-  tokenName: string;
-  tokenSymbol: string;
-  lzEndpoint: string;
-  lzId: number;
-  active: boolean;
-  webSocket?: string;
-}
-
-export interface Networks {
-  [key: string]: Network;
 }
 
 export interface Signature {
@@ -473,6 +455,7 @@ const generateErc721Config = async function (
   let chainId: string = '0x' + network.holographId.toString(16).padStart(8, '0');
   let erc721Hash: string = '0x' + web3.utils.asciiToHex('HolographERC721').substring(2).padStart(64, '0');
   let artifact: ContractFactory = await hre.ethers.getContractFactory(contractName);
+  salt = '0x' + remove0x(salt as string).padStart(64, '0');
   let erc721Config: DeploymentConfigStruct = {
     contractType: erc721Hash,
     chainType: chainId,
@@ -534,6 +517,7 @@ const generateErc20Config = async function (
   let chainId: string = '0x' + network.holographId.toString(16).padStart(8, '0');
   let erc20Hash: string = '0x' + web3.utils.asciiToHex('HolographERC20').substring(2).padStart(64, '0');
   let artifact: ContractFactory = await hre.ethers.getContractFactory(contractName);
+  salt = '0x' + remove0x(salt as string).padStart(64, '0');
   let erc20Config: DeploymentConfigStruct = {
     contractType: erc20Hash,
     chainType: chainId,
@@ -794,6 +778,7 @@ const HASH = function (input: string | BytesLike, prepend: boolean = true): stri
 };
 
 export {
+  web3,
   executeJobGas,
   KeyOf,
   isDefined,

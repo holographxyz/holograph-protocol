@@ -2,6 +2,7 @@ import { expect, assert } from 'chai';
 import { PreTest } from './utils';
 import setup from './utils';
 import { BytesLike, BigNumber, ContractFactory } from 'ethers';
+import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
   Signature,
@@ -84,7 +85,13 @@ const getEstimatedGas = async function (
 
   let fees = await l1.bridge.callStatic.getMessageFee(l2.network.holographId, estimatedGas, GWEI, payload);
   let total: BigNumber = fees[0].add(fees[1]);
-  let gasEstimation = await l2.operator.callStatic.jobEstimator(payload);
+  let gasEstimation = TESTGASLIMIT.sub(
+    await l2.operator.callStatic.jobEstimator(payload as string, {
+      value: total,
+      gasPrice: GASPRICE,
+      gasLimit: TESTGASLIMIT,
+    })
+  );
   return [payload, gasEstimation, total, fees[0], fees[1]];
 };
 
@@ -378,7 +385,7 @@ describe('Holograph Operator Contract', async () => {
         );
       let functionSig = functionHash('bridgeInRequest(uint256,uint32,address,address,address,uint256,bool,bytes)'); // fuunction signature
       let gasEstimation = await l2.operator.callStatic.jobEstimator(functionSig + remove0x(bridgeInRequestPayload));
-      assert(gasEstimation.gt(BigNumber.from('0x38d7ea4c68000')), 'unexpectedly low gas estimation'); // 0.001 ETH
+      assert(gasEstimation.gt(BigNumber.from('0x5af3107a4000')), 'unexpectedly low gas estimation'); // 0.001 ETH
     });
     it('Should allow external contract to call fn', async () => {
       let data: BytesLike = generateInitCode(
@@ -770,6 +777,15 @@ describe('Holograph Operator Contract', async () => {
     });
   });
 
+  describe('getPodOperatorsLength()', async () => {
+    it('should return expected pod length', async () => {
+      expect(await l1.operator.getPodOperatorsLength(1)).to.equal(BigNumber.from('1'));
+    });
+    it('should fail if pod does not exist', async () => {
+      await expect(l1.operator.getPodOperatorsLength(2)).to.be.revertedWith('HOLOGRAPH: pod does not exist');
+    });
+  });
+
   describe('** bond test operators **', async () => {
     it('should add 10 operator wallets on each chain', async function () {
       let bondAmounts: BigNumber[] = await l1.operator.getPodBondAmounts(1);
@@ -846,12 +862,13 @@ describe('Holograph Operator Contract', async () => {
       let payloadHash: string = availableJobs[0] as string;
       let payload: string = availableJobs[1] as string;
       let operatorJob = await l1.operator.getJobDetails(payloadHash);
+      let selectedOperator = operatorJob[2] as string;
       let fallbackOperator = (
         await l1.operator.callStatic['getPodOperators(uint256,uint256,uint256)'](1, operatorJob[5][0], 1)
       )[0];
       let jobOperator: SignerWithAddress = pickOperator(l1, fallbackOperator, true);
       // iterate and try again in case current job operator is selected
-      while (jobOperator.address.toLowerCase() == operatorJob[2].toLowerCase()) {
+      while (jobOperator.address.toLowerCase() == selectedOperator.toLowerCase()) {
         jobOperator = pickOperator(l1, fallbackOperator, true);
       }
       await expect(l1.operator.connect(jobOperator).executeJob(payload)).to.be.revertedWith(
@@ -887,7 +904,7 @@ describe('Holograph Operator Contract', async () => {
       let wallet: SignerWithAddress;
       for (let i = 0, l = wallets.length; i < l; i++) {
         wallet = l1[wallets[i]] as SignerWithAddress;
-        await l1.operator.topupUtilityToken(wallet.address, bondRequirements[1]);
+        await expect(l1.operator.topupUtilityToken(wallet.address, bondRequirements[1])).to.not.be.reverted;
       }
       operatorJobTokenId++;
       while (!(await createOperatorJob(l1, l2, operatorJobTokenId, true))) {
@@ -914,8 +931,8 @@ describe('Holograph Operator Contract', async () => {
         jobOperatorBondAmount.add(bondRequirements[0])
       );
     });
-    it('Should succeed executing 50 jobs', async () => {
-      for (let i = 0, l = 50; i < l; i++) {
+    it('Should succeed executing 100 jobs', async () => {
+      for (let i = 0, l = 100; i < l; i++) {
         if (zeroAddressJobs.length == 0) {
           operatorJobTokenId++;
           await createOperatorJob(l1, l2, operatorJobTokenId);

@@ -253,7 +253,7 @@ contract LayerZeroModule is Admin, Initializable, CrossChainMessageInterface, La
     uint256 gasLimit,
     uint256 gasPrice,
     bytes calldata crossChainPayload
-  ) external view returns (uint256 hlgFee, uint256 msgFee) {
+  ) external view returns (uint256 hlgFee, uint256 msgFee, uint256 dstGasPrice) {
     uint16 lzDestChain = uint16(
       _interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)
     );
@@ -271,7 +271,7 @@ contract LayerZeroModule is Admin, Initializable, CrossChainMessageInterface, La
       uint256(_baseGas() + (crossChainPayload.length * _gasPerByte()))
     );
     (uint256 nativeFee, ) = lz.estimateFees(lzDestChain, address(this), crossChainPayload, false, adapterParams);
-    return (((gasPrice * (gasLimit + (gasLimit / 10))) * dstPriceRatio) / (10**10), nativeFee);
+    return (((gasPrice * (gasLimit + (gasLimit / 10))) * dstPriceRatio) / (10**10), nativeFee, dstGasPrice);
   }
 
   function getHlgFee(

@@ -8,7 +8,7 @@ import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-etherscan';
 import { types, task, HardhatUserConfig } from 'hardhat/config';
 import '@holographxyz/hardhat-holograph-contract-builder';
-import networks from './config/networks';
+import { NetworkType, Network, Networks, networks } from '@holographxyz/networks';
 import dotenv from 'dotenv';
 dotenv.config();
 

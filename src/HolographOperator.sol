@@ -561,13 +561,14 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
    * @dev @param crossChainPayload the entire packet being sent cross-chain
    * @return hlgFee the amount (in wei) of native gas token that will cost for finalizing job on destiantion chain
    * @return msgFee the amount (in wei) of native gas token that will cost for sending message to destiantion chain
+   * @return dstGasPrice the amount (in wei) that destination message maximum gas price will be
    */
   function getMessageFee(
     uint32,
     uint256,
     uint256,
     bytes calldata
-  ) external view returns (uint256, uint256) {
+  ) external view returns (uint256, uint256, uint256) {
     assembly {
       calldatacopy(0, 0, calldatasize())
       let result := staticcall(gas(), sload(_messagingModuleSlot), 0, calldatasize(), 0, 0)

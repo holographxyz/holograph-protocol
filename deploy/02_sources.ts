@@ -43,13 +43,11 @@ import {
   hreSplit,
   generateErc20Config,
   getHolographedContractHash,
-  Network,
-  NetworkType,
   Signature,
   StrictECDSA,
 } from '../scripts/utils/helpers';
 import { HolographERC20Event, ConfigureEvents } from '../scripts/utils/events';
-import networks from '../config/networks';
+import { NetworkType, Network, networks } from '@holographxyz/networks';
 
 const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   let { hre, hre2 } = await hreSplit(hre1, global.__companionNetwork);

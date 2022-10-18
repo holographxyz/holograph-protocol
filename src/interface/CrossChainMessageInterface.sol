@@ -17,7 +17,7 @@ interface CrossChainMessageInterface {
     uint256 gasLimit,
     uint256 gasPrice,
     bytes calldata crossChainPayload
-  ) external view returns (uint256 hlgFee, uint256 msgFee);
+  ) external view returns (uint256 hlgFee, uint256 msgFee, uint256 dstGasPrice);
 
   function getHlgFee(
     uint32 toChain,
