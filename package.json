@@ -24,9 +24,9 @@
     "typechain-types"
   ],
   "scripts": {
-    "postinstall": "cp -n sample.env .env",
+    "postinstall": "(ls .env >> /dev/null 2>&1 && cp .env ignore.original.env) ; cp sample.env .env",
     "dev:iterate": "hardhat clean & hardhat typechain",
-    "init": "cp -n sample.env .env",
+    "init": "(ls .env >> /dev/null 2>&1 && cp .env ignore.original.env) ; cp sample.env .env",
     "abi": "hardhat abi",
     "build": "hardhat holograph-build-contracts",
     "clean-compile": "hardhat clean ; hardhat compile",
@@ -47,7 +47,7 @@
   "dependencies": {
     "@holographxyz/hardhat-deploy-holographed": "^0.0.3",
     "@holographxyz/hardhat-holograph-contract-builder": "^0.0.3",
-    "@holographxyz/networks": "0.0.4",
+    "@holographxyz/networks": "^0.0.5",
     "chai-ethers": "^0.0.1",
     "ganache": "^7.2.0",
     "path": "^0.12.7",
