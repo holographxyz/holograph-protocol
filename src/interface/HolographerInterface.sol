@@ -3,6 +3,8 @@
 /*SOLIDITY_COMPILER_VERSION*/
 
 interface HolographerInterface {
+  function getContractType() external view returns (bytes32 contractType);
+
   function getDeploymentBlock() external view returns (address holograph);
 
   function getHolograph() external view returns (address holograph);

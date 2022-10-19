@@ -102,6 +102,8 @@
 pragma solidity 0.8.13;
 
 interface HolographerInterface {
+  function getContractType() external view returns (bytes32 contractType);
+
   function getDeploymentBlock() external view returns (address holograph);
 
   function getHolograph() external view returns (address holograph);
