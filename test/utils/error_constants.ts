@@ -7,3 +7,4 @@ export const PAD1_ALREADY_INITIALIZED_ERROR_MSG = 'PA1D: already initialized';
 export const FACTORY_ONLY_ERROR_MSG = 'HOLOGRAPH: factory only function';
 export const EMPTY_CONTRACT_ERROR_MSG = 'HOLOGRAPH: empty contract';
 export const CONTRACT_ALREADY_SET_ERROR_MSG = 'HOLOGRAPH: contract already set';
+export const PA1D_ONLY_OWNER_ERROR_MSG = 'PA1D: caller not an owner';
