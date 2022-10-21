@@ -652,8 +652,8 @@ const beamSomething = async function (
   const GWEI: BigNumber = BigNumber.from('1000000000');
   const TESTGASLIMIT: BigNumber = BigNumber.from('10000000');
   const GASPRICE: BigNumber = BigNumber.from('1000000000');
-  const GASPERBYTE: number = 31;
-  const BASEGAS: number = 130000;
+  const GASPERBYTE: number = 35;
+  const BASEGAS: number = 150000;
 
   const lzReceiveABI = {
     inputs: [
