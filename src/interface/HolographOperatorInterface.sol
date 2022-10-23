@@ -11,6 +11,11 @@ interface HolographOperatorInterface {
   event AvailableOperatorJob(bytes32 jobHash, bytes payload);
 
   /**
+   * @dev Event is emitted for every time that a job is completed.
+   */
+  event FinishedOperatorJob(bytes32 jobHash, address operator);
+
+  /**
    * @dev Event is emitted every time a cross-chain message is sent
    */
   event CrossChainMessageSent(bytes32 messageHash);

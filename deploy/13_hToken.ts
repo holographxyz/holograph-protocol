@@ -95,10 +95,10 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
         v: '0x' + sig.substring(130, 132),
       } as Signature);
 
-      const depoyTx = await factory.deployHolographableContract(erc20Config, signature, deployer.address, {
+      const deployTx = await factory.deployHolographableContract(erc20Config, signature, deployer.address, {
         nonce: await hre.ethers.provider.getTransactionCount(deployer.address),
       });
-      const deployResult = await depoyTx.wait();
+      const deployResult = await deployTx.wait();
       let eventIndex: number = 0;
       let eventFound: boolean = false;
       for (let i = 0, l = deployResult.events.length; i < l; i++) {

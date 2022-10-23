@@ -181,7 +181,7 @@ describe('Holograph Operator Contract', async () => {
     // temporarily set deployer as messaging module, to allow for easy sending
     await l1.operator.setMessagingModule(l1.deployer.address);
     // make call with deployer AS messaging module
-    await l1.operator.crossChainMessage(payload);
+    await l1.operator.crossChainMessage(payload, { gasLimit: TESTGASLIMIT });
     // return messaging module back to original address
     await l1.operator.setMessagingModule(originalMessagingModule);
     let operatorJob = await l1.operator.getJobDetails(payloadHash);
@@ -194,7 +194,7 @@ describe('Holograph Operator Contract', async () => {
       if (skipZeroAddressFallback && operatorJob[5][0] == 0) {
         // need to skip this one, since it will fail a fallback test
         // execute job to leave operator bonded
-        await l1.operator.connect(pickOperator(l1, operator)).executeJob(payload);
+        await l1.operator.connect(pickOperator(l1, operator)).executeJob(payload, { gasLimit: TESTGASLIMIT });
         return false;
       } else {
         availableJobs.push(payloadHash);
@@ -887,14 +887,14 @@ describe('Holograph Operator Contract', async () => {
       )[0];
       let jobOperator: SignerWithAddress = pickOperator(l1, fallbackOperator);
       let jobOperatorBondAmount: BigNumber = await l1.operator.getBondedAmount(jobOperator.address);
-      await expect(l1.operator.connect(jobOperator).executeJob(payload)).to.not.be.reverted;
+      await expect(l1.operator.connect(jobOperator).executeJob(payload))
+        .to.emit(HLGL1, 'Transfer')
+        .withArgs(l1.operator.address, jobOperator.address, bondRequirements[0]);
       expect(await l1.operator.getBondedAmount(selectedOperator)).to.equal(
         selectedOperatorBondAmount.sub(bondRequirements[0])
       );
       expect(await l1.operator.getBondedPod(selectedOperator)).to.equal(BigNumber.from('0'));
-      expect(await l1.operator.getBondedAmount(jobOperator.address)).to.equal(
-        jobOperatorBondAmount.add(bondRequirements[0])
-      );
+      expect(await l1.operator.getBondedAmount(jobOperator.address)).to.equal(jobOperatorBondAmount);
       // add slashed operator back
       await expect(l1.operator.bondUtilityToken(selectedOperator, bondRequirements[1], 1)).to.not.be.reverted;
     });
@@ -922,14 +922,14 @@ describe('Holograph Operator Contract', async () => {
       let jobOperatorBondAmount: BigNumber = await l1.operator.getBondedAmount(jobOperator.address);
       process.stdout.write(' '.repeat(8) + 'sleeping for ' + BLOCKTIME + ' seconds...' + '\n');
       await sleep(1000 * BLOCKTIME); // gotta wait 60 seconds for operator opportunity to close
-      await expect(l1.operator.connect(jobOperator).executeJob(payload)).to.not.be.reverted;
+      await expect(l1.operator.connect(jobOperator).executeJob(payload))
+        .to.emit(HLGL1, 'Transfer')
+        .withArgs(l1.operator.address, jobOperator.address, bondRequirements[0]);
       expect(await l1.operator.getBondedAmount(selectedOperator)).to.equal(
         selectedOperatorBondAmount.sub(bondRequirements[0])
       );
       expect(await l1.operator.getBondedPod(selectedOperator)).to.equal(BigNumber.from(operatorJob[0] as number));
-      expect(await l1.operator.getBondedAmount(jobOperator.address)).to.equal(
-        jobOperatorBondAmount.add(bondRequirements[0])
-      );
+      expect(await l1.operator.getBondedAmount(jobOperator.address)).to.equal(jobOperatorBondAmount);
     });
     it('Should succeed executing 100 jobs', async () => {
       for (let i = 0, l = 100; i < l; i++) {

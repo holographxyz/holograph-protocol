@@ -34,6 +34,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
 
   const holograph = await hre.ethers.getContract('Holograph');
   let hlgTokenAddress = await holograph.getUtilityToken();
+  const operatorAddress = await holograph.getOperator();
 
   const holographFactoryProxy = await hre.ethers.getContract('HolographFactoryProxy');
   const holographFactory = ((await hre.ethers.getContract('HolographFactory')) as Contract).attach(
@@ -98,10 +99,10 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       v: '0x' + sig.substring(130, 132),
     } as Signature);
 
-    const depoyTx = await holographFactory.deployHolographableContract(erc20Config, signature, deployer.address, {
+    const deployTx = await holographFactory.deployHolographableContract(erc20Config, signature, deployer.address, {
       nonce: await hre.ethers.provider.getTransactionCount(deployer.address),
     });
-    const deployResult = await depoyTx.wait();
+    const deployResult = await deployTx.wait();
     let eventIndex: number = 0;
     let eventFound: boolean = false;
     for (let i = 0, l = deployResult.events.length; i < l; i++) {
@@ -121,22 +122,33 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
         `Seems like hlgTokenAddress ${hlgTokenAddress} and futureHlgAddress ${futureHlgAddress} do not match!`
       );
     }
-    if ((await holograph.getUtilityToken()) != hlgTokenAddress) {
-      const setHTokenTx = await holograph.setUtilityToken(hlgTokenAddress, {
-        nonce: await hre.ethers.provider.getTransactionCount(deployer.address),
-      });
-      await setHTokenTx.wait();
-    }
-    if ((await holographRegistry.getUtilityToken()) != hlgTokenAddress) {
-      const setHTokenTx2 = await holographRegistry.setUtilityToken(hlgTokenAddress, {
-        nonce: await hre.ethers.provider.getTransactionCount(deployer.address),
-      });
-      await setHTokenTx2.wait();
-    }
-
     hre.deployments.log('deployed "HLG" at:', await holograph.getUtilityToken());
   } else {
     hre.deployments.log('reusing "HLG" at:', hlgTokenAddress);
+  }
+
+  if ((await holograph.getUtilityToken()) != hlgTokenAddress) {
+    const setHTokenTx = await holograph.setUtilityToken(hlgTokenAddress, {
+      nonce: await hre.ethers.provider.getTransactionCount(deployer.address),
+    });
+    await setHTokenTx.wait();
+  }
+
+  if ((await holographRegistry.getUtilityToken()) != hlgTokenAddress) {
+    const setHTokenTx2 = await holographRegistry.setUtilityToken(hlgTokenAddress, {
+      nonce: await hre.ethers.provider.getTransactionCount(deployer.address),
+    });
+    await setHTokenTx2.wait();
+  }
+
+  if (currentNetworkType == NetworkType.testnet || currentNetworkType == NetworkType.localhost) {
+    const hlgContract = (await hre.ethers.getContract('HolographERC20')).attach(hlgTokenAddress);
+    if ((await hlgContract.balanceOf(operatorAddress)).isZero()) {
+      const transferTx = await hlgContract.transfer(operatorAddress, BigNumber.from('1000000000000000000000000'), {
+        nonce: await hre.ethers.provider.getTransactionCount(deployer.address),
+      });
+      await transferTx.wait();
+    }
   }
 };
 

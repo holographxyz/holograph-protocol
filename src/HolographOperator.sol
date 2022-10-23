@@ -229,6 +229,10 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
      */
     delete _operatorJobs[hash];
     /**
+     * @dev operators of last resort are allowed, but they will not receive HLG rewards of any sort
+     */
+    bool isBonded = _bondedAmounts[msg.sender] != 0;
+    /**
      * @dev check that a specific operator was selected for the job
      */
     if (job.operator != address(0)) {
@@ -267,6 +271,8 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
              * @dev ensure that sender is currently valid backup operator
              */
             require(fallbackOperator == msg.sender, "HOLOGRAPH: invalid fallback");
+          } else {
+            require(_bondedOperators[msg.sender] == job.pod, "HOLOGRAPH: pod only fallback");
           }
         }
         /**
@@ -278,9 +284,11 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
          */
         _bondedAmounts[job.operator] -= amount;
         /**
-         * @dev the slashed amount is sent to current operator
+         * @dev only allow HLG rewards to go to bonded operators
+         *      if operator is bonded, the slashed amount is sent to current operator
+         *      otherwise it's sent to HLG directly, can be burned or sent to treasury from there
          */
-        _bondedAmounts[msg.sender] += amount;
+        _utilityToken().transfer((isBonded ? msg.sender : address(_utilityToken())), amount);
         /**
          * @dev check if slashed operator has enough tokens bonded to stay
          */
@@ -334,9 +342,14 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
     ++_inboundMessageCounter;
     /**
      * @dev reward operator (with HLG) for executing the job
-     * @dev this is out of scope and is purposefully omitted from code
+     *      this is out of scope and is purposefully omitted from code
+     *      currently reward is statically set to 1 token
      */
-    ////  _bondedOperators[msg.sender] += reward;
+    _utilityToken().transfer((isBonded ? msg.sender : address(_utilityToken())), (10**18));
+    /**
+     * @dev always emit an event at end of job, this helps other operators keep track of job status
+     */
+    emit FinishedOperatorJob(hash, msg.sender);
   }
 
   /*
