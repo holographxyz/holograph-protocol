@@ -418,6 +418,20 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
       }
     }
     /**
+     * @dev every executed job (even if failed) increments total message counter by one
+     */
+    ++_inboundMessageCounter;
+    /**
+     * @dev reward operator (with HLG) for executing the job
+     *      this is out of scope and is purposefully omitted from code
+     *      currently reward is statically set to 1 token
+     */
+    _utilityToken().transfer((isBonded ? msg.sender : address(_utilityToken())), (10**18));
+    /**
+     * @dev always emit an event at end of job, this helps other operators keep track of job status
+     */
+    emit FinishedOperatorJob(hash, msg.sender);
+    /**
      * @dev ensure that there is enough has left for the job
      */
     require(gasleft() > gasLimit, "HOLOGRAPH: not enough gas left");
@@ -435,20 +449,6 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
       _failedJobs[hash] = true;
       emit FailedOperatorJob(hash);
     }
-    /**
-     * @dev every executed job (even if failed) increments total message counter by one
-     */
-    ++_inboundMessageCounter;
-    /**
-     * @dev reward operator (with HLG) for executing the job
-     *      this is out of scope and is purposefully omitted from code
-     *      currently reward is statically set to 1 token
-     */
-    _utilityToken().transfer((isBonded ? msg.sender : address(_utilityToken())), (10**18));
-    /**
-     * @dev always emit an event at end of job, this helps other operators keep track of job status
-     */
-    emit FinishedOperatorJob(hash, msg.sender);
   }
 
   /*
@@ -603,7 +603,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
   ) external payable {
     require(msg.sender == _bridge(), "HOLOGRAPH: bridge only call");
     CrossChainMessageInterface messagingModule = _messagingModule();
-    uint256 hlgFee = messagingModule.getHlgFee(toChain, gasLimit, gasPrice);
+    uint256 hlgFee = messagingModule.getHlgFee(toChain, gasLimit, gasPrice, bridgeOutPayload.length);
     address hToken = _registry().getHToken(_holograph().getHolographChainId());
     require(hlgFee < msg.value, "HOLOGRAPH: not enough value");
     payable(hToken).transfer(hlgFee);
