@@ -739,6 +739,16 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
   }
 
   /**
+   * @notice Get an operator's currently bonded pod index
+   * @dev Useful for checking if an operator is a fallback for active job
+   * @param operator address of operator to check
+   * @return index currently bonded pod's operator index, returns zero if not in pod or moved out for active job
+   */
+  function getBondedPodIndex(address operator) external view returns (uint256 index) {
+    return _operatorPodIndex[operator];
+  }
+
+  /**
    * @notice Topup a bonded operator with more utility tokens
    * @dev Useful function if an operator got slashed and wants to add a safety buffer to not get unbonded
    *      This function will not work if operator has currently been selected for a job
