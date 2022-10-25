@@ -8,41 +8,13 @@ import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-etherscan';
 import { types, task, HardhatUserConfig } from 'hardhat/config';
 import '@holographxyz/hardhat-holograph-contract-builder';
+import { Environment, getEnvironment } from '@holographxyz/environment';
 import { NetworkType, Network, Networks, networks } from '@holographxyz/networks';
 import dotenv from 'dotenv';
 dotenv.config();
 
-enum Environment {
-  experimental = 'experimental',
-  develop = 'develop',
-  testnet = 'testnet',
-  mainnet = 'mainnet',
-}
-
-const getEnvironment = (): Environment => {
-  let environment = Environment.experimental;
-  const acceptableBranches: Set<string> = new Set<string>(['experimental', 'develop', 'testnet', 'mainnet']);
-  const head = './.git/HEAD';
-  const env: string = process.env.HOLOGRAPH_ENVIRONMENT || '';
-  if (env === '') {
-    if (fs.existsSync(head)) {
-      const contents = fs.readFileSync('./.git/HEAD', 'utf8');
-      const branch = contents.trim().split('ref: refs/heads/')[1];
-      console.log('GitBranch:', branch);
-      if (acceptableBranches.has(branch)) {
-        environment = Environment[branch as keyof typeof Environment];
-      }
-    }
-  } else if (acceptableBranches.has(env)) {
-    console.log('HOLOGRAPH_ENVIRONMENT:', env);
-    environment = Environment[env as keyof typeof Environment];
-  }
-  console.log('Environment:', environment);
-
-  return environment;
-};
-
 const currentEnvironment = Environment[getEnvironment()];
+process.stdout.write(`\n👉 Environment: ${currentEnvironment}\n\n`);
 
 const SOLIDITY_VERSION = process.env.SOLIDITY_VERSION || '0.8.13';
 

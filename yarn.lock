@@ -472,6 +472,14 @@
     "@ethersproject/properties" "^5.7.0"
     "@ethersproject/strings" "^5.7.0"
 
+"@holographxyz/environment@0.1.8":
+  version "0.1.8"
+  resolved "https://registry.yarnpkg.com/@holographxyz/environment/-/environment-0.1.8.tgz#69f78f7611414ad2904b822045aa9a093d50104e"
+  integrity sha512-1xKu9pI7t5TlmjXKlkQkv+TjQWNzPTDibX2UPfMVcm3GyGRm614r9IWTyM5ykF0sA3Pox67wRmByTRKGEWFbOg==
+  dependencies:
+    dotenv "^10.0.0"
+    path "^0.12.7"
+
 "@holographxyz/hardhat-deploy-holographed@^0.0.3":
   version "0.0.3"
   resolved "https://registry.yarnpkg.com/@holographxyz/hardhat-deploy-holographed/-/hardhat-deploy-holographed-0.0.3.tgz#a6ecd2fc23c1e6613fc1514f5b38d46774be4746"
@@ -496,11 +504,13 @@
   resolved "https://registry.yarnpkg.com/@holographxyz/hardhat-holograph-contract-builder/-/hardhat-holograph-contract-builder-0.0.3.tgz#0baa893dfd7b8b606d1148de4e1256cdbdf6b756"
   integrity sha512-9VCtZA17EB31VHqCNVfLsYVaT4AJyL+r013mdRcT4FbgB01bBydip9L1YhmcG74R18onONqjV2DtGkXqBr3WtA==
 
-"@holographxyz/networks@1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@holographxyz/networks/-/networks-1.0.0.tgz#aa2b4d277e970dc193dabd5e54af3f4cb7a30f02"
-  integrity sha512-6+nmn47gn51QW+xX3kB98DmuZZxud9LIqVFuLYRvMZndI+oxuOyxDMplHqiTIvOBpkF/5BgDcPJdPTFPVNKLlw==
+"@holographxyz/networks@0.1.8":
+  version "0.1.8"
+  resolved "https://registry.yarnpkg.com/@holographxyz/networks/-/networks-0.1.8.tgz#dd2f3ddd346248761e9fdb28efac7a1db9397902"
+  integrity sha512-BJyYDRrnwCjzkERo3QZJeYiE92eZgCXh4jmLAyRsKGn3a+pCfMl3JHWGTp8Te3zCW5/RVSLz5PILaEeJAUJSNw==
   dependencies:
+    "@ethersproject/bignumber" "^5.7.0"
+    "@holographxyz/environment" "0.1.8"
     dotenv "^10.0.0"
     path "^0.12.7"
 
