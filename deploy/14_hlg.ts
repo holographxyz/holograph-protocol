@@ -57,9 +57,9 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   if (currentNetworkType == NetworkType.local) {
     primaryNetwork = networks.localhost;
   } else if (currentNetworkType == NetworkType.testnet) {
-    primaryNetwork = networks.eth_goerli;
+    primaryNetwork = networks.ethereumTestnetGoerli;
   } else if (currentNetworkType == NetworkType.mainnet) {
-    primaryNetwork = networks.eth;
+    primaryNetwork = networks.ethereum;
   } else {
     throw new Error('cannot identity current NetworkType');
   }
