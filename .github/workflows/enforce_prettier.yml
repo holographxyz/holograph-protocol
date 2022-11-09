@@ -30,5 +30,5 @@ jobs:
       - name: Prettify code
         uses: creyD/prettier_action@v4.2
         with:
-          prettier_options: --check src/**/*.+(js|ts)
+          prettier_options: --check \"src/**/*.ts\" \"test/**/*.ts\"
           dry: True
