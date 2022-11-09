@@ -43,7 +43,7 @@
     "verify": "hardhat verify",
     "lint": "eslint . --ext .ts --config .eslintrc",
     "lint:fix": "eslint . --ext .ts --config .eslintrc --fix",
-    "prettier:check": "prettier --ignore-unknown --check \"src/**/*.ts\" \"test/**/*.ts\"",
+    "prettier:check": "prettier --ignore-unknown --check \"deploy/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.ts\"",
     "prettier:fix": "prettier --loglevel error --ignore-path .gitignore --write ."
   },
   "dependencies": {
