@@ -32,22 +32,35 @@
   "htmlWhitespaceSensitivity": "css",
   "endOfLine": "lf",
   "embeddedLanguageFormatting": "off",
-  "overrides":
-    [
-      { "files": "*.prettierrc", "options": { "singleQuote": false } },
-      { "files": "*.js", "options": { "singleQuote": true } },
-      { "files": "*.ts", "options": { "singleQuote": true } },
-      {
-        "files": "*.sol",
-        "options":
-          {
-            "printWidth": 120,
-            "tabWidth": 2,
-            "useTabs": false,
-            "singleQuote": false,
-            "bracketSpacing": false,
-            "explicitTypes": "always",
-          },
-      },
-    ],
+  "overrides": [
+    {
+      "files": "*.prettierrc",
+      "options": {
+        "singleQuote": false
+      }
+    },
+    {
+      "files": "*.js",
+      "options": {
+        "singleQuote": true
+      }
+    },
+    {
+      "files": "*.ts",
+      "options": {
+        "singleQuote": true
+      }
+    },
+    {
+      "files": "*.sol",
+      "options": {
+        "printWidth": 120,
+        "tabWidth": 2,
+        "useTabs": false,
+        "singleQuote": false,
+        "bracketSpacing": false,
+        "explicitTypes": "always"
+      }
+    }
+  ]
 }
