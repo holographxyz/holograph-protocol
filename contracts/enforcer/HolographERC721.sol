@@ -368,7 +368,7 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
   function approve(address to, uint256 tokenId) external payable {
     address tokenOwner = _tokenOwner[tokenId];
     require(to != tokenOwner, "ERC721: cannot approve self");
-    require(_isApproved(msg.sender, tokenId), "ERC721: not approved sender");
+    require(_isApprovedStrict(msg.sender, tokenId), "ERC721: not approved sender");
     if (_isEventRegistered(HolographERC721Event.beforeApprove)) {
       require(SourceERC721().beforeApprove(tokenOwner, to, tokenId));
     }
@@ -462,10 +462,8 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
     _transferFrom(from, to, tokenId);
     if (_isContract(to)) {
       require(
-        (ERC165(to).supportsInterface(ERC165.supportsInterface.selector) &&
-          ERC165(to).supportsInterface(ERC721TokenReceiver.onERC721Received.selector) &&
-          ERC721TokenReceiver(to).onERC721Received(address(this), from, tokenId, data) ==
-          ERC721TokenReceiver.onERC721Received.selector),
+        ERC721TokenReceiver(to).onERC721Received(msg.sender, from, tokenId, data) ==
+          ERC721TokenReceiver.onERC721Received.selector,
         "ERC721: onERC721Received fail"
       );
     }
@@ -483,12 +481,12 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
   function setApprovalForAll(address to, bool approved) external {
     require(to != msg.sender, "ERC721: cannot approve self");
     if (_isEventRegistered(HolographERC721Event.beforeApprovalAll)) {
-      require(SourceERC721().beforeApprovalAll(to, approved));
+      require(SourceERC721().beforeApprovalAll(msg.sender, to, approved));
     }
     _operatorApprovals[msg.sender][to] = approved;
     emit ApprovalForAll(msg.sender, to, approved);
     if (_isEventRegistered(HolographERC721Event.afterApprovalAll)) {
-      require(SourceERC721().afterApprovalAll(to, approved));
+      require(SourceERC721().afterApprovalAll(msg.sender, to, approved));
     }
   }
 
@@ -907,6 +905,12 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
     require(_exists(tokenId), "ERC721: token does not exist");
     address tokenOwner = _tokenOwner[tokenId];
     return (spender == tokenOwner || _tokenApprovals[tokenId] == spender || _operatorApprovals[tokenOwner][spender]);
+  }
+
+  function _isApprovedStrict(address spender, uint256 tokenId) private view returns (bool) {
+    require(_exists(tokenId), "ERC721: token does not exist");
+    address tokenOwner = _tokenOwner[tokenId];
+    return (spender == tokenOwner || _operatorApprovals[tokenOwner][spender]);
   }
 
   function _isContract(address contractAddress) private view returns (bool) {

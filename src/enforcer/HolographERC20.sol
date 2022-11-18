@@ -171,6 +171,18 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, Ho
     }
   }
 
+  function _sourceCall(bytes memory payload) private returns (bool output) {
+    assembly {
+      mstore(add(payload, mload(payload)), caller())
+      let result := call(gas(), sload(_sourceContractSlot), callvalue(), payload, add(mload(payload), 32), 0, 0)
+      returndatacopy(0, output, returndatasize())
+      switch result
+      case 0 {
+        revert(0, returndatasize())
+      }
+    }
+  }
+
   function decimals() public view returns (uint8) {
     return _decimals;
   }
@@ -226,22 +238,24 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, Ho
 
   function approve(address spender, uint256 amount) public returns (bool) {
     if (_isEventRegistered(HolographERC20Event.beforeApprove)) {
-      require(SourceERC20().beforeApprove(msg.sender, spender, amount));
+      require(
+        _sourceCall(abi.encodeWithSelector(HolographedERC20.beforeApprove.selector, msg.sender, spender, amount))
+      );
     }
     _approve(msg.sender, spender, amount);
     if (_isEventRegistered(HolographERC20Event.afterApprove)) {
-      require(SourceERC20().afterApprove(msg.sender, spender, amount));
+      require(_sourceCall(abi.encodeWithSelector(HolographedERC20.afterApprove.selector, msg.sender, spender, amount)));
     }
     return true;
   }
 
   function burn(uint256 amount) public {
     if (_isEventRegistered(HolographERC20Event.beforeBurn)) {
-      require(SourceERC20().beforeBurn(msg.sender, amount));
+      require(_sourceCall(abi.encodeWithSelector(HolographedERC20.beforeBurn.selector, msg.sender, amount)));
     }
     _burn(msg.sender, amount);
     if (_isEventRegistered(HolographERC20Event.afterBurn)) {
-      require(SourceERC20().afterBurn(msg.sender, amount));
+      require(_sourceCall(abi.encodeWithSelector(HolographedERC20.afterBurn.selector, msg.sender, amount)));
     }
   }
 
@@ -252,11 +266,11 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, Ho
       _allowances[account][msg.sender] = currentAllowance - amount;
     }
     if (_isEventRegistered(HolographERC20Event.beforeBurn)) {
-      require(SourceERC20().beforeBurn(account, amount));
+      require(_sourceCall(abi.encodeWithSelector(HolographedERC20.beforeBurn.selector, account, amount)));
     }
     _burn(account, amount);
     if (_isEventRegistered(HolographERC20Event.afterBurn)) {
-      require(SourceERC20().afterBurn(account, amount));
+      require(_sourceCall(abi.encodeWithSelector(HolographedERC20.afterBurn.selector, account, amount)));
     }
     return true;
   }
@@ -269,11 +283,15 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, Ho
       newAllowance = currentAllowance - subtractedValue;
     }
     if (_isEventRegistered(HolographERC20Event.beforeApprove)) {
-      require(SourceERC20().beforeApprove(msg.sender, spender, newAllowance));
+      require(
+        _sourceCall(abi.encodeWithSelector(HolographedERC20.beforeApprove.selector, msg.sender, spender, newAllowance))
+      );
     }
     _approve(msg.sender, spender, newAllowance);
     if (_isEventRegistered(HolographERC20Event.afterApprove)) {
-      require(SourceERC20().afterApprove(msg.sender, spender, newAllowance));
+      require(
+        _sourceCall(abi.encodeWithSelector(HolographedERC20.afterApprove.selector, msg.sender, spender, newAllowance))
+      );
     }
     return true;
   }
@@ -285,7 +303,10 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, Ho
     );
     _mint(to, amount);
     if (_isEventRegistered(HolographERC20Event.bridgeIn)) {
-      require(SourceERC20().bridgeIn(fromChain, from, to, amount, data), "HOLOGRAPH: bridge in failed");
+      require(
+        _sourceCall(abi.encodeWithSelector(HolographedERC20.bridgeIn.selector, fromChain, from, to, amount, data)),
+        "HOLOGRAPH: bridge in failed"
+      );
     }
     return Holographable.bridgeIn.selector;
   }
@@ -304,7 +325,30 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, Ho
       }
     }
     if (_isEventRegistered(HolographERC20Event.bridgeOut)) {
-      data = SourceERC20().bridgeOut(toChain, from, to, amount);
+      bytes memory sourcePayload = abi.encodeWithSelector(
+        HolographedERC20.bridgeOut.selector,
+        toChain,
+        from,
+        to,
+        amount
+      );
+      assembly {
+        mstore(add(sourcePayload, mload(sourcePayload)), caller())
+        let result := call(
+          gas(),
+          sload(_sourceContractSlot),
+          callvalue(),
+          sourcePayload,
+          add(mload(sourcePayload), 32),
+          0,
+          0
+        )
+        returndatacopy(0, data, returndatasize())
+        switch result
+        case 0 {
+          revert(0, returndatasize())
+        }
+      }
     }
     _burn(from, amount);
     return (Holographable.bridgeOut.selector, abi.encode(from, to, amount, data));
@@ -328,11 +372,15 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, Ho
       require(newAllowance >= currentAllowance, "ERC20: increased above max value");
     }
     if (_isEventRegistered(HolographERC20Event.beforeApprove)) {
-      require(SourceERC20().beforeApprove(msg.sender, spender, newAllowance));
+      require(
+        _sourceCall(abi.encodeWithSelector(HolographedERC20.beforeApprove.selector, msg.sender, spender, newAllowance))
+      );
     }
     _approve(msg.sender, spender, newAllowance);
     if (_isEventRegistered(HolographERC20Event.afterApprove)) {
-      require(SourceERC20().afterApprove(msg.sender, spender, newAllowance));
+      require(
+        _sourceCall(abi.encodeWithSelector(HolographedERC20.afterApprove.selector, msg.sender, spender, newAllowance))
+      );
     }
     return true;
   }
@@ -345,15 +393,37 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, Ho
   ) public returns (bytes4) {
     require(_isContract(account), "ERC20: operator not contract");
     if (_isEventRegistered(HolographERC20Event.beforeOnERC20Received)) {
-      require(SourceERC20().beforeOnERC20Received(account, sender, address(this), amount, data));
+      require(
+        _sourceCall(
+          abi.encodeWithSelector(
+            HolographedERC20.beforeOnERC20Received.selector,
+            account,
+            sender,
+            address(this),
+            amount,
+            data
+          )
+        )
+      );
     }
-    try ERC20(account).balanceOf(address(this)) returns (uint256 balance) {
-      require(balance >= amount, "ERC20: balance check failed");
+    try ERC20(account).balanceOf(address(this)) returns (uint256) {
+      // do nothing, just want to see if this reverts due to invalid erc-20 contract
     } catch {
       revert("ERC20: failed getting balance");
     }
     if (_isEventRegistered(HolographERC20Event.afterOnERC20Received)) {
-      require(SourceERC20().afterOnERC20Received(account, sender, address(this), amount, data));
+      require(
+        _sourceCall(
+          abi.encodeWithSelector(
+            HolographedERC20.afterOnERC20Received.selector,
+            account,
+            sender,
+            address(this),
+            amount,
+            data
+          )
+        )
+      );
     }
     return ERC20Receiver.onERC20Received.selector;
   }
@@ -379,14 +449,14 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, Ho
       )
     );
     bytes32 hash = _hashTypedDataV4(structHash);
-    address signer = ECDSA.recover(hash, v, r, s);
+    address signer = _recover(r, s, v, hash);
     require(signer == account, "ERC20: invalid signature");
     if (_isEventRegistered(HolographERC20Event.beforeApprove)) {
-      require(SourceERC20().beforeApprove(account, spender, amount));
+      require(_sourceCall(abi.encodeWithSelector(HolographedERC20.beforeApprove.selector, account, spender, amount)));
     }
     _approve(account, spender, amount);
     if (_isEventRegistered(HolographERC20Event.afterApprove)) {
-      require(SourceERC20().afterApprove(account, spender, amount));
+      require(_sourceCall(abi.encodeWithSelector(HolographedERC20.afterApprove.selector, account, spender, amount)));
     }
   }
 
@@ -400,12 +470,19 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, Ho
     bytes memory data
   ) public returns (bool) {
     if (_isEventRegistered(HolographERC20Event.beforeSafeTransfer)) {
-      require(SourceERC20().beforeSafeTransfer(msg.sender, recipient, amount, data));
+      require(
+        _sourceCall(
+          abi.encodeWithSelector(HolographedERC20.beforeSafeTransfer.selector, msg.sender, recipient, amount, data)
+        )
+      );
     }
     _transfer(msg.sender, recipient, amount);
-    require(_checkOnERC20Received(msg.sender, recipient, amount, data), "ERC20: non ERC20Receiver");
     if (_isEventRegistered(HolographERC20Event.afterSafeTransfer)) {
-      require(SourceERC20().afterSafeTransfer(msg.sender, recipient, amount, data));
+      require(
+        _sourceCall(
+          abi.encodeWithSelector(HolographedERC20.afterSafeTransfer.selector, msg.sender, recipient, amount, data)
+        )
+      );
     }
     return true;
   }
@@ -425,6 +502,9 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, Ho
     bytes memory data
   ) public returns (bool) {
     if (account != msg.sender) {
+      /*
+       * @dev This is intentionally enabled to remove friction when operator or bridge needs to move tokens
+       */
       if (msg.sender != _holograph().getBridge() && msg.sender != _holograph().getOperator()) {
         uint256 currentAllowance = _allowances[account][msg.sender];
         require(currentAllowance >= amount, "ERC20: amount exceeds allowance");
@@ -434,12 +514,19 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, Ho
       }
     }
     if (_isEventRegistered(HolographERC20Event.beforeSafeTransfer)) {
-      require(SourceERC20().beforeSafeTransfer(account, recipient, amount, data));
+      require(
+        _sourceCall(
+          abi.encodeWithSelector(HolographedERC20.beforeSafeTransfer.selector, account, recipient, amount, data)
+        )
+      );
     }
     _transfer(account, recipient, amount);
-    require(_checkOnERC20Received(account, recipient, amount, data), "ERC20: non ERC20Receiver");
     if (_isEventRegistered(HolographERC20Event.afterSafeTransfer)) {
-      require(SourceERC20().afterSafeTransfer(account, recipient, amount, data));
+      require(
+        _sourceCall(
+          abi.encodeWithSelector(HolographedERC20.afterSafeTransfer.selector, account, recipient, amount, data)
+        )
+      );
     }
     return true;
   }
@@ -478,13 +565,24 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, Ho
     _transfer(from, to, amount);
   }
 
+  /**
+   * @dev Allows for source smart contract to withdraw contract balance.
+   */
+  function sourceWithdraw(address payable destination) external onlySource {
+    destination.transfer(address(this).balance);
+  }
+
   function transfer(address recipient, uint256 amount) public returns (bool) {
     if (_isEventRegistered(HolographERC20Event.beforeTransfer)) {
-      require(SourceERC20().beforeTransfer(msg.sender, recipient, amount));
+      require(
+        _sourceCall(abi.encodeWithSelector(HolographedERC20.beforeTransfer.selector, msg.sender, recipient, amount))
+      );
     }
     _transfer(msg.sender, recipient, amount);
     if (_isEventRegistered(HolographERC20Event.afterTransfer)) {
-      require(SourceERC20().afterTransfer(msg.sender, recipient, amount));
+      require(
+        _sourceCall(abi.encodeWithSelector(HolographedERC20.afterTransfer.selector, msg.sender, recipient, amount))
+      );
     }
     return true;
   }
@@ -495,6 +593,9 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, Ho
     uint256 amount
   ) public returns (bool) {
     if (account != msg.sender) {
+      /*
+       * @dev This is intentionally enabled to remove friction when operator or bridge needs to move tokens
+       */
       if (msg.sender != _holograph().getBridge() && msg.sender != _holograph().getOperator()) {
         uint256 currentAllowance = _allowances[account][msg.sender];
         require(currentAllowance >= amount, "ERC20: amount exceeds allowance");
@@ -504,11 +605,13 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, Ho
       }
     }
     if (_isEventRegistered(HolographERC20Event.beforeTransfer)) {
-      require(SourceERC20().beforeTransfer(account, recipient, amount));
+      require(
+        _sourceCall(abi.encodeWithSelector(HolographedERC20.beforeTransfer.selector, account, recipient, amount))
+      );
     }
     _transfer(account, recipient, amount);
     if (_isEventRegistered(HolographERC20Event.afterTransfer)) {
-      require(SourceERC20().afterTransfer(account, recipient, amount));
+      require(_sourceCall(abi.encodeWithSelector(HolographedERC20.afterTransfer.selector, account, recipient, amount)));
     }
     return true;
   }
@@ -533,46 +636,6 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, Ho
     }
     _totalSupply -= amount;
     emit Transfer(account, address(0), amount);
-  }
-
-  function _checkOnERC20Received(
-    address account,
-    address recipient,
-    uint256 amount,
-    bytes memory data
-  ) private nonReentrant returns (bool) {
-    if (_isContract(recipient)) {
-      try ERC165(recipient).supportsInterface(ERC165.supportsInterface.selector) returns (bool erc165support) {
-        require(erc165support, "ERC20: no ERC165 support");
-        // we have erc165 support
-        if (ERC165(recipient).supportsInterface(0x534f5876)) {
-          // we have eip-4524 support
-          try ERC20Receiver(recipient).onERC20Received(address(this), account, amount, data) returns (bytes4 retval) {
-            return retval == ERC20Receiver.onERC20Received.selector;
-          } catch (bytes memory reason) {
-            if (reason.length == 0) {
-              revert("ERC20: non ERC20Receiver");
-            } else {
-              assembly {
-                revert(add(32, reason), mload(reason))
-              }
-            }
-          }
-        } else {
-          revert("ERC20: eip-4524 not supported");
-        }
-      } catch (bytes memory reason) {
-        if (reason.length == 0) {
-          revert("ERC20: no ERC165 support");
-        } else {
-          assembly {
-            revert(add(32, reason), mload(reason))
-          }
-        }
-      }
-    } else {
-      return true;
-    }
   }
 
   /**
@@ -620,6 +683,30 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, Ho
       codehash := extcodehash(contractAddress)
     }
     return (codehash != 0x0 && codehash != precomputekeccak256(""));
+  }
+
+  /**
+   * @dev Internal function used for identifying signer
+   */
+  function _recover(
+    bytes32 r,
+    bytes32 s,
+    uint8 v,
+    bytes32 hash
+  ) private pure returns (address signer) {
+    if (v < 27) {
+      v += 27;
+    }
+    require(v == 27 || v == 28, "HOLOGRAPH: invalid v value");
+    if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
+      s = bytes32(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141 - uint256(s));
+      require(
+        uint256(s) <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0,
+        "HOLOGRAPH: invalid s value"
+      );
+    }
+    signer = ecrecover(hash, v, r, s);
+    require(signer != address(0), "HOLOGRAPH: zero address signer");
   }
 
   /**

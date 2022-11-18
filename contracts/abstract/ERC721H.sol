@@ -146,9 +146,12 @@ abstract contract ERC721H is Initializable {
   ) internal returns (bytes4) {
     require(!_isInitialized(), "ERC721: already initialized");
     address _holographer = msg.sender;
+    address currentOwner;
     assembly {
       sstore(_holographerSlot, _holographer)
+      currentOwner := sload(_ownerSlot)
     }
+    require(currentOwner != address(0), "HOLOGRAPH: owner not set");
     _setInitialized();
     return InitializableInterface.init.selector;
   }
@@ -206,8 +209,12 @@ abstract contract ERC721H is Initializable {
     }
   }
 
+  function withdraw() external virtual onlyOwner {
+    payable(_getOwner()).transfer(address(this).balance);
+  }
+
   /**
-   * @dev Defined here to suppress compiler warnings
+   * @dev Purposefully left empty
    */
   receive() external payable {}
 
