@@ -60,12 +60,12 @@ contract Holographer is Admin, Initializable, HolographerInterface {
       sstore(_originChainSlot, originChain)
       sstore(_sourceContractSlot, sourceContract)
     }
-    _setInitialized();
     (bool success, bytes memory returnData) = HolographRegistryInterface(HolographInterface(holograph).getRegistry())
       .getReservedContractTypeAddress(contractType)
       .delegatecall(abi.encodeWithSelector(InitializableInterface.init.selector, initCode));
     bytes4 selector = abi.decode(returnData, (bytes4));
-    require(success && selector == InitializableInterface.init.selector, "initialization failed");
+    require(success && selector == InitializableInterface.init.selector, "HOLOGRAPH: initialization failed");
+    _setInitialized();
     return InitializableInterface.init.selector;
   }
 

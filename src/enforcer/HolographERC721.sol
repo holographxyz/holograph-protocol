@@ -342,7 +342,7 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
           0,
           0
         )
-        returndatacopy(0, data, returndatasize())
+        returndatacopy(data, 0, returndatasize())
         switch result
         case 0 {
           revert(0, returndatasize())
@@ -956,7 +956,7 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
     assembly {
       mstore(add(payload, mload(payload)), caller())
       let result := call(gas(), sload(_sourceContractSlot), callvalue(), payload, add(mload(payload), 32), 0, 0)
-      returndatacopy(0, output, returndatasize())
+      returndatacopy(output, 0, returndatasize())
       switch result
       case 0 {
         revert(0, returndatasize())

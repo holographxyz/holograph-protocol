@@ -274,7 +274,7 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, Ho
     assembly {
       mstore(add(payload, mload(payload)), caller())
       let result := call(gas(), sload(_sourceContractSlot), callvalue(), payload, add(mload(payload), 32), 0, 0)
-      returndatacopy(0, output, returndatasize())
+      returndatacopy(output, 0, returndatasize())
       switch result
       case 0 {
         revert(0, returndatasize())
@@ -442,7 +442,7 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, Ho
           0,
           0
         )
-        returndatacopy(0, data, returndatasize())
+        returndatacopy(data, 0, returndatasize())
         switch result
         case 0 {
           revert(0, returndatasize())
@@ -796,16 +796,16 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, Ho
     if (v < 27) {
       v += 27;
     }
-    require(v == 27 || v == 28, "HOLOGRAPH: invalid v value");
+    require(v == 27 || v == 28, "ERC20: invalid v value");
     if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
       s = bytes32(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141 - uint256(s));
       require(
         uint256(s) <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0,
-        "HOLOGRAPH: invalid s value"
+        "ERC20: invalid s value"
       );
     }
     signer = ecrecover(hash, v, r, s);
-    require(signer != address(0), "HOLOGRAPH: zero address signer");
+    require(signer != address(0), "ERC20: zero address signer");
   }
 
   /**

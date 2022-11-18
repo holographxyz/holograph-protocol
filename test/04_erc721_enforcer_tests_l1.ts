@@ -38,7 +38,7 @@ import {
   SampleERC721,
 } from '../typechain-types';
 
-describe('Testing the Holograph ERC721 Enforcer (L1)', async function () {
+describe.only('Testing the Holograph ERC721 Enforcer (L1)', async function () {
   let l1: PreTest;
 
   let ERC721: HolographERC721;
@@ -337,10 +337,18 @@ describe('Testing the Holograph ERC721 Enforcer (L1)', async function () {
         await expect(SAMPLEERC721.mint(l1.deployer.address, thirdNFT, tokenURIs[thirdNFT]))
           .to.emit(ERC721, 'Transfer')
           .withArgs(zeroAddress, l1.deployer.address, thirdNFT);
+        process.stdout.write('\nminted\n');
+
+        try {
+          await ERC721.esitamteGas.burn(thirdNFT);
+        } catch (ex) {
+          process.stdout.write('\n' + JSON.stringify(ex, undefined, 2) + '\n');
+        }
 
         await expect(ERC721.burn(thirdNFT))
           .to.emit(ERC721, 'Transfer')
           .withArgs(l1.deployer.address, zeroAddress, thirdNFT);
+        process.stdout.write('\nburned\n');
 
         await expect(SAMPLEERC721.mint(l1.deployer.address, thirdNFT, tokenURIs[thirdNFT])).to.be.revertedWith(
           "ERC721: can't mint burned token"
