@@ -218,13 +218,16 @@ contract HolographGeneric is Admin, Owner, Initializable, HolographGenericInterf
 
   function _sourceCall(bytes memory payload) private returns (bool output) {
     assembly {
+      let pos := mload(0x40)
+      mstore(0x40, add(pos, 0x20))
       mstore(add(payload, mload(payload)), caller())
-      let result := call(gas(), sload(_sourceContractSlot), callvalue(), payload, add(mload(payload), 32), 0, 0)
-      returndatacopy(output, 0, returndatasize())
+      let result := call(gas(), sload(_sourceContractSlot), callvalue(), payload, add(mload(payload), 0x20), 0, 0)
+      returndatacopy(pos, 0, returndatasize())
       switch result
       case 0 {
         revert(0, returndatasize())
       }
+      output := mload(pos)
     }
   }
 
