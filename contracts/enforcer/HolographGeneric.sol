@@ -250,7 +250,10 @@ contract HolographGeneric is Admin, Owner, Initializable, HolographGenericInterf
 
   function bridgeIn(uint32 fromChain, bytes calldata payload) external onlyBridge returns (bytes4) {
     if (_isEventRegistered(HolographGenericEvent.bridgeIn)) {
-      require(_sourceCall(abi.encodeWithSelector(HolographedGeneric.bridgeIn.selector, fromChain, payload)), "HOLOGRAPH: bridge in failed");
+      require(
+        _sourceCall(abi.encodeWithSelector(HolographedGeneric.bridgeIn.selector, fromChain, payload)),
+        "HOLOGRAPH: bridge in failed"
+      );
     }
     return Holographable.bridgeIn.selector;
   }
@@ -261,7 +264,12 @@ contract HolographGeneric is Admin, Owner, Initializable, HolographGenericInterf
     bytes calldata payload
   ) external onlyBridge returns (bytes4 selector, bytes memory data) {
     if (_isEventRegistered(HolographGenericEvent.bridgeOut)) {
-      bytes memory sourcePayload = abi.encodeWithSelector(HolographedGeneric.bridgeOut.selector, toChain, sender, payload);
+      bytes memory sourcePayload = abi.encodeWithSelector(
+        HolographedGeneric.bridgeOut.selector,
+        toChain,
+        sender,
+        payload
+      );
       assembly {
         mstore(add(sourcePayload, mload(sourcePayload)), caller())
         let result := call(
