@@ -370,12 +370,12 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
     require(to != tokenOwner, "ERC721: cannot approve self");
     require(_isApprovedStrict(msg.sender, tokenId), "ERC721: not approved sender");
     if (_isEventRegistered(HolographERC721Event.beforeApprove)) {
-      require(SourceERC721().beforeApprove(tokenOwner, to, tokenId));
+      require(_sourceCall(abi.encodeWithSelector(HolographedERC721.beforeApprove.selector, tokenOwner, to, tokenId)));
     }
     _tokenApprovals[tokenId] = to;
     emit Approval(tokenOwner, to, tokenId);
     if (_isEventRegistered(HolographERC721Event.afterApprove)) {
-      require(SourceERC721().afterApprove(tokenOwner, to, tokenId));
+      require(_sourceCall(abi.encodeWithSelector(HolographedERC721.afterApprove.selector, tokenOwner, to, tokenId)));
     }
   }
 
@@ -388,11 +388,11 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
     require(_isApproved(msg.sender, tokenId), "ERC721: not approved sender");
     address wallet = _tokenOwner[tokenId];
     if (_isEventRegistered(HolographERC721Event.beforeBurn)) {
-      require(SourceERC721().beforeBurn(wallet, tokenId));
+      require(_sourceCall(abi.encodeWithSelector(HolographedERC721.beforeBurn.selector, wallet, tokenId)));
     }
     _burn(wallet, tokenId);
     if (_isEventRegistered(HolographERC721Event.afterBurn)) {
-      require(SourceERC721().afterBurn(wallet, tokenId));
+      require(_sourceCall(abi.encodeWithSelector(HolographedERC721.afterBurn.selector, wallet, tokenId)));
     }
   }
 
@@ -405,7 +405,10 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
     delete _burnedTokens[tokenId];
     _mint(to, tokenId);
     if (_isEventRegistered(HolographERC721Event.bridgeIn)) {
-      require(SourceERC721().bridgeIn(fromChain, from, to, tokenId, data), "HOLOGRAPH: bridge in failed");
+      require(
+        _sourceCall(abi.encodeWithSelector(HolographedERC721.bridgeIn.selector, fromChain, from, to, tokenId, data)),
+        "HOLOGRAPH: bridge in failed"
+      );
     }
     return Holographable.bridgeIn.selector;
   }
@@ -420,7 +423,30 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
     require(_isApproved(sender, tokenId), "ERC721: sender not approved");
     require(from == _tokenOwner[tokenId], "ERC721: from is not owner");
     if (_isEventRegistered(HolographERC721Event.bridgeOut)) {
-      data = SourceERC721().bridgeOut(toChain, from, to, tokenId);
+      bytes memory sourcePayload = abi.encodeWithSelector(
+        HolographedERC721.bridgeOut.selector,
+        toChain,
+        from,
+        to,
+        tokenId
+      );
+      assembly {
+        mstore(add(sourcePayload, mload(sourcePayload)), caller())
+        let result := call(
+          gas(),
+          sload(_sourceContractSlot),
+          callvalue(),
+          sourcePayload,
+          add(mload(sourcePayload), 32),
+          0,
+          0
+        )
+        returndatacopy(0, data, returndatasize())
+        switch result
+        case 0 {
+          revert(0, returndatasize())
+        }
+      }
     }
     _burn(from, tokenId);
     return (Holographable.bridgeOut.selector, abi.encode(from, to, tokenId, data));
@@ -457,7 +483,9 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
   ) public payable {
     require(_isApproved(msg.sender, tokenId), "ERC721: not approved sender");
     if (_isEventRegistered(HolographERC721Event.beforeSafeTransfer)) {
-      require(SourceERC721().beforeSafeTransfer(from, to, tokenId, data));
+      require(
+        _sourceCall(abi.encodeWithSelector(HolographedERC721.beforeSafeTransfer.selector, from, to, tokenId, data))
+      );
     }
     _transferFrom(from, to, tokenId);
     if (_isContract(to)) {
@@ -468,7 +496,9 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
       );
     }
     if (_isEventRegistered(HolographERC721Event.afterSafeTransfer)) {
-      require(SourceERC721().afterSafeTransfer(from, to, tokenId, data));
+      require(
+        _sourceCall(abi.encodeWithSelector(HolographedERC721.afterSafeTransfer.selector, from, to, tokenId, data))
+      );
     }
   }
 
@@ -481,12 +511,16 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
   function setApprovalForAll(address to, bool approved) external {
     require(to != msg.sender, "ERC721: cannot approve self");
     if (_isEventRegistered(HolographERC721Event.beforeApprovalAll)) {
-      require(SourceERC721().beforeApprovalAll(msg.sender, to, approved));
+      require(
+        _sourceCall(abi.encodeWithSelector(HolographedERC721.beforeApprovalAll.selector, msg.sender, to, approved))
+      );
     }
     _operatorApprovals[msg.sender][to] = approved;
     emit ApprovalForAll(msg.sender, to, approved);
     if (_isEventRegistered(HolographERC721Event.afterApprovalAll)) {
-      require(SourceERC721().afterApprovalAll(msg.sender, to, approved));
+      require(
+        _sourceCall(abi.encodeWithSelector(HolographedERC721.afterApprovalAll.selector, msg.sender, to, approved))
+      );
     }
   }
 
@@ -620,11 +654,11 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
   ) public payable {
     require(_isApproved(msg.sender, tokenId), "ERC721: not approved sender");
     if (_isEventRegistered(HolographERC721Event.beforeTransfer)) {
-      require(SourceERC721().beforeTransfer(from, to, tokenId, data));
+      require(_sourceCall(abi.encodeWithSelector(HolographedERC721.beforeTransfer.selector, from, to, tokenId, data)));
     }
     _transferFrom(from, to, tokenId);
     if (_isEventRegistered(HolographERC721Event.afterTransfer)) {
-      require(SourceERC721().afterTransfer(from, to, tokenId, data));
+      require(_sourceCall(abi.encodeWithSelector(HolographedERC721.afterTransfer.selector, from, to, tokenId, data)));
     }
   }
 
@@ -755,7 +789,18 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
   ) external returns (bytes4) {
     require(_isContract(_operator), "ERC721: operator not contract");
     if (_isEventRegistered(HolographERC721Event.beforeOnERC721Received)) {
-      require(SourceERC721().beforeOnERC721Received(_operator, _from, address(this), _tokenId, _data));
+      require(
+        _sourceCall(
+          abi.encodeWithSelector(
+            HolographedERC721.beforeOnERC721Received.selector,
+            _operator,
+            _from,
+            address(this),
+            _tokenId,
+            _data
+          )
+        )
+      );
     }
     try HolographERC721Interface(_operator).ownerOf(_tokenId) returns (address tokenOwner) {
       require(tokenOwner == address(this), "ERC721: contract not token owner");
@@ -763,7 +808,18 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
       revert("ERC721: token does not exist");
     }
     if (_isEventRegistered(HolographERC721Event.afterOnERC721Received)) {
-      require(SourceERC721().afterOnERC721Received(_operator, _from, address(this), _tokenId, _data));
+      require(
+        _sourceCall(
+          abi.encodeWithSelector(
+            HolographedERC721.afterOnERC721Received.selector,
+            _operator,
+            _from,
+            address(this),
+            _tokenId,
+            _data
+          )
+        )
+      );
     }
     return ERC721TokenReceiver.onERC721Received.selector;
   }
@@ -922,15 +978,6 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
   }
 
   /**
-   * @dev Get the source smart contract as bridgeable interface.
-   */
-  function SourceERC721() private view returns (HolographedERC721 sourceContract) {
-    assembly {
-      sourceContract := sload(_sourceContractSlot)
-    }
-  }
-
-  /**
    * @dev Get the interfaces contract address.
    */
   function _interfaces() private view returns (address) {
@@ -1000,6 +1047,18 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
         default {
           return(0, returndatasize())
         }
+      }
+    }
+  }
+
+  function _sourceCall(bytes memory payload) private returns (bool output) {
+    assembly {
+      mstore(add(payload, mload(payload)), caller())
+      let result := call(gas(), sload(_sourceContractSlot), callvalue(), payload, add(mload(payload), 32), 0, 0)
+      returndatacopy(0, output, returndatasize())
+      switch result
+      case 0 {
+        revert(0, returndatasize())
       }
     }
   }

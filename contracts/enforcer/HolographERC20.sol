@@ -809,15 +809,6 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, Ho
   }
 
   /**
-   * @dev Get the source smart contract as bridgeable interface.
-   */
-  function SourceERC20() private view returns (HolographedERC20 sourceContract) {
-    assembly {
-      sourceContract := sload(_sourceContractSlot)
-    }
-  }
-
-  /**
    * @dev Get the interfaces contract address.
    */
   function _interfaces() private view returns (address) {
