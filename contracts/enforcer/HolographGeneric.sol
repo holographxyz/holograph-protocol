@@ -185,6 +185,13 @@ contract HolographGeneric is Admin, Owner, Initializable, HolographGenericInterf
   }
 
   /**
+   * @dev Allows for source smart contract to withdraw contract balance.
+   */
+  function sourceWithdraw(address payable destination) external onlySource {
+    destination.transfer(address(this).balance);
+  }
+
+  /**
    * @dev Purposefully left empty, to prevent running out of gas errors when receiving native token payments.
    */
   receive() external payable {}
@@ -205,6 +212,18 @@ contract HolographGeneric is Admin, Owner, Initializable, HolographGenericInterf
       }
       default {
         return(0, returndatasize())
+      }
+    }
+  }
+
+  function _sourceCall(bytes memory payload) private returns (bool output) {
+    assembly {
+      mstore(add(payload, mload(payload)), caller())
+      let result := call(gas(), sload(_sourceContractSlot), callvalue(), payload, add(mload(payload), 32), 0, 0)
+      returndatacopy(0, output, returndatasize())
+      switch result
+      case 0 {
+        revert(0, returndatasize())
       }
     }
   }
@@ -231,7 +250,7 @@ contract HolographGeneric is Admin, Owner, Initializable, HolographGenericInterf
 
   function bridgeIn(uint32 fromChain, bytes calldata payload) external onlyBridge returns (bytes4) {
     if (_isEventRegistered(HolographGenericEvent.bridgeIn)) {
-      require(SourceGeneric().bridgeIn(fromChain, payload), "HOLOGRAPH: bridge in failed");
+      require(_sourceCall(abi.encodeWithSelector(HolographedGeneric.bridgeIn.selector, fromChain, payload)), "HOLOGRAPH: bridge in failed");
     }
     return Holographable.bridgeIn.selector;
   }
@@ -242,7 +261,24 @@ contract HolographGeneric is Admin, Owner, Initializable, HolographGenericInterf
     bytes calldata payload
   ) external onlyBridge returns (bytes4 selector, bytes memory data) {
     if (_isEventRegistered(HolographGenericEvent.bridgeOut)) {
-      data = SourceGeneric().bridgeOut(toChain, sender, payload);
+      bytes memory sourcePayload = abi.encodeWithSelector(HolographedGeneric.bridgeOut.selector, toChain, sender, payload);
+      assembly {
+        mstore(add(sourcePayload, mload(sourcePayload)), caller())
+        let result := call(
+          gas(),
+          sload(_sourceContractSlot),
+          callvalue(),
+          sourcePayload,
+          add(mload(sourcePayload), 32),
+          0,
+          0
+        )
+        returndatacopy(0, data, returndatasize())
+        switch result
+        case 0 {
+          revert(0, returndatasize())
+        }
+      }
     }
     return (Holographable.bridgeOut.selector, data);
   }

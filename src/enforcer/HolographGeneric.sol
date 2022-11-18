@@ -162,7 +162,24 @@ contract HolographGeneric is Admin, Owner, Initializable, HolographGenericInterf
     bytes calldata payload
   ) external onlyBridge returns (bytes4 selector, bytes memory data) {
     if (_isEventRegistered(HolographGenericEvent.bridgeOut)) {
-      data = SourceGeneric().bridgeOut(toChain, sender, payload);
+      bytes memory sourcePayload = abi.encodeWithSelector(HolographedGeneric.bridgeOut.selector, toChain, sender, payload);
+      assembly {
+        mstore(add(sourcePayload, mload(sourcePayload)), caller())
+        let result := call(
+          gas(),
+          sload(_sourceContractSlot),
+          callvalue(),
+          sourcePayload,
+          add(mload(sourcePayload), 32),
+          0,
+          0
+        )
+        returndatacopy(0, data, returndatasize())
+        switch result
+        case 0 {
+          revert(0, returndatasize())
+        }
+      }
     }
     return (Holographable.bridgeOut.selector, data);
   }
