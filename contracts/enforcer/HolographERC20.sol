@@ -127,8 +127,6 @@ import "../interface/InitializableInterface.sol";
 import "../interface/HolographInterfacesInterface.sol";
 import "../interface/Ownable.sol";
 
-import "../library/ECDSA.sol";
-
 /**
  * @title Holograph Bridgeable ERC-20 Token
  * @author CXIP-Labs
