@@ -228,6 +228,15 @@ contract HolographFactory is Admin, Initializable, Holographable, HolographFacto
     if (v < 27) {
       v += 27;
     }
+    if (v != 27 && v != 28) {
+      return false;
+    }
+    if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
+      s = bytes32(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141 - uint256(s));
+      if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
+        return false;
+      }
+    }
     /**
      * @dev signature is checked against EIP-191 first, then directly, to support legacy wallets
      */
