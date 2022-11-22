@@ -107,7 +107,7 @@ contract PA1D is Admin, Owner, Initializable {
   function isOwner() private view returns (bool) {
     return (msg.sender == getOwner() ||
       msg.sender == getAdmin() ||
-      msg.sender == Owner(HolographerInterface(address(this)).getSourceContract()).getOwner());
+      msg.sender == Owner(HolographerInterface(address(this)).getSourceContract()).owner());
   }
 
   /**
