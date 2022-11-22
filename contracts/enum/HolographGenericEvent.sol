@@ -101,11 +101,8 @@
 
 pragma solidity 0.8.13;
 
-enum InterfaceType {
+enum HolographGenericEvent {
   UNDEFINED, // 0
-  ERC20, //     1
-  ERC721, //    2
-  ERC1155, //   3
-  PA1D, //      4
-  GENERIC //    5
+  bridgeIn, //  1
+  bridgeOut //  2
 }
