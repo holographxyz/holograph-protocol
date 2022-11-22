@@ -214,9 +214,12 @@ abstract contract ERC721H is Initializable {
   }
 
   /**
-   * @dev Purposefully left empty
+   * @dev This function is unreachable unless custom contract address is called directly.
+   *      Please use custom payable functions for accepting native value.
    */
-  receive() external payable {}
+  receive() external payable {
+    revert("ERC721: unreachable code");
+  }
 
   /**
    * @dev Return true for any un-implemented event hooks

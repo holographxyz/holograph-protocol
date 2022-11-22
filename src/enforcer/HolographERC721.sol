@@ -158,7 +158,7 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
     if (!skipInit) {
       require(sourceContract.init(initCode) == InitializableInterface.init.selector, "ERC721: could not init source");
       (bool success, bytes memory returnData) = _royalties().delegatecall(
-        abi.encodeWithSignature("initPA1D(bytes)", abi.encode(address(this), uint256(contractBps)))
+        abi.encodeWithSignature("initPA1D(bytes)", abi.encode(uint256(contractBps)))
       );
       bytes4 selector = abi.decode(returnData, (bytes4));
       require(success && selector == InitializableInterface.init.selector, "ERC721: coud not init PA1D");
