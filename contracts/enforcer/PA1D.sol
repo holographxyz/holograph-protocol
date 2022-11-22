@@ -210,6 +210,13 @@ contract PA1D is Admin, Owner, Initializable {
   }
 
   /**
+   * @dev This is here in place to prevent reverts in case contract is used outside of the protocol.
+   */
+  function getSourceContract() external view returns (address sourceContract) {
+    sourceContract = address(this);
+  }
+
+  /**
    * @dev Gets the default royalty payment receiver address from storage slot.
    * @return receiver Wallet or smart contract that will receive the initial royalty payouts.
    */
