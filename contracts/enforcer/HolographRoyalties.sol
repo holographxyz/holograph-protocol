@@ -107,41 +107,41 @@ import "../abstract/Owner.sol";
 
 import "../interface/ERC20.sol";
 import "../interface/InitializableInterface.sol";
-import "../interface/PA1DInterface.sol";
+import "../interface/HolographRoyaltiesInterface.sol";
 
 import "../struct/ZoraBidShares.sol";
 
 /**
- * @title PA1D (CXIP)
+ * @title HolographRoyalties (previously PA1D)
  * @author CXIP-Labs
  * @notice A smart contract for providing royalty info, collecting royalties, and distributing it to configured payout wallets.
  * @dev This smart contract is not intended to be used directly. Apply it to any of your ERC721 or ERC1155 smart contracts through a delegatecall fallback.
  */
-contract PA1D is Admin, Owner, Initializable {
+contract HolographRoyalties is Admin, Owner, Initializable {
   /**
-   * @dev bytes32(uint256(keccak256('eip1967.Holograph.PA1D.defaultBp')) - 1)
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.ROYALTIES.defaultBp')) - 1)
    */
-  bytes32 constant _defaultBpSlot = 0x3ab91e3c2ba71a57537d782545f8feb1d402b604f5e070fa6c3b911fc2f18f75;
+  bytes32 constant _defaultBpSlot = 0xff29fcf645501423fd56e0287670f6813a1e5db5cf706428bc8516381e7ffe81;
   /**
-   * @dev bytes32(uint256(keccak256('eip1967.Holograph.PA1D.defaultReceiver')) - 1)
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.ROYALTIES.defaultReceiver')) - 1)
    */
-  bytes32 constant _defaultReceiverSlot = 0xfd430e1c7265cc31dbd9a10ce657e68878a41cfe179c80cd68c5edf961516848;
+  bytes32 constant _defaultReceiverSlot = 0x00b381815b89a20a37ee91e8a0119be5e16f6d1668377e7ae457213a74a415bb;
   /**
-   * @dev bytes32(uint256(keccak256('eip1967.Holograph.PA1D.initialized')) - 1)
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.ROYALTIES.initialized')) - 1)
    */
-  bytes32 constant _initializedPaidSlot = 0x33a44e907d5bf333e203bebc20bb8c91c00375213b80f466a908f3d50b337c6c;
+  bytes32 constant _initializedPaidSlot = 0x91428d26cb4818e4e627ebb64c06b5a67b82f313516b5c903cf07a00681c95f6;
   /**
-   * @dev bytes32(uint256(keccak256('eip1967.Holograph.PA1D.payout.addresses')) - 1)
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.ROYALTIES.payout.addresses')) - 1)
    */
-  bytes32 constant _payoutAddressesSlot = 0x700a541bc37f227b0d36d34e7b77cc0108bde768297c6f80f448f380387371df;
+  bytes32 constant _payoutAddressesSlot = 0xf31f2a3a453a7aa2f3054423a8c5474ac9817ea457b458152967bbcb12ed6a43;
   /**
-   * @dev bytes32(uint256(keccak256('eip1967.Holograph.PA1D.payout.bps')) - 1)
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.ROYALTIES.payout.bps')) - 1)
    */
-  bytes32 constant _payoutBpsSlot = 0x7a62e8104cd2cc2ef6bd3a26bcb71428108fbe0e0ead6a5bfb8676781e2ed28d;
+  bytes32 constant _payoutBpsSlot = 0xa4023567d5b5f01c63e00d90785d7cd4ff057a237ad185c5ecade8f4059fb61a;
 
-  string constant _bpString = "eip1967.Holograph.PA1D.bp";
-  string constant _receiverString = "eip1967.Holograph.PA1D.receiver";
-  string constant _tokenAddressString = "eip1967.Holograph.PA1D.tokenAddress";
+  string constant _bpString = "eip1967.Holograph.ROYALTIES.bp";
+  string constant _receiverString = "eip1967.Holograph.ROYALTIES.receiver";
+  string constant _tokenAddressString = "eip1967.Holograph.ROYALTIES.tokenAddress";
 
   /**
    * @notice Event emitted when setting/updating royalty info/fees. This is used by Rarible V1.
@@ -156,7 +156,7 @@ contract PA1D is Admin, Owner, Initializable {
    * @dev Use this modifier to lock public functions that should not be accesible to non-owners.
    */
   modifier onlyOwner() override {
-    require(isOwner(), "PA1D: caller not an owner");
+    require(isOwner(), "$$$$: caller not an owner");
     _;
   }
 
@@ -171,7 +171,7 @@ contract PA1D is Admin, Owner, Initializable {
    * @param initPayload abi encoded payload to use for contract initilaization
    */
   function init(bytes memory initPayload) external override returns (bytes4) {
-    require(!_isInitialized(), "PA1D: already initialized");
+    require(!_isInitialized(), "$$$$: already initialized");
     assembly {
       sstore(_adminSlot, caller())
       sstore(_ownerSlot, caller())
@@ -182,12 +182,12 @@ contract PA1D is Admin, Owner, Initializable {
     return InitializableInterface.init.selector;
   }
 
-  function initPA1D(bytes memory initPayload) external returns (bytes4) {
+  function initHolographRoyalties(bytes memory initPayload) external returns (bytes4) {
     uint256 initialized;
     assembly {
       initialized := sload(_initializedPaidSlot)
     }
-    require(initialized == 0, "PA1D: already initialized");
+    require(initialized == 0, "$$$$: already initialized");
     (address receiver, uint256 bp) = abi.decode(initPayload, (address, uint256));
     setRoyalties(0, payable(receiver), bp);
     initialized = 1;
@@ -387,7 +387,7 @@ contract PA1D is Admin, Owner, Initializable {
     // adding 1x for each item in array to accomodate rounding errors
     uint256 gasCost = (23300 * length) + length;
     uint256 balance = address(this).balance;
-    require(balance - gasCost > 10000, "PA1D: Not enough ETH to transfer");
+    require(balance - gasCost > 10000, "$$$$: Not enough ETH to transfer");
     balance = balance - gasCost;
     uint256 sending;
     // uint256 sent;
@@ -408,12 +408,12 @@ contract PA1D is Admin, Owner, Initializable {
     uint256 length = addresses.length;
     ERC20 erc20 = ERC20(tokenAddress);
     uint256 balance = erc20.balanceOf(address(this));
-    require(balance > 10000, "PA1D: Not enough tokens to transfer");
+    require(balance > 10000, "$$$$: Not enough tokens to transfer");
     uint256 sending;
     //uint256 sent;
     for (uint256 i = 0; i < length; i++) {
       sending = ((bps[i] * balance) / 10000);
-      require(erc20.transfer(addresses[i], sending), "PA1D: Couldn't transfer token");
+      require(erc20.transfer(addresses[i], sending), "$$$$: Couldn't transfer token");
       // sent = sent + sending;
     }
   }
@@ -432,11 +432,11 @@ contract PA1D is Admin, Owner, Initializable {
     for (uint256 t = 0; t < tokenAddresses.length; t++) {
       erc20 = ERC20(tokenAddresses[t]);
       balance = erc20.balanceOf(address(this));
-      require(balance > 10000, "PA1D: Not enough tokens to transfer");
+      require(balance > 10000, "$$$$: Not enough tokens to transfer");
       // uint256 sent;
       for (uint256 i = 0; i < addresses.length; i++) {
         sending = ((bps[i] * balance) / 10000);
-        require(erc20.transfer(addresses[i], sending), "PA1D: Couldn't transfer token");
+        require(erc20.transfer(addresses[i], sending), "$$$$: Couldn't transfer token");
         // sent = sent + sending;
       }
     }
@@ -457,7 +457,7 @@ contract PA1D is Admin, Owner, Initializable {
           break;
         }
       }
-      require(matched, "PA1D: sender not authorized");
+      require(matched, "$$$$: sender not authorized");
     }
   }
 
@@ -469,12 +469,12 @@ contract PA1D is Admin, Owner, Initializable {
    * @param bps An array of the percentages that each address will receive from the royalty payouts.
    */
   function configurePayouts(address payable[] memory addresses, uint256[] memory bps) public onlyOwner {
-    require(addresses.length == bps.length, "PA1D: missmatched array lenghts");
+    require(addresses.length == bps.length, "$$$$: missmatched array lenghts");
     uint256 totalBp;
     for (uint256 i = 0; i < addresses.length; i++) {
       totalBp = totalBp + bps[i];
     }
-    require(totalBp == 10000, "PA1D: bps down't equal 10000");
+    require(totalBp == 10000, "$$$$: bps down't equal 10000");
     _setPayoutAddresses(addresses);
     _setPayoutBps(bps);
   }
