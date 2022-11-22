@@ -225,6 +225,19 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "isHToken",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
