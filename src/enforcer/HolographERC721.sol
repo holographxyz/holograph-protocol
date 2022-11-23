@@ -324,6 +324,10 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
     require(_isApproved(sender, tokenId), "ERC721: sender not approved");
     require(from == _tokenOwner[tokenId], "ERC721: from is not owner");
     if (_isEventRegistered(HolographERC721Event.bridgeOut)) {
+      /*
+       * @dev making a bridgeOut call to source contract
+       *      assembly is used so that msg.sender can be injected in the calldata
+       */
       bytes memory sourcePayload = abi.encodeWithSelector(
         HolographedERC721.bridgeOut.selector,
         toChain,
@@ -949,6 +953,9 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
     }
   }
 
+  /*
+   * @dev all calls to source contract go through this function in order to inject original msg.sender in calldata
+   */
   function _sourceCall(bytes memory payload) private returns (bool output) {
     assembly {
       let pos := mload(0x40)

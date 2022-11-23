@@ -169,6 +169,9 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, Ho
     }
   }
 
+  /*
+   * @dev all calls to source contract go through this function in order to inject original msg.sender in calldata
+   */
   function _sourceCall(bytes memory payload) private returns (bool output) {
     assembly {
       let pos := mload(0x40)
@@ -326,6 +329,10 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, Ho
       }
     }
     if (_isEventRegistered(HolographERC20Event.bridgeOut)) {
+      /*
+       * @dev making a bridgeOut call to source contract
+       *      assembly is used so that msg.sender can be injected in the calldata
+       */
       bytes memory sourcePayload = abi.encodeWithSelector(
         HolographedERC20.bridgeOut.selector,
         toChain,
@@ -698,12 +705,21 @@ contract HolographERC20 is Admin, Owner, Initializable, NonReentrant, EIP712, Ho
     if (v < 27) {
       v += 27;
     }
-    require(v == 27 || v == 28, "ERC20: invalid v value");
+    require(v == 27 || v == 28, "ERC20: invalid v-value");
+    // prevent signature malleability by checking if s-value is in the upper range
     if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
+      // if s-value is in upper range, calculate a new s-value
       s = bytes32(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141 - uint256(s));
+      // flip the v-value
+      if (v == 27) {
+        v = 28;
+      } else {
+        v = 27;
+      }
+      // check if s-value is still in upper range
       require(
-        uint256(s) <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0,
-        "ERC20: invalid s value"
+        uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0,
+        "ERC20: invalid s-value"
       );
     }
     signer = ecrecover(hash, v, r, s);
