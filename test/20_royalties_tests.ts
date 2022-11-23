@@ -255,7 +255,7 @@ describe('HolographRoyalties Contract', async function () {
       let data = (await royalties.populateTransaction.configurePayouts(addresses, bps)).data || '';
 
       await expect(l1.factory.connect(owner).adminCall(royalties.address, data)).to.be.revertedWith(
-        '$$$$: missmatched array lenghts'
+        'ROYALTIES: missmatched lenghts'
       );
     });
 
@@ -266,7 +266,7 @@ describe('HolographRoyalties Contract', async function () {
       let data = (await royalties.populateTransaction.configurePayouts(addresses, bps)).data || '';
 
       await expect(l1.factory.connect(owner).adminCall(royalties.address, data)).to.be.revertedWith(
-        "$$$$: bps down't equal 10000"
+        'ROYALTIES: bps must equal 10000'
       );
     });
 
@@ -307,7 +307,7 @@ describe('HolographRoyalties Contract', async function () {
     });
 
     it('Should fail if sender is not authorized', async () => {
-      await expect(royalties.connect(notOwner).getEthPayout()).to.be.revertedWith('$$$$: sender not authorized');
+      await expect(royalties.connect(notOwner).getEthPayout()).to.be.revertedWith('ROYALTIES: sender not authorized');
     });
   });
 
@@ -328,7 +328,7 @@ describe('HolographRoyalties Contract', async function () {
     });
 
     it('Should fail if sender is not authorized', async () => {
-      await expect(royalties.connect(notOwner).getEthPayout()).to.be.revertedWith('$$$$: sender not authorized');
+      await expect(royalties.connect(notOwner).getEthPayout()).to.be.revertedWith('ROYALTIES: sender not authorized');
     });
   });
 
@@ -352,7 +352,7 @@ describe('HolographRoyalties Contract', async function () {
 
     it('Should fail if sender is not authorized', async () => {
       await expect(royalties.connect(notOwner).getTokenPayout(owner.address)).to.be.revertedWith(
-        '$$$$: sender not authorized'
+        'ROYALTIES: sender not authorized'
       );
     });
   });

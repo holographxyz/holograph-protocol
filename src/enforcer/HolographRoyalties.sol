@@ -57,7 +57,7 @@ contract HolographRoyalties is Admin, Owner, Initializable {
    * @dev Use this modifier to lock public functions that should not be accesible to non-owners.
    */
   modifier onlyOwner() override {
-    require(isOwner(), "$$$$: caller not an owner");
+    require(isOwner(), "ROYALTIES: caller not an owner");
     _;
   }
 
@@ -72,7 +72,7 @@ contract HolographRoyalties is Admin, Owner, Initializable {
    * @param initPayload abi encoded payload to use for contract initilaization
    */
   function init(bytes memory initPayload) external override returns (bytes4) {
-    require(!_isInitialized(), "$$$$: already initialized");
+    require(!_isInitialized(), "ROYALTIES: already initialized");
     assembly {
       sstore(_adminSlot, caller())
       sstore(_ownerSlot, caller())
@@ -88,7 +88,7 @@ contract HolographRoyalties is Admin, Owner, Initializable {
     assembly {
       initialized := sload(_initializedPaidSlot)
     }
-    require(initialized == 0, "$$$$: already initialized");
+    require(initialized == 0, "ROYALTIES: already initialized");
     (address receiver, uint256 bp) = abi.decode(initPayload, (address, uint256));
     setRoyalties(0, payable(receiver), bp);
     initialized = 1;
@@ -288,7 +288,7 @@ contract HolographRoyalties is Admin, Owner, Initializable {
     // adding 1x for each item in array to accomodate rounding errors
     uint256 gasCost = (23300 * length) + length;
     uint256 balance = address(this).balance;
-    require(balance - gasCost > 10000, "$$$$: Not enough ETH to transfer");
+    require(balance - gasCost > 10000, "ROYALTIES: Not enough ETH");
     balance = balance - gasCost;
     uint256 sending;
     // uint256 sent;
@@ -309,12 +309,12 @@ contract HolographRoyalties is Admin, Owner, Initializable {
     uint256 length = addresses.length;
     ERC20 erc20 = ERC20(tokenAddress);
     uint256 balance = erc20.balanceOf(address(this));
-    require(balance > 10000, "$$$$: Not enough tokens to transfer");
+    require(balance > 10000, "ROYALTIES: Not enough tokens");
     uint256 sending;
     //uint256 sent;
     for (uint256 i = 0; i < length; i++) {
       sending = ((bps[i] * balance) / 10000);
-      require(erc20.transfer(addresses[i], sending), "$$$$: Couldn't transfer token");
+      require(erc20.transfer(addresses[i], sending), "ROYALTIES: ERC20 transfer failed");
       // sent = sent + sending;
     }
   }
@@ -333,11 +333,11 @@ contract HolographRoyalties is Admin, Owner, Initializable {
     for (uint256 t = 0; t < tokenAddresses.length; t++) {
       erc20 = ERC20(tokenAddresses[t]);
       balance = erc20.balanceOf(address(this));
-      require(balance > 10000, "$$$$: Not enough tokens to transfer");
+      require(balance > 10000, "ROYALTIES: Not enough tokens");
       // uint256 sent;
       for (uint256 i = 0; i < addresses.length; i++) {
         sending = ((bps[i] * balance) / 10000);
-        require(erc20.transfer(addresses[i], sending), "$$$$: Couldn't transfer token");
+        require(erc20.transfer(addresses[i], sending), "ROYALTIES: ERC20 transfer failed");
         // sent = sent + sending;
       }
     }
@@ -358,7 +358,7 @@ contract HolographRoyalties is Admin, Owner, Initializable {
           break;
         }
       }
-      require(matched, "$$$$: sender not authorized");
+      require(matched, "ROYALTIES: sender not authorized");
     }
   }
 
@@ -370,12 +370,12 @@ contract HolographRoyalties is Admin, Owner, Initializable {
    * @param bps An array of the percentages that each address will receive from the royalty payouts.
    */
   function configurePayouts(address payable[] memory addresses, uint256[] memory bps) public onlyOwner {
-    require(addresses.length == bps.length, "$$$$: missmatched array lenghts");
+    require(addresses.length == bps.length, "ROYALTIES: missmatched lenghts");
     uint256 totalBp;
     for (uint256 i = 0; i < addresses.length; i++) {
       totalBp = totalBp + bps[i];
     }
-    require(totalBp == 10000, "$$$$: bps down't equal 10000");
+    require(totalBp == 10000, "ROYALTIES: bps must equal 10000");
     _setPayoutAddresses(addresses);
     _setPayoutBps(bps);
   }
