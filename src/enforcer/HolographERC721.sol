@@ -903,10 +903,7 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
    * @dev Get the bridge contract address.
    */
   function _royalties() private view returns (address) {
-    return
-      HolographRegistryInterface(_holograph().getRegistry()).getContractTypeAddress(
-        0x0000000000000000000000000000000000000000000000000000000050413144
-      );
+    return HolographRegistryInterface(_holograph().getRegistry()).getContractTypeAddress(asciihex("PA1D"));
   }
 
   /**
