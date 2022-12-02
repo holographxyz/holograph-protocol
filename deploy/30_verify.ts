@@ -11,7 +11,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   if (global.__superColdStorage) {
     // address, domain, authorization, ca
     const coldStorage = global.__superColdStorage;
-    hre.deployments.log('global.__superColdStorage', coldStorage);
     deployer = new SuperColdStorageSigner(
       coldStorage.address,
       'https://' + coldStorage.domain,
