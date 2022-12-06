@@ -11,7 +11,7 @@ import {
 } from './utils/error_constants';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
-describe.only('HolographRoyalties Contract', async function () {
+describe('HolographRoyalties Contract', async function () {
   let royalties: HolographRoyalties;
   let l1: PreTest;
   let mockExternalCall: MockExternalCall;

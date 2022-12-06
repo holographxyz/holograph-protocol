@@ -600,6 +600,7 @@ contract HolographRoyalties is Admin, Owner, Initializable {
     uint256 bp
   ) public onlyOwner {
     require(receiver != address(0), "ROYALTIES: receiver is zero address");
+    require(bp <= 10000, "ROYALTIES: base points over 100%");
     if (tokenId == 0) {
       _setDefaultReceiver(receiver);
       _setDefaultBp(bp);
