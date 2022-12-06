@@ -322,12 +322,15 @@ contract HolographRoyalties is Admin, Owner, Initializable {
     }
     for (uint256 i = 0; i < length; i++) {
       sending = ((bps[i] * balance) / 10000);
-      // If the contract enabled extended call on init then use call to transfer, otherwise use transfer
-      if (extendedCall == true) {
-        (bool success, ) = addresses[i].call{value: sending}("");
-        require(success, "ROYALTIES: Transfer failed");
-      } else {
-        addresses[i].transfer(sending);
+      // only send value if it is greater than 0
+      if (sending > 0) {
+        // If the contract enabled extended call on init then use call to transfer, otherwise use transfer
+        if (extendedCall == true) {
+          (bool success, ) = addresses[i].call{value: sending}("");
+          require(success, "ROYALTIES: Transfer failed");
+        } else {
+          addresses[i].transfer(sending);
+        }
       }
     }
   }
