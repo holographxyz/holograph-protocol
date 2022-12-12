@@ -358,7 +358,7 @@ const getGasLimit = async function (
   if (typeof from !== 'string') {
     from = (from as SignerWithAddress).address;
   }
-  if (!isBytesLike(data)) {
+  if (isBytesLike(data) === false) {
     data = (await data).data;
   }
   const gasLimit = BigNumber.from(
