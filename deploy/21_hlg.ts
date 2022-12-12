@@ -186,7 +186,11 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
           hre,
           from: deployer,
           to: hlgContract,
-          data: hlgContract.populateTransaction.transfer(operatorAddress, BigNumber.from('1000000000000000000000000')),
+          gasLimit: (
+            await hre.ethers.provider.estimateGas(
+              hlgContract.populateTransaction.transfer(operatorAddress, BigNumber.from('1000000000000000000000000'))
+            )
+          ).mul(BigNumber.from('2')),
         })),
       });
       await transferTx.wait();

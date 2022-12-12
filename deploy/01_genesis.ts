@@ -2,7 +2,7 @@ declare var global: any;
 import { Contract } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction, Deployment } from '@holographxyz/hardhat-deploy-holographed/types';
-import { LeanHardhatRuntimeEnvironment, hreSplit, getGasPrice } from '../scripts/utils/helpers';
+import { LeanHardhatRuntimeEnvironment, hreSplit, txParams } from '../scripts/utils/helpers';
 import { SuperColdStorageSigner } from 'super-cold-storage-signer';
 
 const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
@@ -261,12 +261,17 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   }
   if (holographGenesisContract == null && holographGenesisDeployment == null) {
     let holographGenesis = await hre.deployments.deploy('HolographGenesis', {
-      from: deployer.address,
+      ...(await txParams({
+        hre,
+        from: deployer,
+        to: '0x0000000000000000000000000000000000000000',
+        gasLimit: await hre.ethers.provider.estimateGas(
+          (await hre.ethers.getContractFactory('HolographGenesis')).getDeployTransaction()
+        ),
+      })),
       args: [],
       log: true,
       waitConfirmations: 1,
-      nonce: await hre.ethers.provider.getTransactionCount(deployer.address),
-      ...(await getGasPrice()),
     });
   }
 };

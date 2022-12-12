@@ -447,6 +447,9 @@ const txParams = async function ({
   if (typeof from !== 'string') {
     from = (from as SignerWithAddress).address;
   }
+  if (!('__txNonce' in global)) {
+    global.__txNonce = await hre.ethers.provider.getTransactionCount(from as string);
+  }
   if (typeof to !== 'string') {
     to = (to as Contract).address;
   }
@@ -455,8 +458,9 @@ const txParams = async function ({
     value: BigNumber.from(value),
     gasLimit: gasLimit ? gasLimit : await getGasLimit(hre, from as string, to as string, data, BigNumber.from(value)),
     ...(await getGasPrice()),
-    nonce: await hre.ethers.provider.getTransactionCount(from as string),
+    nonce: global.__txNonce,
   };
+  global.__txNonce += 1;
   return output;
 };
 
@@ -501,7 +505,6 @@ const genesisDeployHelper = async function (
       saltHash: deployer + salt.substring(salt.length - 24),
       deployCode: deployCode,
       waitConfirmations: 1,
-      nonce: await ethers.provider.getTransactionCount(deployer),
     });
     deployments.log('future "' + name + '" address is', contractDeterministic.address);
     await contractDeterministic.deploy();

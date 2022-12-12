@@ -9,8 +9,7 @@ import {
   genesisDeriveFutureAddress,
   generateErc20Config,
   generateInitCode,
-  getGasPrice,
-  getGasLimit,
+  txParams,
 } from '../scripts/utils/helpers';
 import { HolographERC20Event, ConfigureEvents } from '../scripts/utils/events';
 import { NetworkType, networks } from '@holographxyz/networks';
@@ -72,10 +71,14 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
               hre,
               from: deployer,
               to: hlgContract,
-              data: hlgContract.populateTransaction.transfer(
-                futureFaucetAddress,
-                BigNumber.from('1000000000000000000000000')
-              ),
+              gasLimit: (
+                await hre.ethers.provider.estimateGas(
+                  hlgContract.populateTransaction.transfer(
+                    futureFaucetAddress,
+                    BigNumber.from('1000000000000000000000000')
+                  )
+                )
+              ).mul(BigNumber.from('2')),
             })),
           }
         );
