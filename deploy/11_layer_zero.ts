@@ -39,6 +39,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
         gasLimit: await hre.ethers.provider.estimateGas(
           (await hre.ethers.getContractFactory('MockLZEndpoint')).getDeployTransaction()
         ),
+        nonce: await hre.ethers.provider.getTransactionCount(lzEndpoint),
       })),
       args: [],
       log: true,

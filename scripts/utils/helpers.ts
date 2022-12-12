@@ -390,6 +390,7 @@ type TransactionParams = {
   data?: Promise<UnsignedTransaction> | BytesLike;
   value?: BigNumberish;
   gasLimit?: BigNumber;
+  nonce?: number;
 };
 
 type TransactionParamsOutput = {
@@ -443,6 +444,7 @@ const txParams = async function ({
   data = null,
   value = 0,
   gasLimit,
+  nonce,
 }: TransactionParams): Promise<TransactionParamsOutput> {
   if (typeof from !== 'string') {
     from = (from as SignerWithAddress).address;
@@ -458,9 +460,11 @@ const txParams = async function ({
     value: BigNumber.from(value),
     gasLimit: gasLimit ? gasLimit : await getGasLimit(hre, from as string, to as string, data, BigNumber.from(value)),
     ...(await getGasPrice()),
-    nonce: global.__txNonce,
+    nonce: nonce === undefined ? global.__txNonce : nonce,
   };
-  global.__txNonce += 1;
+  if (nonce === undefined) {
+    global.__txNonce += 1;
+  }
   return output;
 };
 
