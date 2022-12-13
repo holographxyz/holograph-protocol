@@ -4,7 +4,7 @@ import { DeployFunction } from '@holographxyz/hardhat-deploy-holographed/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { SuperColdStorageSigner } from 'super-cold-storage-signer';
 import { hreSplit, txParams } from '../scripts/utils/helpers';
-import { NetworkType, networks } from '@holographxyz/networks';
+import { NetworkType, Network, networks } from '@holographxyz/networks';
 
 const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   let { hre, hre2 } = await hreSplit(hre1, global.__companionNetwork);
@@ -23,18 +23,13 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     );
   }
 
-  const currentNetworkType: NetworkType = networks[hre.networkName].type;
+  const network: Network = networks[hre.networkName];
 
-  if (currentNetworkType == NetworkType.mainnet) {
-    const multisigs: { [key: string]: string } = {
-      avalanche: '0x569FcF96b09d228918721E33D46C6ca58302B247',
-      polygon: '0xCD2Ec32814f28622533ffcc9131F0D7B2c2CF038',
-      ethereum: '0x99102e9bf378AE777e16D5f1D2D8Ff89b066c5af',
-    };
-    if (!(hre.networkName in multisigs)) {
-      throw new Error('no multisig setup');
+  if (network.type == NetworkType.mainnet) {
+    if (network.protocolMultisig === undefined) {
+      throw new Error('No multisig setup for this network');
     }
-    const MULTI_SIG: string = multisigs[hre.networkName].toLowerCase();
+    const MULTI_SIG: string = network.protocolMultisig as string;
 
     const switchToHolograph: string[] = [
       'HolographBridgeProxy',
@@ -74,6 +69,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       await setHolographAsAdminTx.wait();
       hre.deployments.log(`Changed ${contractName} Admin to Holograph`);
     }
+  } else {
+    hre.deployments.log(`Skipping multisig setup for ${NetworkType[network.type]}`);
   }
 };
 export default func;
