@@ -75,11 +75,4 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
 };
 export default func;
 func.tags = ['MultiSig'];
-func.dependencies = [
-  'HolographGenesis',
-  'DeploySources',
-  'DeployERC20',
-  'DeployERC721',
-  'RegisterTemplates',
-  'Holographer4verify',
-];
+func.dependencies = ['HolographGenesis', 'DeploySources', 'LayerZeroModule'];
