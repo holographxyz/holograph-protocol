@@ -465,7 +465,7 @@ const txParams = async function ({
     ...(await getGasPrice()),
     nonce: nonce === undefined ? global.__txNonce[hre.networkName] : nonce,
   };
-  if (nonce === undefined || nonce === global.__txNonce[hre.networkName]) {
+  if (nonce === undefined) {
     global.__txNonce[hre.networkName] += 1;
   }
   return output;
