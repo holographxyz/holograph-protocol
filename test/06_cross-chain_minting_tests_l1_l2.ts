@@ -1087,11 +1087,12 @@ describe('Testing cross-chain minting (L1 & L2)', async function () {
           payload = gasEstimates.payload;
           let payloadHash: string = HASH(payload);
           let originalGas: BigNumber = BigNumber.from(gasEstimates.estimatedGas);
-          let newGas: BigNumber = originalGas.div(BigNumber.from('10'));
+          // purposefully setting lower gas limit to make job revert with `out of gas` error
+          let badLowGas: BigNumber = originalGas.div(BigNumber.from('10'));
           let bridgeTx = await l1.bridge.bridgeOutRequest(
             l2.network.holographId,
             l1.sampleErc721Holographer.address,
-            newGas,
+            badLowGas,
             GWEI,
             data,
             { value: gasEstimates.fee }
