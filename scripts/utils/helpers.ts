@@ -450,7 +450,10 @@ const txParams = async function ({
     from = (from as SignerWithAddress).address;
   }
   if (!('__txNonce' in global)) {
-    global.__txNonce = await hre.ethers.provider.getTransactionCount(from as string);
+    global.__txNonce = {} as { [key: string]: number };
+  }
+  if (!(hre.networkName in global.__txNonce)) {
+    global.__txNonce[hre.networkName] = await hre.ethers.provider.getTransactionCount(from as string);
   }
   if (typeof to !== 'string') {
     to = (to as Contract).address;
@@ -460,10 +463,10 @@ const txParams = async function ({
     value: BigNumber.from(value),
     gasLimit: gasLimit ? gasLimit : await getGasLimit(hre, from as string, to as string, data, BigNumber.from(value)),
     ...(await getGasPrice()),
-    nonce: nonce === undefined ? global.__txNonce : nonce,
+    nonce: nonce === undefined ? global.__txNonce[hre.networkName] : nonce,
   };
-  if (nonce === undefined) {
-    global.__txNonce += 1;
+  if (nonce === undefined || nonce === global.__txNonce[hre.networkName]) {
+    global.__txNonce[hre.networkName] += 1;
   }
   return output;
 };
