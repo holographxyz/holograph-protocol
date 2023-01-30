@@ -46,6 +46,8 @@
     "lint:fix": "eslint . --ext .ts --config .eslintrc --fix",
     "prettier:check": "prettier --ignore-unknown --check \"deploy/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.ts\"",
     "prettier:fix": "prettier --loglevel error --ignore-path .gitignore --write .",
+    "coverage": "hardhat coverage",
+    "coverage:dev": "hardhat coverage --network localhost --testfiles 'test/{10,12,16}*.ts'",
     "prettier:deployments": "hardhat deploymentsPrettier"
   },
   "dependencies": {
@@ -94,6 +96,7 @@
     "prettier-plugin-solidity": "^1.0.0-beta.13",
     "solhint": "^3.3.7",
     "solhint-plugin-prettier": "^0.0.5",
+    "solidity-coverage": "^0.8.2",
     "ts-node": "^10.1.0",
     "typechain": "^7.0.0",
     "typescript": "^4.3.5"
