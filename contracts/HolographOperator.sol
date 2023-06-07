@@ -115,6 +115,7 @@ import "./interface/HolographInterfacesInterface.sol";
 import "./interface/Ownable.sol";
 
 import "./struct/OperatorJob.sol";
+import "./struct/DataOperator.sol";
 
 /**
  * @title Holograph Operator
@@ -217,19 +218,12 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
   address[][] private _operatorPods;
 
   /**
-   * @dev Internal mapping of bonded operators, to prevent double bonding
+   * @dev Mapping of address to operator data
+   * @dev _bondedOperator: Internal mapping of bonded operators, to prevent double bonding
+   * @dev _operatorPodIndex: Internal mapping of operator pod index to prevent double bonding
+   * @dev _bondedAmount: Internal mapping of bonded amounts
    */
-  mapping(address => uint256) private _bondedOperators;
-
-  /**
-   * @dev Internal mapping of bonded operators, to prevent double bonding
-   */
-  mapping(address => uint256) private _operatorPodIndex;
-
-  /**
-   * @dev Internal mapping of bonded operator amounts
-   */
-  mapping(address => uint256) private _bondedAmounts;
+  mapping(address => DataOperator) private _operatorData;
 
   /**
    * @dev Constructor is left empty and init is used instead
@@ -275,7 +269,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
     // set first operator for each pod as zero address
     _operatorPods = [[address(0)]];
     // mark zero address as bonded operator, to prevent abuse
-    _bondedOperators[address(0)] = 1;
+    _operatorData[address(0)]._bondedOperator = 1;
     _setInitialized();
     return InitializableInterface.init.selector;
   }
@@ -330,7 +324,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
     /**
      * @dev operators of last resort are allowed, but they will not receive HLG rewards of any sort
      */
-    bool isBonded = _bondedAmounts[msg.sender] != 0;
+    bool isBonded = _operatorData[msg.sender]._bondedAmount != 0;
     /**
      * @dev check that a specific operator was selected for the job
      */
@@ -371,7 +365,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
              */
             require(fallbackOperator == msg.sender, "HOLOGRAPH: invalid fallback");
           } else {
-            require(_bondedOperators[msg.sender] == job.pod, "HOLOGRAPH: pod only fallback");
+            require(_operatorData[msg.sender]._bondedOperator == job.pod, "HOLOGRAPH: pod only fallback");
           }
         }
         /**
@@ -381,7 +375,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
         /**
          * @dev select operator that failed to do the job, is slashed the pod base fee
          */
-        _bondedAmounts[job.operator] -= amount;
+        _operatorData[job.operator]._bondedAmount -= amount;
         /**
          * @dev only allow HLG rewards to go to bonded operators
          *      if operator is bonded, the slashed amount is sent to current operator
@@ -391,20 +385,20 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
         /**
          * @dev check if slashed operator has enough tokens bonded to stay
          */
-        if (_bondedAmounts[job.operator] >= amount) {
+        if (_operatorData[job.operator]._bondedAmount >= amount) {
           /**
            * @dev enough bond amount leftover, put operator back in
            */
           _operatorPods[pod].push(job.operator);
-          _operatorPodIndex[job.operator] = _operatorPods[pod].length - 1;
-          _bondedOperators[job.operator] = job.pod;
+          _operatorData[job.operator]._operatorPodIndex = _operatorPods[pod].length - 1;
+          _operatorData[job.operator]._bondedOperator = job.pod;
         } else {
           /**
            * @dev slashed operator does not have enough tokens bonded, return remaining tokens only
            */
-          uint256 leftovers = _bondedAmounts[job.operator];
+          uint256 leftovers = _operatorData[job.operator]._bondedAmount;
           if (leftovers > 0) {
-            _bondedAmounts[job.operator] = 0;
+            _operatorData[job.operator]._bondedAmount = 0;
             _utilityToken().transfer(job.operator, leftovers);
           }
         }
@@ -413,8 +407,8 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
          * @dev the selected operator is executing the job
          */
         _operatorPods[pod].push(msg.sender);
-        _operatorPodIndex[job.operator] = _operatorPods[pod].length - 1;
-        _bondedOperators[msg.sender] = job.pod;
+        _operatorData[job.operator]._operatorPodIndex = _operatorPods[pod].length - 1;
+        _operatorData[msg.sender]._bondedOperator = job.pod;
       }
     }
     /**
@@ -823,7 +817,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
    * @return amount total number of utility token bonded
    */
   function getBondedAmount(address operator) external view returns (uint256 amount) {
-    return _bondedAmounts[operator];
+    return _operatorData[operator]._bondedAmount;
   }
 
   /**
@@ -833,7 +827,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
    * @return pod number that operator is bonded on, returns zero if not bonded or selected for job
    */
   function getBondedPod(address operator) external view returns (uint256 pod) {
-    return _bondedOperators[operator];
+    return _operatorData[operator]._bondedOperator;
   }
 
   /**
@@ -843,7 +837,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
    * @return index currently bonded pod's operator index, returns zero if not in pod or moved out for active job
    */
   function getBondedPodIndex(address operator) external view returns (uint256 index) {
-    return _operatorPodIndex[operator];
+    return _operatorData[operator]._operatorPodIndex;
   }
 
   /**
@@ -857,12 +851,12 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
     /**
      * @dev check that an operator is currently bonded
      */
-    require(_bondedOperators[operator] != 0, "HOLOGRAPH: operator not bonded");
+    require(_operatorData[operator]._bondedOperator != 0, "HOLOGRAPH: operator not bonded");
     unchecked {
       /**
        * @dev add the additional amount to operator
        */
-      _bondedAmounts[operator] += amount;
+      _operatorData[operator]._bondedAmount += amount;
     }
     /**
      * @dev transfer tokens last, to prevent reentrancy attacks
@@ -910,9 +904,9 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
        */
       require(_operatorPods[pod - 1].length < type(uint16).max, "HOLOGRAPH: too many operators");
       _operatorPods[pod - 1].push(operator);
-      _operatorPodIndex[operator] = _operatorPods[pod - 1].length - 1;
-      _bondedOperators[operator] = pod;
-      _bondedAmounts[operator] = amount;
+      _operatorData[operator]._operatorPodIndex = _operatorPods[pod - 1].length - 1;
+      _operatorData[operator]._bondedOperator = pod;
+      _operatorData[operator]._bondedAmount = amount;
       /**
        * @dev transfer tokens last, to prevent reentrancy attacks
        */
@@ -930,7 +924,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
     /**
      * @dev validate that operator is currently bonded
      */
-    require(_bondedOperators[operator] != 0, "HOLOGRAPH: operator not bonded");
+    require(_operatorData[operator]._bondedOperator != 0, "HOLOGRAPH: operator not bonded");
     /**
      * @dev check if sender is not actual operator
      */
@@ -947,15 +941,15 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
     /**
      * @dev get current bonded amount by operator
      */
-    uint256 amount = _bondedAmounts[operator];
+    uint256 amount = _operatorData[operator]._bondedAmount;
     /**
      * @dev unset operator bond amount before making a transfer
      */
-    _bondedAmounts[operator] = 0;
+    _operatorData[operator]._bondedAmount = 0;
     /**
      * @dev remove all operator references
      */
-    _popOperator(_bondedOperators[operator] - 1, _operatorPodIndex[operator]);
+    _popOperator(_operatorData[operator]._bondedOperator - 1, _operatorData[operator]._operatorPodIndex);
     /**
      * @dev transfer tokens to recipient
      */
@@ -1188,18 +1182,18 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
         /**
          * @dev mark operator as no longer bonded
          */
-        _bondedOperators[operator] = 0;
+        _operatorData[operator]._bondedOperator = 0;
         /**
          * @dev remove pod reference for operator
          */
-        _operatorPodIndex[operator] = 0;
+        _operatorData[operator]._operatorPodIndex = 0;
         uint256 lastIndex = _operatorPods[pod].length - 1;
         if (lastIndex != operatorIndex) {
           /**
            * @dev if operator is not last index, move last index to operator's current index
            */
           _operatorPods[pod][operatorIndex] = _operatorPods[pod][lastIndex];
-          _operatorPodIndex[_operatorPods[pod][operatorIndex]] = operatorIndex;
+          _operatorData[_operatorPods[pod][operatorIndex]]._operatorPodIndex = operatorIndex;
         }
         /**
          * @dev delete last index

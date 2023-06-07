@@ -105,6 +105,8 @@ import "../abstract/Admin.sol";
 import "../abstract/Initializable.sol";
 import "../abstract/Owner.sol";
 
+import "../struct/DataERC721.sol";
+
 import "../enum/HolographERC721Event.sol";
 import "../enum/InterfaceType.sol";
 
@@ -180,20 +182,17 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
   mapping(uint256 => address) private _tokenApprovals;
 
   /**
-   * @dev Map of total tokens owner by a specific address.
-   */
-  mapping(address => uint256) private _ownedTokensCount;
-
-  /**
-   * @dev Map of array of token ids owned by a specific address.
-   */
-  mapping(address => uint256[]) private _ownedTokens;
-
-  /**
    * @notice Map of full operator approval for a particular address.
    * @dev Usually utilised for supporting marketplace proxy wallets.
    */
   mapping(address => mapping(address => bool)) private _operatorApprovals;
+
+  /**
+   * @dev Mapping from the address to ERC721 data containing owned tokens count, owned tokens, and operator approvals.
+   * @dev _ownedTokensCount: Total tokens owner by a specific address.
+   * @dev _ownedTokens: Array of tokens owned by a specific address.
+   */
+  mapping(address => DataERC721) private _erc721Data;
 
   /**
    * @dev Mapping from token id to position in the allTokens array.
@@ -344,7 +343,7 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
    * @return uint256[] Returns an array of token ids owned by wallet.
    */
   function tokensOfOwner(address wallet) external view returns (uint256[] memory) {
-    return _ownedTokens[wallet];
+    return _erc721Data[wallet]._ownedTokens;
   }
 
   /**
@@ -359,13 +358,13 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
     uint256 index,
     uint256 length
   ) external view returns (uint256[] memory tokenIds) {
-    uint256 supply = _ownedTokensCount[wallet];
+    uint256 supply = _erc721Data[wallet]._ownedTokensCount;
     if (index + length > supply) {
       length = supply - index;
     }
     tokenIds = new uint256[](length);
     for (uint256 i = 0; i < length; i++) {
-      tokenIds[i] = _ownedTokens[wallet][index + i];
+      tokenIds[i] = _erc721Data[wallet]._ownedTokens[index + i];
     }
   }
 
@@ -665,7 +664,7 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
    */
   function balanceOf(address wallet) public view returns (uint256) {
     require(wallet != address(0), "ERC721: zero address");
-    return _ownedTokensCount[wallet];
+    return _erc721Data[wallet]._ownedTokensCount;
   }
 
   function burned(uint256 tokenId) public view returns (bool) {
@@ -755,7 +754,7 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
    */
   function tokenOfOwnerByIndex(address wallet, uint256 index) external view returns (uint256) {
     require(index < balanceOf(wallet), "ERC721: index out of bounds");
-    return _ownedTokens[wallet][index];
+    return _erc721Data[wallet]._ownedTokens[index];
   }
 
   /**
@@ -825,9 +824,9 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
    * @param tokenId Id of token to add.
    */
   function _addTokenToOwnerEnumeration(address to, uint256 tokenId) private {
-    _ownedTokensIndex[tokenId] = _ownedTokensCount[to];
-    _ownedTokensCount[to]++;
-    _ownedTokens[to].push(tokenId);
+    _ownedTokensIndex[tokenId] = _erc721Data[to]._ownedTokensCount;
+    _erc721Data[to]._ownedTokensCount++;
+    _erc721Data[to]._ownedTokens.push(tokenId);
     _allTokensIndex[tokenId] = _allTokens.length;
     _allTokens.push(tokenId);
   }
@@ -889,19 +888,19 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
    */
   function _removeTokenFromOwnerEnumeration(address from, uint256 tokenId) private {
     _removeTokenFromAllTokensEnumeration(tokenId);
-    _ownedTokensCount[from]--;
-    uint256 lastTokenIndex = _ownedTokensCount[from];
+    _erc721Data[from]._ownedTokensCount--;
+    uint256 lastTokenIndex = _erc721Data[from]._ownedTokensCount;
     uint256 tokenIndex = _ownedTokensIndex[tokenId];
     if (tokenIndex != lastTokenIndex) {
-      uint256 lastTokenId = _ownedTokens[from][lastTokenIndex];
-      _ownedTokens[from][tokenIndex] = lastTokenId;
+      uint256 lastTokenId = _erc721Data[from]._ownedTokens[lastTokenIndex];
+      _erc721Data[from]._ownedTokens[tokenIndex] = lastTokenId;
       _ownedTokensIndex[lastTokenId] = tokenIndex;
     }
     if (lastTokenIndex == 0) {
-      delete _ownedTokens[from];
+      delete _erc721Data[from]._ownedTokens;
     } else {
-      delete _ownedTokens[from][lastTokenIndex];
-      _ownedTokens[from].pop();
+      delete _erc721Data[from]._ownedTokens[lastTokenIndex];
+      _erc721Data[from]._ownedTokens.pop();
     }
   }
 

@@ -101,6 +101,8 @@
 
 pragma solidity 0.8.13;
 
-interface HolographTreasuryInterface {
-
+struct DataOperator {
+  uint256 _bondedOperator;
+  uint256 _operatorPodIndex;
+  uint256 _bondedAmount;
 }

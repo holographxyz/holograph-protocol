@@ -101,6 +101,7 @@
 
 pragma solidity 0.8.13;
 
-interface HolographTreasuryInterface {
-
+struct DataERC721 {
+  uint256 _ownedTokensCount;
+  uint256[] _ownedTokens;
 }
