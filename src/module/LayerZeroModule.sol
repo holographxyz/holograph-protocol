@@ -14,6 +14,7 @@ import "../interface/HolographInterfacesInterface.sol";
 import "../interface/LayerZeroModuleInterface.sol";
 import "../interface/LayerZeroOverrides.sol";
 
+import "../struct/CrossChainMessageParams.sol";
 import "../struct/GasParameters.sol";
 
 import "./OVM_GasPriceOracle.sol";
@@ -164,6 +165,20 @@ contract LayerZeroModule is Admin, Initializable, CrossChainMessageInterface, La
     );
   }
 
+  function send(CrossChainMessageParams memory msgParams) external payable {
+    require(msg.sender == address(_operator()), "HOLOGRAPH: operator only call");
+    msgParams.gasParameters = _gasParameters(msgParams.toChain);
+    msgParams.adapterParams = _adapterParams(msgParams);
+    _lz().send{value: msgParams.msgValue}(
+      uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(msgParams.toChain), ChainIdType.LAYERZERO)),
+      abi.encodePacked(address(this), address(this)),
+      msgParams.crossChainPayload,
+      payable(msgParams.msgSender),
+      address(this),
+      msgParams.adapterParams
+    );
+  }
+
   function getMessageFee(
     uint32 toChain,
     uint256 gasLimit,
@@ -205,6 +220,35 @@ contract LayerZeroModule is Admin, Initializable, CrossChainMessageInterface, La
     dstGasPrice = (dstGasPriceInWei * dstPriceRatio) / (10 ** 10);
   }
 
+  function getMessageFee(CrossChainMessageParams memory msgParams) external view returns (uint256 hlgFee, uint256 msgFee, uint256 dstGasPrice) {
+    uint16 lzDestChain = uint16(
+      _interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(msgParams.toChain), ChainIdType.LAYERZERO)
+    );
+    // convert holograph chain id to lz chain id
+    (uint128 dstPriceRatio, uint128 dstGasPriceInWei) = _getPricing(lzDestChain);
+    if (msgParams.gasPrice == 0) {
+      msgParams.gasPrice = dstGasPriceInWei;
+    }
+    msgParams.gasParameters = _gasParameters(msgParams.toChain);
+    require(msgParams.gasPrice > msgParams.gasParameters.minGasPrice, "HOLOGRAPH: gas price too low");
+    msgParams.adapterParams = _adapterParams(msgParams);
+    msgParams.gasLimit = msgParams.gasLimit + msgParams.gasParameters.jobBaseGas + (msgParams.crossChainPayload.length * msgParams.gasParameters.jobGasPerByte);
+    msgParams.gasLimit = msgParams.gasLimit + (msgParams.gasLimit / 10);
+    require(msgParams.gasLimit < msgParams.gasParameters.maxGasLimit, "HOLOGRAPH: gas limit over max");
+    (uint256 nativeFee, ) = _lz().estimateFees(lzDestChain, address(this), msgParams.crossChainPayload, false, msgParams.adapterParams);
+    hlgFee = ((msgParams.gasPrice * msgParams.gasLimit) * dstPriceRatio) / (10 ** 10);
+    /*
+     * @dev toChain is a ChainIdType.HOLOGRAPH, which can be found at https://github.com/holographxyz/networks/blob/main/src/networks.ts
+     *      chainId 7 == optimism
+     *      chainId 4000000015 == optimismTestnetGoerli
+     */
+    if (msgParams.toChain == uint32(7) || msgParams.toChain == uint32(4000000015)) {
+      hlgFee += (_optimismGasPriceOracle().getL1Fee(msgParams.crossChainPayload) * dstPriceRatio) / (10 ** 10);
+    }
+    msgFee = nativeFee;
+    dstGasPrice = (dstGasPriceInWei * dstPriceRatio) / (10 ** 10);
+  }
+
   function getHlgFee(
     uint32 toChain,
     uint256 gasLimit,
@@ -238,12 +282,58 @@ contract LayerZeroModule is Admin, Initializable, CrossChainMessageInterface, La
     }
   }
 
+  function getHlgFee(CrossChainMessageParams memory msgParams) external view returns (uint256 hlgFee) {
+    uint16 lzDestChain = uint16(
+      _interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(msgParams.toChain), ChainIdType.LAYERZERO)
+    );
+    (uint128 dstPriceRatio, uint128 dstGasPriceInWei) = _getPricing(lzDestChain);
+    if (msgParams.gasPrice == 0) {
+      msgParams.gasPrice = dstGasPriceInWei;
+    }
+    msgParams.gasParameters = _gasParameters(msgParams.toChain);
+    require(msgParams.gasPrice > msgParams.gasParameters.minGasPrice, "HOLOGRAPH: gas price too low");
+    msgParams.gasLimit = msgParams.gasLimit + msgParams.gasParameters.jobBaseGas + (msgParams.crossChainPayload.length * msgParams.gasParameters.jobGasPerByte);
+    msgParams.gasLimit = msgParams.gasLimit + (msgParams.gasLimit / 10);
+    require(msgParams.gasLimit < msgParams.gasParameters.maxGasLimit, "HOLOGRAPH: gas limit over max");
+    hlgFee = ((msgParams.gasPrice * msgParams.gasLimit) * dstPriceRatio) / (10 ** 10);
+    /*
+     * @dev toChain is a ChainIdType.HOLOGRAPH, which can be found at https://github.com/holographxyz/networks/blob/main/src/networks.ts
+     *      chainId 7 == optimism
+     *      chainId 4000000015 == optimismTestnetGoerli
+     */
+    if (msgParams.toChain == uint32(7) || msgParams.toChain == uint32(4000000015)) {
+      hlgFee += (_optimismGasPriceOracle().getL1Fee(msgParams.crossChainPayload) * dstPriceRatio) / (10 ** 10);
+    }
+  }
+
+  function _adapterParams(CrossChainMessageParams memory msgParams) internal pure returns (bytes memory adapterParams) {
+    if (msgParams.dstNativeAmount > 0) {
+      adapterParams = abi.encodePacked(
+        uint16(2),
+        uint256(msgParams.gasParameters.msgBaseGas + (msgParams.crossChainPayload.length * msgParams.gasParameters.msgGasPerByte)),
+        msgParams.dstNativeAmount,
+        msgParams.dstNativeAddress
+      );
+    } else {
+      adapterParams = abi.encodePacked(
+        uint16(1),
+        uint256(msgParams.gasParameters.msgBaseGas + (msgParams.crossChainPayload.length * msgParams.gasParameters.msgGasPerByte))
+      );
+    }
+  }
+
   function _getPricing(
     LayerZeroOverrides lz,
     uint16 lzDestChain
   ) private view returns (uint128 dstPriceRatio, uint128 dstGasPriceInWei) {
     return
       LayerZeroOverrides(LayerZeroOverrides(lz.defaultSendLibrary()).getAppConfig(lzDestChain, address(this)).relayer)
+        .dstPriceLookup(lzDestChain);
+  }
+
+  function _getPricing(uint16 lzDestChain) private view returns (uint128 dstPriceRatio, uint128 dstGasPriceInWei) {
+    return
+      LayerZeroOverrides(LayerZeroOverrides(_lz().defaultSendLibrary()).getAppConfig(lzDestChain, address(this)).relayer)
         .dstPriceLookup(lzDestChain);
   }
 
@@ -362,6 +452,15 @@ contract LayerZeroModule is Admin, Initializable, CrossChainMessageInterface, La
   function _interfaces() private view returns (HolographInterfacesInterface interfaces) {
     assembly {
       interfaces := sload(_interfacesSlot)
+    }
+  }
+
+  /**
+   * @dev Internal function used for getting the LayerZero Overrides Interface
+   */
+  function _lz() private view returns (LayerZeroOverrides lz) {
+    assembly {
+      lz := sload(_lZEndpointSlot)
     }
   }
 

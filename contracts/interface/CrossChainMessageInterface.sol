@@ -101,6 +101,8 @@
 
 pragma solidity 0.8.13;
 
+import "../struct/CrossChainMessageParams.sol";
+
 interface CrossChainMessageInterface {
   function send(
     uint256 gasLimit,
@@ -124,4 +126,11 @@ interface CrossChainMessageInterface {
     uint256 gasPrice,
     bytes calldata crossChainPayload
   ) external view returns (uint256 hlgFee);
+
+  function send(CrossChainMessageParams memory msgParams) external payable;
+
+  function getMessageFee(CrossChainMessageParams memory msgParams) external view returns (uint256 hlgFee, uint256 msgFee, uint256 dstGasPrice);
+
+  function getHlgFee(CrossChainMessageParams memory msgParams) external view returns (uint256 hlgFee);
+
 }

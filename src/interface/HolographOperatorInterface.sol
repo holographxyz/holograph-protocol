@@ -2,6 +2,7 @@
 
 /*SOLIDITY_COMPILER_VERSION*/
 
+import "../struct/CrossChainMessageParams.sol";
 import "../struct/OperatorJob.sol";
 
 interface HolographOperatorInterface {
@@ -70,6 +71,8 @@ interface HolographOperatorInterface {
     bytes calldata bridgeOutPayload
   ) external payable;
 
+  function send(uint256 nonce, address holographableContract, CrossChainMessageParams memory msgParams) external payable;
+
   /**
    * @notice Get the fees associated with sending specific payload
    * @dev Will provide exact costs on protocol and message side, combine the two to get total
@@ -87,6 +90,8 @@ interface HolographOperatorInterface {
     uint256 gasPrice,
     bytes calldata crossChainPayload
   ) external view returns (uint256 hlgFee, uint256 msgFee, uint256 dstGasPrice);
+
+  function getMessageFee(CrossChainMessageParams calldata) external view returns (uint256, uint256, uint256);
 
   /**
    * @notice Get the details for an available operator job

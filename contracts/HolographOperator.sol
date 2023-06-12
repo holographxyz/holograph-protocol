@@ -114,6 +114,7 @@ import "./interface/InitializableInterface.sol";
 import "./interface/HolographInterfacesInterface.sol";
 import "./interface/Ownable.sol";
 
+import "./struct/CrossChainMessageParams.sol";
 import "./struct/OperatorJob.sol";
 
 /**
@@ -677,6 +678,75 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
   }
 
   /**
+   * @notice Send cross chain bridge request message
+   * @dev This function is restricted to only be callable by Holograph Bridge
+   * @param nonce incremented number used to ensure job hashes are unique
+   * @param holographableContract address of the contract for which the bridge request is being made
+   * @param msgParams CrossChainMessageParams struct for all cross-chain message details
+   */
+  function send(
+    uint256 nonce,
+    address holographableContract,
+    CrossChainMessageParams memory msgParams
+  ) external payable {
+    require(msg.sender == _bridge(), "HOLOGRAPH: bridge only call");
+    CrossChainMessageInterface messagingModule = _messagingModule();
+    uint256 hlgFee = messagingModule.getHlgFee(msgParams);
+    address hToken = _registry().getHToken(_holograph().getHolographChainId());
+    require(hlgFee < msg.value, "HOLOGRAPH: not enough value");
+    payable(hToken).transfer(hlgFee);
+    msgParams.crossChainPayload = abi.encodeWithSelector(
+      HolographBridgeInterface.bridgeInRequest.selector,
+      /**
+       * @dev job nonce is an incremented value that is assigned to each bridge request to guarantee unique hashes
+       */
+      nonce,
+      /**
+       * @dev including the current holograph chain id (origin chain)
+       */
+      _holograph().getHolographChainId(),
+      /**
+       * @dev holographable contract have the same address across all chains, so our destination address will be the same
+       */
+      holographableContract,
+      /**
+       * @dev get the current chain's hToken for native gas token
+       */
+      hToken,
+      /**
+       * @dev recipient will be defined when operator picks up the job
+       */
+      address(0),
+      /**
+       * @dev value is set to zero for now
+       */
+      hlgFee,
+      /**
+       * @dev specify that function call should not revert
+       */
+      true,
+      /**
+       * @dev attach actual holographableContract function call
+       */
+      msgParams.crossChainPayload
+    );
+    /**
+     * @dev add gas variables to the back for later extraction
+     */
+    msgParams.crossChainPayload = abi.encodePacked(msgParams.crossChainPayload, msgParams.gasLimit, msgParams.gasPrice);
+    msgParams.msgValue = msg.value - hlgFee;
+    /**
+     * @dev Send the data to the current Holograph Messaging Module
+     *      This will be changed to dynamically select which messaging module to use based on destination network
+     */
+    messagingModule.send{value: msg.value - hlgFee}(msgParams);
+    /**
+     * @dev for easy indexing, an event is emitted with the payload hash for status tracking
+     */
+    emit CrossChainMessageSent(keccak256(msgParams.crossChainPayload));
+  }
+
+  /**
    * @notice Get the fees associated with sending specific payload
    * @dev Will provide exact costs on protocol and message side, combine the two to get total
    * @dev @param toChain holograph chain id of destination chain for payload
@@ -688,6 +758,29 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
    * @return dstGasPrice the amount (in wei) that destination message maximum gas price will be
    */
   function getMessageFee(uint32, uint256, uint256, bytes calldata) external view returns (uint256, uint256, uint256) {
+    assembly {
+      calldatacopy(0, 0, calldatasize())
+      let result := staticcall(gas(), sload(_messagingModuleSlot), 0, calldatasize(), 0, 0)
+      returndatacopy(0, 0, returndatasize())
+      switch result
+      case 0 {
+        revert(0, returndatasize())
+      }
+      default {
+        return(0, returndatasize())
+      }
+    }
+  }
+
+  /**
+   * @notice Get the fees associated with sending specific payload
+   * @dev Will provide exact costs on protocol and message side, combine the two to get total
+   * @dev @param msgParams CrossChainMessageParams struct
+   * @return hlgFee the amount (in wei) of native gas token that will cost for finalizing job on destiantion chain
+   * @return msgFee the amount (in wei) of native gas token that will cost for sending message to destiantion chain
+   * @return dstGasPrice the amount (in wei) that destination message maximum gas price will be
+   */
+  function getMessageFee(CrossChainMessageParams calldata) external view returns (uint256, uint256, uint256) {
     assembly {
       calldatacopy(0, 0, calldatasize())
       let result := staticcall(gas(), sload(_messagingModuleSlot), 0, calldatasize(), 0, 0)
