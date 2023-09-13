@@ -53,6 +53,7 @@
     "prettier:deployments": "hardhat deploymentsPrettier"
   },
   "dependencies": {
+    "@chainlink/contracts-ccip": "^0.7.6",
     "@ethersproject/abstract-provider": "^5.7.0",
     "@ethersproject/bignumber": "^5.7.0",
     "@ethersproject/bytes": "^5.7.0",
@@ -62,7 +63,7 @@
     "@holographxyz/hardhat-deploy-holographed": "^0.0.5",
     "@holographxyz/hardhat-holograph-contract-builder": "^0.0.4",
     "@holographxyz/holograph-genesis": "^0.0.7",
-    "@holographxyz/networks": "0.1.36",
+    "@holographxyz/networks": "0.1.37",
     "chai-ethers": "^0.0.1",
     "ganache": "^7.8.0",
     "hardhat-preprocessor": "^0.1.5",

@@ -24,6 +24,7 @@ dotenv.config();
 
 let tenderlyNetwork = {};
 let tenderlyConfig = {};
+
 /*
 if (process.env.USE_TENDERLY && process.env.USE_TENDERLY == 'true') {
   tenderly.setup();
@@ -445,6 +446,22 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: 'https://api-goerli.basescan.org/api',
           browserURL: 'https://goerli.basescan.org',
+        },
+      },
+      {
+        network: 'zora',
+        chainId: 7777777,
+        urls: {
+          apiURL: '',
+          browserURL: 'https://explorer.zora.energy',
+        },
+      },
+      {
+        network: 'zoraTestnetGoerli',
+        chainId: 999,
+        urls: {
+          apiURL: '',
+          browserURL: 'https://testnet.explorer.zora.energy',
         },
       },
     ],
