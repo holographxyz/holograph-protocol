@@ -438,42 +438,6 @@ const genesisDeriveFutureAddress = async function (
   return contractDeterministic.address;
 };
 
-const getGasLimit = async function (
-  hre: LeanHardhatRuntimeEnvironment,
-  from: string | SignerWithAddress,
-  to: string,
-  data: Promise<UnsignedTransaction> | BytesLike = '',
-  value: BigNumberish = 0,
-  skipError: bool = false
-): Promise<BigNumber> {
-  if (typeof from !== 'string') {
-    from = (from as SignerWithAddress).address;
-  }
-  if (isBytesLike(data) === false) {
-    data = (await data).data;
-  }
-  let gasLimit: BigNumber = BigNumber.from('0');
-  try {
-    gasLimit = BigNumber.from(
-      await hre.ethers.provider.estimateGas({
-        from: from as string,
-        to,
-        data: data as BytesLike,
-        value,
-      })
-    );
-  } catch (ex: any) {
-    if (!skipError) {
-      throw ex as unknown as Error;
-    }
-  }
-  if ('__gasLimitMultiplier' in global) {
-    return gasLimit.mul(global.__gasLimitMultiplier).div(BigNumber.from('10000'));
-  } else {
-    return gasLimit;
-  }
-};
-
 type GasParams = {
   gasPrice: BigNumber | null;
   type: number;
@@ -548,7 +512,55 @@ const getGasPrice = async function (): Promise<GasParams> {
   }
 };
 
-const txParams = async function ({
+const getGasLimit = async function (
+  hre: LeanHardhatRuntimeEnvironment,
+  from: string | SignerWithAddress | SuperColdStorageSigner,
+  to: string,
+  data: Promise<UnsignedTransaction> | BytesLike = '',
+  value: BigNumberish = 0,
+  skipError: bool = false
+): Promise<BigNumber> {
+  if (typeof from !== 'string') {
+    from = (from as SignerWithAddress).address;
+  }
+  if (isBytesLike(data) === false) {
+    data = (await data).data;
+  }
+  let gasLimit: BigNumber = BigNumber.from('0');
+  try {
+    gasLimit = BigNumber.from(
+      await hre.ethers.provider.estimateGas({
+        from: from as string,
+        to,
+        data: data as BytesLike,
+        value,
+      })
+    );
+  } catch (ex: any) {
+    if (!skipError) {
+      throw ex as unknown as Error;
+    }
+  }
+  if ('__gasLimitMultiplier' in global) {
+    return gasLimit.mul(global.__gasLimitMultiplier).div(BigNumber.from('10000'));
+  } else {
+    return gasLimit;
+  }
+};
+
+const getOrInitializeNonce = async (networkName: string, provider: any, address: string): Promise<number> => {
+  if (!global.__txNonce) {
+    global.__txNonce = {};
+  }
+
+  if (!global.__txNonce[networkName]) {
+    global.__txNonce[networkName] = await provider.getTransactionCount(address);
+  }
+
+  return global.__txNonce[networkName]++;
+};
+
+const txParams = async ({
   hre,
   from,
   to,
@@ -556,35 +568,45 @@ const txParams = async function ({
   value = 0,
   gasLimit,
   nonce,
-}: TransactionParams): Promise<TransactionParamsOutput> {
-  if (typeof from !== 'string') {
-    from = (from as SignerWithAddress).address;
+}: TransactionParams): Promise<TransactionParamsOutput> => {
+  const addressFrom = typeof from === 'string' ? from : from.address;
+  const addressTo = typeof to === 'string' ? to : to.address;
+
+  if (nonce === undefined) {
+    nonce = await getOrInitializeNonce(hre.networkName, hre.ethers.provider, addressFrom);
   }
-  if (nonce === undefined && !('__txNonce' in global)) {
-    global.__txNonce = {} as { [key: string]: number };
-  }
-  if (nonce === undefined && !(hre.networkName in global.__txNonce)) {
-    global.__txNonce[hre.networkName] = await hre.ethers.provider.getTransactionCount(from as string);
-  }
-  if (typeof to !== 'string') {
-    to = (to as Contract).address;
-  }
-  let output: TransactionParamsOutput = {
-    from: from as string,
+
+  const gasMultiplier = global.__gasLimitMultiplier
+    ? global.__gasLimitMultiplier.div(BigNumber.from('10000'))
+    : BigNumber.from(1);
+
+  const calculatedGasLimit = gasLimit
+    ? gasLimit.mul(gasMultiplier)
+    : await getGasLimit(hre, addressFrom, addressTo, data, BigNumber.from(value), true);
+
+  return {
+    from: addressFrom,
     value: BigNumber.from(value),
-    gasLimit: gasLimit
-      ? '__gasLimitMultiplier' in global
-        ? gasLimit.mul(global.__gasLimitMultiplier).div(BigNumber.from('10000'))
-        : gasLimit
-      : await getGasLimit(hre, from as string, to as string, data, BigNumber.from(value), true),
+    gasLimit: calculatedGasLimit,
     ...(await getGasPrice()),
     // gasLimit: 1000000,
     nonce: nonce === undefined ? global.__txNonce[hre.networkName] : nonce,
   };
-  if (nonce === undefined) {
-    global.__txNonce[hre.networkName] += 1;
+};
+
+const getContractFromEthers = async (
+  hre: LeanHardhatRuntimeEnvironment,
+  contractName: string
+): Promise<Contract | null> => {
+  return await hre.ethers.getContractOrNull(contractName);
+};
+
+const getDeployment = async (hre: LeanHardhatRuntimeEnvironment, contractName: string): Promise<Deployment | null> => {
+  try {
+    return await hre.deployments.get(contractName);
+  } catch {
+    return null;
   }
-  return output;
 };
 
 const genesisDeployHelper = async function (
@@ -602,23 +624,27 @@ const genesisDeployHelper = async function (
 
   const secret = generateDeployerSecretHash();
 
-  let holographGenesis: any = await ethers.getContractOrNull('HolographGenesis');
+  // Use HolographGenesisLocal if on localhost or localhost2, otherwise use HolographGenesis
+  const contractName = ['localhost', 'localhost2'].includes(hre.networkName)
+    ? 'HolographGenesisLocal'
+    : 'HolographGenesis';
+
+  let holographGenesis: any = await ethers.getContractOrNull(contractName);
   if (holographGenesis == null) {
     try {
-      holographGenesis = await deployments.get('HolographGenesis');
+      holographGenesis = await deployments.get(contractName);
     } catch (ex: any) {
-      console.log(`Not deploying ${name} because HolographGenesis is not deployed.`);
+      console.log(`Not deploying ${name} because ${contractName} is not deployed.`);
+      return {} as Contract; // Early return if the Genesis contract is not deployed
     }
   }
-
-  // console.log(`Holograph Genesis address: ${holographGenesis.address}`);
 
   let contract: any = await ethers.getContractOrNull(name);
   if (contract == null) {
     try {
       contract = await deployments.get(name);
     } catch (ex: any) {
-      // we do nothing
+      // We do nothing if the contract is not found
     }
   }
   if (
@@ -642,11 +668,8 @@ const genesisDeployHelper = async function (
   } else {
     deployments.log('reusing "' + name + '" at', contract?.address);
   }
-  if (contract == null) {
-    return {} as Contract;
-  } else {
-    return contract as Contract;
-  }
+
+  return contract ? (contract as Contract) : ({} as Contract);
 };
 
 const utf8ToBytes32 = function (str: string): string {
@@ -680,6 +703,7 @@ export interface Erc721Config {
   erc721ConfigHash: BytesLike;
   erc721ConfigHashBytes: number[];
 }
+
 const generateErc721Config = async function (
   network: Network,
   deployer: BytesLike,

@@ -9,6 +9,9 @@ import { GasPricing, initializeGasPricing, updateGasPricing } from './gas';
 const ZERO = BigNumber.from('0');
 const TWO = BigNumber.from('2');
 
+const LOCALHOST = 'localhost';
+const LOCALHOST2 = 'localhost2';
+
 export type BlockParams = {
   network: string;
   blockNumber: number;
@@ -24,7 +27,7 @@ export class GasService {
   provider!: JsonRpcProvider | WebSocketProvider | Web3Provider;
   ready: boolean = false;
   lastBlockNumber: number = 0;
-  verbose: boolean = false;
+  verbose: boolean = true;
 
   constructor(network: string, provider: JsonRpcProvider | WebSocketProvider | Web3Provider, verbose: boolean = false) {
     this.network = network;
@@ -32,7 +35,11 @@ export class GasService {
     this.verbose = verbose;
   }
 
-  structuredLog(network: string, msg: string, tags: undefined | string | (string | number)[]): void {
+  structuredLog(network: string, msg: string, tags: string | number | (string | number)[] = []): void {
+    if (!Array.isArray(tags)) {
+      tags = [tags];
+    }
+
     if (this.verbose) {
       process.stdout.write(`${JSON.stringify({ network, msg, tags })}\n`);
     }
@@ -46,70 +53,106 @@ export class GasService {
   };
 
   async init(): Promise<void> {
-    this.gasPrice = await initializeGasPricing(this.network, this.provider);
-    global.__gasPrice = this.gasPrice;
-    global.__gasService = this;
-    this.provider.on('block', async (blockNumber: string) => {
-      const block = Number.parseInt(blockNumber, 10);
-      this.structuredLog(this.network, `New block mined ${block}`, undefined);
-      await this.processBlock(this.network, block);
-      global.__gasPrice = this.gasPrice;
-      if (this.lastBlockNumber != 0) {
+    try {
+      this.gasPrice = await initializeGasPricing(this.network, this.provider);
+      this.setGlobalGasPrice(this.gasPrice);
+
+      this.provider.on('block', async (blockNumber: string) => {
+        try {
+          const block = Number.parseInt(blockNumber, 10);
+          this.structuredLog(this.network, `New block mined ${block}`, undefined);
+          await this.processBlock(this.network, block);
+          this.setGlobalGasPrice(this.gasPrice);
+          if (this.lastBlockNumber !== 0) {
+            this.ready = true;
+          }
+          this.lastBlockNumber = block;
+        } catch (error: any) {
+          this.structuredLog(this.network, `Error processing block: ${error.message}`, undefined);
+        }
+      });
+
+      if ([LOCALHOST, LOCALHOST2].includes(this.network)) {
         this.ready = true;
       }
-      this.lastBlockNumber = block;
-    });
-    if (this.network == 'localhost' || this.network == 'localhost2') {
-      this.ready = true;
+
+      while (!this.ready) {
+        await this.wait(1);
+      }
+    } catch (error: any) {
+      this.structuredLog(this.network, `Initialization error: ${error.message}`, undefined);
     }
-    while (!this.ready) {
-      await this.wait(1);
-    }
+  }
+
+  // Added a separate function to handle the global assignment for clarity and to avoid direct manipulation in the init.
+  private setGlobalGasPrice(price: any): void {
+    global.__gasPrice = price;
+    global.__gasService = this;
   }
 
   extractGasData(network: string, block: Block | BlockWithTransactions, tx: TransactionResponse): void {
     if (this.gasPrice.isEip1559) {
-      // set current tx priority fee
-      let priorityFee: BigNumber = ZERO;
-      let remainder: BigNumber;
-      if (tx.maxFeePerGas === undefined || tx.maxPriorityFeePerGas === undefined) {
-        // we have a legacy transaction here, so need to calculate priority fee out
-        priorityFee = tx.gasPrice!.sub(block.baseFeePerGas!);
-      } else {
-        // we have EIP-1559 transaction here, get priority fee
-        // check first that base block fee is less than maxFeePerGas
-        remainder = tx.maxFeePerGas!.sub(block.baseFeePerGas!);
-        priorityFee = remainder.gt(tx.maxPriorityFeePerGas!) ? tx.maxPriorityFeePerGas! : remainder;
-      }
+      this.handleEIP1559Transaction(block, tx);
+    } else if (tx.gasPrice && tx.gasPrice.gt(ZERO)) {
+      this.handleLegacyTransaction(tx);
+    }
 
-      if (this.gasPrice.nextPriorityFee === null) {
-        this.gasPrice.nextPriorityFee = priorityFee;
-      } else {
-        this.gasPrice.nextPriorityFee = this.gasPrice.nextPriorityFee!.add(priorityFee).div(TWO);
-      }
-      if (this.gasPrice.nextPriorityFee.lt(ZERO)) {
-        this.gasPrice.nextPriorityFee = ZERO;
-      }
+    if (this.isLocalNetwork(network)) {
+      this.resetGasPriceForLocalNetwork();
     }
-    // for legacy networks (non EIP-1559), get average rolling gasPrice
-    // it's important to skip this calculation if gas price is 0, which happens in some instances like on BSC
-    // we check first that gasPrice variable is actually set, and we check that it is greater than zero
-    else if (tx.gasPrice !== undefined && tx.gasPrice !== null && tx.gasPrice!.gt(ZERO)) {
-      // if current network gas pricing is null, then this means it's the first time that gas price data is being set
-      if (this.gasPrice.gasPrice === null) {
-        this.gasPrice.gasPrice = tx.gasPrice!;
-      }
-      // otherwise we already have gas price data set, we just add new value to it and divide by two to get the floating average
-      else {
-        this.gasPrice.gasPrice = this.gasPrice.gasPrice!.add(tx.gasPrice!).div(TWO);
-      }
+  }
+
+  private handleEIP1559Transaction(block: Block | BlockWithTransactions, tx: TransactionResponse): void {
+    const priorityFee = this.calculatePriorityFee(block, tx);
+
+    if (this.gasPrice.nextPriorityFee === null) {
+      this.gasPrice.nextPriorityFee = priorityFee;
+    } else {
+      this.gasPrice.nextPriorityFee = this.gasPrice.nextPriorityFee.add(priorityFee).div(TWO);
     }
-    if (network === networks['localhost' as NetworkKeys].key || network === networks['localhost2' as NetworkKeys].key) {
-      this.gasPrice.nextBlockFee = ZERO;
-      this.gasPrice.maxFeePerGas = ZERO;
+
+    // Ensure non-negative by comparing with ZERO
+    if (this.gasPrice.nextPriorityFee.lt(ZERO)) {
       this.gasPrice.nextPriorityFee = ZERO;
-      this.gasPrice.gasPrice = ZERO;
     }
+
+    this.structuredLog('EIP-1559', `Handled EIP-1559 transaction with priority fee: ${priorityFee.toString()}`);
+  }
+
+  private calculatePriorityFee(block: Block | BlockWithTransactions, tx: TransactionResponse): BigNumber {
+    let priorityFee: BigNumber = ZERO;
+
+    if (!tx.maxFeePerGas || !tx.maxPriorityFeePerGas) {
+      priorityFee = tx.gasPrice!.sub(block.baseFeePerGas!);
+    } else {
+      const remainder = tx.maxFeePerGas.sub(block.baseFeePerGas!);
+      priorityFee = remainder.lt(tx.maxPriorityFeePerGas) ? remainder : tx.maxPriorityFeePerGas;
+    }
+
+    return priorityFee;
+  }
+
+  private handleLegacyTransaction(tx: TransactionResponse): void {
+    if (this.gasPrice.gasPrice === null) {
+      this.gasPrice.gasPrice = tx.gasPrice!;
+    } else {
+      this.gasPrice.gasPrice = this.gasPrice.gasPrice.add(tx.gasPrice!).div(TWO);
+    }
+
+    this.structuredLog('Legacy', `Handled legacy transaction with gas price: ${tx.gasPrice!.toString()}`);
+  }
+
+  private isLocalNetwork(network: string): boolean {
+    return (
+      network === networks['localhost' as NetworkKeys].key || network === networks['localhost2' as NetworkKeys].key
+    );
+  }
+
+  private resetGasPriceForLocalNetwork(): void {
+    this.gasPrice.nextBlockFee = ZERO;
+    this.gasPrice.maxFeePerGas = ZERO;
+    this.gasPrice.nextPriorityFee = ZERO;
+    this.gasPrice.gasPrice = ZERO;
   }
 
   async getBlockWithTransactions({
@@ -120,92 +163,88 @@ export class GasService {
     canFail = false,
     interval = 5000,
   }: BlockParams): Promise<BlockWithTransactions | null> {
-    return new Promise<BlockWithTransactions | null>((topResolve, _topReject) => {
-      let counter = 0;
-      let sent = false;
-      let blockInterval: NodeJS.Timeout | null = null;
-      const getBlock = async (): Promise<void> => {
-        try {
-          const block: BlockWithTransactions | null = await this.provider.getBlockWithTransactions(blockNumber);
-          if (block === null) {
-            counter++;
-            if (canFail && counter > attempts) {
-              if (blockInterval) clearInterval(blockInterval);
-              if (!sent) {
-                sent = true;
-                topResolve(null);
-              }
-            }
-          } else {
-            if (blockInterval) clearInterval(blockInterval);
-            if (!sent) {
-              sent = true;
-              topResolve(block as BlockWithTransactions);
-            }
-          }
-        } catch (error: any) {
-          if (error.message !== 'cannot query unfinalized data') {
-            counter++;
-            if (canFail && counter > attempts) {
-              this.structuredLog(network, `Failed retrieving block ${blockNumber}`, tags);
-              if (blockInterval) clearInterval(blockInterval);
-              if (!sent) {
-                sent = true;
-                _topReject(error);
-              }
-            }
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+      try {
+        const block = await this.provider.getBlockWithTransactions(blockNumber);
+
+        if (block) {
+          return block;
+        }
+
+        // If canFail is true and we've made all our attempts, return null
+        if (canFail && attempt === attempts) {
+          return null;
+        }
+      } catch (error: any) {
+        // Only increment the attempt counter if the error isn't 'cannot query unfinalized data'
+        if (error.message !== 'cannot query unfinalized data') {
+          this.structuredLog(network, `Attempt ${attempt}: Failed retrieving block ${blockNumber}`, tags);
+
+          if (canFail && attempt === attempts) {
+            throw error;
           }
         }
-      };
+      }
 
-      blockInterval = setInterval(getBlock, interval);
-      getBlock();
-    });
+      // If we haven't reached our max attempts, wait for the interval duration before trying again
+      if (attempt < attempts) {
+        await new Promise((resolve) => setTimeout(resolve, interval));
+      }
+    }
+
+    // If we get through all attempts without returning or throwing, return null
+    return null;
   }
 
   async processBlock(network: string, blockNumber: number): Promise<void> {
-    const block: BlockWithTransactions | null = await this.getBlockWithTransactions({
-      network: network,
+    const block = await this.getBlockWithTransactions({
+      network,
       blockNumber,
       attempts: 10,
       canFail: false,
     });
-    if (block !== undefined && block !== null && 'transactions' in block) {
-      this.structuredLog(network, `Block retrieved`, blockNumber);
-      this.structuredLog(network, `Calculating block gas`, blockNumber);
-      if (this.gasPrice.isEip1559) {
-        this.structuredLog(
-          network,
-          `Calculated block gas price was ${formatUnits(
-            this.gasPrice.nextBlockFee!,
-            'gwei'
-          )} GWEI, and actual block gas price is ${formatUnits(block.baseFeePerGas!, 'gwei')} GWEI`,
-          blockNumber
-        );
-      }
 
-      this.gasPrice = updateGasPricing(network, block, this.gasPrice);
-
-      const priorityFees: BigNumber = this.gasPrice.nextPriorityFee!;
-      if (block.transactions.length === 0) {
-        this.structuredLog(network, `Zero transactions in block`, blockNumber);
-      }
-      for (let i = 0, l = block.transactions.length; i < l; i++) {
-        this.extractGasData(network, block, block.transactions[i]);
-      }
-      this.gasPrice = updateGasPricing(network, block, this.gasPrice);
-      if (this.gasPrice.isEip1559 && priorityFees !== null) {
-        this.structuredLog(
-          network,
-          `Calculated block priority fees was ${formatUnits(
-            priorityFees,
-            'gwei'
-          )} GWEI, and actual block priority fees is ${formatUnits(this.gasPrice.nextPriorityFee!, 'gwei')} GWEI`,
-          blockNumber
-        );
-      }
-    } else {
+    if (!block || !('transactions' in block)) {
       this.structuredLog(network, 'Dropped block', blockNumber);
+      return;
+    }
+
+    this.structuredLog(network, `Block retrieved`, blockNumber);
+    this.structuredLog(network, `Calculating block gas`, blockNumber);
+
+    if (this.gasPrice.isEip1559) {
+      this.structuredLog(
+        network,
+        `Calculated block gas price was ${formatUnits(
+          this.gasPrice.nextBlockFee!,
+          'gwei'
+        )} GWEI, and actual block gas price is ${formatUnits(block.baseFeePerGas!, 'gwei')} GWEI`,
+        blockNumber
+      );
+    }
+
+    this.gasPrice = updateGasPricing(network, block, this.gasPrice);
+    const priorityFees = this.gasPrice.nextPriorityFee!;
+
+    if (!block.transactions.length) {
+      this.structuredLog(network, `Zero transactions in block`, blockNumber);
+    }
+
+    for (const tx of block.transactions) {
+      this.extractGasData(network, block, tx);
+    }
+
+    this.gasPrice = updateGasPricing(network, block, this.gasPrice);
+
+    if (this.gasPrice.isEip1559 && priorityFees) {
+      this.structuredLog(
+        network,
+        `Calculated block priority fees was ${formatUnits(
+          priorityFees,
+          'gwei'
+        )} GWEI, and actual block priority fees is ${formatUnits(this.gasPrice.nextPriorityFee!, 'gwei')} GWEI`,
+        blockNumber
+      );
     }
   }
 }
