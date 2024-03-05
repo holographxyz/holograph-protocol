@@ -21,4 +21,6 @@ interface HolographGenericInterface is ERC165, Holographable {
     bytes32 topic3,
     bytes calldata eventData
   ) external;
+
+  function sourceWithdraw(address payable destination) external;
 }

@@ -4,6 +4,8 @@
 
 import "../abstract/Initializable.sol";
 
+import "../interface/HolographGenericInterface.sol";
+
 abstract contract GenericH is Initializable {
   /**
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.holographer')) - 1)
@@ -106,8 +108,11 @@ abstract contract GenericH is Initializable {
     }
   }
 
-  function withdraw() external virtual onlyOwner {
-    payable(_getOwner()).transfer(address(this).balance);
+  function withdraw(address payable destinationAddress) external virtual onlyOwner {
+    if (holographer().balance > 0) {
+      HolographGenericInterface(holographer()).sourceWithdraw(payable(address(this)));
+    }
+    destinationAddress.transfer(address(this).balance);
   }
 
   event FundsReceived(address indexed source, uint256 amount);
