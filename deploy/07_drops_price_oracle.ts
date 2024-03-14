@@ -52,6 +52,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     baseTestnetSepolia: 'BaseTestnetSepolia',
     zora: 'Zora',
     zoraTestnetSepolia: 'ZoraTestnetSepolia',
+    lineaTestnetGoerli: 'LineaTestnetGoerli',
   };
 
   let targetDropsPriceOracle = 'DummyDropsPriceOracle';
@@ -59,8 +60,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     targetDropsPriceOracle = 'DropsPriceOracle' + definedOracleNames[network.key];
   } else {
     if (
-      environment == Environment.mainnet ||
-      (network.key != 'localhost' && network.key != 'localhost2' && network.key != 'hardhat')
+      environment === Environment.mainnet ||
+      (network.key !== 'localhost' && network.key !== 'localhost2' && network.key !== 'hardhat')
     ) {
       throw new Error('Drops price oracle not created for network yet!');
     }
@@ -77,7 +78,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     futureDropsPriceOracleAddress,
     'latest',
   ]);
-  if (dropsPriceOracleDeployedCode == '0x' || dropsPriceOracleDeployedCode == '') {
+  if (dropsPriceOracleDeployedCode === '0x' || dropsPriceOracleDeployedCode === '') {
     definedOracleNames;
     console.log('"' + targetDropsPriceOracle + '" bytecode not found, need to deploy"');
     let dropsPriceOracle = await genesisDeployHelper(
@@ -103,7 +104,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     futureDropsPriceOracleProxyAddress,
     'latest',
   ]);
-  if (dropsPriceOracleProxyDeployedCode == '0x' || dropsPriceOracleProxyDeployedCode == '') {
+  if (dropsPriceOracleProxyDeployedCode === '0x' || dropsPriceOracleProxyDeployedCode === '') {
     console.log('"DropsPriceOracleProxy" bytecode not found, need to deploy"');
     let dropsPriceOracleProxy = await genesisDeployHelper(
       hre,
@@ -119,7 +120,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     futureDropsPriceOracleProxyAddress;
     const dropsPriceOracleProxy = await hre.ethers.getContract('DropsPriceOracleProxy', deployerAddress);
     let priceOracleSource = await dropsPriceOracleProxy.getDropsPriceOracle();
-    if (priceOracleSource != futureDropsPriceOracleAddress) {
+    if (priceOracleSource !== futureDropsPriceOracleAddress) {
       console.log('"DropsPriceOracleProxy" references incorrect version of "' + targetDropsPriceOracle + '".');
       const setDropsPriceOracleTx = await MultisigAwareTx(
         hre,
@@ -142,7 +143,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     }
   }
 
-  if (network.key == 'mantleTestnet') {
+  if (network.key === 'mantleTestnet') {
     console.log('Checking token price ratio on mantle testnet');
     const priceOracleContract = (
       (await hre.ethers.getContract('DropsPriceOracleMantleTestnet', deployerAddress)) as Contract

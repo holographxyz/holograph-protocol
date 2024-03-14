@@ -37,7 +37,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
 
   const currentNetworkType: NetworkType = networks[hre.networkName].type;
 
-  if (currentNetworkType == NetworkType.local) {
+  if (currentNetworkType === NetworkType.local) {
     const web3 = new Web3();
 
     const salt = hre.deploymentSalt;
@@ -68,7 +68,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       salt
     );
     let sampleErc20Address = await holographRegistry.getHolographedHashAddress(sampleErc20Config.erc20ConfigHash);
-    if (sampleErc20Address == zeroAddress) {
+    if (sampleErc20Address === zeroAddress) {
       console.log('need to deploy "SampleERC20" for chain:', chainId);
       const sig = await deployer.signer.signMessage(sampleErc20Config.erc20ConfigHashBytes);
       const signature: Signature = StrictECDSA({
@@ -97,16 +97,16 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
         }
       );
       const deployResult = await deployTx.wait();
-      if (deployResult.events.length < 1 || deployResult.events[0].event != 'BridgeableContractDeployed') {
+      if (deployResult.events.length < 1 || deployResult.events[0].event !== 'BridgeableContractDeployed') {
         throw new Error('BridgeableContractDeployed event not fired');
       }
       sampleErc20Address = deployResult.events[0].args[0];
       console.log(
-        'deployed "SampleERC20" at:',
+        'Deployed "SampleERC20" at:',
         await holographRegistry.getHolographedHashAddress(sampleErc20Config.erc20ConfigHash)
       );
     } else {
-      console.log('reusing "SampleERC20" at:', sampleErc20Address);
+      console.log('Reusing "SampleERC20" at:', sampleErc20Address);
     }
 
     let sampleErc721Config = await generateErc721Config(
@@ -121,7 +121,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       salt
     );
     let sampleErc721Address = await holographRegistry.getHolographedHashAddress(sampleErc721Config.erc721ConfigHash);
-    if (sampleErc721Address == zeroAddress) {
+    if (sampleErc721Address === zeroAddress) {
       console.log('need to deploy "SampleERC721" for chain:', chainId);
       const sig = await deployer.signer.signMessage(sampleErc721Config.erc721ConfigHashBytes);
       const signature: Signature = StrictECDSA({
@@ -147,16 +147,16 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
         }
       );
       const deployResult = await deployTx.wait();
-      if (deployResult.events.length < 2 || deployResult.events[1].event != 'BridgeableContractDeployed') {
+      if (deployResult.events.length < 2 || deployResult.events[1].event !== 'BridgeableContractDeployed') {
         throw new Error('BridgeableContractDeployed event not fired');
       }
       sampleErc721Address = deployResult.events[1].args[0];
       console.log(
-        'deployed "SampleERC721" at:',
+        'Deployed "SampleERC721" at:',
         await holographRegistry.getHolographedHashAddress(sampleErc721Config.erc721ConfigHash)
       );
     } else {
-      console.log('reusing "SampleERC721" at:', sampleErc721Address);
+      console.log('Reusing "SampleERC721" at:', sampleErc721Address);
     }
 
     let cxipErc721Config = await generateErc721Config(
@@ -178,7 +178,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       salt
     );
     let cxipErc721Address = await holographRegistry.getHolographedHashAddress(cxipErc721Config.erc721ConfigHash);
-    if (cxipErc721Address == zeroAddress) {
+    if (cxipErc721Address === zeroAddress) {
       console.log('need to deploy "CxipERC721Proxy" for chain:', chainId);
       const sig = await deployer.signer.signMessage(cxipErc721Config.erc721ConfigHashBytes);
       const signature: Signature = StrictECDSA({
@@ -204,16 +204,16 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
         }
       );
       const deployResult = await deployTx.wait();
-      if (deployResult.events.length < 2 || deployResult.events[1].event != 'BridgeableContractDeployed') {
+      if (deployResult.events.length < 2 || deployResult.events[1].event !== 'BridgeableContractDeployed') {
         throw new Error('BridgeableContractDeployed event not fired');
       }
       cxipErc721Address = deployResult.events[1].args[0];
       console.log(
-        'deployed "CxipERC721Proxy" at:',
+        'Deployed "CxipERC721Proxy" at:',
         await holographRegistry.getHolographedHashAddress(cxipErc721Config.erc721ConfigHash)
       );
     } else {
-      console.log('reusing "CxipERC721Proxy" at:', cxipErc721Address);
+      console.log('Reusing "CxipERC721Proxy" at:', cxipErc721Address);
     }
   }
 
