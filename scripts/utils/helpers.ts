@@ -584,6 +584,7 @@ const txParams = async function ({
         : gasLimit
       : await getGasLimit(hre, from as string, to as string, data, BigNumber.from(value), true),
     ...(await getGasPrice()),
+    // gasLimit: 1000000,
     nonce: nonce === undefined ? global.__txNonce[hre.networkName] : nonce,
   };
   if (nonce === undefined) {
