@@ -120,3 +120,25 @@ This is a straightforward script that invokes the contract `purchase` function u
 ```sh
 ts-node ./scripts/countdown_erc721/4-purchase.ts 
 ```
+
+## Script 5: Set Metadata 
+
+This is a straightforward script that invokes the contract `setMetadataParams` function using hardcoded values as parameters. This script also allows the execution to be made using a Safe wallet.
+
+### Steps
+
+1. **Set the static values:**
+   - Configure the static values:
+     - `contractAddress`: The CountdownERC721 address
+     - `params`: The metadata params that are going to be updated.
+     - `safeAddress`: (OPTIONAL) This is the Safe Wallet address, and should only be filled if the Safe wallet is going to be used.
+  
+2. **Run the script update the owner:**
+   - To execute the script using a Safe Wallet pass the '--safe' param:
+     ```sh
+     ts-node ./scripts/countdown_erc721/4-purchase.ts --safe
+     ```
+   - To execute the script with a standard wallet just run:
+     ```sh
+     ts-node ./scripts/countdown_erc721/4-purchase.ts 
+     ```
