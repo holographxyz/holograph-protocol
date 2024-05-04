@@ -6,6 +6,7 @@ This folder contains four scripts:
 - `2-setOwner.ts`
 - `3-mintTo.ts`
 - `4-purchase.ts`
+- `5-setMetadataParams.ts`
 
 Below are the steps required to run the scripts successfully.
 
@@ -125,6 +126,8 @@ ts-node ./scripts/countdown_erc721/4-purchase.ts
 
 This is a straightforward script that invokes the contract `setMetadataParams` function using hardcoded values as parameters. This script also allows the execution to be made using a Safe wallet.
 
+PS: Please ensure that you execute the script using a private key belonging to one of the Safe address owners if you're running the script with the Safe wallet.
+
 ### Steps
 
 1. **Set the static values:**
@@ -136,9 +139,9 @@ This is a straightforward script that invokes the contract `setMetadataParams` f
 2. **Run the script update the owner:**
    - To execute the script using a Safe Wallet pass the '--safe' param:
      ```sh
-     ts-node ./scripts/countdown_erc721/4-purchase.ts --safe
+     ts-node ./scripts/countdown_erc721/5-setMetadataParams.ts --safe
      ```
    - To execute the script with a standard wallet just run:
      ```sh
-     ts-node ./scripts/countdown_erc721/4-purchase.ts 
+     ts-node ./scripts/countdown_erc721/5-setMetadataParams.ts
      ```

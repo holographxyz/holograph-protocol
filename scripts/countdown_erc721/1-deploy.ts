@@ -61,7 +61,7 @@ async function main() {
     fundsRecipient: deployerAddress,
     contractURI: 'https://example.com/metadata.json', // Will not change, currently hardcoded
     salesConfiguration: {
-      publicSalePrice: 10_000_000, // Set price in USD (10_000_000 = $10 USD)
+      publicSalePrice: 10_000_000, // Set price in wei
       maxSalePurchasePerAddress: 0, // no limit
     },
   };

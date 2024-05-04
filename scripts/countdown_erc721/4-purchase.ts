@@ -32,20 +32,13 @@ async function main() {
    */
   const contractAddress = ''; // Set to the address of the contract you deployed
   const quantity = 1;
-  const price = ethers.utils.parseUnits('10', 6);
-
-  // DO NOT CHANGE THIS!
-  const dropsPriceOracleAddress = '0xeA7f4C52cbD4CF1036CdCa8B16AcA11f5b09cF6E';
+  const price = ethers.utils.parseEther('0.00000000001');
 
   /*
    * STEP 3: Contract call
    */
 
-  // NOTE: get total price
-  const dropsPriceOracleABI = ['function convertUsdToWei(uint256 usdAmount) view returns (uint256 weiAmount)'];
-  const dropsPriceOracle = new Contract(dropsPriceOracleAddress, dropsPriceOracleABI, deployer);
-  const nativePrice: BigNumber = await dropsPriceOracle.convertUsdToWei(price);
-  const totalPrice = nativePrice.mul(quantity);
+  const totalPrice = price.mul(quantity);
 
   // NOTE: get contract instance
   const countdownERC721ABI = ['function purchase(uint256 quantity) external payable returns (uint256)'];
