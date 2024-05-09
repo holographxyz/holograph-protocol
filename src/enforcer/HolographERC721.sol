@@ -263,6 +263,7 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
       );
       bytes4 initSelector = abi.decode(initData, (bytes4));
       require(initSuccess && initSelector == InitializableInterface.init.selector, "ERC721: could not init source");
+      
       (bool success, bytes memory returnData) = _royalties().delegatecall(
         abi.encodeWithSelector(
           HolographRoyaltiesInterface.initHolographRoyalties.selector,

@@ -364,7 +364,7 @@ contract CountdownERC721 is NonReentrant, ERC721H, ICountdownERC721 {
    * @return Token URI
    */
   function tokenURI(uint256 tokenId) public view returns (string memory) {
-    HolographERC721Interface H721 = HolographERC721Interface(holographer());
+    HolographERC721Interface H721 = HolographERC721Interface(address(this));
     require(H721.exists(tokenId), "ERC721: token does not exist");
 
     string memory _name = H721.name();
@@ -389,7 +389,7 @@ contract CountdownERC721 is NonReentrant, ERC721H, ICountdownERC721 {
    * @notice Returns the name of the token through the holographer entrypoint
    */
   function name() external view returns (string memory) {
-    return HolographERC721Interface(holographer()).name();
+    return HolographERC721Interface(address(this)).name();
   }
 
   /* -------------------------------------------------------------------------- */
@@ -435,7 +435,7 @@ contract CountdownERC721 is NonReentrant, ERC721H, ICountdownERC721 {
     // First mint the NFTs
     _mintNFTs(msgSender(), quantity);
 
-    HolographERC721Interface H721 = HolographERC721Interface(holographer());
+    HolographERC721Interface H721 = HolographERC721Interface(address(this));
     uint256 chainPrepend = H721.sourceGetChainPrepend();
     uint256 firstMintedTokenId = (chainPrepend + uint256(_currentTokenId - quantity)) + 1;
 
@@ -590,7 +590,7 @@ contract CountdownERC721 is NonReentrant, ERC721H, ICountdownERC721 {
   }
 
   function _mintNFTs(address recipient, uint256 quantity) internal {
-    HolographERC721Interface H721 = HolographERC721Interface(holographer());
+    HolographERC721Interface H721 = HolographERC721Interface(address(this));
     uint256 chainPrepend = H721.sourceGetChainPrepend();
     uint224 tokenId = 0;
 
