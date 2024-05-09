@@ -255,7 +255,14 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
     _bps = contractBps;
     _eventConfig = eventConfig;
     if (!skipInit) {
-      require(sourceContract.init(initCode) == InitializableInterface.init.selector, "ERC721: could not init source");
+      (bool initSuccess, bytes memory initData) = address(sourceContract).delegatecall(
+        abi.encodeWithSelector(
+          InitializableInterface.init.selector, 
+          initCode
+        )
+      );
+      bytes4 initSelector = abi.decode(initData, (bytes4));
+      require(initSuccess && initSelector == InitializableInterface.init.selector, "ERC721: could not init source");
       (bool success, bytes memory returnData) = _royalties().delegatecall(
         abi.encodeWithSelector(
           HolographRoyaltiesInterface.initHolographRoyalties.selector,
@@ -1102,7 +1109,7 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
       assembly {
         calldatacopy(0, 0, calldatasize())
         mstore(calldatasize(), caller())
-        let result := call(gas(), sload(_sourceContractSlot), callvalue(), 0, add(calldatasize(), 0x20), 0, 0)
+        let result := delegatecall(gas(), sload(_sourceContractSlot), 0, add(calldatasize(), 0x20), 0, 0)
         returndatacopy(0, 0, returndatasize())
         switch result
         case 0 {
@@ -1123,10 +1130,9 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
       mstore(add(payload, add(mload(payload), 0x20)), caller())
       // offset memory position by 32 bytes to skip the 32 bytes where bytes length is stored
       // add 32 bytes to bytes length to include the appended msg.sender to calldata
-      let result := call(
+      let result := delegatecall(
         gas(),
         sload(_sourceContractSlot),
-        callvalue(),
         add(payload, 0x20),
         add(mload(payload), 0x20),
         0,
