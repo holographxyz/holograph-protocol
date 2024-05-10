@@ -111,7 +111,6 @@ import "../enum/InterfaceType.sol";
 import "../interface/ERC165.sol";
 import "../interface/ERC721.sol";
 import "../interface/HolographERC721Interface.sol";
-import "../interface/ERC721Metadata.sol";
 import "../interface/ERC721TokenReceiver.sol";
 import "../interface/Holographable.sol";
 import "../interface/HolographedERC721.sol";
@@ -121,7 +120,6 @@ import "../interface/HolographRegistryInterface.sol";
 import "../interface/InitializableInterface.sol";
 import "../interface/HolographInterfacesInterface.sol";
 import "../interface/HolographRoyaltiesInterface.sol";
-import "../interface/Ownable.sol";
 
 /**
  * @title Holograph Bridgeable ERC-721 Collection
@@ -138,6 +136,10 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.sourceContract')) - 1)
    */
   bytes32 constant _sourceContractSlot = 0x27d542086d1e831d40b749e7f5509a626c3047a36d160781c40d5acc83e5b074;
+  /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.ownerInitialized')) - 1)
+   */
+  bytes32 constant _ownerInitializedSlot = 0xf997b1374974b9309317a268115cc6f1ab5511065a124fa88f59ecd4cc8b95f1;
 
   /**
    * @dev Configuration for events to trigger for source smart contract.
@@ -239,8 +241,8 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
     require(!_isInitialized(), "ERC721: already initialized");
     InitializableInterface sourceContract;
     assembly {
-      sstore(_ownerSlot, caller())
       sourceContract := sload(_sourceContractSlot)
+      sstore(_ownerSlot, sourceContract)
     }
     (
       string memory contractName,
@@ -256,6 +258,7 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
     _eventConfig = eventConfig;
     if (!skipInit) {
       require(sourceContract.init(initCode) == InitializableInterface.init.selector, "ERC721: could not init source");
+
       (bool success, bytes memory returnData) = _royalties().delegatecall(
         abi.encodeWithSelector(
           HolographRoyaltiesInterface.initHolographRoyalties.selector,
@@ -269,7 +272,7 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
     _setInitialized();
     return InitializableInterface.init.selector;
   }
-
+  
   /**
    * @notice Gets a base64 encoded contract JSON file.
    * @return string The URI.
@@ -1022,20 +1025,8 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
     return _holograph().getInterfaces();
   }
 
-  function owner() public view override returns (address) {
-    assembly {
-      calldatacopy(0, 0, calldatasize())
-      mstore(calldatasize(), caller())
-      let result := staticcall(gas(), sload(_sourceContractSlot), 0, add(calldatasize(), 0x20), 0, 0)
-      returndatacopy(0, 0, returndatasize())
-      switch result
-      case 0 {
-        revert(0, returndatasize())
-      }
-      default {
-        return(0, returndatasize())
-      }
-    }
+  function owner() external view override returns (address) {
+    return getOwner();
   }
 
   function _holograph() private view returns (HolographInterface holograph) {
