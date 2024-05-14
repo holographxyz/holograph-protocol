@@ -137,6 +137,10 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, IHolographER
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.sourceContract')) - 1)
    */
   bytes32 constant _sourceContractSlot = 0x27d542086d1e831d40b749e7f5509a626c3047a36d160781c40d5acc83e5b074;
+  /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.ownerInitialized')) - 1)
+   */
+  bytes32 constant _ownerInitializedSlot = 0xf997b1374974b9309317a268115cc6f1ab5511065a124fa88f59ecd4cc8b95f1;
 
   /**
    * @dev Configuration for events to trigger for source smart contract.
@@ -239,7 +243,6 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, IHolographER
     if (_isInitialized()) revert ERC721_AlreadyInitialized();
     InitializableInterface sourceContract;
     assembly {
-      sstore(_ownerSlot, caller())
       sourceContract := sload(_sourceContractSlot)
     }
     (
@@ -273,6 +276,31 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, IHolographER
 
     _setInitialized();
     return InitializableInterface.init.selector;
+  }
+
+  /**
+   * @notice Initializes the contract's owner.
+   * @param initialOwner The initial owner of the contract.
+   */
+  function initOwner(address initialOwner) external onlySource {
+    // Load the owner initialized flag
+    bool ownerInitialized;
+    assembly {
+      ownerInitialized := sload(_ownerInitializedSlot)
+    }
+
+    // Check if the owner has already been initialized
+    if (ownerInitialized) revert ERC721_OwnerAlreadyInitialized();
+
+    address previousOwner = getOwner();
+    assembly {
+      // Set the owner initialized flag to true
+      sstore(_ownerInitializedSlot, 1)
+      // Set the owner of the contract
+      sstore(_ownerSlot, initialOwner)
+    }
+    
+    emit OwnershipTransferred(previousOwner, initialOwner);
   }
 
   /**
@@ -1066,19 +1094,7 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, IHolographER
   }
 
   function owner() public view override returns (address) {
-    assembly {
-      calldatacopy(0, 0, calldatasize())
-      mstore(calldatasize(), caller())
-      let result := staticcall(gas(), sload(_sourceContractSlot), 0, add(calldatasize(), 0x20), 0, 0)
-      returndatacopy(0, 0, returndatasize())
-      switch result
-      case 0 {
-        revert(0, returndatasize())
-      }
-      default {
-        return(0, returndatasize())
-      }
-    }
+    return getOwner();
   }
 
   function _holograph() private view returns (HolographInterface holograph) {

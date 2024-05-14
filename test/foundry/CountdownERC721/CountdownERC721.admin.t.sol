@@ -37,8 +37,8 @@ contract CountdownERC721AdminTest is CountdownERC721Fixture, ICustomERC721Errors
     vm.prank(DEFAULT_OWNER_ADDRESS);
     enforcer.setOwner(newOwner);
 
-    assertEq(countdownErc721.owner(), newOwner);
     assertEq(enforcer.getOwner(), newOwner);
+    assertEq(countdownErc721.owner(), newOwner);
   }
 
   function test_CantSetOwnerIfNotOwner() public setupTestCountdownErc721(DEFAULT_MAX_SUPPLY) {

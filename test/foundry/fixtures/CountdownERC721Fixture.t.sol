@@ -221,7 +221,7 @@ contract CountdownERC721Fixture is Test {
     factory.deployHolographableContract(config, signature, alice); // Pass the payload hash, with the signature, and signer's address
     Vm.Log[] memory entries = vm.getRecordedLogs();
 
-    address newCountdownERC721Address = address(uint160(uint256(entries[2].topics[1])));
+    address newCountdownERC721Address = address(uint160(uint256(entries[3].topics[1])));
 
     // Connect the drop implementation to the drop proxy address
     countdownErc721 = CountdownERC721(payable(newCountdownERC721Address));
