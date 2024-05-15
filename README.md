@@ -19,7 +19,7 @@
 
 ## Description
 
-Holograph is an omnichain tokenization protocol. Asset issuers use Holograph to mint natively composable omnichain tokens. Holograph works by burning tokens on the source chain, sending a message via a messaging protocol to the destination chain, and then reminting the same number of tokens to the same contract address. This unifies liquidity, eliminates slippage, and preserves fungibility across blockchains.
+Holograph is an omnichain tokenization protocol, enabling asset issuers to mint natively composable omnichain tokens. Holograph works by burning tokens on the source chain, sending a message via a messaging protocol to the destination chain, and then reminting the same number of tokens to the same contract address. This unifies liquidity, eliminates slippage, and preserves fungibility across blockchains.
 
 ## Version
 

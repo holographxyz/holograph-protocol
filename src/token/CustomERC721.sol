@@ -478,7 +478,7 @@ contract CustomERC721 is NonReentrant, ContractMetadata, InitializableLazyMint, 
    * @param recipient recipient to mint to
    * @param quantity quantity to mint
    */
-  function mintTo(address recipient, uint256 quantity) external canMintTokens(quantity) returns (uint256) {
+  function mintTo(address recipient, uint256 quantity) external onlyMinter canMintTokens(quantity) returns (uint256) {
     _mintNFTs(recipient, quantity);
 
     return _currentTokenId;

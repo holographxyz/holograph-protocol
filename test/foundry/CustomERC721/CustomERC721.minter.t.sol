@@ -49,7 +49,7 @@ contract CustomERC721MinterRoleTest is CustomERC721Fixture, ICustomERC721Errors 
 
   function test_Fuzz_OnlyMinterCanMint(address sender) public setupTestCustomERC21(DEFAULT_MAX_SUPPLY) {
     vm.assume(sender != DEFAULT_MINTER_ADDRESS);
-    
+
     // Calling with pranking any address should revert too
     vm.expectRevert(Access_OnlyMinter.selector);
     vm.prank(sender);

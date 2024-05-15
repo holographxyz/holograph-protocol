@@ -104,7 +104,7 @@ contract CountdownERC721DeploymentTest is CountdownERC721Fixture, ICustomERC721E
     countdownErc721.init(abi.encode(contractName, contractSymbol, contractBps, EVENT_CONFIG, skipInit, initCode));
   }
 
-  function test_DefaultValues() public  setupTestCountdownErc721(DEFAULT_MAX_SUPPLY) {
+  function test_DefaultValues() public setupTestCountdownErc721(DEFAULT_MAX_SUPPLY) {
     uint256 expectedEndDate = DEFAULT_START_DATE + DEFAULT_MAX_SUPPLY * DEFAULT_MINT_INTERVAL;
 
     /* -------------------------- Not updatable values -------------------------- */
@@ -121,4 +121,3 @@ contract CountdownERC721DeploymentTest is CountdownERC721Fixture, ICustomERC721E
     assertEq(countdownErc721.contractURI(), DEFAULT_CONTRACT_URI, "Wrong contract URI");
   }
 }
-

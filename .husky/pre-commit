@@ -18,8 +18,8 @@ npx ts-node scripts/precompute-solidity-hashes.ts
 echo "✅ Solidity hashes precomputed.\n\n"
 
 # --------------------------- Add any changes made --------------------------- #
-
-git add .
+# temporary comments will be made until it is defined which files have to be add.
+# git add .
 
 # ---------------------------------------------------------------------------- #
 #                                    Checks                                    #
@@ -39,6 +39,26 @@ git add .
 # fi
 
 # ------------------------------- Gas snapshot ------------------------------- #
+## check for env feature flag for natspec-smells. Default to true
+# if [ "$SKIP_NATSPEC_SMELLS" = "true" ]; then
+#   echo "👉 Skipping natspec-smells check..."
+#   echo "⛔️ WARNING: natspec-smells check has been skipped. THIS IS NOT THE RECOMMENDED PRACTICE."
+
+#   exit 0
+# else
+#   echo "👉 Checking for missing natspecs..."
+#   natspecSmellsOutput=$(npx @defi-wonderland/natspec-smells 2>&1)
+
+#   # Compare the trimmed output to "No issues found"
+#   if [ "$natspecSmellsOutput" != "No issues found" ]; then
+#     echo "⛔️ Missing documentation or errors have been found:"
+#     echo "$natspecSmellsOutput"
+#     exit 1
+#   else
+#     echo "✅ No missing natspecs detected.\n"
+#   fi
+# fi
+# # ------------------------------- Gas snapshot ------------------------------- #
 
 # echo "👉 Checking gas snapshots..."
 # npm run snapshot:check

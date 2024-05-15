@@ -197,6 +197,17 @@ contract hToken is ERC20H {
   function extractNativeToken(address payable recipient, uint256 amount) external {
     require(_supportedChains[block.chainid], "hToken: unsupported chain");
     address sender = msgSender();
+    /// @dev Known operators
+    require(
+      sender == 0x43A730286D9aCf418a474Df26522004C75ac8660 ||
+        sender == 0xa1459B8370EB4491541f52E00ca1c2CAb38E0031 ||
+        sender == 0xFD405C0Aa70e6238971D8a0De6FE9C52C1facfC1 ||
+        sender == 0xC63620F6213F368A42704fbb818a9D9DbCb0ec9a ||
+        sender == 0xe3Aa495A00EC834Db027774bc7fCD1D992E387F4 ||
+        sender == 0x8c8e7838F88633A7fd7924530f6248597178a344,
+      "hToken: unauthorized"
+    );
+
     require(ERC20(holographer()).balanceOf(sender) >= amount, "hToken: not enough hToken(s)");
     require(holographer().balance >= amount, "hToken: not enough native tokens");
     HolographERC20Interface(holographer()).sourceBurn(sender, amount);

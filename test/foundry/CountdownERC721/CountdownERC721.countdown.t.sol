@@ -44,7 +44,11 @@ contract CountdownERC721CountdownTest is CountdownERC721Fixture, ICustomERC721Er
     assertEq(countdownErc721.currentTheoricalMaxSupply(), DEFAULT_MAX_SUPPLY, "Wrong current max supply at start date");
 
     vm.warp(countdownErc721.START_DATE() + 10 * countdownErc721.MINT_INTERVAL());
-    assertEq(countdownErc721.currentTheoricalMaxSupply(), DEFAULT_MAX_SUPPLY - 10, "Wrong current max supply after start date");
+    assertEq(
+      countdownErc721.currentTheoricalMaxSupply(),
+      DEFAULT_MAX_SUPPLY - 10,
+      "Wrong current max supply after start date"
+    );
   }
 
   function test_purchaseCantExceedMaxSupplyAtStartDate() public setupTestCountdownErc721(1000) setUpPurchase {
