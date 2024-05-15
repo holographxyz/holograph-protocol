@@ -50,7 +50,7 @@ describe('Testing the Holograph ERC20 Enforcer (CHAIN1)', async function () {
       it('supportsInterface supported', async function () {
         expect(await ERC20.supportsInterface(functionHash('supportsInterface(bytes4)'))).to.be.true;
       });
-
+      //duplicated
       it('ERC165 interface supported', async function () {
         expect(await ERC20.supportsInterface(functionHash('supportsInterface(bytes4)'))).to.be.true;
       });
@@ -80,7 +80,6 @@ describe('Testing the Holograph ERC20 Enforcer (CHAIN1)', async function () {
       it('transferFrom supported', async function () {
         expect(await ERC20.supportsInterface(functionHash('transferFrom(address,address,uint256)'))).to.be.true;
       });
-
       it('ERC20 interface supported', async function () {
         expect(
           await ERC20.supportsInterface(
@@ -109,7 +108,6 @@ describe('Testing the Holograph ERC20 Enforcer (CHAIN1)', async function () {
       it('decimals supported', async function () {
         expect(await ERC20.supportsInterface(functionHash('decimals()'))).to.be.true;
       });
-
       it('ERC20Metadata interface supported', async function () {
         expect(
           await ERC20.supportsInterface(
@@ -127,7 +125,6 @@ describe('Testing the Holograph ERC20 Enforcer (CHAIN1)', async function () {
       it('burnFrom supported', async function () {
         expect(await ERC20.supportsInterface(functionHash('burnFrom(address,uint256)'))).to.be.true;
       });
-
       it('ERC20Burnable interface supported', async function () {
         expect(
           await ERC20.supportsInterface(XOR([functionHash('burn(uint256)'), functionHash('burnFrom(address,uint256)')]))
@@ -152,7 +149,6 @@ describe('Testing the Holograph ERC20 Enforcer (CHAIN1)', async function () {
         expect(await ERC20.supportsInterface(functionHash('safeTransferFrom(address,address,uint256,bytes)'))).to.be
           .true;
       });
-
       it('ERC20Safer interface supported', async function () {
         expect(
           await ERC20.supportsInterface(
@@ -181,7 +177,6 @@ describe('Testing the Holograph ERC20 Enforcer (CHAIN1)', async function () {
       it('DOMAIN_SEPARATOR supported', async function () {
         expect(await ERC20.supportsInterface(functionHash('DOMAIN_SEPARATOR()'))).to.be.true;
       });
-
       it('ERC20Permit interface supported', async function () {
         expect(
           await ERC20.supportsInterface(

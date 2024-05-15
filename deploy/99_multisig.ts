@@ -23,8 +23,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
 
   // If we are on a mainnet or testnet, and we are deploying to a mainnet or testnet environment, then we need to set the multisig
   if (
-    (network.type == NetworkType.mainnet || network.type == NetworkType.testnet) &&
-    (environment == Environment.mainnet || environment == Environment.testnet)
+    (network.type === NetworkType.mainnet || network.type === NetworkType.testnet) &&
+    (environment === Environment.mainnet || environment === Environment.testnet)
   ) {
     // If there is no multisig, then we need to use the deployer address
     // Otherwise, we use the multisig address
@@ -79,9 +79,9 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
           })),
         })
       );
-      hre.deployments.log(`Changing Holograph Admin tx ${setHolographAdminTx.hash}`);
+      console.log(`Changing Holograph Admin tx ${setHolographAdminTx.hash}`);
       await setHolographAdminTx.wait();
-      hre.deployments.log('Changed Holograph Admin');
+      console.log('Changed Holograph Admin');
     }
 
     for (const contractName of switchToHolograph) {
@@ -104,13 +104,13 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
             })),
           })
         );
-        hre.deployments.log(`Changing ${contractName} Admin to Holograph tx ${setHolographAsAdminTx.hash}`);
+        console.log(`Changing ${contractName} Admin to Holograph tx ${setHolographAsAdminTx.hash}`);
         await setHolographAsAdminTx.wait();
-        hre.deployments.log(`Changed ${contractName} Admin to Holograph`);
+        console.log(`Changed ${contractName} Admin to Holograph`);
       }
     }
   } else {
-    hre.deployments.log(`Skipping multisig setup for ${NetworkType[network.type]}`);
+    console.log(`Skipping multisig setup for ${NetworkType[network.type]}`);
   }
   console.log(`Exiting script: ${__filename} ✅\n`);
 };

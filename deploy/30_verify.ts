@@ -34,6 +34,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     baseTestnetSepolia: 'BaseTestnetSepolia',
     zora: 'Zora',
     zoraTestnetSepolia: 'ZoraTestnetSepolia',
+    lineaTestnetGoerli: 'LineaTestnetGoerli',
+    lineaTestnetSepolia: 'LineaTestnetSepolia',
+    linea: 'Linea',
   };
 
   let targetDropsPriceOracle = 'DummyDropsPriceOracle';
@@ -41,14 +44,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     targetDropsPriceOracle = 'DropsPriceOracle' + definedOracleNames[network.key];
   } else {
     if (
-      environment == Environment.mainnet ||
-      (network.key != 'localhost' && network.key != 'localhost2' && network.key != 'hardhat')
+      environment === Environment.mainnet ||
+      (network.key !== 'localhost' && network.key !== 'localhost2' && network.key !== 'hardhat')
     ) {
       throw new Error('Drops price oracle not created for network yet!');
     }
   }
 
-  if (currentNetworkType != NetworkType.local) {
+  if (currentNetworkType !== NetworkType.local) {
     let contracts: string[] = [
       'HolographUtilityToken',
       'hToken',
@@ -98,17 +101,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         };
 
         if (contract.includes('DropsPriceOracle') && contract !== 'DropsPriceOracleProxy') {
-          const contractFullName = `contracts/drops/oracle/${contract}.sol:${contract}`;
+          const contractFullName = `src/drops/oracle/${contract}.sol:${contract}`;
           options['contract'] = contractFullName;
         }
 
         await hre.run('verify:verify', options);
       } catch (error) {
-        hre.deployments.log(`Failed to verify "${contract}" -> ${error}`);
+        console.log(`Failed to verify "${contract}" -> ${error}`);
       }
     }
   } else {
-    hre.deployments.log('Not verifying contracts on localhost networks.');
+    console.log('Not verifying contracts on localhost networks.');
   }
 
   console.log(`Exiting script: ${__filename} ✅\n`);

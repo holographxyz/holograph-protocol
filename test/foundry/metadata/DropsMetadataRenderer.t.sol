@@ -4,7 +4,7 @@ pragma solidity 0.8.13;
 import {Test} from "forge-std/Test.sol";
 
 import {DropMockBase} from "./DropMockBase.sol";
-import {DropsMetadataRenderer} from "../../../contracts/drops/metadata/DropsMetadataRenderer.sol";
+import {DropsMetadataRenderer} from "../../../src/drops/metadata/DropsMetadataRenderer.sol";
 
 contract DropsMetadataRendererTest is Test {
   address public constant mediaContract = address(123456);

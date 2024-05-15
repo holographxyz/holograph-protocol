@@ -18,9 +18,9 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   const salt = hre.deploymentSalt;
   const currentNetworkType: NetworkType = networks[hre.networkName].type;
 
-  if (currentNetworkType != NetworkType.local) {
+  if (currentNetworkType !== NetworkType.local) {
     const holographer: Contract | null = await hre.ethers.getContractOrNull('Holographer', deployerAddress);
-    if (holographer == null) {
+    if (holographer === null) {
       await hre.deployments.deploy('Holographer', {
         ...(await txParams({
           hre,
@@ -34,11 +34,11 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
         log: true,
         waitConfirmations: 1,
       } as any);
-      hre.deployments.log('Deployed a "Holographer" empty contract for block explorer verification purposes.');
+      console.log('Deployed a "Holographer" empty contract for block explorer verification purposes.');
     }
 
     const cxipERC721Proxy: Contract | null = await hre.ethers.getContractOrNull('CxipERC721Proxy', deployerAddress);
-    if (cxipERC721Proxy == null) {
+    if (cxipERC721Proxy === null) {
       await hre.deployments.deploy('CxipERC721Proxy', {
         ...(await txParams({
           hre,
@@ -52,14 +52,14 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
         log: true,
         waitConfirmations: 1,
       } as any);
-      hre.deployments.log('Deployed a "CxipERC721Proxy" empty contract for block explorer verification purposes.');
+      console.log('Deployed a "CxipERC721Proxy" empty contract for block explorer verification purposes.');
     }
 
     const holographDropERC721Proxy: Contract | null = await hre.ethers.getContractOrNull(
       'HolographDropERC721Proxy',
       deployerAddress
     );
-    if (holographDropERC721Proxy == null) {
+    if (holographDropERC721Proxy === null) {
       await hre.deployments.deploy('HolographDropERC721Proxy', {
         ...(await txParams({
           hre,
@@ -73,16 +73,14 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
         log: true,
         waitConfirmations: 1,
       } as any);
-      hre.deployments.log(
-        'Deployed a "HolographDropERC721Proxy" empty contract for block explorer verification purposes.'
-      );
+      console.log('Deployed a "HolographDropERC721Proxy" empty contract for block explorer verification purposes.');
     }
 
     const holographUtilityToken: Contract | null = await hre.ethers.getContractOrNull(
       'HolographUtilityToken',
       deployerAddress
     );
-    if (holographUtilityToken == null) {
+    if (holographUtilityToken === null) {
       await hre.deployments.deploy('HolographUtilityToken', {
         ...(await txParams({
           hre,
@@ -96,13 +94,11 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
         log: true,
         waitConfirmations: 1,
       } as any);
-      hre.deployments.log(
-        'Deployed a "HolographUtilityToken" empty contract for block explorer verification purposes.'
-      );
+      console.log('Deployed a "HolographUtilityToken" empty contract for block explorer verification purposes.');
     }
 
     const hTokenProxy: Contract | null = await hre.ethers.getContractOrNull('hTokenProxy', deployerAddress);
-    if (hTokenProxy == null) {
+    if (hTokenProxy === null) {
       await hre.deployments.deploy('hTokenProxy', {
         ...(await txParams({
           hre,
@@ -116,7 +112,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
         log: true,
         waitConfirmations: 1,
       } as any);
-      hre.deployments.log('Deployed a "hTokenProxy" empty contract for block explorer verification purposes.');
+      console.log('Deployed a "hTokenProxy" empty contract for block explorer verification purposes.');
     }
   }
 

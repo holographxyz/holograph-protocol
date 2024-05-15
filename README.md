@@ -1,10 +1,9 @@
 <div align="center">
-  <a href="https://holograph.xyz"><img alt="Holograph" src="https://user-images.githubusercontent.com/21043504/188220186-9c7f55e0-143a-41b4-a6b8-90e8bd54bfd9.png" width=600></a>
+  <a href="https://holograph.xyz"><img alt="Holograph" src="./docs/holograph-protocol-v2.png" width=600></a>
   <br />
   <h1>Holograph Protocol V2</h1>
 </div>
-<p align="center">
-</p>
+
 
 ## Table of Contents
 
@@ -20,7 +19,7 @@
 
 ## Description
 
-Holograph is an omnichain tokenization protocol. Issuers use Holograph to mint natively composable tokens that can be transferred across blockchains without wrapping. Holograph works by burning tokens on the source chain, sending a message via a messaging protocol to the destination chain, and then reminting the same number of tokens to the same contract address. This unifies liquidity, eliminates slippage, and reserves fungibility across blockchains.
+Holograph is an omnichain tokenization protocol, enabling asset issuers to mint natively composable omnichain tokens. Holograph works by burning tokens on the source chain, sending a message via a messaging protocol to the destination chain, and then reminting the same number of tokens to the same contract address. This unifies liquidity, eliminates slippage, and preserves fungibility across blockchains.
 
 ## Version
 
@@ -102,13 +101,21 @@ Custom contract is any type of smart contract that was developed outside of Holo
 
 #### H Tokens
 
+##### Develop
+
+hETH: 0xFFab4710eD70C14878D9FAb1d37E9e3C9276e5ef
+hBNB: 0x9BecEaD6FD33AcfE6B096cAf0c619E14e709991B
+hAVAX: 0x39d587b08ea8aE448Cf447dd9fc05C6D8A0A92B8
+hMATIC: 0xd6F1E7272c783E99eE508A0905Ed98a743C72d09
+hMNT: 0x18cc1d7311122561210655c1abae70C1D27466A1
+
 ##### Testnet
 
-hETH, Address: 0xB019322549D380C6bC7CbC6628ff29455fe4C1cC
-hBNB, Address: 0xA1a98BCE0BDb2770dAfb3588d4457887f5E19434
-hAVAX, Address: 0x9dA278F042213B5E8a8e18499CB3B5073d585660
-hMATIC: Address: 0x4Fd9Be1a583F4da78362aCf92942d01C46269dF0
-hMNT: Mantle, Address: 0xcF26eb593C244fa62E35b08DaD45136b75690841
+hETH: 0xB019322549D380C6bC7CbC6628ff29455fe4C1cC
+hBNB: 0xA1a98BCE0BDb2770dAfb3588d4457887f5E19434
+hAVAX: 0x9dA278F042213B5E8a8e18499CB3B5073d585660
+hMATIC: 0x4Fd9Be1a583F4da78362aCf92942d01C46269dF0
+hMNT: 0xcF26eb593C244fa62E35b08DaD45136b75690841
 
 ##### Mainnet
 
@@ -140,7 +147,7 @@ The simplified code path for bridging out is:
 
 At step 1, a user submits their bridge request with a valid payload using the estimatedGas value computed in the previous [Estimate Gas](#estimategas) section
 
-At step 2, the code checks that the contract is a _holographable_ contract. This means it has implemented the required functions for a _Holographed_ contract. See `contracts/enforcer/HolographERC721.sol` for an example.
+At step 2, the code checks that the contract is a _holographable_ contract. This means it has implemented the required functions for a _Holographed_ contract. See `src/enforcer/HolographERC721.sol` for an example.
 
 At step 3, we call the `_bridgeOut` function on the _Holographed_ contract and apply various checks and generate a payload with information about the bridge request.
 
@@ -210,21 +217,106 @@ At step 5, the wallet sends a transaction to the `exectureJob` method on the `Ho
 
 ## Development
 
-### Getting Started
+### Installing Dependencies
 
 1. This project uses [asdf](https://asdf-vm.com/) for versions management. Install following plugins
    - Install [asdf Node plugin](https://github.com/asdf-vm/asdf-nodejs): `asdf plugin add nodejs https://github.com/asdf-vm/asdf-nodejs.git`
-   - Install [asdf yarn plugin](https://github.com/twuni/asdf-yarn): `asdf plugin-add yarn`
-1. Run `asdf install` after to have the correct tool versions.
-1. Install dependencies with `yarn install`.
+   - Install [asdf pnpm plugin](https://github.com/jonathanmorley/asdf-pnpm): `asdf plugin-add pnpm`
+2. Run `asdf install` after to have the correct tool versions.
+3. Install dependencies with `pnpm install`.
+4. Install Forge globally with `curl -L https://foundry.paradigm.xyz | bash`
 
-   _"This project uses environment variables that are stored in `.env`"_
+### Environment
 
-### Building
+Please see the sample.env file for the environment variables that need to be configured. There are some notable variables that are important to consider and have set for both local, testnet, and production development and deployments. So make sure these are set:
 
-When the project is built, the code in the `src` folder gets written to the `contracts` folder. The files in the `contracts` folder are the "real" files that are used for testing and code verification on all the scanners.
+- `HOLOGRAPH_ENVIRONMENT` should generally be set to `develop` for development and testing. This can be updated to `testnet` for deployment to the live testing environment and finally `mainnet` only for mainnet deployments.
 
-Again, files from the `src` directory are automatically transpiled into the `contracts` directory each time that **hardhat** compiles the contracts.
+- `LOCALHOST_DEPLOYER_SECRET` make sure this is set to `something` while deploying and testing using your local Anvil chain. See more about [Anvil](https://book.getfoundry.sh/anvil/)
+
+- `DEPLOYER` is required by hardhat deploy so make sure it has a value set. You can use the default first test account that is used by the anvil command in the package.json. Please see sample.env for setting this up.
+
+- `HARDWARE_WALLET_DEPLOYER` this is only used for `testnet` and `mainnet` envs for deployment. This can be set to `0x0` during development.
+
+### Compiling
+
+1. Terminal 1: `pnpm clean-compile`
+
+This runs `hardhat clean` and then `hardhat compile` in sequence. Alternatively you can just run `pnpm compile`.
+
+### Deploying Holograph Protocol
+
+To run the protocol locally, we actually need to run 2 networks `localhost` and `localhost2`. The `pnpm anvil` command will run the blockchains locally. Then the second command will deploy the entire Holograph Protocol to each network.
+
+1. Terminal 1: `pnpm anvil` - This runs `localhost` and `localhost2` blockchain networks
+2. Terminal 2: `pnpm deploy-x2` - Deploys protocol on both networks without compiling. The command will ask you to enter `y` to continue twice. If you get an error, make sure you ran `pnpm clean-compile` at least once before!
+
+The expected output is show below. For local development, if addresses are different, please review env variables to make sure you get the correct values.
+
+```bash
+👉 Environment: develop
+
+Setting deployer key to 0xdf5295149F367b1FBFD595bdA578BAd22e59f504 as fallback
+Starting deploy script: 00_genesis.ts
+Deployer: 0xdf5295149F367b1FBFD595bdA578BAd22e59f504
+HolographGenesisLocal contract found and verified at 0x4c3BA951A7ea09b5BB57230F63a89D36A07B2992
+Exiting script: 00_genesis.ts ✅
+
+Starting deploy script: 01_sources.ts 👇
+
+Deployer address: 0xdf5295149F367b1FBFD595bdA578BAd22e59f504
+Deploying to network: localhost
+The deployment salt is: 1000
+The gas price override is set to: undefined gwei
+We are in dry run mode? false
+Continue? (y/n)
+the future "Holograph" address is 0x17253175f447ca4B560a87a3F39591DFC7A021e3
+the future "HolographBridge" address is 0x0af817Df693A292a4b8b9ACC698199333eB0DD9e
+the future "HolographBridgeProxy" address is 0x53D2B46b341385bC7e022667Eb1860505073D43a
+the future "HolographFactory" address is 0xa574B1A37c9235d19D942DD4393f728d2a646FDe
+the future "HolographFactoryProxy" address is 0xcE2cDFDF0b9D45F8Bd2D3CCa4033527301903FDe
+the future "HolographOperator" address is 0x0d173B3F4Da8e50333734F36E40c5f475874A7b3
+the future "HolographOperatorProxy" address is 0xABc5a4C81D3033cf920b982E75D1080b91AA0EF9
+the future "HolographRegistry" address is 0x1052ae1742fc6878010a31aA53671fEF7D51bf65
+the future "HolographRegistryProxy" address is 0xB47C0E0170306583AA979bF30c0407e2bFE234b2
+the future "HolographTreasury" address is 0x76c4fC0627405741Db0959E66d64c0ECeAceDC94
+the future "HolographTreasuryProxy" address is 0x65115A3Be2Aa1F267ccD7499e720088060c7ccd2
+the future "HolographInterfaces" address is 0x67F6394693bd2B46BBE87627F0E581faD80C7B57
+the future "HolographRoyalties" address is 0xbF8f7474D7aCbb87E270FEDA9A5CBB7f766887E3
+Using deployerAddress from signer 0xdf5295149F367b1FBFD595bdA578BAd22e59f504
+the future "HolographUtilityToken" address is 0x56BA455232a82784F17C33c577124EF208D931ED
+"Holograph" bytecode not found, need to deploy"
+future "Holograph" address is 0x17253175f447ca4B560a87a3F39591DFC7A021e3
+... // more logs
+```
+
+### Slots
+
+A note on contract slots. The protocol uses the EIP1967 standard heavily for addressing storage location via slots. We use a consistent format across the codebase
+in the form of:
+
+eip1967.<contract-name>.<storage-variable-name>
+
+Additionally we have a utility script that indentify this within the contracts directory as a pre-commit and auto-hash it into it's proper format prior to pushing updates to the repo. An example of how to add a new storage variable to a contract via a hashed slot is as followed:
+
+1. Add a variable to your contracts storage such as `bytes32 constant _interfacesSlot = precomputeslot("eip1967.Holograph.interfaces");`. Add slots below existing slots. Never add them in between existing slots.
+2. Run the `npx ts-node scripts/precompute-solidity-hashes.ts` script to update the contents of the `precompute` slot function into the output of the hash that is actually stored in the contract.
+3. Annotate the converted line with a comment so the original value is captured. See existing slot to see how we comment these values. We should be able to see what the string version of the hash is.
+4. These constants provide access to important variables at a unique location in a consistent manner.
+
+Note, that if you do not manually call the `precompute-solidity-hashes.ts` script, we have a git hook that will automatically convert it.
+
+### Quick Environment Commands
+
+You can set up aliases locally to make development smoother. Note, that you will need to update the path to the code to the location on your own computer.
+
+```shell
+alias protbuild="cd ~/path/to/protocol && pnpm install && pnpm clean-compile && pnpm anvil"
+
+alias protdeploy="cd ~/path/to/protocol && pnpm deploy-x2"
+```
+
+Then you can run `protbuild` and then `protdeploy` to set up the project locally.
 
 ### Running tests
 
@@ -232,18 +324,18 @@ Again, files from the `src` directory are automatically transpiled into the `con
 
 There are two sets of tests. The main test suite uses Hardhat. To run them start your local chains that the contracts will be deployed to using:
 
-`yarn run ganache-x2` or `yarn anvil`
+`pnpm anvil`
 
 Keep in mind that two networks are spun up in order to facilitate the multichain tests that bridge from one network to the other.
 Next run the hardhat tests with:
 
-`yarn test`
+`pnpm test`
 
 The newer tests for Drops use Foundry. Please make sure you have Foundry installed by following the instructions [here](https://github.com/foundry-rs/foundry).
 
-Currently the Foundry tests require "forking" from a local chain that has the rest of the Holograph protocol contracts already deployed. To do this, with the local ganache chains still running from the `ganache-x2` / `anvil` command mentioned above, run deploy with:
+Currently, the Foundry tests require "forking" from a local chain that has the rest of the Holograph protocol contracts already deployed. To do this, with the local anvil chains still running from the `anvil` command mentioned above, run deploy with:
 
-`yarn deploy:localhost`
+`pnpm deploy:localhost`
 
 Then you can run the Foundry tests with:
 
@@ -253,7 +345,7 @@ Then you can run the Foundry tests with:
 
 **Before pushing your work to the repo, make sure to prepare your code**
 
-Please make use of the `yarn run prettier:fix` command to format the codebase into a universal style.
+Please make use of the `pnpm run prettier:fix` command to format the codebase into a universal style.
 
 ## Directory Structure
 
@@ -261,11 +353,10 @@ Please make use of the `yarn run prettier:fix` command to format the codebase in
 root
 
 ├── <a href="./config">config</a>: Network configuration files
-├── <a href="./contracts">contracts</a>: Smart contracts that power the Holograph protocol
+├── <a href="./src">contracts</a>: Smart contracts that power the Holograph protocol
 ├── <a href="./deploy">deploy</a>: Deployment scripts for the smart contracts uses <a href="https://hardhat.org/">Hardhat</a> and <a href="https://github.com/wighawag/hardhat-deploy">Hardhat Deploy</a>
 ├── <a href="./deployments">deployments</a>: Deployment build files that include contract addresses on each network
 ├── <a href="./scripts">scripts</a>: Scripts and helper utilities
-├── <a href="./src">src</a>: Source contracts that get dynamically transpiled down into the finalized output <a href="./contracts">contracts</a>
 └── <a href="./test">test</a>: Hardhat tests for the smart contracts
 </pre>
 
@@ -319,9 +410,9 @@ Our primary experimentation branch is [`experimental`](https://github.com/hologr
 3. Clean Repo
    1. Remove temp folders: [node_modules, artifacts, cache, cache_hardhat, dist, typechain-types, ganache]
 4. Run Tests
-   1. run `yarn clean-compile`
-   2. run `yarn ganache-x2` - terminal 1
-   3. run `yarn deploy` - terminal 2
+   1. run `pnpm clean-compile`
+   2. run `pnpm anvil` - terminal 1
+   3. run `pnpm deploy` - terminal 2
 5. Run Deployments per environment, per supported network
 6. Validate Contracts on each network
 

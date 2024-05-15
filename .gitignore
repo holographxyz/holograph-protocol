@@ -240,3 +240,7 @@ cache
 ganache
 artifacts
 typechain-types
+
+## pnpm
+.pnpm-store
+.pnpm-debug.log*

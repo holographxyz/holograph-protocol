@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 
-/*SOLIDITY_COMPILER_VERSION*/
+pragma solidity 0.8.13;
 
 interface ERC20Metadata {
   function decimals() external view returns (uint8);
