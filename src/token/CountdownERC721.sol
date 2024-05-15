@@ -14,7 +14,6 @@ import {CountdownERC721Initializer} from "src/struct/CountdownERC721Initializer.
 import {CustomERC721SaleDetails} from "src/struct/CustomERC721SaleDetails.sol";
 import {CustomERC721SalesConfiguration} from "src/struct/CustomERC721SalesConfiguration.sol";
 import {MetadataParams} from "src/struct/MetadataParams.sol";
-import {HolographERC721Interface} from "../interface/HolographERC721Interface.sol";
 
 import {Address} from "../drops/library/Address.sol";
 import {Strings} from "./../drops/library/Strings.sol";
@@ -277,11 +276,13 @@ contract CountdownERC721 is NonReentrant, ERC721H, ICountdownERC721 {
 
     _init(initPayload);
 
-    (bool success, ) = msg.sender.call(
-      abi.encodeWithSignature("initOwner(address)", initializer.initialOwner)
-    );
-
-    // require(success, "HOLOGRAPH: initOwner failed");
+    try HolographERC721Interface(msg.sender).supportsInterface(HolographERC721Interface.initOwner.selector) returns (
+      bool result
+    ) {
+      if (result) {
+        HolographERC721Interface(msg.sender).initOwner(initializer.initialOwner);
+      }
+    } catch {}
 
     return InitializableInterface.init.selector;
   }

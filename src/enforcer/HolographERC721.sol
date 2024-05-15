@@ -282,7 +282,7 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, IHolographER
    * @notice Initializes the contract's owner.
    * @param initialOwner The initial owner of the contract.
    */
-  function initOwner(address initialOwner) external onlySource {
+  function initOwner(address initialOwner) public onlySource {
     // Load the owner initialized flag
     bool ownerInitialized;
     assembly {
@@ -349,7 +349,8 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, IHolographER
     if (
       interfaces.supportsInterface(InterfaceType.ERC721, interfaceId) || // check global interfaces
       interfaces.supportsInterface(InterfaceType.ROYALTIES, interfaceId) || // check if royalties supports interface
-      erc165Contract.supportsInterface(interfaceId) // check if source supports interface
+      erc165Contract.supportsInterface(interfaceId) || // check if source supports interface
+      interfaceId == bytes4(abi.encodeWithSignature("initOwner(address)"))
     ) {
       return true;
     } else {
