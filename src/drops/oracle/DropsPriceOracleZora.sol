@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-/*SOLIDITY_COMPILER_VERSION*/
+pragma solidity 0.8.13;
 
 import {Admin} from "../../abstract/Admin.sol";
 import {Initializable} from "../../abstract/Initializable.sol";
@@ -11,7 +11,7 @@ contract DropsPriceOracleZora is Admin, Initializable, IDropsPriceOracle {
   /**
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.tokenPriceRatio')) - 1)
    */
-  bytes32 constant _tokenPriceRatioSlot = precomputeslot("eip1967.Holograph.tokenPriceRatio");
+  bytes32 constant _tokenPriceRatioSlot = 0x562ce994878444f1ca8bcf3afcea513b950965abed659462312e8fdd38c020a1;
 
   /**
    * @dev Constructor is left empty and init is used instead

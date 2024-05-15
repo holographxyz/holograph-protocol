@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-/*SOLIDITY_COMPILER_VERSION*/
+pragma solidity 0.8.13;
 
 interface IUniswapV3Quoter {
   /// @notice Returns the amount out received for a given exact input swap without executing the swap

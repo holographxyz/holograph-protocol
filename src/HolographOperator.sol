@@ -1,6 +1,105 @@
-/*HOLOGRAPH_LICENSE_HEADER*/
+// SPDX-License-Identifier: UNLICENSED
+/*
 
-/*SOLIDITY_COMPILER_VERSION*/
+                         ┌───────────┐
+                         │ HOLOGRAPH │
+                         └───────────┘
+╔═════════════════════════════════════════════════════════════╗
+║                                                             ║
+║                            / ^ \                            ║
+║                            ~~*~~            ¸               ║
+║                         [ '<>:<>' ]         │░░░            ║
+║               ╔╗           _/"\_           ╔╣               ║
+║             ┌─╬╬─┐          """          ┌─╬╬─┐             ║
+║          ┌─┬┘ ╠╣ └┬─┐       \_/       ┌─┬┘ ╠╣ └┬─┐          ║
+║       ┌─┬┘ │  ╠╣  │ └┬─┐           ┌─┬┘ │  ╠╣  │ └┬─┐       ║
+║    ┌─┬┘ │  │  ╠╣  │  │ └┬─┐     ┌─┬┘ │  │  ╠╣  │  │ └┬─┐    ║
+║ ┌─┬┘ │  │  │  ╠╣  │  │  │ └┬┐ ┌┬┘ │  │  │  ╠╣  │  │  │ └┬─┐ ║
+╠┬┘ │  │  │  │  ╠╣  │  │  │  │└¤┘│  │  │  │  ╠╣  │  │  │  │ └┬╣
+║│  │  │  │  │  ╠╣  │  │  │  │   │  │  │  │  ╠╣  │  │  │  │  │║
+╠╩══╩══╩══╩══╩══╬╬══╩══╩══╩══╩═══╩══╩══╩══╩══╬╬══╩══╩══╩══╩══╩╣
+╠┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴╬╬┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴╬╬┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴╣
+║               ╠╣                           ╠╣               ║
+║               ╠╣                           ╠╣               ║
+║    ,          ╠╣     ,        ,'      *    ╠╣               ║
+║~~~~~^~~~~~~~~┌╬╬┐~~~^~~~~~~~~^^~~~~~~~~^~~┌╬╬┐~~~~~~~^~~~~~~║
+╚══════════════╩╩╩╩═════════════════════════╩╩╩╩══════════════╝
+     - one protocol, one bridge = infinite possibilities -
+
+
+ ***************************************************************
+
+ DISCLAIMER: U.S Patent Pending
+
+ LICENSE: Holograph Limited Public License (H-LPL)
+
+ https://holograph.xyz/licenses/h-lpl/1.0.0
+
+ This license governs use of the accompanying software. If you
+ use the software, you accept this license. If you do not accept
+ the license, you are not permitted to use the software.
+
+ 1. Definitions
+
+ The terms "reproduce," "reproduction," "derivative works," and
+ "distribution" have the same meaning here as under U.S.
+ copyright law. A "contribution" is the original software, or
+ any additions or changes to the software. A "contributor" is
+ any person that distributes its contribution under this
+ license. "Licensed patents" are a contributor’s patent claims
+ that read directly on its contribution.
+
+ 2. Grant of Rights
+
+ A) Copyright Grant- Subject to the terms of this license,
+ including the license conditions and limitations in sections 3
+ and 4, each contributor grants you a non-exclusive, worldwide,
+ royalty-free copyright license to reproduce its contribution,
+ prepare derivative works of its contribution, and distribute
+ its contribution or any derivative works that you create.
+ B) Patent Grant- Subject to the terms of this license,
+ including the license conditions and limitations in section 3,
+ each contributor grants you a non-exclusive, worldwide,
+ royalty-free license under its licensed patents to make, have
+ made, use, sell, offer for sale, import, and/or otherwise
+ dispose of its contribution in the software or derivative works
+ of the contribution in the software.
+
+ 3. Conditions and Limitations
+
+ A) No Trademark License- This license does not grant you rights
+ to use any contributors’ name, logo, or trademarks.
+ B) If you bring a patent claim against any contributor over
+ patents that you claim are infringed by the software, your
+ patent license from such contributor is terminated with
+ immediate effect.
+ C) If you distribute any portion of the software, you must
+ retain all copyright, patent, trademark, and attribution
+ notices that are present in the software.
+ D) If you distribute any portion of the software in source code
+ form, you may do so only under this license by including a
+ complete copy of this license with your distribution. If you
+ distribute any portion of the software in compiled or object
+ code form, you may only do so under a license that complies
+ with this license.
+ E) The software is licensed “as-is.” You bear all risks of
+ using it. The contributors give no express warranties,
+ guarantees, or conditions. You may have additional consumer
+ rights under your local laws which this license cannot change.
+ To the extent permitted under your local laws, the contributors
+ exclude all implied warranties, including those of
+ merchantability, fitness for a particular purpose and
+ non-infringement.
+
+ 4. (F) Platform Limitation- The licenses granted in sections
+ 2.A & 2.B extend only to the software or derivative works that
+ you create that run on a Holograph system product.
+
+ ***************************************************************
+
+*/
+
+pragma solidity 0.8.13;
 
 import "./abstract/Admin.sol";
 import "./abstract/Initializable.sol";
@@ -27,35 +126,35 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
   /**
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.bridge')) - 1)
    */
-  bytes32 constant _bridgeSlot = precomputeslot("eip1967.Holograph.bridge");
+  bytes32 constant _bridgeSlot = 0xeb87cbb21687feb327e3d58c6c16d552231d12c7a0e8115042a4165fac8a77f9;
   /**
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.holograph')) - 1)
    */
-  bytes32 constant _holographSlot = precomputeslot("eip1967.Holograph.holograph");
+  bytes32 constant _holographSlot = 0xb4107f746e9496e8452accc7de63d1c5e14c19f510932daa04077cd49e8bd77a;
   /**
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.interfaces')) - 1)
    */
-  bytes32 constant _interfacesSlot = precomputeslot("eip1967.Holograph.interfaces");
+  bytes32 constant _interfacesSlot = 0xbd3084b8c09da87ad159c247a60e209784196be2530cecbbd8f337fdd1848827;
   /**
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.jobNonce')) - 1)
    */
-  bytes32 constant _jobNonceSlot = precomputeslot("eip1967.Holograph.jobNonce");
+  bytes32 constant _jobNonceSlot = 0x1cda64803f3b43503042e00863791e8d996666552d5855a78d53ee1dd4b3286d;
   /**
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.messagingModule')) - 1)
    */
-  bytes32 constant _messagingModuleSlot = precomputeslot("eip1967.Holograph.messagingModule");
+  bytes32 constant _messagingModuleSlot = 0x54176250282e65985d205704ffce44a59efe61f7afd99e29fda50f55b48c061a;
   /**
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.registry')) - 1)
    */
-  bytes32 constant _registrySlot = precomputeslot("eip1967.Holograph.registry");
+  bytes32 constant _registrySlot = 0xce8e75d5c5227ce29a4ee170160bb296e5dea6934b80a9bd723f7ef1e7c850e7;
   /**
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.utilityToken')) - 1)
    */
-  bytes32 constant _utilityTokenSlot = precomputeslot("eip1967.Holograph.utilityToken");
+  bytes32 constant _utilityTokenSlot = 0xbf76518d46db472b71aa7677a0908b8016f3dee568415ffa24055f9a670f9c37;
   /**
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.minGasPrice')) - 1)
    */
-  bytes32 constant _minGasPriceSlot = precomputeslot("eip1967.Holograph.minGasPrice");
+  bytes32 constant _minGasPriceSlot = 0x264d744422f7427cd080572c35c848b6cd3a36da6b47519af89ef13098b12fc0;
 
   /**
    * @dev Internal number (in seconds), used for defining a window for operator to execute the job
@@ -398,10 +497,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
    * @dev This function is restricted for use by Holograph Messaging Module only
    */
   function crossChainMessage(bytes calldata bridgeInRequestPayload) external payable {
-    require(
-      msg.sender == address(_messagingModule()) || msg.sender == 0x777C19834a1A2FF6353a1E9cfb7C799ed7943a11,
-      "HOLOGRAPH: messaging only call"
-    );
+    require(msg.sender == address(_messagingModule()), "HOLOGRAPH: messaging only call");
     uint256 gasPrice = 0;
     assembly {
       /**
@@ -1159,7 +1255,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
     assembly {
       codehash := extcodehash(contractAddress)
     }
-    return (codehash != 0x0 && codehash != precomputekeccak256(""));
+    return (codehash != 0x0 && codehash != 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470);
   }
 
   /**

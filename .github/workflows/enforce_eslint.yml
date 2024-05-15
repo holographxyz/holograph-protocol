@@ -25,8 +25,12 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18.4.0'
+          node-version: '20.12.2'
+      - uses: pnpm/action-setup@v3
+        name: Install pnpm
+        with:
+          version: 8
       - name: Install dependencies
-        run: yarn install
+        run: pnpm install
       - name: Lint Check
-        run: yarn lint
+        run: pnpm lint

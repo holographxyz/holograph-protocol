@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import {EditionsMetadataRenderer} from "../../../contracts/drops/metadata/EditionsMetadataRenderer.sol";
-import {MetadataRenderAdminCheck} from "../../../contracts/drops/metadata/MetadataRenderAdminCheck.sol";
-import {IMetadataRenderer} from "../../../contracts/drops/interface/IMetadataRenderer.sol";
+import {EditionsMetadataRenderer} from "../../../src/drops/metadata/EditionsMetadataRenderer.sol";
+import {MetadataRenderAdminCheck} from "../../../src/drops/metadata/MetadataRenderAdminCheck.sol";
+import {IMetadataRenderer} from "../../../src/drops/interface/IMetadataRenderer.sol";
 import {DropMockBase} from "./DropMockBase.sol";
-import {IHolographDropERC721} from "../../../contracts/drops/interface/IHolographDropERC721.sol";
-import {SaleDetails} from "../../../contracts/drops/struct/SaleDetails.sol";
-import {SalesConfiguration} from "../../../contracts/drops/struct/SalesConfiguration.sol";
-import {Configuration} from "../../../contracts/drops/struct/Configuration.sol";
+import {IHolographDropERC721} from "../../../src/drops/interface/IHolographDropERC721.sol";
+import {SaleDetails} from "../../../src/drops/struct/SaleDetails.sol";
+import {SalesConfiguration} from "../../../src/drops/struct/SalesConfiguration.sol";
+import {Configuration} from "../../../src/drops/struct/Configuration.sol";
 
 import {Test} from "forge-std/Test.sol";
 

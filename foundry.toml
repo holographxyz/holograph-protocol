@@ -1,12 +1,18 @@
 [profile.default]
 solc_version = '0.8.13'
 optimizer = true
-optimizer_runs = 5000
-out = 'dist/artifacts'
+optimizer_runs = 999999
+out = 'artifacts'
 test = 'test'
-src = 'contracts'
+src = 'src'
 libs = ['node_modules', 'lib']
+bytecode_hash = "none"
 gas_reports = ['*']
 
-fs_permissions = [{ access = "read", path = "./dist/artifacts"}]
 
+# [profile.default.fmt]
+# line_length = 120
+# bracket_spacing = true
+# wrap_comments = true
+# number_underscore = "thousands"
+fs_permissions = [{ access = "read", path = "./artifacts" }]

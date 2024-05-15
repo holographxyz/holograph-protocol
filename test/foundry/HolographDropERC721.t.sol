@@ -4,33 +4,33 @@ pragma solidity 0.8.13;
 import {Test, Vm} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 
-import {DeploymentConfig} from "../../contracts/struct/DeploymentConfig.sol";
-import {Verification} from "../../contracts/struct/Verification.sol";
-import {DropsInitializerV2} from "../../contracts/drops/struct/DropsInitializerV2.sol";
-import {SalesConfiguration} from "../../contracts/drops/struct/SalesConfiguration.sol";
-import {SaleDetails} from "../../contracts/drops/struct/SaleDetails.sol";
+import {DeploymentConfig} from "../../src/struct/DeploymentConfig.sol";
+import {Verification} from "../../src/struct/Verification.sol";
+import {DropsInitializerV2} from "../../src/drops/struct/DropsInitializerV2.sol";
+import {SalesConfiguration} from "../../src/drops/struct/SalesConfiguration.sol";
+import {SaleDetails} from "../../src/drops/struct/SaleDetails.sol";
 
-import {HolographFactory} from "../../contracts/HolographFactory.sol";
-import {HolographTreasury} from "../../contracts/HolographTreasury.sol";
+import {HolographFactory} from "../../src/HolographFactory.sol";
+import {HolographTreasury} from "../../src/HolographTreasury.sol";
 
 import {MockUser} from "./utils/MockUser.sol";
 import {Constants} from "./utils/Constants.sol";
 import {Utils} from "./utils/Utils.sol";
-import {HolographerInterface} from "../../contracts/interface/HolographerInterface.sol";
-import {IHolographDropERC721V2} from "../../contracts/drops/interface/IHolographDropERC721V2.sol";
+import {HolographerInterface} from "../../src/interface/HolographerInterface.sol";
+import {IHolographDropERC721V2} from "../../src/drops/interface/IHolographDropERC721V2.sol";
 
-import {HolographERC721} from "../../contracts/enforcer/HolographERC721.sol";
-import {HolographDropERC721V2} from "../../contracts/drops/token/HolographDropERC721V2.sol";
-import {HolographDropERC721Proxy} from "../../contracts/drops/proxy/HolographDropERC721Proxy.sol";
+import {HolographERC721} from "../../src/enforcer/HolographERC721.sol";
+import {HolographDropERC721V2} from "../../src/drops/token/HolographDropERC721V2.sol";
+import {HolographDropERC721Proxy} from "../../src/drops/proxy/HolographDropERC721Proxy.sol";
 
-import {IMetadataRenderer} from "../../contracts/drops/interface/IMetadataRenderer.sol";
+import {IMetadataRenderer} from "../../src/drops/interface/IMetadataRenderer.sol";
 import {MockMetadataRenderer} from "./metadata/MockMetadataRenderer.sol";
 import {DummyMetadataRenderer} from "./utils/DummyMetadataRenderer.sol";
-import {DropsMetadataRenderer} from "../../contracts/drops/metadata/DropsMetadataRenderer.sol";
-import {EditionsMetadataRenderer} from "../../contracts/drops/metadata/EditionsMetadataRenderer.sol";
+import {DropsMetadataRenderer} from "../../src/drops/metadata/DropsMetadataRenderer.sol";
+import {EditionsMetadataRenderer} from "../../src/drops/metadata/EditionsMetadataRenderer.sol";
 
-import {DropsPriceOracleProxy} from "../../contracts/drops/proxy/DropsPriceOracleProxy.sol";
-import {DummyDropsPriceOracle} from "../../contracts/drops/oracle/DummyDropsPriceOracle.sol";
+import {DropsPriceOracleProxy} from "../../src/drops/proxy/DropsPriceOracleProxy.sol";
+import {DummyDropsPriceOracle} from "../../src/drops/oracle/DummyDropsPriceOracle.sol";
 
 contract HolographDropERC721Test is Test {
   /// @notice Event emitted when the funds are withdrawn from the minting contract
@@ -139,7 +139,7 @@ contract HolographDropERC721Test is Test {
     // Setup VM
     // NOTE: These tests rely on the Holograph protocol being deployed to the local chain
     //       At the moment, the deploy pipeline is still managed by Hardhat, so we need to
-    //       first run it via `npx hardhat deploy --network localhost` or `yarn deploy:localhost` if you need two local chains before running the tests.
+    //       first run it via `npx hardhat deploy --network localhost` or `pnpm deploy:localhost` if you need two local chains before running the tests.
     uint256 forkId = vm.createFork("http://localhost:8545");
     vm.selectFork(forkId);
 
@@ -150,15 +150,18 @@ contract HolographDropERC721Test is Test {
 
     vm.prank(HOLOGRAPH_TREASURY_ADDRESS);
 
-    dummyPriceOracle = new DummyDropsPriceOracle();
-    // we deploy DropsPriceOracleProxy at specific address
-    vm.etch(address(Constants.getDropsPriceOracleProxy()), address(new DropsPriceOracleProxy()).code);
-    // we set storage slot to point to actual drop implementation
-    vm.store(
-      address(Constants.getDropsPriceOracleProxy()),
-      bytes32(uint256(keccak256("eip1967.Holograph.dropsPriceOracle")) - 1),
-      bytes32(abi.encode(address(dummyPriceOracle)))
-    );
+    dummyPriceOracle = DummyDropsPriceOracle(Constants.getDummyDropsPriceOracle());
+
+    // NOTE: This needs to be uncommented to inject the DropsPriceOracleProxy contract into the VM if it isn't done by the deploy script
+    //       At the moment we have hardhat configured to deploy and inject the code approrpriately to match the hardcoded address in the HolographDropERC721V2 contract
+    // We deploy DropsPriceOracleProxy at specific address
+    // vm.etch(address(Constants.getDropsPriceOracleProxy()), address(new DropsPriceOracleProxy()).code);
+    // We set storage slot to point to actual drop implementation
+    // vm.store(
+    //   address(Constants.getDropsPriceOracleProxy()),
+    //   bytes32(uint256(keccak256("eip1967.Holograph.dropsPriceOracle")) - 1),
+    //   bytes32(abi.encode(Constants.getDummyDropsPriceOracle()))
+    // );
 
     dropsMetadataRenderer = new DropsMetadataRenderer();
   }

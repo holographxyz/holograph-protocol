@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 
-/*SOLIDITY_COMPILER_VERSION*/
+pragma solidity 0.8.13;
 
 interface ERC20 {
   function totalSupply() external view returns (uint256);

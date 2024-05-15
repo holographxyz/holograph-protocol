@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-/*SOLIDITY_COMPILER_VERSION*/
+pragma solidity 0.8.13;
 
 interface IUniswapV3PoolImmutables {
   /// @notice The contract that deployed the pool, which must adhere to the IUniswapV3Factory interface

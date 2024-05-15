@@ -2,11 +2,11 @@
 pragma solidity 0.8.13;
 
 // import {Test} from "forge-std/Test.sol";
-// import {IHolographDropERC721} from "../../../contracts/drops/interfaces/IHolographDropERC721.sol";
-// import {HolographERC721Drop} from "../../../contracts/drops/HolographERC721Drop.sol";
-// import {HolographFeeManager} from "../../../contracts/drops/HolographFeeManager.sol";
+// import {IHolographDropERC721} from "../../../src/drops/interfaces/IHolographDropERC721.sol";
+// import {HolographERC721Drop} from "../../../src/drops/HolographERC721Drop.sol";
+// import {HolographFeeManager} from "../../../src/drops/HolographFeeManager.sol";
 // import {DummyMetadataRenderer} from "../utils/DummyMetadataRenderer.sol";
-// import {HolographERC721DropProxy} from "../../../contracts/drops/HolographERC721DropProxy.sol";
+// import {HolographERC721DropProxy} from "../../../src/drops/HolographERC721DropProxy.sol";
 
 // import {MerkleData} from "./MerkleData.sol";
 

@@ -22,7 +22,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   let lzEndpoint = networks[hre.networkName].lzEndpoint.toLowerCase();
 
   if (lzEndpoint && lzEndpoint !== zeroAddress) {
-    if (currentNetworkType == NetworkType.local && lzEndpoint == zeroAddress) {
+    if (currentNetworkType === NetworkType.local && lzEndpoint === zeroAddress) {
       lzEndpoint = (await hre.getNamedAccounts()).lzEndpoint;
       const mockLZEndpoint = await hre.deployments.deploy('MockLZEndpoint', {
         ...(await txParams({
@@ -48,7 +48,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       deployerAddress
     )) as Contract;
 
-    if ((await layerZeroModule.getLZEndpoint()).toLowerCase() != lzEndpoint) {
+    if ((await layerZeroModule.getLZEndpoint()).toLowerCase() !== lzEndpoint) {
       const lzTx = await MultisigAwareTx(
         hre,
         'LayerZeroModule',
@@ -62,14 +62,14 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
           })),
         })
       );
-      hre.deployments.log('Transaction hash:', lzTx.hash);
+      console.log('Transaction hash:', lzTx.hash);
       await lzTx.wait();
-      hre.deployments.log(`Registered lzEndpoint to: ${await layerZeroModule.getLZEndpoint()}`);
+      console.log(`Registered lzEndpoint to: ${await layerZeroModule.getLZEndpoint()}`);
     } else {
-      hre.deployments.log(`lzEndpoint is already registered to: ${await layerZeroModule.getLZEndpoint()}`);
+      console.log(`lzEndpoint is already registered to: ${await layerZeroModule.getLZEndpoint()}`);
     }
   } else {
-    hre.deployments.log(`Skipping for ${hre1.network.name} network because lzEndpoint is not set`);
+    console.log(`Skipping for ${hre1.network.name} network because lzEndpoint is not set`);
   }
   console.log(`Exiting script: ${__filename} ✅\n`);
 };

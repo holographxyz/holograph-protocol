@@ -151,7 +151,7 @@ export default async function (chain2?: boolean): Promise<PreTest> {
   const chainId: BytesLike = '0x' + network.holographId.toString(16).padStart(8, '0');
   const chainId2: BytesLike = '0x' + network2.holographId.toString(16).padStart(8, '0');
   const fixtures: string[] = [
-    'HolographGenesis',
+    ['localhost', 'localhost2'].includes(hre.networkName) ? 'HolographGenesisLocal' : 'HolographGenesis',
     'Holograph',
     'HolographBridge',
     'HolographBridgeProxy',
@@ -271,7 +271,9 @@ export default async function (chain2?: boolean): Promise<PreTest> {
   holographErc721 = (await hre.ethers.getContract('HolographERC721')) as HolographERC721;
   holographFactory = (await hre.ethers.getContract('HolographFactory')) as HolographFactory;
   holographFactoryProxy = (await hre.ethers.getContract('HolographFactoryProxy')) as HolographFactoryProxy;
-  holographGenesis = (await hre.ethers.getContract('HolographGenesis')) as HolographGenesis;
+  holographGenesis = (await hre.ethers.getContract(
+    ['localhost', 'localhost2'].includes(hre.networkName) ? 'HolographGenesisLocal' : 'HolographGenesis'
+  )) as HolographGenesis;
   holographOperator = (await hre.ethers.getContract('HolographOperator')) as HolographOperator;
   holographOperatorProxy = (await hre.ethers.getContract('HolographOperatorProxy')) as HolographOperatorProxy;
   holographRegistry = (await hre.ethers.getContract('HolographRegistry')) as HolographRegistry;

@@ -416,7 +416,7 @@ const genesisDeriveFutureAddress = async function (
   const { deploy, deterministicCustom } = deployments;
   const deployer = await getDeployer(hre);
   const deployerAddress = await deployer.deployer.getAddress();
-  const secret = generateDeployerSecretHash();
+  const secret = generateDeployerSecretHash(hre.networkName);
 
   // Use HolographGenesisLocal if on localhost or localhost2, otherwise use HolographGenesis
   const contractName = ['localhost', 'localhost2'].includes(hre.networkName)
@@ -584,8 +584,8 @@ const txParams = async function ({
         : gasLimit
       : await getGasLimit(hre, from as string, to as string, data, BigNumber.from(value), true),
     ...(await getGasPrice()),
-    // gasLimit: 1000000,
     nonce: nonce === undefined ? global.__txNonce[hre.networkName] : nonce,
+    // gasLimit: 10000000,
   };
   if (nonce === undefined) {
     global.__txNonce[hre.networkName] += 1;
@@ -606,7 +606,7 @@ const genesisDeployHelper = async function (
   const deployer = await getDeployer(hre);
   const deployerAddress = await deployer.deployer.getAddress();
 
-  const secret = generateDeployerSecretHash();
+  const secret = generateDeployerSecretHash(hre.networkName);
 
   // Use HolographGenesisLocal if on localhost or localhost2, otherwise use HolographGenesis
   const contractName = ['localhost', 'localhost2'].includes(hre.networkName)
@@ -1048,8 +1048,11 @@ function askQuestion(query: string): Promise<string> {
   });
 }
 
-function generateDeployerSecretHash(): string {
-  const secretString = process.env.DEPLOYER_SECRET;
+function generateDeployerSecretHash(networkName: string): string {
+  const secretString =
+    networkName === 'localhost' || networkName === 'localhost2'
+      ? process.env.LOCALHOST_DEPLOYER_SECRET
+      : process.env.DEPLOYER_SECRET;
 
   if (!secretString) {
     throw new Error(`Secret is required`);

@@ -1,6 +1,105 @@
-/*HOLOGRAPH_LICENSE_HEADER*/
+// SPDX-License-Identifier: UNLICENSED
+/*
 
-/*SOLIDITY_COMPILER_VERSION*/
+                         ┌───────────┐
+                         │ HOLOGRAPH │
+                         └───────────┘
+╔═════════════════════════════════════════════════════════════╗
+║                                                             ║
+║                            / ^ \                            ║
+║                            ~~*~~            ¸               ║
+║                         [ '<>:<>' ]         │░░░            ║
+║               ╔╗           _/"\_           ╔╣               ║
+║             ┌─╬╬─┐          """          ┌─╬╬─┐             ║
+║          ┌─┬┘ ╠╣ └┬─┐       \_/       ┌─┬┘ ╠╣ └┬─┐          ║
+║       ┌─┬┘ │  ╠╣  │ └┬─┐           ┌─┬┘ │  ╠╣  │ └┬─┐       ║
+║    ┌─┬┘ │  │  ╠╣  │  │ └┬─┐     ┌─┬┘ │  │  ╠╣  │  │ └┬─┐    ║
+║ ┌─┬┘ │  │  │  ╠╣  │  │  │ └┬┐ ┌┬┘ │  │  │  ╠╣  │  │  │ └┬─┐ ║
+╠┬┘ │  │  │  │  ╠╣  │  │  │  │└¤┘│  │  │  │  ╠╣  │  │  │  │ └┬╣
+║│  │  │  │  │  ╠╣  │  │  │  │   │  │  │  │  ╠╣  │  │  │  │  │║
+╠╩══╩══╩══╩══╩══╬╬══╩══╩══╩══╩═══╩══╩══╩══╩══╬╬══╩══╩══╩══╩══╩╣
+╠┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴╬╬┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴╬╬┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴╣
+║               ╠╣                           ╠╣               ║
+║               ╠╣                           ╠╣               ║
+║    ,          ╠╣     ,        ,'      *    ╠╣               ║
+║~~~~~^~~~~~~~~┌╬╬┐~~~^~~~~~~~~^^~~~~~~~~^~~┌╬╬┐~~~~~~~^~~~~~~║
+╚══════════════╩╩╩╩═════════════════════════╩╩╩╩══════════════╝
+     - one protocol, one bridge = infinite possibilities -
+
+
+ ***************************************************************
+
+ DISCLAIMER: U.S Patent Pending
+
+ LICENSE: Holograph Limited Public License (H-LPL)
+
+ https://holograph.xyz/licenses/h-lpl/1.0.0
+
+ This license governs use of the accompanying software. If you
+ use the software, you accept this license. If you do not accept
+ the license, you are not permitted to use the software.
+
+ 1. Definitions
+
+ The terms "reproduce," "reproduction," "derivative works," and
+ "distribution" have the same meaning here as under U.S.
+ copyright law. A "contribution" is the original software, or
+ any additions or changes to the software. A "contributor" is
+ any person that distributes its contribution under this
+ license. "Licensed patents" are a contributor’s patent claims
+ that read directly on its contribution.
+
+ 2. Grant of Rights
+
+ A) Copyright Grant- Subject to the terms of this license,
+ including the license conditions and limitations in sections 3
+ and 4, each contributor grants you a non-exclusive, worldwide,
+ royalty-free copyright license to reproduce its contribution,
+ prepare derivative works of its contribution, and distribute
+ its contribution or any derivative works that you create.
+ B) Patent Grant- Subject to the terms of this license,
+ including the license conditions and limitations in section 3,
+ each contributor grants you a non-exclusive, worldwide,
+ royalty-free license under its licensed patents to make, have
+ made, use, sell, offer for sale, import, and/or otherwise
+ dispose of its contribution in the software or derivative works
+ of the contribution in the software.
+
+ 3. Conditions and Limitations
+
+ A) No Trademark License- This license does not grant you rights
+ to use any contributors’ name, logo, or trademarks.
+ B) If you bring a patent claim against any contributor over
+ patents that you claim are infringed by the software, your
+ patent license from such contributor is terminated with
+ immediate effect.
+ C) If you distribute any portion of the software, you must
+ retain all copyright, patent, trademark, and attribution
+ notices that are present in the software.
+ D) If you distribute any portion of the software in source code
+ form, you may do so only under this license by including a
+ complete copy of this license with your distribution. If you
+ distribute any portion of the software in compiled or object
+ code form, you may only do so under a license that complies
+ with this license.
+ E) The software is licensed “as-is.” You bear all risks of
+ using it. The contributors give no express warranties,
+ guarantees, or conditions. You may have additional consumer
+ rights under your local laws which this license cannot change.
+ To the extent permitted under your local laws, the contributors
+ exclude all implied warranties, including those of
+ merchantability, fitness for a particular purpose and
+ non-infringement.
+
+ 4. (F) Platform Limitation- The licenses granted in sections
+ 2.A & 2.B extend only to the software or derivative works that
+ you create that run on a Holograph system product.
+
+ ***************************************************************
+
+*/
+
+pragma solidity 0.8.13;
 
 import "../abstract/Admin.sol";
 import "../abstract/Initializable.sol";
@@ -23,28 +122,28 @@ contract HolographRoyalties is Admin, Owner, Initializable {
   /**
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.ROYALTIES.defaultBp')) - 1)
    */
-  bytes32 constant _defaultBpSlot = precomputeslot("eip1967.Holograph.ROYALTIES.defaultBp");
+  bytes32 constant _defaultBpSlot = 0xff29fcf645501423fd56e0287670f6813a1e5db5cf706428bc8516381e7ffe81;
   /**
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.ROYALTIES.defaultReceiver')) - 1)
    */
-  bytes32 constant _defaultReceiverSlot = precomputeslot("eip1967.Holograph.ROYALTIES.defaultReceiver");
+  bytes32 constant _defaultReceiverSlot = 0x00b381815b89a20a37ee91e8a0119be5e16f6d1668377e7ae457213a74a415bb;
   /**
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.ROYALTIES.initialized')) - 1)
    */
-  bytes32 constant _initializedPaidSlot = precomputeslot("eip1967.Holograph.ROYALTIES.initialized");
+  bytes32 constant _initializedPaidSlot = 0x91428d26cb4818e4e627ebb64c06b5a67b82f313516b5c903cf07a00681c95f6;
   /**
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.ROYALTIES.payout.addresses')) - 1)
    */
-  bytes32 constant _payoutAddressesSlot = precomputeslot("eip1967.Holograph.ROYALTIES.payout.addresses");
+  bytes32 constant _payoutAddressesSlot = 0xf31f2a3a453a7aa2f3054423a8c5474ac9817ea457b458152967bbcb12ed6a43;
   /**
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.ROYALTIES.payout.bps')) - 1)
    */
-  bytes32 constant _payoutBpsSlot = precomputeslot("eip1967.Holograph.ROYALTIES.payout.bps");
+  bytes32 constant _payoutBpsSlot = 0xa4023567d5b5f01c63e00d90785d7cd4ff057a237ad185c5ecade8f4059fb61a;
   /**
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.ROYALTIES.extendedCall')) - 1)
    * @dev extendedCall is an init config used to determine if payouts should be sent via a call or a transfer.
    */
-  bytes32 constant _extendedCallSlot = precomputeslot("eip1967.Holograph.ROYALTIES.extendedCall");
+  bytes32 constant _extendedCallSlot = 0x254926eafdecb56f669f96a3a752fbca17becd902481431df613768b1f903fa3;
 
   string constant _bpString = "eip1967.Holograph.ROYALTIES.bp";
   string constant _receiverString = "eip1967.Holograph.ROYALTIES.receiver";

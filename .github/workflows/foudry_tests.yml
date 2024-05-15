@@ -1,0 +1,51 @@
+name: Foundry tests
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+
+env:
+  FOUNDRY_PROFILE: ci
+  SKIP_DEPLOY_CONFIRMATION: true
+  HOLOGRAPH_ENVIRONMENT: develop
+  LOCALHOST_DEPLOYER_SECRET: something
+  DEPLOYER: ff22437ccbedfffafa93a9f1da2e8c19c1711052799acf3b58ae5bebb5c6bd7b
+  HARDWARE_WALLET_DEPLOYER: 0x0
+  LOCALHOST_RPC_URL: http://localhost:8545
+  LOCALHOST2_RPC_URL: http://localhost:9545
+  MAINNET_DEPLOYMENT_SALT: 0
+  TESTNET_DEPLOYMENT_SALT: 0
+  DEVELOP_DEPLOYMENT_SALT: 1000
+  EXPERIMENTAL_DEPLOYMENT_SALT: 1000000
+  TENDERLY_ENABLED: false
+  DRY_RUN: false
+  MNEMONIC: "deputy annual debris outer baby prefer mammal scene insect obtain parrot length zero detail average nation address depart stem tuition fork rocket topple kidney"
+
+jobs:
+  run-foundry-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Install tools from asdf config
+        uses: ai/asdf-cache-action@v1
+
+      - name: Install deps
+        run: pnpm install && forge install
+
+      - name: Run the protocol
+        run: bash scripts/start-protocol.sh
+
+      - name: Run tests
+        run: forge test -vv --no-match-test "(FFI|Fork)" --no-match-contract Fork
+
+      - name: Kill the anvil nodes
+        run: bash scripts/stop-protocol.sh

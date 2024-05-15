@@ -1,7 +1,7 @@
 declare var global: any;
 import path from 'path';
 
-import { BigNumber } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { DeployFunction, DeployOptions } from '@holographxyz/hardhat-deploy-holographed/types';
@@ -31,7 +31,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   // Salt is used for deterministic address generation
   const salt = hre.deploymentSalt;
 
-  // TODO: Goerli testnet should be deprecated and removed once Sepolia is ready
+  // Define a mapping of blockchain network identifiers to their human-readable names
   const definedOracleNames = {
     avalanche: 'Avalanche',
     avalancheTestnet: 'AvalancheTestnet',
@@ -52,34 +52,46 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     baseTestnetSepolia: 'BaseTestnetSepolia',
     zora: 'Zora',
     zoraTestnetSepolia: 'ZoraTestnetSepolia',
+    linea: 'Linea',
+    lineaTestnetSepolia: 'LineaTestnetSepolia',
+    lineaTestnetGoerli: 'LineaTestnetGoerli',
   };
 
-  let targetDropsPriceOracle = 'DummyDropsPriceOracle';
+  // Define known development network keys for easier checking
+  const knownDevNetworks = new Set(['localhost', 'localhost2', 'hardhat']);
+
+  // Determine if the current environment requires a specific Drops Price Oracle
+  let targetDropsPriceOracle;
   if (network.key in definedOracleNames) {
+    // Use the specific oracle name based on the network key
     targetDropsPriceOracle = 'DropsPriceOracle' + definedOracleNames[network.key];
+  } else if (!knownDevNetworks.has(network.key) && environment !== Environment.mainnet) {
+    // If it's an unrecognized network (not in known dev networks and not mainnet), throw an error
+    throw new Error('Drops price oracle not created for network yet!');
   } else {
-    if (
-      environment == Environment.mainnet ||
-      (network.key != 'localhost' && network.key != 'localhost2' && network.key != 'hardhat')
-    ) {
-      throw new Error('Drops price oracle not created for network yet!');
-    }
+    // For known development networks or mainnet without a specific oracle, use the dummy default
+    targetDropsPriceOracle = 'DummyDropsPriceOracle';
   }
-  // Deploy network specific DropsPriceOracle source contract
+
+  // Asynchronously derive a future address for deploying the network-specific DropsPriceOracle
   const futureDropsPriceOracleAddress = await genesisDeriveFutureAddress(
     hre,
     salt,
     targetDropsPriceOracle,
     generateInitCode([], [])
   );
-  hre.deployments.log('the future "' + targetDropsPriceOracle + '" address is', futureDropsPriceOracleAddress);
+  // Log the future address of the oracle
+  console.log('the future "' + targetDropsPriceOracle + '" address is', futureDropsPriceOracleAddress);
+
+  // Check if the oracle contract is already deployed by getting the code at the future address
   let dropsPriceOracleDeployedCode: string = await hre.provider.send('eth_getCode', [
     futureDropsPriceOracleAddress,
     'latest',
   ]);
-  if (dropsPriceOracleDeployedCode == '0x' || dropsPriceOracleDeployedCode == '') {
-    definedOracleNames;
-    hre.deployments.log('"' + targetDropsPriceOracle + '" bytecode not found, need to deploy"');
+  // If no code is found at the address, it means the contract has not been deployed
+  if (dropsPriceOracleDeployedCode === '0x' || dropsPriceOracleDeployedCode === '') {
+    console.log('"' + targetDropsPriceOracle + '" bytecode not found, need to deploy"');
+    // Deploy the oracle using a helper function with the provided details
     let dropsPriceOracle = await genesisDeployHelper(
       hre,
       salt,
@@ -88,7 +100,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       futureDropsPriceOracleAddress
     );
   } else {
-    hre.deployments.log('"' + targetDropsPriceOracle + '" is already deployed.');
+    console.log('"' + targetDropsPriceOracle + '" is already deployed.');
   }
 
   // Deploy DropsPriceOracleProxy source contract
@@ -98,13 +110,13 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     'DropsPriceOracleProxy',
     generateInitCode([], [])
   );
-  hre.deployments.log('the future "DropsPriceOracleProxy" address is', futureDropsPriceOracleProxyAddress);
+  console.log('the future "DropsPriceOracleProxy" address is', futureDropsPriceOracleProxyAddress);
   let dropsPriceOracleProxyDeployedCode: string = await hre.provider.send('eth_getCode', [
     futureDropsPriceOracleProxyAddress,
     'latest',
   ]);
-  if (dropsPriceOracleProxyDeployedCode == '0x' || dropsPriceOracleProxyDeployedCode == '') {
-    hre.deployments.log('"DropsPriceOracleProxy" bytecode not found, need to deploy"');
+  if (dropsPriceOracleProxyDeployedCode === '0x' || dropsPriceOracleProxyDeployedCode === '') {
+    console.log('"DropsPriceOracleProxy" bytecode not found, need to deploy"');
     let dropsPriceOracleProxy = await genesisDeployHelper(
       hre,
       salt,
@@ -113,14 +125,14 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       futureDropsPriceOracleProxyAddress
     );
   } else {
-    hre.deployments.log('"DropsPriceOracleProxy" is already deployed.');
-    hre.deployments.log('Checking for reference to correct "' + targetDropsPriceOracle + '" deployment.');
+    console.log('"DropsPriceOracleProxy" is already deployed.');
+    console.log('Checking for reference to correct "' + targetDropsPriceOracle + '" deployment.');
     // need to check here if source reference is correct
     futureDropsPriceOracleProxyAddress;
     const dropsPriceOracleProxy = await hre.ethers.getContract('DropsPriceOracleProxy', deployerAddress);
     let priceOracleSource = await dropsPriceOracleProxy.getDropsPriceOracle();
-    if (priceOracleSource != futureDropsPriceOracleAddress) {
-      hre.deployments.log('"DropsPriceOracleProxy" references incorrect version of "' + targetDropsPriceOracle + '".');
+    if (priceOracleSource !== futureDropsPriceOracleAddress) {
+      console.log('"DropsPriceOracleProxy" references incorrect version of "' + targetDropsPriceOracle + '".');
       const setDropsPriceOracleTx = await MultisigAwareTx(
         hre,
         'DropsPriceOracleProxy',
@@ -134,21 +146,21 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
           })),
         })
       );
-      hre.deployments.log('Transaction hash:', setDropsPriceOracleTx.hash);
+      console.log('Transaction hash:', setDropsPriceOracleTx.hash);
       await setDropsPriceOracleTx.wait();
-      hre.deployments.log('"DropsPriceOracleProxy" reference updated.');
+      console.log('"DropsPriceOracleProxy" reference updated.');
     } else {
-      hre.deployments.log('"DropsPriceOracleProxy" references correct version of "' + targetDropsPriceOracle + '".');
+      console.log('"DropsPriceOracleProxy" references correct version of "' + targetDropsPriceOracle + '".');
     }
   }
 
-  if (network.key == 'mantleTestnet') {
-    hre.deployments.log('Checking token price ratio on mantle testnet');
+  if (network.key === 'mantleTestnet') {
+    console.log('Checking token price ratio on mantle testnet');
     const priceOracleContract = (
       (await hre.ethers.getContract('DropsPriceOracleMantleTestnet', deployerAddress)) as Contract
     ).attach(futureDropsPriceOracleProxyAddress);
     if ((await priceOracleContract.getTokenPriceRatio()).eq(BigNumber.from('0'))) {
-      hre.deployments.log('price ratio not set');
+      console.log('price ratio not set');
       const priceOracleContractTx = await MultisigAwareTx(
         hre,
         'DropsPriceOracleMantleTestnet',
@@ -162,19 +174,19 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
           })),
         })
       );
-      hre.deployments.log('Transaction hash:', priceOracleContractTx.hash);
+      console.log('Transaction hash:', priceOracleContractTx.hash);
       await priceOracleContractTx.wait();
     } else {
-      hre.deployments.log('price ratio is set');
+      console.log('price ratio is set');
     }
   }
 
-  // we manually inject drops price oracle proxy on local deployments
+  // We manually inject drops price oracle proxy on local deployments
   // this is to accomodate the fact that drops price oracle proxy is hardcoded in the contract
-  if (network.key in ['localhost', 'localhost2', 'hardhat']) {
-    hre.deployments.log('Injecting DropsPriceOracleProxy on local deployments');
-    // set it at address in VM
-    let acountByteCodeSet: boolean = await hre.provider.send('evm_setAccountCode', [
+  if (['localhost', 'localhost2', 'hardhat'].includes(network.key)) {
+    console.log('Injecting DropsPriceOracleProxy on local deployments');
+    // Set it at address in VM
+    let acountByteCodeSet: boolean = await hre.provider.send('anvil_setCode', [
       '0xeA7f4C52cbD4CF1036CdCa8B16AcA11f5b09cF6E',
       [
         '0x',
@@ -271,11 +283,15 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
         '8116811461095457600080fdfea164736f6c634300080d000a',
       ].join(''),
     ]);
-    let acountStorageSet: boolean = await hre.provider.send('evm_setAccountStorageAt', [
+    console.log('DropsPriceOracleProxy code injected successfully');
+
+    console.log(`Setting DropsPriceOracleProxy address in anvil storage at 0xeA7f4C52cbD4CF1036CdCa8B16AcA11f5b09cF6E`);
+    let acountStorageSet: boolean = await hre.provider.send('anvil_setStorageAt', [
       '0xeA7f4C52cbD4CF1036CdCa8B16AcA11f5b09cF6E',
       '0x26600f0171e5a2b86874be26285c66444b2a6fa5f62114757214d5e732aded36',
-      futureDropsPriceOracleAddress,
+      ethers.utils.hexZeroPad(futureDropsPriceOracleAddress, 32), // must be padded to 32 bytes
     ]);
+    console.log('DropsPriceOracleProxy address set in anvil storage successfully');
   }
 
   console.log(`Exiting script: ${__filename} ✅\n`);
