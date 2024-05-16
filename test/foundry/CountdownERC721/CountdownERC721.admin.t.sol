@@ -31,7 +31,7 @@ contract CountdownERC721AdminTest is CountdownERC721Fixture, ICustomERC721Errors
 
   function test_SetOwner() public setupTestCountdownErc721(DEFAULT_MAX_SUPPLY) {
     assertEq(countdownErc721.owner(), DEFAULT_OWNER_ADDRESS);
-    
+
     address newOwner = address(0x1234567890123456789012345678901234567890);
     HolographERC721 enforcer = HolographERC721(payable(address(countdownErc721)));
     vm.prank(DEFAULT_OWNER_ADDRESS);
@@ -48,7 +48,7 @@ contract CountdownERC721AdminTest is CountdownERC721Fixture, ICustomERC721Errors
 
     address notOwnerAddress = address(uint160(DEFAULT_OWNER_ADDRESS) + 1);
     vm.prank(notOwnerAddress);
-    vm.expectRevert("HOLOGRAPH: owner only function");
+    vm.expectRevert(abi.encodeWithSelector(HOLOGRAPH_OnlyOwnerFunction.selector));
     enforcer.setOwner(address(0xfffff));
 
     assertEq(countdownErc721.owner(), DEFAULT_OWNER_ADDRESS);

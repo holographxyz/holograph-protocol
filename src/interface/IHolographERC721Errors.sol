@@ -129,5 +129,6 @@ interface IHolographERC721Errors {
   error ERC721_OwnerAlreadyInitialized();
 
   error HOLOGRAPH_BridgeInFailed();
+  error HOLOGRAPH_OnlyOwnerFunction();
 
 }

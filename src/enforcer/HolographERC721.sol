@@ -208,6 +208,21 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, IHolographER
    */
   mapping(uint256 => bool) private _burnedTokens;
 
+  modifier onlyOwner() override {
+    Owner sourceContract;
+    assembly {
+      sourceContract := sload(_sourceContractSlot)
+    }
+
+    address _owner = getOwner();
+    address _sourceContractOwner = sourceContract.owner();
+    if(msg.sender != _owner && msg.sender != _sourceContractOwner) {
+      revert HOLOGRAPH_OnlyOwnerFunction();
+    } 
+
+    _;
+  }
+
   /**
    * @notice Only allow calls from bridge smart contract.
    */

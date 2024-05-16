@@ -805,7 +805,7 @@ contract Erc721Enforcer is Test, IHolographERC721Errors {
 
   /// @notice deployer should fail transferring ownership
   function testTransferOwnership() public {
-    vm.expectRevert("HOLOGRAPH: owner only function");
+    vm.expectRevert(abi.encodeWithSelector(HOLOGRAPH_OnlyOwnerFunction.selector));
     holographERC721.setOwner(alice);
   }
 
