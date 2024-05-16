@@ -781,9 +781,9 @@ contract Erc721Enforcer is Test, IHolographERC721Errors {
    * Ownership
    */
 
-  /// @notice holographERC721 owner should return deployer address
+  /// @notice holographERC721 owner should return "holographFactoryProxyAddress" address
   function testOwner() public {
-    assertEq(holographERC721.owner(), deployer);
+    assertEq(holographERC721.owner(), holographFactoryProxyAddress);
   }
 
   /// @notice deployer should return true for isOwner
