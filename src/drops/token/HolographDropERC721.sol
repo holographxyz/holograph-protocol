@@ -103,6 +103,7 @@ pragma solidity 0.8.13;
 
 import {ERC721H} from "../../abstract/ERC721H.sol";
 import {NonReentrant} from "../../abstract/NonReentrant.sol";
+import {InitializableInterface} from "../../abstract/Initializable.sol";
 
 import {HolographERC721Interface} from "../../interface/HolographERC721Interface.sol";
 import {HolographerInterface} from "../../interface/HolographerInterface.sol";
@@ -318,6 +319,17 @@ contract HolographDropERC721 is NonReentrant, ERC721H, IHolographDropERC721 {
     setStatus(1);
 
     return _init(initPayload);
+
+    // TODO: Do we want to manage ownership like customERC721 and countdownERC721 ?
+    // try HolographERC721Interface(msg.sender).supportsInterface(HolographERC721Interface.initOwner.selector) returns (
+    //   bool result
+    // ) {
+    //   if (result) {
+    //     HolographERC721Interface(msg.sender).initOwner(initializer.initialOwner);
+    //   }
+    // } catch {}
+
+    // return InitializableInterface.init.selector;
   }
 
   /**

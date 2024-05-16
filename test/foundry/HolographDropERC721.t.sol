@@ -229,7 +229,7 @@ contract HolographDropERC721Test is Test, IHolographERC721Errors {
   }
 
   function test_Init() public setupTestDrop(10) {
-    require(holographDropERC721.owner() == DEFAULT_OWNER_ADDRESS, "Default owner set wrong");
+    require(holographDropERC721.owner() == Constants.getHolographFactoryProxy(), "Default owner set wrong");
     (
       IMetadataRenderer renderer,
       uint64 editionSize,
