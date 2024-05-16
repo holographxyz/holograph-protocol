@@ -4,6 +4,7 @@ pragma solidity 0.8.13;
 
 import {ERC721H} from "../abstract/ERC721H.sol";
 import {NonReentrant} from "../abstract/NonReentrant.sol";
+import {InitializableInterface} from "../abstract/Initializable.sol";
 
 import {HolographERC721Interface} from "../interface/HolographERC721Interface.sol";
 import {ICountdownERC721} from "../interface/ICountdownERC721.sol";
@@ -18,7 +19,6 @@ import {MetadataParams} from "src/struct/MetadataParams.sol";
 import {Address} from "../drops/library/Address.sol";
 import {Strings} from "./../drops/library/Strings.sol";
 import {NFTMetadataRenderer} from "../library/NFTMetadataRenderer.sol";
-import {InitializableInterface} from "../abstract/Initializable.sol";
 
 /**
  * @dev This contract subscribes to the following HolographERC721 events:
