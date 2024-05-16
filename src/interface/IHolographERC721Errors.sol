@@ -125,7 +125,7 @@ interface IHolographERC721Errors {
   error ERC721_TokenHasBeenBurned(uint256 tokenId);
   error ERC721_TokenDoesNotExist(uint256 tokenId);
   error ERC721_CantMintBurnedToken(uint256 tokenId);
-  error ERC721_TokenAlreadyExist(uint256 tokenId);
+  error ERC721_TokenAlreadyExists(uint256 tokenId);
   error ERC721_OwnerAlreadyInitialized();
 
   error HOLOGRAPH_BridgeInFailed();

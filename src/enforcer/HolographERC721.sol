@@ -243,6 +243,7 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, IHolographER
     if (_isInitialized()) revert ERC721_AlreadyInitialized();
     InitializableInterface sourceContract;
     assembly {
+      sstore(_ownerSlot, caller())
       sourceContract := sload(_sourceContractSlot)
     }
     (
@@ -464,7 +465,7 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, IHolographER
       (address, address, uint256, bytes)
     );
     if (_exists(tokenId)) {
-      revert ERC721_TokenAlreadyExist(tokenId);
+      revert ERC721_TokenAlreadyExists(tokenId);
     }
     delete _burnedTokens[tokenId];
     _mint(to, tokenId);
@@ -957,7 +958,7 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, IHolographER
       revert ERC721_MintingToZeroAddress();
     }
     if(_exists(tokenId)) {
-      revert ERC721_TokenAlreadyExist(tokenId);
+      revert ERC721_TokenAlreadyExists(tokenId);
     }
     if(_burnedTokens[tokenId]) {
       revert ERC721_TokenHasBeenBurned(tokenId);
