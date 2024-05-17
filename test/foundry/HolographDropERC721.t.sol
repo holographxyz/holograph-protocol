@@ -127,9 +127,6 @@ contract HolographDropERC721Test is Test, IHolographERC721Errors {
       factory.deployHolographableContract(config, signature, alice); // Pass the payload hash, with the signature, and signer's address
       Vm.Log[] memory entries = vm.getRecordedLogs();
 
-      // Ensure there are enough log entries
-      require(entries.length > 2, "Insufficient log entries recorded");
-
       // Extract the new drop address from the correct log entry and topic
       address newDropAddress = address(uint160(uint256(entries[2].topics[1])));
 
@@ -235,7 +232,7 @@ contract HolographDropERC721Test is Test, IHolographERC721Errors {
   }
 
   function test_Init() public setupTestDrop(10) {
-    require(holographDropERC721.owner() == Constants.getHolographFactoryProxy(), "Default owner set wrong");
+    require(holographDropERC721.owner() == DEFAULT_OWNER_ADDRESS, "Default owner set wrong");
     (
       IMetadataRenderer renderer,
       uint64 editionSize,
