@@ -688,23 +688,23 @@ contract HolographDropERC721Test is Test, IHolographERC721Errors {
       presaleMerkleRoot: bytes32(0)
     });
 
-    // (, , , , , uint64 presaleEndLookup, ) = holographDropERC721.salesConfig();
-    // assertEq(presaleEndLookup, 100);
+    (, , , , , uint64 presaleEndLookup, ) = holographDropERC721.salesConfig();
+    assertEq(presaleEndLookup, 100);
 
-    // vm.startPrank(DEFAULT_OWNER_ADDRESS);
-    // holographDropERC721.setSaleConfiguration({
-    //   publicSaleStart: 0,
-    //   publicSaleEnd: type(uint64).max,
-    //   presaleStart: 100,
-    //   presaleEnd: 0,
-    //   publicSalePrice: price,
-    //   maxSalePurchasePerAddress: 1003,
-    //   presaleMerkleRoot: bytes32(0)
-    // });
+    vm.startPrank(DEFAULT_OWNER_ADDRESS);
+    holographDropERC721.setSaleConfiguration({
+      publicSaleStart: 0,
+      publicSaleEnd: type(uint64).max,
+      presaleStart: 100,
+      presaleEnd: 0,
+      publicSalePrice: price,
+      maxSalePurchasePerAddress: 1003,
+      presaleMerkleRoot: bytes32(0)
+    });
 
-    // (, , , , uint64 presaleStartLookup2, uint64 presaleEndLookup2, ) = holographDropERC721.salesConfig();
-    // assertEq(presaleEndLookup2, 0);
-    // assertEq(presaleStartLookup2, 100);
+    (, , , , uint64 presaleStartLookup2, uint64 presaleEndLookup2, ) = holographDropERC721.salesConfig();
+    assertEq(presaleEndLookup2, 0);
+    assertEq(presaleStartLookup2, 100);
   }
 
   function test_GlobalLimit(uint16 limit) public setupTestDrop(uint64(limit)) {
