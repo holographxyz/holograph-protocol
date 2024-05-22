@@ -13,7 +13,6 @@ import {HolographDropERC721Proxy} from "src/drops/proxy/HolographDropERC721Proxy
 import {DeploymentConfig} from "src/struct/DeploymentConfig.sol";
 import {Verification} from "src/struct/Verification.sol";
 import {DropsInitializer} from "src/drops/struct/DropsInitializer.sol";
-import {DropsInitializerV2} from "src/drops/struct/DropsInitializerV2.sol";
 import {SalesConfiguration} from "src/drops/struct/SalesConfiguration.sol";
 import {IHolographERC721Errors} from "src/interface/IHolographERC721Errors.sol";
 import {DropsMetadataRenderer} from "src/drops/metadata/DropsMetadataRenderer.sol";
@@ -33,31 +32,29 @@ contract HolographDropERC721V2CompatibilityTest is Test, IHolographERC721Errors 
   address v1Address;
   address v2Address;
 
-  HolographDropERC721 public holographDropERC721;
-  HolographDropERC721V2 public holographDropErc721V2;
+  address payable public holographDropERC721;
+  HolographDropERC721V2 public holographDropErc721V2Implementation;
   DropsMetadataRenderer public dropsMetadataRenderer;
   DummyMetadataRenderer public dummyMetadataRenderer;
 
   /* ----------------------------- Tests constants ---------------------------- */
   address public constant DEFAULT_OWNER_ADDRESS = address(0x1);
   address payable public constant DEFAULT_FUNDS_RECIPIENT_ADDRESS = payable(address(0x2));
-  address payable public constant HOLOGRAPH_TREASURY_ADDRESS = payable(address(0x3));
-  address payable constant TEST_ACCOUNT = payable(address(0x888));
-  address public constant MEDIA_CONTRACT = address(0x666);
   address public ALICE; // Not constant because it need to be set in the setUp
 
-  uint256 public constant FIRST_TOKEN_ID =
-    115792089183396302089269705419353877679230723318366275194376439045705909141505; // large 256 bit number due to chain id prefix
+  /* -------------------------------------------------------------------------- */
+  /*                                  Modifiers                                 */
+  /* -------------------------------------------------------------------------- */
 
   modifier updateHolographDropERC721ImplementationToV2() {
-    address registryAdmin = registry.getAdmin();
-
-    vm.startPrank(registryAdmin);
-    registry.setReservedContractTypeAddress(Utils.stringToBytes32("HolographERC721"), true);
-    registry.setContractTypeAddress(Utils.stringToBytes32("HolographERC721"), address(holographDropErc721V2));
+    _updateHolographDropERC721ImplementationToV2();
 
     _;
   }
+
+  /* -------------------------------------------------------------------------- */
+  /*                                    Setup                                   */
+  /* -------------------------------------------------------------------------- */
 
   function setUp() public {
     uint256 forkId = vm.createFork("https://eth.llamarpc.com/");
@@ -68,11 +65,9 @@ contract HolographDropERC721V2CompatibilityTest is Test, IHolographERC721Errors 
     holograph = Holograph(payable(Constants.getHolograph()));
     factory = HolographFactory(payable(Constants.getHolographFactoryProxy()));
     registry = HolographRegistry(payable(holograph.getRegistry()));
-    holographDropERC721 = HolographDropERC721(
-      payable(registry.getContractTypeAddress(Utils.stringToBytes32("HolographERC721")))
-    );
-    holographDropErc721V2 = new HolographDropERC721V2();
-    v2Address = address(holographDropErc721V2);
+    holographDropERC721 = payable(registry.getContractTypeAddress(Utils.stringToBytes32("HolographERC721")));
+    holographDropErc721V2Implementation = new HolographDropERC721V2();
+    v2Address = address(holographDropErc721V2Implementation);
 
     // Metadata renderers
     dropsMetadataRenderer = new DropsMetadataRenderer();
@@ -139,21 +134,38 @@ contract HolographDropERC721V2CompatibilityTest is Test, IHolographERC721Errors 
       v1Address = proxy.getHolographDropERC721Source();
 
       // Connect the drop implementation to the drop proxy address
-      holographDropERC721 = HolographDropERC721(payable(newDropAddress));
+      holographDropERC721 = payable(newDropAddress);
     }
   }
 
-  function test_FFI_V1() public view {
+  /* -------------------------------------------------------------------------- */
+  /*                                    Tests                                   */
+  /* -------------------------------------------------------------------------- */
+
+  /* ------------------------------- Setup tests ------------------------------ */
+
+  function test_FFI_setupV1() public view {
     HolographDropERC721Proxy proxy = HolographDropERC721Proxy(payable(address(holographDropERC721)));
     assertEq(address(proxy.getHolographDropERC721Source()), v1Address);
+
+    string memory version = HolographDropERC721(holographDropERC721).version();
+    assertEq(version, "1.0.0");
   }
 
-  function test_FFI_V2() public updateHolographDropERC721ImplementationToV2 {
+  function test_FFI_setupV2() public updateHolographDropERC721ImplementationToV2 {
     HolographDropERC721Proxy proxy = HolographDropERC721Proxy(payable(address(holographDropERC721)));
     assertEq(address(proxy.getHolographDropERC721Source()), v2Address);
+
+    uint32 version = HolographDropERC721V2(holographDropERC721).version();
+    assertEq(version, 2);
   }
 
-  /* ---------------------------- Private functions --------------------------- */
+  /* ------------------------ Compatibility check tests ----------------------- */
+
+
+  /* -------------------------------------------------------------------------- */
+  /*                              Private functions                             */
+  /* -------------------------------------------------------------------------- */
 
   function getV1DeploymentConfig(
     string memory contractName,
@@ -178,5 +190,17 @@ contract HolographDropERC721V2CompatibilityTest is Test, IHolographERC721Errors 
         byteCode: bytecode, // custom contract bytecode
         initCode: abi.encode(contractName, contractSymbol, contractBps, eventConfig, skipInit, initCode) // init code is used to initialize the HolographERC721 enforcer
       });
+  }
+
+  function _updateHolographDropERC721ImplementationToV2() private {
+    bytes32 holographDropERC721SourceType = Utils.stringToBytes32("HolographDropERC721");
+    address registryAdmin = registry.getAdmin();
+
+    vm.startPrank(registryAdmin);
+
+    registry.setReservedContractTypeAddress(holographDropERC721SourceType, true);
+    registry.setContractTypeAddress(holographDropERC721SourceType, address(holographDropErc721V2Implementation));
+
+    vm.stopPrank();
   }
 }
