@@ -147,21 +147,28 @@ contract HolographDropERC721V2CompatibilityTest is Test, IHolographERC721Errors 
   function test_FFI_setupV1() public view {
     HolographDropERC721Proxy proxy = HolographDropERC721Proxy(payable(address(holographDropERC721)));
     assertEq(address(proxy.getHolographDropERC721Source()), v1Address);
-
-    string memory version = HolographDropERC721(holographDropERC721).version();
-    assertEq(version, "1.0.0");
   }
 
   function test_FFI_setupV2() public updateHolographDropERC721ImplementationToV2 {
     HolographDropERC721Proxy proxy = HolographDropERC721Proxy(payable(address(holographDropERC721)));
     assertEq(address(proxy.getHolographDropERC721Source()), v2Address);
-
-    uint32 version = HolographDropERC721V2(holographDropERC721).version();
-    assertEq(version, 2);
   }
 
   /* ------------------------ Compatibility check tests ----------------------- */
 
+  function test_FFI_versionCompatibility() public {
+    // Fetch v1 contract version
+    string memory version = HolographDropERC721(holographDropERC721).version();
+
+    // update implementation to v2
+    _updateHolographDropERC721ImplementationToV2();
+
+    // Fetch v2 contract version
+    uint32 newVersion = HolographDropERC721V2(holographDropERC721).version();
+
+    assertEq(version, "1.0.0");
+    assertEq(newVersion, 2);
+  }
 
   /* -------------------------------------------------------------------------- */
   /*                              Private functions                             */
