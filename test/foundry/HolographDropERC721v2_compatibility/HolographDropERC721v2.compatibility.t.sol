@@ -6,6 +6,7 @@ import {console} from "forge-std/console.sol";
 
 import {Holograph} from "src/Holograph.sol";
 import {HolographFactory} from "src/HolographFactory.sol";
+import {HolographERC721} from "src/enforcer/HolographERC721.sol";
 import {HolographRegistry} from "src/HolographRegistry.sol";
 import {HolographDropERC721} from "src/drops/token/HolographDropERC721.sol";
 import {HolographDropERC721V2} from "src/drops/token/HolographDropERC721V2.sol";
@@ -33,6 +34,7 @@ contract HolographDropERC721V2CompatibilityTest is Test, IHolographERC721Errors 
   address v2Address;
 
   address payable public holographDropERC721;
+  HolographERC721 public newHolographErc721Implementation;
   HolographDropERC721V2 public holographDropErc721V2Implementation;
   DropsMetadataRenderer public dropsMetadataRenderer;
   DummyMetadataRenderer public dummyMetadataRenderer;
@@ -67,6 +69,7 @@ contract HolographDropERC721V2CompatibilityTest is Test, IHolographERC721Errors 
     registry = HolographRegistry(payable(holograph.getRegistry()));
     holographDropERC721 = payable(registry.getContractTypeAddress(Utils.stringToBytes32("HolographERC721")));
     holographDropErc721V2Implementation = new HolographDropERC721V2();
+    newHolographErc721Implementation = new HolographERC721();
     v2Address = address(holographDropErc721V2Implementation);
 
     // Metadata renderers
@@ -147,11 +150,21 @@ contract HolographDropERC721V2CompatibilityTest is Test, IHolographERC721Errors 
   function test_FFI_setupV1() public view {
     HolographDropERC721Proxy proxy = HolographDropERC721Proxy(payable(address(holographDropERC721)));
     assertEq(address(proxy.getHolographDropERC721Source()), v1Address);
+
+    bool isV2 = HolographDropERC721(holographDropERC721).supportsInterface(
+      bytes4(abi.encodeWithSignature("initOwner(address)"))
+    );
+    assertFalse(isV2);
   }
 
   function test_FFI_setupV2() public updateHolographDropERC721ImplementationToV2 {
     HolographDropERC721Proxy proxy = HolographDropERC721Proxy(payable(address(holographDropERC721)));
     assertEq(address(proxy.getHolographDropERC721Source()), v2Address);
+
+    bool isV2 = HolographDropERC721(holographDropERC721).supportsInterface(
+      bytes4(abi.encodeWithSignature("initOwner(address)"))
+    );
+    assertTrue(isV2);
   }
 
   /* ------------------------ Compatibility check tests ----------------------- */
@@ -168,6 +181,10 @@ contract HolographDropERC721V2CompatibilityTest is Test, IHolographERC721Errors 
 
     assertEq(version, "1.0.0");
     assertEq(newVersion, 2);
+  }
+
+  function test_FFI_setOwnerCompatibility() public updateHolographDropERC721ImplementationToV2 {
+    // Set owner in v1
   }
 
   /* -------------------------------------------------------------------------- */
@@ -201,12 +218,16 @@ contract HolographDropERC721V2CompatibilityTest is Test, IHolographERC721Errors 
 
   function _updateHolographDropERC721ImplementationToV2() private {
     bytes32 holographDropERC721SourceType = Utils.stringToBytes32("HolographDropERC721");
+    bytes32 holographERC721EnforcerType = Utils.stringToBytes32("HolographERC721");
     address registryAdmin = registry.getAdmin();
 
     vm.startPrank(registryAdmin);
 
     registry.setReservedContractTypeAddress(holographDropERC721SourceType, true);
     registry.setContractTypeAddress(holographDropERC721SourceType, address(holographDropErc721V2Implementation));
+
+    registry.setReservedContractTypeAddress(holographERC721EnforcerType, true);
+    registry.setContractTypeAddress(holographERC721EnforcerType, address(newHolographErc721Implementation));
 
     vm.stopPrank();
   }
