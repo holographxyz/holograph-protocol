@@ -183,8 +183,55 @@ contract HolographDropERC721V2CompatibilityTest is Test, IHolographERC721Errors 
     assertEq(newVersion, 2);
   }
 
-  function test_FFI_setOwnerCompatibility() public updateHolographDropERC721ImplementationToV2 {
-    // Set owner in v1
+  /**
+   * @dev Context
+   *      - In the V1, we had 2 differents owners
+   *      - The owner we get when we call the "owner()" function, is the one that is set in 
+   *        the initPayload because the HolographERC721 enforcer delegate the "owner()" call
+   *        to the HolographDropERC721 contract in the V1.
+   *      - The owner we get when we call the "getOwner()" function, is the one that has deployed
+   *        the enforcer contract because it is set in the constructor of the enforcer contract.
+   *        This is always the factory contract address.
+   */
+  function test_FFI_setOwnerV1() public {
+    // Set owner as the source contract owner (should fail)
+    vm.startPrank(HolographERC721(holographDropERC721).owner());
+    vm.expectRevert(bytes("HOLOGRAPH: owner only function"));
+    HolographERC721(holographDropERC721).setOwner(address(0xdead));
+    vm.stopPrank();
+
+    assertEq(HolographERC721(holographDropERC721).owner(), DEFAULT_OWNER_ADDRESS);
+    assertEq(HolographERC721(holographDropERC721).getOwner(), address(factory));
+
+    // Set owner as the enforcer contract owner (should succeed)
+    vm.startPrank(HolographERC721(holographDropERC721).getOwner());
+    HolographERC721(holographDropERC721).setOwner(address(0xdead));
+    vm.stopPrank();
+
+    assertEq(HolographERC721(holographDropERC721).owner(), DEFAULT_OWNER_ADDRESS);
+    assertEq(HolographERC721(holographDropERC721).getOwner(), address(0xdead));
+  }
+
+  /**
+   * @dev Context
+   *      - In the V2, the enforcer doesn't delegate the "owner()" call to the HolographDropERC721
+   *        anymore, so `owner()` and `getOwner()` returns the same address.
+   *      - In the V2, the onlyOwner modifier is now checking if the caller is the owner of the 
+   *        enforcer OR the owner of the HolographDropERC721 contract.
+   */
+  function test_FFI_setOwnerV2() public updateHolographDropERC721ImplementationToV2 {
+    // We should have the same owner for both functions after the update
+    assertEq(HolographERC721(holographDropERC721).owner(), address(factory));
+    assertEq(HolographERC721(holographDropERC721).getOwner(), address(factory));
+
+    // Set owner as the source contract owner (should succeed)
+    vm.startPrank(HolographERC721(holographDropERC721).owner());
+    HolographERC721(holographDropERC721).setOwner(address(0xdead));
+    vm.stopPrank();
+
+    // The owner should be the new owner (for both functions)
+    assertEq(HolographERC721(holographDropERC721).owner(), address(0xdead));
+    assertEq(HolographERC721(holographDropERC721).getOwner(), address(0xdead));
   }
 
   /* -------------------------------------------------------------------------- */
