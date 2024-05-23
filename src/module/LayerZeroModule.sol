@@ -247,7 +247,7 @@ contract LayerZeroModule is Admin, Initializable, CrossChainMessageInterface, La
     // NOTE: 10245 is the LZ V1 destination chain id for Base Sepolia
     //       We need to update this to use the actual chain id for the destination chain
     //       This will require updating the networks package
-    (uint128 dstPriceRatio, uint128 dstGasPriceInWei) = _getPricing(10245);
+    (uint128 dstPriceRatio, uint128 dstGasPriceInWei) = _getPricing(10245); // Base Sepolia chain destination eid
     if (gasPrice == 0) {
       gasPrice = dstGasPriceInWei;
     }
