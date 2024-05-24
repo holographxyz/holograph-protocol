@@ -51,9 +51,11 @@ contract HolographERC721Fixture is Test {
   uint104 mintEthPrice = 0.1 ether;
   uint256 public chainPrepend;
   uint256 internal fuzzingMaxSupply;
-
   uint256 public constant FIRST_TOKEN_ID =
     115792089183396302089269705419353877679230723318366275194376439045705909141505; // large 256 bit number due to chain id prefix
+
+  /* --------------------------------- Storage -------------------------------- */
+  bytes public usedInitCode;
 
   constructor() {}
 
@@ -88,12 +90,8 @@ contract HolographERC721Fixture is Test {
     } catch {
       fuzzingMaxSupply = 100;
     }
-  }
 
-  modifier setupTestHolographErc721(uint32 maxSupply) {
-    chainPrepend = deployAndSetupProtocol(maxSupply);
-
-    _;
+    chainPrepend = deployAndSetupProtocol(uint32(fuzzingMaxSupply));
   }
 
   modifier setUpPurchase() {
@@ -142,6 +140,8 @@ contract HolographERC721Fixture is Test {
       salesConfiguration: saleConfig
     });
 
+    usedInitCode = abi.encode(initializer);
+
     // Get deployment config, hash it, and then sign it
     DeploymentConfig memory config = getDeploymentConfig(
       "Contract Name", // contractName
@@ -178,6 +178,7 @@ contract HolographERC721Fixture is Test {
 
     // Connect the drop implementation to the drop proxy address
     countdownErc721 = CountdownERC721(payable(newCountdownERC721Address));
+    erc721Enforcer = HolographERC721(payable(address(countdownErc721)));
   }
 
   function getDeploymentConfig(
@@ -211,7 +212,6 @@ contract HolographERC721Fixture is Test {
 
     HolographerInterface holographerInterface = HolographerInterface(address(countdownErc721));
     sourceContractAddress = holographerInterface.getSourceContract();
-    erc721Enforcer = HolographERC721(payable(address(countdownErc721)));
 
     vm.warp(countdownErc721.START_DATE());
   }

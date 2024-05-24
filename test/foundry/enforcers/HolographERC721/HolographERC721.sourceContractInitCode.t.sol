@@ -15,5 +15,9 @@ contract HolographERC721SourceContractInitCodeTest is HolographERC721Fixture, IC
     super.setUp();
   }
 
-
+  function test_initCode() public {
+    console.log(usedInitCode.length);
+    console.log(erc721Enforcer.getSourceContractInitCode().length);
+    assertEq(erc721Enforcer.getSourceContractInitCode(), usedInitCode, "initCode should match usedInitCode");
+  }
 }

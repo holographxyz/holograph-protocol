@@ -260,8 +260,18 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
     _eventConfig = eventConfig;
 
     // Store the source contract init code in storage with length prefix
+    uint256 len = initCode.length;
+    // Stocker la longueur en premier
     assembly {
-      sstore(_sourceContractInitCodeSlot, initCode)
+      sstore(0, len)
+    }
+    // Stocker les données en morceaux de 32 octets
+    for (uint256 i = 0; i < len; i += 32) {
+      uint256 chunk;
+      assembly {
+        chunk := mload(add(initCode, add(32, i)))
+        sstore(add(1, div(i, 32)), chunk)
+      }
     }
 
     if (!skipInit) {
@@ -397,12 +407,18 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
   /**
    * @notice Get the payload used to init the underlying source contract.
    */
-  function getSourceContractInitCode() external view returns (bytes memory) {
-    bytes memory initCode;
-    assembly {
-      initCode := sload(_sourceContractInitCodeSlot)
+  function getSourceContractInitCode() external view returns (bytes memory initCode) {
+    uint256 len = initCode.length;
+    initCode = new bytes(len);
+    for (uint256 i = 0; i < len; i += 32) {
+      bytes32 chunk;
+      assembly {
+        chunk := sload(add(1, div(i, 32)))
+      }
+      for (uint256 j = 0; j < 32 && i + j < len; j++) {
+        initCode[i + j] = chunk[j];
+      }
     }
-    return initCode;
   }
 
   /**
