@@ -138,6 +138,10 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.sourceContract')) - 1)
    */
   bytes32 constant _sourceContractSlot = 0x27d542086d1e831d40b749e7f5509a626c3047a36d160781c40d5acc83e5b074;
+  /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.sourceContractInitCode')) - 1)
+   */
+  bytes32 constant _sourceContractInitCodeSlot = 0xf195807c8e604522e333eabd274eed1fe12c4b39ba1971fc824498636685519f;
 
   /**
    * @dev Configuration for events to trigger for source smart contract.
@@ -254,6 +258,12 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
     _symbol = contractSymbol;
     _bps = contractBps;
     _eventConfig = eventConfig;
+
+    // Store the source contract init code in storage with length prefix
+    assembly {
+      sstore(_sourceContractInitCodeSlot, initCode)
+    }
+
     if (!skipInit) {
       require(sourceContract.init(initCode) == InitializableInterface.init.selector, "ERC721: could not init source");
       (bool success, bytes memory returnData) = _royalties().delegatecall(
@@ -382,6 +392,17 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
     for (uint256 i = 0; i < length; i++) {
       tokenIds[i] = _ownedTokens[wallet][index + i];
     }
+  }
+
+  /**
+   * @notice Get the payload used to init the underlying source contract.
+   */
+  function getSourceContractInitCode() external view returns (bytes memory) {
+    bytes memory initCode;
+    assembly {
+      initCode := sload(_sourceContractInitCodeSlot)
+    }
+    return initCode;
   }
 
   /**
