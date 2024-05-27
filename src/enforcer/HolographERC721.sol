@@ -138,11 +138,7 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.sourceContract')) - 1)
    */
   bytes32 constant _sourceContractSlot = 0x27d542086d1e831d40b749e7f5509a626c3047a36d160781c40d5acc83e5b074;
-  /**
-   * @dev bytes32(uint256(keccak256('eip1967.Holograph.sourceContractInitCode')) - 1)
-   */
-  bytes32 constant _sourceContractInitCodeSlot = 0xf195807c8e604522e333eabd274eed1fe12c4b39ba1971fc824498636685519f;
-
+  
   /**
    * @dev Configuration for events to trigger for source smart contract.
    */
@@ -258,21 +254,6 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
     _symbol = contractSymbol;
     _bps = contractBps;
     _eventConfig = eventConfig;
-
-    // Store the source contract init code in storage with length prefix
-    uint256 len = initCode.length;
-    // Stocker la longueur en premier
-    assembly {
-      sstore(0, len)
-    }
-    // Stocker les données en morceaux de 32 octets
-    for (uint256 i = 0; i < len; i += 32) {
-      uint256 chunk;
-      assembly {
-        chunk := mload(add(initCode, add(32, i)))
-        sstore(add(1, div(i, 32)), chunk)
-      }
-    }
 
     if (!skipInit) {
       require(sourceContract.init(initCode) == InitializableInterface.init.selector, "ERC721: could not init source");
@@ -401,23 +382,6 @@ contract HolographERC721 is Admin, Owner, HolographERC721Interface, Initializabl
     tokenIds = new uint256[](length);
     for (uint256 i = 0; i < length; i++) {
       tokenIds[i] = _ownedTokens[wallet][index + i];
-    }
-  }
-
-  /**
-   * @notice Get the payload used to init the underlying source contract.
-   */
-  function getSourceContractInitCode() external view returns (bytes memory initCode) {
-    uint256 len = initCode.length;
-    initCode = new bytes(len);
-    for (uint256 i = 0; i < len; i += 32) {
-      bytes32 chunk;
-      assembly {
-        chunk := sload(add(1, div(i, 32)))
-      }
-      for (uint256 j = 0; j < 32 && i + j < len; j++) {
-        initCode[i + j] = chunk[j];
-      }
     }
   }
 

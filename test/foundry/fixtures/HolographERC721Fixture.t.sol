@@ -55,7 +55,7 @@ contract HolographERC721Fixture is Test {
     115792089183396302089269705419353877679230723318366275194376439045705909141505; // large 256 bit number due to chain id prefix
 
   /* --------------------------------- Storage -------------------------------- */
-  bytes public usedInitCode;
+  bytes public usedInitPayload;
 
   constructor() {}
 
@@ -140,7 +140,7 @@ contract HolographERC721Fixture is Test {
       salesConfiguration: saleConfig
     });
 
-    usedInitCode = abi.encode(initializer);
+    usedInitPayload = abi.encode(initializer);
 
     // Get deployment config, hash it, and then sign it
     DeploymentConfig memory config = getDeploymentConfig(

@@ -7,17 +7,19 @@ import {console} from "forge-std/console.sol";
 import {ICustomERC721Errors} from "test/foundry/interface/ICustomERC721Errors.sol";
 import {HolographERC721Fixture} from "test/foundry/fixtures/HolographERC721Fixture.t.sol";
 
-contract HolographERC721SourceContractInitCodeTest is HolographERC721Fixture, ICustomERC721Errors {
-
+contract HolographERC721InitPayloadTest is HolographERC721Fixture, ICustomERC721Errors {
   constructor() {}
 
   function setUp() public override {
     super.setUp();
   }
 
-  function test_initCode() public {
-    console.log(usedInitCode.length);
-    console.log(erc721Enforcer.getSourceContractInitCode().length);
-    assertEq(erc721Enforcer.getSourceContractInitCode(), usedInitCode, "initCode should match usedInitCode");
+  function test_CountdownERC721InitPayload() public {
+    console.log(usedInitPayload.length);
+
+    (bool success, bytes memory initPayload) = address(countdownErc721).call(abi.encodeWithSignature("getCountdownERC721Initializer()"));
+
+    assertEq(success, true, "getCountdownERC721Initializer() call should succeed");
+    assertEq(initPayload, usedInitPayload, "initPayload should match usedInitPayload");
   }
 }
