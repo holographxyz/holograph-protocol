@@ -112,7 +112,7 @@ import "./interface/HolographFactoryInterface.sol";
 import "./interface/HolographOperatorInterface.sol";
 import "./interface/HolographRegistryInterface.sol";
 import "./interface/InitializableInterface.sol";
-
+import {console} from "forge-std/Test.sol";
 /**
  * @title Holograph Bridge
  * @author https://github.com/holographxyz
@@ -354,6 +354,7 @@ contract HolographBridge is Admin, Initializable, HolographBridgeInterface {
       "HOLOGRAPH: not holographed"
     );
     bytes memory payload;
+    console.log("############## HolographBridge 1 ");
     /**
      * @dev the revertedBridgeOutRequest function is wrapped into a try/catch function
      */
@@ -363,11 +364,14 @@ contract HolographBridge is Admin, Initializable, HolographBridgeInterface {
       /**
        * @dev a non reverted result is actually a revert
        */
+      console.log("############## HolographBridge 2 ");
+      console.log(revertReason);
       revert(revertReason);
     } catch (bytes memory realResponse) {
       /**
        * @dev a revert is actually success, so the return data is stored as payload
        */
+      console.log("############## HolographBridge 3 ");
       payload = realResponse;
     }
     uint256 jobNonce;
@@ -378,6 +382,7 @@ contract HolographBridge is Admin, Initializable, HolographBridgeInterface {
      * @dev extract hlgFee from operator
      */
     uint256 fee = 0;
+    console.log("############## HolographBridge 4 ");
     if (gasPrice < type(uint256).max && gasLimit < type(uint256).max) {
       (uint256 hlgFee, , uint256 dstGasPrice) = _operator().getMessageFee(
         toChain,
@@ -393,6 +398,7 @@ contract HolographBridge is Admin, Initializable, HolographBridgeInterface {
     /**
      * @dev the data is abi encoded into actual bridgeOutRequest payload bytes
      */
+    console.log("############## HolographBridge 5 ");
     bytes memory encodedData = abi.encodeWithSelector(
       HolographBridgeInterface.bridgeInRequest.selector,
       /**
@@ -407,6 +413,7 @@ contract HolographBridge is Admin, Initializable, HolographBridgeInterface {
       true,
       payload
     );
+    console.log("############## HolographBridge 6 ");
     /**
      * @dev this abi encodes the data just like in Holograph Operator
      */

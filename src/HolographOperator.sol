@@ -115,6 +115,7 @@ import "./interface/HolographInterfacesInterface.sol";
 import "./interface/Ownable.sol";
 
 import "./struct/OperatorJob.sol";
+import {console} from "forge-std/Test.sol";
 
 /**
  * @title Holograph Operator
@@ -497,6 +498,9 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
    * @dev This function is restricted for use by Holograph Messaging Module only
    */
   function crossChainMessage(bytes calldata bridgeInRequestPayload) external payable {
+    console.log("$$$$$$$$$$$$$ Operator crossChainMessage 1");
+    console.logAddress(msg.sender);
+    console.logAddress(address(_messagingModule()));
     require(msg.sender == address(_messagingModule()), "HOLOGRAPH: messaging only call");
     uint256 gasPrice = 0;
     assembly {
@@ -506,8 +510,10 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
       gasPrice := calldataload(sub(add(bridgeInRequestPayload.offset, bridgeInRequestPayload.length), 0x20))
     }
     bool underpriced = gasPrice < _minGasPrice();
+    console.log("$$$$$$$$$$$$$ Operator crossChainMessage 2");
     unchecked {
       bytes32 jobHash = keccak256(bridgeInRequestPayload);
+      console.log("$$$$$$$$$$$$$ Operator crossChainMessage 3");
       /**
        * @dev load and increment operator temp storage in one call
        */
@@ -516,12 +522,14 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
        * @dev use job hash, job nonce, block number, and block timestamp for generating a random number
        */
       uint256 random = uint256(keccak256(abi.encodePacked(jobHash, _jobNonce(), block.number, block.timestamp)));
+      console.log("$$$$$$$$$$$$$ Operator crossChainMessage 4");
       // use the left 128 bits of random number
       uint256 random1 = uint256(random >> 128);
       // use the right 128 bits of random number
       uint256 random2 = uint256(uint128(random));
       // combine the two new random numbers for use in additional pod operator selection logic
       random = uint256(keccak256(abi.encodePacked(random1 + random2)));
+      console.log("$$$$$$$$$$$$$ Operator crossChainMessage 5");
       /**
        * @dev divide by total number of pods, use modulus/remainder
        */
@@ -530,6 +538,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
        * @dev identify the total number of available operators in pod
        */
       uint256 podSize = _operatorPods[pod].length;
+      console.log("$$$$$$$$$$$$$ Operator crossChainMessage 6");
       /**
        * @dev select a primary operator
        */
@@ -541,6 +550,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
        */
       _operatorTempStorage[_operatorTempStorageCounter] = _operatorPods[pod][operatorIndex];
       _popOperator(pod, operatorIndex);
+      console.log("$$$$$$$$$$$$$ Operator crossChainMessage 7");
       if (podSize > 1) {
         podSize--;
       }
@@ -559,6 +569,8 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
       /**
        * @dev emit event to signal to operators that a job has become available
        */
+      console.log("$$$$$$$$$$$$$ Operator crossChainMessage 7");
+      console.logBytes32(jobHash);
       emit AvailableOperatorJob(jobHash, bridgeInRequestPayload);
     }
   }

@@ -119,6 +119,7 @@ import "./struct/Verification.sol";
 
 import "./library/Strings.sol";
 
+import {console} from "forge-std/Test.sol";
 /**
  * @title Holograph Factory
  * @author https://github.com/holographxyz
@@ -233,6 +234,14 @@ contract HolographFactory is Admin, Initializable, Holographable, HolographFacto
     /**
      * @dev the configuration is encoded and hashed along with signer address
      */
+    console.log("------- Factory - config.contractType: ");
+    console.logBytes32(config.contractType);
+    console.log("------- Factory - config.chainType: ");
+    console.logUint(config.chainType);
+    console.log("------- Factory - config.salt: ");
+    console.logBytes32(config.salt);
+    console.log("------- Factory - config.signer: ");
+    console.logAddress(signer);
     bytes32 hash = keccak256(
       abi.encodePacked(
         config.contractType,
@@ -243,10 +252,29 @@ contract HolographFactory is Admin, Initializable, Holographable, HolographFacto
         signer
       )
     );
+    console.log("------- Factory - hash: ");
+    console.logBytes32(hash);
+    if (hash == 0xa3a2316b8119471cb8f7f5d293ef00c9a2544864c2cc4ac7efaadfb71736b99e) {
+      console.log("sample found");
+      console.log("------- Factory - config.byteCode: ");
+      console.logBytes32(keccak256(config.byteCode));
+      console.log("------- Factory - config.initCode: ");
+      console.logBytes32(keccak256(config.initCode));
+    }
     /**
      * @dev the hash is validated against signature
      *      this is to guarantee that the original creator's configuration has not been altered
      */
+    console.log("------- Factory - signatyre.r: ");
+    console.logBytes32(signature.r);
+    console.log("------- Factory - signatyre.s: ");
+    console.logBytes32(signature.s);
+    console.log("------- Factory - signatyre.v: ");
+    console.logUint(signature.v);
+    console.log("------- Factory - hash: ");
+    console.logBytes32(hash);
+    console.log("------- Factory - signer: ");
+    console.logAddress(signer);
     require(_verifySigner(signature.r, signature.s, signature.v, hash, signer), "HOLOGRAPH: invalid signature");
     /**
      * @dev check that this contract has not already been deployed on this chain
@@ -255,6 +283,8 @@ contract HolographFactory is Admin, Initializable, Holographable, HolographFacto
     address holographerAddress = address(
       uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), address(this), hash, keccak256(holographerBytecode)))))
     );
+    console.log("------- Factory - holographerAddress 1 : ");
+    console.logAddress(holographerAddress);
     require(!_isContract(holographerAddress), "HOLOGRAPH: already deployed");
     /**
      * @dev convert hash into uint256 which will be used as the salt for create2
@@ -262,6 +292,8 @@ contract HolographFactory is Admin, Initializable, Holographable, HolographFacto
     uint256 saltInt = uint256(hash);
     address sourceContractAddress;
     bytes memory sourceByteCode = config.byteCode;
+    console.log("------- Factory - saltInt: ");
+    console.logUint(saltInt);
     assembly {
       /**
        * @dev deploy the user created smart contract first
@@ -277,16 +309,28 @@ contract HolographFactory is Admin, Initializable, Holographable, HolographFacto
     /**
      * @dev initialize the Holographer contract
      */
+    console.log("------- Factory - InitializableInterface.init.selector: ");
+    console.logBytes4(InitializableInterface.init.selector);
+    console.log("------- Factory - initializableinterface");
+    // console.logBytes4(InitializableInterface(holographerAddress).init(
+    //     abi.encode(abi.encode(config.chainType, holograph, config.contractType, sourceContractAddress), config.initCode)
+    //   ));
     require(
       InitializableInterface(holographerAddress).init(
         abi.encode(abi.encode(config.chainType, holograph, config.contractType, sourceContractAddress), config.initCode)
       ) == InitializableInterface.init.selector,
       "initialization failed"
     );
+    console.log("------- Factory - si paso");
     /**
+     *
      * @dev update the Holograph Registry with deployed contract address
      */
     HolographRegistryInterface(registry).setHolographedHashAddress(hash, holographerAddress);
+    console.log("------- Factory - holographerAddress 2 : ");
+    console.logAddress(holographerAddress);
+    console.log("------- Factory - hash: ");
+    console.logBytes32(hash);
     /**
      * @dev emit an event that on-chain indexers can easily read
      */
