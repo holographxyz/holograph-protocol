@@ -40,6 +40,10 @@ contract LayerZeroModule is Admin, Initializable, CrossChainMessageInterface, La
    */
   bytes32 constant _lZEndpointSlot = 0x56825e447adf54cdde5f04815fcf9b1dd26ef9d5c053625147c18b7c13091686;
   /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.lZExecutor')) - 1)
+   */
+  bytes32 constant _lZExecutorSlot = 0x08720257337cb48e74dba39eae100a85bc795393fb1ccb40807c78f4e9a4eba0;
+  /**
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.operator')) - 1)
    */
   bytes32 constant _operatorSlot = 0x7caba557ad34138fa3b7e43fb574e0e6cc10481c3073e0dffbc560db81b5c60f;
