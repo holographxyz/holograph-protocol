@@ -101,7 +101,7 @@ library Constants {
   }
 
   function getCxipERC721() internal pure returns (address) {
-    return address(0xE7AD7a544fa0262256F035Da6F77e396A271eA4C);
+    return address(0x5Aac4D94E6656246E9f047e379caBF8660f06Ea2);
   }
 
   function getHToken() internal pure returns (address) {
@@ -129,7 +129,7 @@ library Constants {
   }
 
   function getSampleERC721() internal pure returns (address) {
-    return address(0x846Af4c87F5Af1F303E5a5D215D83A611b08069c);
+    return address(0x411e7C0e83fD04B5dFE79E3addf4680E00Bfea73);
   }
 
   function getSampleERC721_L2() internal pure returns (address) {
