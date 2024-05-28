@@ -106,9 +106,9 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       // Check if the network has a valid holograph ID.
       if (value.holographId > 0) {
         // Retrieve and convert the chain ID mapping from EVM to Holograph.
-        let evm2hlg: number = (await holographInterfaces.getChainId(1, value.chain, 2)).toNumber();
+        let evmToHlg: number = (await holographInterfaces.getChainId(1, value.chain, 2)).toNumber();
         // Check if the retrieved mapping doesn't match the expected holograph ID.
-        if (evm2hlg !== value.holographId) {
+        if (evmToHlg !== value.holographId) {
           // Add mapping details to needToMap array.
           needToMap.push([1, value.chain, 2, value.holographId]);
           // Log this mapping requirement in a human-readable format.
@@ -118,9 +118,9 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
         }
 
         // Retrieve and convert the chain ID mapping from Holograph to EVM.
-        let hlg2evm: number = (await holographInterfaces.getChainId(2, value.holographId, 1)).toNumber();
+        let hlgToEvm: number = (await holographInterfaces.getChainId(2, value.holographId, 1)).toNumber();
         // Check if the retrieved mapping doesn't match the expected EVM chain ID.
-        if (hlg2evm !== value.chain) {
+        if (hlgToEvm !== value.chain) {
           // Add mapping details to needToMap array.
           needToMap.push([2, value.holographId, 1, value.chain]);
           // Log this mapping requirement in a human-readable format.
@@ -132,9 +132,9 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
         // Check if the network has a valid LayerZero ID.
         if (value.lzId > 0) {
           // Retrieve and convert the chain ID mapping from LayerZero to Holograph.
-          let lz2hlg: number = (await holographInterfaces.getChainId(3, value.lzId, 2)).toNumber();
+          let lzToHlg: number = (await holographInterfaces.getChainId(3, value.lzId, 2)).toNumber();
           // Check if the retrieved mapping doesn't match the expected holograph ID.
-          if (lz2hlg !== value.holographId) {
+          if (lzToHlg !== value.holographId) {
             // Add mapping details to needToMap array.
             needToMap.push([3, value.lzId, 2, value.holographId]);
             // Log this mapping requirement in a human-readable format.
@@ -142,15 +142,50 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
           }
 
           // Retrieve and convert the chain ID mapping from Holograph to LayerZero.
-          let hlg2lz: number = (await holographInterfaces.getChainId(2, value.holographId, 3)).toNumber();
+          let hlgToLz: number = (await holographInterfaces.getChainId(2, value.holographId, 3)).toNumber();
           // Check if the retrieved mapping doesn't match the expected LayerZero ID.
-          if (hlg2lz !== value.lzId) {
+          if (hlgToLz !== value.lzId) {
             // Add mapping details to needToMap array.
             needToMap.push([2, value.holographId, 3, value.lzId]);
             // Log this mapping requirement in a human-readable format.
             console.log(`Mapping required: Holograph chain ID ${value.holographId} to LayerZero ID ${value.lzId}`);
           }
         }
+
+        // NOTE: I think we can avoid this and just use LayerZero V2 IDs and add 30,000 to the ID to get the LayerZero V2 ID
+        //       That make it possible to avoid updating the HolographInterfaes contract for now as well as requiring less changes in the networks package
+        //       If we need to support LayerZero V2 IDs in the future, we can add a new chain type for LayerZero V2 and update the HolographInterfaces contract
+        //       For this to work ChainIdType 4 should be reserved for LayerZero V2
+        //       The updated struct would look like this:
+        //       enum ChainIdType {
+        //            UNDEFINED, //  0
+        //            EVM, //        1
+        //            HOLOGRAPH, //  2
+        //            LAYERZERO, //  3
+        //            LAYERZEROV2 // 4
+        //       }
+        // // Check if the network has a valid LayerZero V2 ID.
+        // if (value.lzId > 0) {
+        //   // Retrieve and convert the chain ID mapping from LayerZero V2 to Holograph.
+        //   let lzV2ToHlg: number = (await holographInterfaces.getChainId(4, value.lzId, 2)).toNumber();
+        //   // Check if the retrieved mapping doesn't match the expected holograph ID.
+        //   if (lzV2ToHlg !== value.holographId) {
+        //     // Add mapping details to needToMap array.
+        //     needToMap.push([4, value.lzId, 2, value.holographId]);
+        //     // Log this mapping requirement in a human-readable format.
+        //     console.log(`Mapping required: LayerZero V2 ID ${value.lzId} to Holograph chain ID ${value.holographId}`);
+        //   }
+
+        //   // Retrieve and convert the chain ID mapping from Holograph to LayerZero.
+        //   let hlgToLzV2: number = (await holographInterfaces.getChainId(2, value.holographId, 4)).toNumber();
+        //   // Check if the retrieved mapping doesn't match the expected LayerZero ID.
+        //   if (hlgToLzV2 !== value.lzId) {
+        //     // Add mapping details to needToMap array.
+        //     needToMap.push([2, value.holographId, 4, value.lzId]);
+        //     // Log this mapping requirement in a human-readable format.
+        //     console.log(`Mapping required: Holograph chain ID ${value.holographId} to LayerZero V2 ID ${value.lzId}`);
+        //   }
+        // }
       }
     }
   }

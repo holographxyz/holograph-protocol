@@ -106,6 +106,13 @@ import "../enum/InterfaceType.sol";
 import "../enum/TokenUriType.sol";
 
 interface HolographInterfacesInterface {
+  /// @notice Generates a URI for a given contract
+  /// @param name The name of the contract
+  /// @param imageURL The URL of the contract's image
+  /// @param externalLink An external link associated with the contract
+  /// @param bps The basis points for the contract
+  /// @param contractAddress The address of the contract
+  /// @return A string representing the contract URI
   function contractURI(
     string calldata name,
     string calldata imageURL,
@@ -114,18 +121,37 @@ interface HolographInterfacesInterface {
     address contractAddress
   ) external pure returns (string memory);
 
+  /// @notice Retrieves the URI prepend for a given token URI type
+  /// @param uriType The type of the token URI
+  /// @return prepend The prepend string for the given URI type
   function getUriPrepend(TokenUriType uriType) external view returns (string memory prepend);
 
+  /// @notice Updates the URI prepend for a given token URI type
+  /// @param uriType The type of the token URI
+  /// @param prepend The new prepend string to set
   function updateUriPrepend(TokenUriType uriType, string calldata prepend) external;
 
+  /// @notice Updates the URI prepends for multiple token URI types
+  /// @param uriTypes The array of token URI types
+  /// @param prepends The array of new prepend strings to set
   function updateUriPrepends(TokenUriType[] calldata uriTypes, string[] calldata prepends) external;
 
+  /// @notice Get the chain ID for a given chain type and chain ID
+  /// @param fromChainType The type of chain ID to convert from
+  /// @param fromChainId The actual chain ID to convert from
+  /// @param toChainType The type of chain ID to convert to
+  /// @return toChainId The chain ID in the converted chain type
   function getChainId(
     ChainIdType fromChainType,
     uint256 fromChainId,
     ChainIdType toChainType
   ) external view returns (uint256 toChainId);
 
+  /// @notice Updates the chain ID mapping for a given chain type and chain ID
+  /// @param fromChainType The type of chain ID to convert from
+  /// @param fromChainId The actual chain ID to convert from
+  /// @param toChainType The type of chain ID to convert to
+  /// @param toChainId The chain ID in the converted chain type
   function updateChainIdMap(
     ChainIdType fromChainType,
     uint256 fromChainId,
@@ -133,6 +159,11 @@ interface HolographInterfacesInterface {
     uint256 toChainId
   ) external;
 
+  /// @notice Updates the chain ID mappings for multiple chain types and chain IDs
+  /// @param fromChainType The array of types of chain IDs to convert from
+  /// @param fromChainId The array of actual chain IDs to convert from
+  /// @param toChainType The array of types of chain IDs to convert to
+  /// @param toChainId The array of chain IDs in the converted chain type
   function updateChainIdMaps(
     ChainIdType[] calldata fromChainType,
     uint256[] calldata fromChainId,
@@ -140,9 +171,21 @@ interface HolographInterfacesInterface {
     uint256[] calldata toChainId
   ) external;
 
+  /// @notice Checks if an interface is supported
+  /// @param interfaceType The type of interface to check
+  /// @param interfaceId The ID of the interface to check
+  /// @return True if the interface is supported, false otherwise
   function supportsInterface(InterfaceType interfaceType, bytes4 interfaceId) external view returns (bool);
 
+  /// @notice Updates the support status of an interface
+  /// @param interfaceType The type of interface to update
+  /// @param interfaceId The ID of the interface to update
+  /// @param supported The support status to set
   function updateInterface(InterfaceType interfaceType, bytes4 interfaceId, bool supported) external;
 
+  /// @notice Updates the support status of multiple interfaces
+  /// @param interfaceType The type of interfaces to update
+  /// @param interfaceIds The array of IDs of the interfaces to update
+  /// @param supported The support status to set for all interfaces
   function updateInterfaces(InterfaceType interfaceType, bytes4[] calldata interfaceIds, bool supported) external;
 }

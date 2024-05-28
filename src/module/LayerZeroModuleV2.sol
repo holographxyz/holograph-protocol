@@ -1,103 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
-/*
-
-                         ┌───────────┐
-                         │ HOLOGRAPH │
-                         └───────────┘
-╔═════════════════════════════════════════════════════════════╗
-║                                                             ║
-║                            / ^ \                            ║
-║                            ~~*~~            ¸               ║
-║                         [ '<>:<>' ]         │░░░            ║
-║               ╔╗           _/"\_           ╔╣               ║
-║             ┌─╬╬─┐          """          ┌─╬╬─┐             ║
-║          ┌─┬┘ ╠╣ └┬─┐       \_/       ┌─┬┘ ╠╣ └┬─┐          ║
-║       ┌─┬┘ │  ╠╣  │ └┬─┐           ┌─┬┘ │  ╠╣  │ └┬─┐       ║
-║    ┌─┬┘ │  │  ╠╣  │  │ └┬─┐     ┌─┬┘ │  │  ╠╣  │  │ └┬─┐    ║
-║ ┌─┬┘ │  │  │  ╠╣  │  │  │ └┬┐ ┌┬┘ │  │  │  ╠╣  │  │  │ └┬─┐ ║
-╠┬┘ │  │  │  │  ╠╣  │  │  │  │└¤┘│  │  │  │  ╠╣  │  │  │  │ └┬╣
-║│  │  │  │  │  ╠╣  │  │  │  │   │  │  │  │  ╠╣  │  │  │  │  │║
-╠╩══╩══╩══╩══╩══╬╬══╩══╩══╩══╩═══╩══╩══╩══╩══╬╬══╩══╩══╩══╩══╩╣
-╠┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴╬╬┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴╬╬┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴╣
-║               ╠╣                           ╠╣               ║
-║               ╠╣                           ╠╣               ║
-║    ,          ╠╣     ,        ,'      *    ╠╣               ║
-║~~~~~^~~~~~~~~┌╬╬┐~~~^~~~~~~~~^^~~~~~~~~^~~┌╬╬┐~~~~~~~^~~~~~~║
-╚══════════════╩╩╩╩═════════════════════════╩╩╩╩══════════════╝
-     - one protocol, one bridge = infinite possibilities -
-
-
- ***************************************************************
-
- DISCLAIMER: U.S Patent Pending
-
- LICENSE: Holograph Limited Public License (H-LPL)
-
- https://holograph.xyz/licenses/h-lpl/1.0.0
-
- This license governs use of the accompanying software. If you
- use the software, you accept this license. If you do not accept
- the license, you are not permitted to use the software.
-
- 1. Definitions
-
- The terms "reproduce," "reproduction," "derivative works," and
- "distribution" have the same meaning here as under U.S.
- copyright law. A "contribution" is the original software, or
- any additions or changes to the software. A "contributor" is
- any person that distributes its contribution under this
- license. "Licensed patents" are a contributor’s patent claims
- that read directly on its contribution.
-
- 2. Grant of Rights
-
- A) Copyright Grant- Subject to the terms of this license,
- including the license conditions and limitations in sections 3
- and 4, each contributor grants you a non-exclusive, worldwide,
- royalty-free copyright license to reproduce its contribution,
- prepare derivative works of its contribution, and distribute
- its contribution or any derivative works that you create.
- B) Patent Grant- Subject to the terms of this license,
- including the license conditions and limitations in section 3,
- each contributor grants you a non-exclusive, worldwide,
- royalty-free license under its licensed patents to make, have
- made, use, sell, offer for sale, import, and/or otherwise
- dispose of its contribution in the software or derivative works
- of the contribution in the software.
-
- 3. Conditions and Limitations
-
- A) No Trademark License- This license does not grant you rights
- to use any contributors’ name, logo, or trademarks.
- B) If you bring a patent claim against any contributor over
- patents that you claim are infringed by the software, your
- patent license from such contributor is terminated with
- immediate effect.
- C) If you distribute any portion of the software, you must
- retain all copyright, patent, trademark, and attribution
- notices that are present in the software.
- D) If you distribute any portion of the software in source code
- form, you may do so only under this license by including a
- complete copy of this license with your distribution. If you
- distribute any portion of the software in compiled or object
- code form, you may only do so under a license that complies
- with this license.
- E) The software is licensed “as-is.” You bear all risks of
- using it. The contributors give no express warranties,
- guarantees, or conditions. You may have additional consumer
- rights under your local laws which this license cannot change.
- To the extent permitted under your local laws, the contributors
- exclude all implied warranties, including those of
- merchantability, fitness for a particular purpose and
- non-infringement.
-
- 4. (F) Platform Limitation- The licenses granted in sections
- 2.A & 2.B extend only to the software or derivative works that
- you create that run on a Holograph system product.
-
- ***************************************************************
-
-*/
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.13;
 
@@ -112,6 +13,8 @@ import "../interface/InitializableInterface.sol";
 import "../interface/HolographInterfacesInterface.sol";
 import "../interface/LayerZeroModuleInterface.sol";
 import "../interface/LayerZeroOverrides.sol";
+import "../interface/ILayerZeroPriceFeed.sol";
+import "../interface/IWorker.sol";
 
 import "../struct/GasParameters.sol";
 
@@ -123,7 +26,7 @@ import "./OVM_GasPriceOracle.sol";
  * @notice Holograph module for enabling LayerZero cross-chain messaging
  * @dev This contract abstracts all of the LayerZero specific logic into an isolated module
  */
-contract LayerZeroModule is Admin, Initializable, CrossChainMessageInterface, LayerZeroModuleInterface {
+contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, LayerZeroModuleInterface {
   /**
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.bridge')) - 1)
    */
@@ -136,6 +39,10 @@ contract LayerZeroModule is Admin, Initializable, CrossChainMessageInterface, La
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.lZEndpoint')) - 1)
    */
   bytes32 constant _lZEndpointSlot = 0x56825e447adf54cdde5f04815fcf9b1dd26ef9d5c053625147c18b7c13091686;
+  /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.lZExecutor')) - 1)
+   */
+  bytes32 constant _lZExecutorSlot = 0x08720257337cb48e74dba39eae100a85bc795393fb1ccb40807c78f4e9a4eba0;
   /**
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.operator')) - 1)
    */
@@ -269,39 +176,51 @@ contract LayerZeroModule is Admin, Initializable, CrossChainMessageInterface, La
     uint256 gasPrice,
     bytes calldata crossChainPayload
   ) external view returns (uint256 hlgFee, uint256 msgFee, uint256 dstGasPrice) {
-    uint16 lzDestChain = uint16(
-      _interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)
-    );
-    LayerZeroOverrides lz;
+    uint16 lzEid = uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO));
+    uint16 lzV2Eid = lzEid + 30000; // 30000 is the difference between LZ V1 and LZ V2 chain eids (i.e. Ethereum eid is 101 on V1 and 30101 on V2)
+
+    /// @notice The IWorker interface is used to get the price feed address but must be wired up to the lzExecutor address
+    IWorker lzExecutor;
     assembly {
-      lz := sload(_lZEndpointSlot)
+      lzExecutor := sload(_lzExecutorSlot)
     }
-    // convert holograph chain id to lz chain id
-    (uint128 dstPriceRatio, uint128 dstGasPriceInWei) = _getPricing(lz, lzDestChain);
+
+    address lzPriceFeedAddress = lzExecutor.priceFeed();
+    ILayerZeroPriceFeed lzPriceFeed = ILayerZeroPriceFeed(lzPriceFeedAddress);
+
+    /// @notice The getPrice function is used to get the pricing for the destination chain but still uses LZ V1 eid
+    ILayerZeroPriceFeed.Price memory price = lzPriceFeed.getPrice(_dstEid);
+
     if (gasPrice == 0) {
-      gasPrice = dstGasPriceInWei;
+      gasPrice = price.gasPriceInUnit;
     }
+
     GasParameters memory gasParameters = _gasParameters(toChain);
     require(gasPrice > gasParameters.minGasPrice, "HOLOGRAPH: gas price too low");
-    bytes memory adapterParams = abi.encodePacked(
-      uint16(1),
-      uint256(gasParameters.msgBaseGas + (crossChainPayload.length * gasParameters.msgGasPerByte))
+
+    uint256 totalGas = gasLimit + gasParameters.jobBaseGas + (crossChainPayload.length * gasParameters.jobGasPerByte);
+    totalGas += totalGas / 10; // Add 10% buffer
+    require(totalGas < gasParameters.maxGasLimit, "HOLOGRAPH: gas limit over max");
+
+    (uint256 nativeFee, , , ) = lzPriceFeed.estimateFeeByEid(
+      uint32(lzEid), /// @notice estimateFeeByEid expects the LZ V1 eid
+      crossChainPayload.length,
+      totalGas
     );
-    gasLimit = gasLimit + gasParameters.jobBaseGas + (crossChainPayload.length * gasParameters.jobGasPerByte);
-    gasLimit = gasLimit + (gasLimit / 10);
-    require(gasLimit < gasParameters.maxGasLimit, "HOLOGRAPH: gas limit over max");
-    (uint256 nativeFee, ) = lz.estimateFees(lzDestChain, address(this), crossChainPayload, false, adapterParams);
-    hlgFee = ((gasPrice * gasLimit) * dstPriceRatio) / (10 ** 20);
+
+    hlgFee = ((gasPrice * totalGas) * price.priceRatio) / (10 ** 20);
+
     /*
      * @dev toChain is a ChainIdType.HOLOGRAPH, which can be found at https://github.com/holographxyz/networks/blob/main/src/networks.ts
      *      chainId 7 == optimism
      *      chainId 4000000015 == optimismTestnetSepolia
      */
     if (toChain == uint32(7) || toChain == uint32(4000000074)) {
-      hlgFee += (_optimismGasPriceOracle().getL1Fee(crossChainPayload) * dstPriceRatio) / (10 ** 20);
+      hlgFee += (_optimismGasPriceOracle().getL1Fee(crossChainPayload) * price.priceRatio) / (10 ** 20);
     }
+
     msgFee = nativeFee;
-    dstGasPrice = (dstGasPriceInWei * dstPriceRatio) / (10 ** 20);
+    dstGasPrice = (price.gasPriceInUnit * price.priceRatio) / (10 ** 20);
   }
 
   function getHlgFee(
@@ -310,40 +229,41 @@ contract LayerZeroModule is Admin, Initializable, CrossChainMessageInterface, La
     uint256 gasPrice,
     bytes calldata crossChainPayload
   ) external view returns (uint256 hlgFee) {
-    LayerZeroOverrides lz;
+    uint16 lzEid = uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO));
+    uint16 lzV2Eid = lzEid + 30000; // 30000 is the difference between LZ V1 and LZ V2 chain eids (i.e. Ethereum eid is 101 on V1 and 30101 on V2)
+
+    /// @notice The IWorker interface is used to get the price feed address but must be wired up to the lzExecutor address
+    IWorker lzExecutor;
     assembly {
-      lz := sload(_lZEndpointSlot)
+      lzExecutor := sload(_lzExecutorSlot)
     }
-    uint16 lzDestChain = uint16(
-      _interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)
-    );
-    (uint128 dstPriceRatio, uint128 dstGasPriceInWei) = _getPricing(lz, lzDestChain);
+
+    address lzPriceFeedAddress = lzExecutor.priceFeed();
+    ILayerZeroPriceFeed lzPriceFeed = ILayerZeroPriceFeed(lzPriceFeedAddress);
+
+    /// @notice The getPrice function is used to get the pricing for the destination chain but still uses LZ V1 eid
+    ILayerZeroPriceFeed.Price memory price = lzPriceFeed.getPrice(_dstEid);
+
     if (gasPrice == 0) {
-      gasPrice = dstGasPriceInWei;
+      gasPrice = price.gasPriceInUnit;
     }
+
     GasParameters memory gasParameters = _gasParameters(toChain);
     require(gasPrice > gasParameters.minGasPrice, "HOLOGRAPH: gas price too low");
     gasLimit = gasLimit + gasParameters.jobBaseGas + (crossChainPayload.length * gasParameters.jobGasPerByte);
     gasLimit = gasLimit + (gasLimit / 10);
     require(gasLimit < gasParameters.maxGasLimit, "HOLOGRAPH: gas limit over max");
-    hlgFee = ((gasPrice * gasLimit) * dstPriceRatio) / (10 ** 20);
+    hlgFee = ((gasPrice * gasLimit) * price.priceRatio) / (10 ** 20);
+
     /*
+     * @notice Special handling for Optimism chains
      * @dev toChain is a ChainIdType.HOLOGRAPH, which can be found at https://github.com/holographxyz/networks/blob/main/src/networks.ts
      *      chainId 7 == optimism
      *      chainId 4000000015 == optimismTestnetSepolia
      */
     if (toChain == uint32(7) || toChain == uint32(4000000074)) {
-      hlgFee += (_optimismGasPriceOracle().getL1Fee(crossChainPayload) * dstPriceRatio) / (10 ** 20);
+      hlgFee += (_optimismGasPriceOracle().getL1Fee(crossChainPayload) * price.priceRatio) / (10 ** 20);
     }
-  }
-
-  function _getPricing(
-    LayerZeroOverrides lz,
-    uint16 lzDestChain
-  ) private view returns (uint128 dstPriceRatio, uint128 dstGasPriceInWei) {
-    return
-      LayerZeroOverrides(LayerZeroOverrides(lz.defaultSendLibrary()).getAppConfig(lzDestChain, address(this)).relayer)
-        .dstPriceLookup(lzDestChain);
   }
 
   /**
