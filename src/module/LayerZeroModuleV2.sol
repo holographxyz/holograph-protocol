@@ -40,9 +40,9 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
    */
   bytes32 constant _lZEndpointSlot = 0x56825e447adf54cdde5f04815fcf9b1dd26ef9d5c053625147c18b7c13091686;
   /**
-   * @dev bytes32(uint256(keccak256('eip1967.Holograph.lZExecutor')) - 1)
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.lzExecutor')) - 1)
    */
-  bytes32 constant _lZExecutorSlot = 0x08720257337cb48e74dba39eae100a85bc795393fb1ccb40807c78f4e9a4eba0;
+  bytes32 constant _lzExecutorSlot = 0x5418c0677489e4391269fdb0d577e7ea7ccb07075c2c66748ef879ea504777e0;
   /**
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.operator')) - 1)
    */
@@ -170,6 +170,15 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
     );
   }
 
+  function _getPriceFeed(uint16 lzEid) internal view returns (ILayerZeroPriceFeed, ILayerZeroPriceFeed.Price memory) {
+    IWorker lzExecutor;
+    assembly {
+      lzExecutor := sload(_lzExecutorSlot)
+    }
+    ILayerZeroPriceFeed lzPriceFeed = ILayerZeroPriceFeed(lzExecutor.priceFeed());
+    return (lzPriceFeed, lzPriceFeed.getPrice(lzEid));
+  }
+
   function getMessageFee(
     uint32 toChain,
     uint256 gasLimit,
@@ -179,17 +188,7 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
     uint16 lzEid = uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO));
     uint16 lzV2Eid = lzEid + 30000; // 30000 is the difference between LZ V1 and LZ V2 chain eids (i.e. Ethereum eid is 101 on V1 and 30101 on V2)
 
-    /// @notice The IWorker interface is used to get the price feed address but must be wired up to the lzExecutor address
-    IWorker lzExecutor;
-    assembly {
-      lzExecutor := sload(_lzExecutorSlot)
-    }
-
-    address lzPriceFeedAddress = lzExecutor.priceFeed();
-    ILayerZeroPriceFeed lzPriceFeed = ILayerZeroPriceFeed(lzPriceFeedAddress);
-
-    /// @notice The getPrice function is used to get the pricing for the destination chain but still uses LZ V1 eid
-    ILayerZeroPriceFeed.Price memory price = lzPriceFeed.getPrice(_dstEid);
+    (ILayerZeroPriceFeed lzPriceFeed, ILayerZeroPriceFeed.Price memory price) = _getPriceFeed(lzEid);
 
     if (gasPrice == 0) {
       gasPrice = price.gasPriceInUnit;
@@ -203,18 +202,14 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
     require(totalGas < gasParameters.maxGasLimit, "HOLOGRAPH: gas limit over max");
 
     (uint256 nativeFee, , , ) = lzPriceFeed.estimateFeeByEid(
-      uint32(lzEid), /// @notice estimateFeeByEid expects the LZ V1 eid
+      uint32(lzEid), // estimateFeeByEid expects the LZ V1 eid
       crossChainPayload.length,
       totalGas
     );
 
     hlgFee = ((gasPrice * totalGas) * price.priceRatio) / (10 ** 20);
 
-    /*
-     * @dev toChain is a ChainIdType.HOLOGRAPH, which can be found at https://github.com/holographxyz/networks/blob/main/src/networks.ts
-     *      chainId 7 == optimism
-     *      chainId 4000000015 == optimismTestnetSepolia
-     */
+    // Special handling for Optimism chains
     if (toChain == uint32(7) || toChain == uint32(4000000074)) {
       hlgFee += (_optimismGasPriceOracle().getL1Fee(crossChainPayload) * price.priceRatio) / (10 ** 20);
     }
@@ -230,19 +225,8 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
     bytes calldata crossChainPayload
   ) external view returns (uint256 hlgFee) {
     uint16 lzEid = uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO));
-    uint16 lzV2Eid = lzEid + 30000; // 30000 is the difference between LZ V1 and LZ V2 chain eids (i.e. Ethereum eid is 101 on V1 and 30101 on V2)
 
-    /// @notice The IWorker interface is used to get the price feed address but must be wired up to the lzExecutor address
-    IWorker lzExecutor;
-    assembly {
-      lzExecutor := sload(_lzExecutorSlot)
-    }
-
-    address lzPriceFeedAddress = lzExecutor.priceFeed();
-    ILayerZeroPriceFeed lzPriceFeed = ILayerZeroPriceFeed(lzPriceFeedAddress);
-
-    /// @notice The getPrice function is used to get the pricing for the destination chain but still uses LZ V1 eid
-    ILayerZeroPriceFeed.Price memory price = lzPriceFeed.getPrice(_dstEid);
+    (, ILayerZeroPriceFeed.Price memory price) = _getPriceFeed(lzEid);
 
     if (gasPrice == 0) {
       gasPrice = price.gasPriceInUnit;
@@ -250,17 +234,14 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
 
     GasParameters memory gasParameters = _gasParameters(toChain);
     require(gasPrice > gasParameters.minGasPrice, "HOLOGRAPH: gas price too low");
-    gasLimit = gasLimit + gasParameters.jobBaseGas + (crossChainPayload.length * gasParameters.jobGasPerByte);
-    gasLimit = gasLimit + (gasLimit / 10);
-    require(gasLimit < gasParameters.maxGasLimit, "HOLOGRAPH: gas limit over max");
-    hlgFee = ((gasPrice * gasLimit) * price.priceRatio) / (10 ** 20);
 
-    /*
-     * @notice Special handling for Optimism chains
-     * @dev toChain is a ChainIdType.HOLOGRAPH, which can be found at https://github.com/holographxyz/networks/blob/main/src/networks.ts
-     *      chainId 7 == optimism
-     *      chainId 4000000015 == optimismTestnetSepolia
-     */
+    uint256 totalGas = gasLimit + gasParameters.jobBaseGas + (crossChainPayload.length * gasParameters.jobGasPerByte);
+    totalGas += totalGas / 10; // Add 10% buffer
+    require(totalGas < gasParameters.maxGasLimit, "HOLOGRAPH: gas limit over max");
+
+    hlgFee = ((gasPrice * totalGas) * price.priceRatio) / (10 ** 20);
+
+    // Special handling for Optimism chains
     if (toChain == uint32(7) || toChain == uint32(4000000074)) {
       hlgFee += (_optimismGasPriceOracle().getL1Fee(crossChainPayload) * price.priceRatio) / (10 ** 20);
     }

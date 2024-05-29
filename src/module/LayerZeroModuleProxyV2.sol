@@ -5,11 +5,11 @@ pragma solidity 0.8.13;
 import "../abstract/Admin.sol";
 import "../abstract/Initializable.sol";
 
-contract LayerZeroModuleProxy is Admin, Initializable {
+contract LayerZeroModuleProxyV2 is Admin, Initializable {
   /**
-   * @dev bytes32(uint256(keccak256('eip1967.Holograph.layerZeroModule')) - 1)
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.layerZeroModuleV2')) - 1)
    */
-  bytes32 constant _layerZeroModuleSlot = 0x7c89cf3f353cabaa2f43d6eba6b9682ecfdeedd31a3b76a8b3e17a61970fb7f0;
+  bytes32 constant _layerZeroModuleV2Slot = 0x928de58955d10fd78410a0a6aa3c5832b103908613a6ceb2ee3933da510fb06c;
 
   constructor() {}
 
@@ -18,7 +18,7 @@ contract LayerZeroModuleProxy is Admin, Initializable {
     (address layerZeroModule, bytes memory initCode) = abi.decode(data, (address, bytes));
     assembly {
       sstore(_adminSlot, origin())
-      sstore(_layerZeroModuleSlot, layerZeroModule)
+      sstore(_layerZeroModuleV2Slot, layerZeroModule)
     }
     (bool success, bytes memory returnData) = layerZeroModule.delegatecall(
       abi.encodeWithSignature("init(bytes)", initCode)
@@ -31,13 +31,13 @@ contract LayerZeroModuleProxy is Admin, Initializable {
 
   function getLayerZeroModule() external view returns (address layerZeroModule) {
     assembly {
-      layerZeroModule := sload(_layerZeroModuleSlot)
+      layerZeroModule := sload(_layerZeroModuleV2Slot)
     }
   }
 
   function setLayerZeroModule(address layerZeroModule) external onlyAdmin {
     assembly {
-      sstore(_layerZeroModuleSlot, layerZeroModule)
+      sstore(_layerZeroModuleV2Slot, layerZeroModule)
     }
   }
 
@@ -45,7 +45,7 @@ contract LayerZeroModuleProxy is Admin, Initializable {
 
   fallback() external payable {
     assembly {
-      let layerZeroModule := sload(_layerZeroModuleSlot)
+      let layerZeroModule := sload(_layerZeroModuleV2Slot)
       calldatacopy(0, 0, calldatasize())
       let result := delegatecall(gas(), layerZeroModule, 0, calldatasize(), 0, 0)
       returndatacopy(0, 0, returndatasize())
