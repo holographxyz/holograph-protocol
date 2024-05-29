@@ -283,7 +283,7 @@ contract Erc721Enforcer is Test {
   /// @notice Should return contract URI as base64 string
   function testContractURI() public {
     string
-      memory expectedURI = "data:application/json;base64,eyJuYW1lIjoiU2FtcGxlIEVSQzcyMSBDb250cmFjdCAobG9jYWxob3N0KSIsImRlc2NyaXB0aW9uIjoiU2FtcGxlIEVSQzcyMSBDb250cmFjdCAobG9jYWxob3N0KSIsImltYWdlIjoiIiwiZXh0ZXJuYWxfbGluayI6IiIsInNlbGxlcl9mZWVfYmFzaXNfcG9pbnRzIjoxMDAwLCJmZWVfcmVjaXBpZW50IjoiMHg0MTFlN2MwZTgzZmQwNGI1ZGZlNzllM2FkZGY0NjgwZTAwYmZlYTczIn0";
+      memory expectedURI = "data:application/json;base64,eyJuYW1lIjoiU2FtcGxlIEVSQzcyMSBDb250cmFjdCAobG9jYWxob3N0KSIsImRlc2NyaXB0aW9uIjoiU2FtcGxlIEVSQzcyMSBDb250cmFjdCAobG9jYWxob3N0KSIsImltYWdlIjoiIiwiZXh0ZXJuYWxfbGluayI6IiIsInNlbGxlcl9mZWVfYmFzaXNfcG9pbnRzIjoxMDAwLCJmZWVfcmVjaXBpZW50IjoiMHgxNGUwNjA1NDdhODQ4YjU0ODE5MTJmZGMzYTdiMGUyODdkN2I5MGZkIn0";
     assertEq(holographERC721.contractURI(), expectedURI, "The contract URI does not match.");
   }
 
