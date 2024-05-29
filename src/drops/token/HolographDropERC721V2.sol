@@ -283,7 +283,7 @@ contract HolographDropERC721V2 is NonReentrant, ERC721H, IHolographDropERC721V2 
   /**
    * @notice Getter for the DropsInitializerV2 init payload
    */
-  function getDropsInitializer() external view returns (DropsInitializerV2 memory) {
+  function getInitProperties() external view returns (DropsInitializerV2 memory) {
     return abi.decode(INIT_PAYLOAD, (DropsInitializerV2));
   }
 

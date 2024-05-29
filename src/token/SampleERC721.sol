@@ -164,7 +164,7 @@ contract SampleERC721 is StrictERC721H {
   /**
    * @notice Getter for the SampleERC721 init payload
    */
-  function getSampleERC721() external view returns (address) {
+  function getInitProperties() external view returns (address) {
     return abi.decode(INIT_PAYLOAD, (address));
   }
 

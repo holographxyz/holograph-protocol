@@ -166,7 +166,7 @@ contract CxipERC721 is ERC721H {
   /**
    * @notice Getter for the CxipERC721 init payload
    */
-  function getCxipERC721Initializer() external view returns (address) {
+  function getInitProperties() external view returns (address) {
     return abi.decode(INIT_PAYLOAD, (address));
   }
 

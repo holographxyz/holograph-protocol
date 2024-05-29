@@ -17,9 +17,9 @@ contract HolographERC721InitPayloadTest is HolographERC721Fixture, ICustomERC721
   function test_CountdownERC721InitPayload() public {
     console.log(usedInitPayload.length);
 
-    (bool success, bytes memory initPayload) = address(countdownErc721).call(abi.encodeWithSignature("getCountdownERC721Initializer()"));
+    (bool success, bytes memory initPayload) = address(countdownErc721).call(abi.encodeWithSignature("getInitProperties()"));
 
-    assertEq(success, true, "getCountdownERC721Initializer() call should succeed");
+    assertEq(success, true, "getInitProperties() call should succeed");
     assertEq(initPayload, usedInitPayload, "initPayload should match usedInitPayload");
   }
 }

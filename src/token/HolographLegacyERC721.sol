@@ -67,7 +67,7 @@ contract HolographLegacyERC721 is ERC721H {
   /**
    * @notice Getter for the HolographLegacyERC721 init payload
    */
-  function getHolographLegacyERC721() external view returns (address) {
+  function getInitProperties() external view returns (address) {
     return abi.decode(INIT_PAYLOAD, (address));
   }
 

@@ -303,7 +303,7 @@ contract CustomERC721 is NonReentrant, ContractMetadata, InitializableLazyMint, 
   /**
    * @notice Getter for the CustomERC721Initializer init payload
    */
-  function getCustomERC721Initializer() external view returns (CustomERC721Initializer memory) {
+  function getInitProperties() external view returns (CustomERC721Initializer memory) {
     return abi.decode(INIT_PAYLOAD, (CustomERC721Initializer));
   }
 

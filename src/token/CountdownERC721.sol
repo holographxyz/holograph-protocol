@@ -292,7 +292,7 @@ contract CountdownERC721 is NonReentrant, ERC721H, ICountdownERC721 {
   /**
    * @notice Getter for the CountdownERC721Initializer init payload
    */
-  function getCountdownERC721Initializer() external view returns (CountdownERC721Initializer memory) {
+  function getInitProperties() external view returns (CountdownERC721Initializer memory) {
     return abi.decode(INIT_PAYLOAD, (CountdownERC721Initializer));
   }
 
