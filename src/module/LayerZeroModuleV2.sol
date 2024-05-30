@@ -308,6 +308,25 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
   }
 
   /**
+   * @notice Get the address of the approved LayerZero Executor
+   */
+  function getLZExecutor() external view returns (address lzExecutor) {
+    assembly {
+      lzExecutor := sload(_lzExecutorSlot)
+    }
+  }
+
+  /**
+   * @notice Update the approved LayerZero Executor address
+   * @param lzExecutor address of the LayerZero Executor to use
+   */
+  function setLZExecutor(address lzExecutor) external onlyAdmin {
+    assembly {
+      sstore(_lzExecutorSlot, lzExecutor)
+    }
+  }
+
+  /**
    * @notice Get the address of the Holograph Operator module
    * @dev All cross-chain Holograph Bridge beams are handled by the Holograph Operator module
    */

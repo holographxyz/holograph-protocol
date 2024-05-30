@@ -71,6 +71,49 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   } else {
     console.log(`Skipping for ${hre1.network.name} network because lzEndpoint is not set`);
   }
+
+  console.log(`Setting lzExecutor for ${hre1.network.name} network`);
+  console.log(networks[hre.networkName].lzExecutor.toLowerCase());
+
+  // LZ Executor
+  let lzExecutor = networks[hre.networkName].lzExecutor.toLowerCase();
+
+  if (lzExecutor && lzExecutor !== zeroAddress) {
+    console.log(`lzExecutor is set to: ${lzExecutor}`);
+    const layerZeroModuleV2ProxyV2 = await hre.ethers.getContract('LayerZeroModuleProxyV2', deployerAddress);
+    const layerZeroModuleV2 = (await hre.ethers.getContractAt(
+      'LayerZeroModuleV2',
+      layerZeroModuleV2ProxyV2.address,
+      deployerAddress
+    )) as Contract;
+
+    console.log(`NNN`);
+    console.log(layerZeroModuleV2.getLZExecutor);
+
+    if ((await layerZeroModuleV2.getLZExecutor()).toLowerCase() !== lzExecutor) {
+      console.log(`Setting lzExecutor to: ${lzExecutor} via multisig aware tx`);
+      const lzTx = await MultisigAwareTx(
+        hre,
+        'LayerZeroModuleV2',
+        layerZeroModuleV2,
+        await layerZeroModuleV2.populateTransaction.setLZExecutor(lzExecutor, {
+          ...(await txParams({
+            hre,
+            from: deployerAddress,
+            to: layerZeroModuleV2,
+            data: layerZeroModuleV2.populateTransaction.setLZExecutor(lzExecutor),
+          })),
+        })
+      );
+      console.log('Transaction hash:', lzTx.hash);
+      await lzTx.wait();
+      console.log(`Registered lzExecutor to: ${await layerZeroModuleV2.getLZExecutor()}`);
+    } else {
+      console.log(`lzExecutor is already registered to: ${await layerZeroModuleV2.getLZExecutor()}`);
+    }
+  } else {
+    console.log(`Skipping for ${hre1.network.name} network because lzExecutor is not set`);
+  }
   console.log(`Exiting script: ${__filename} ✅\n`);
 };
 
