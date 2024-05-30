@@ -105,7 +105,7 @@ library Constants {
   }
 
   function getHToken() internal pure returns (address) {
-    return address(0xEe7804e943659DB09338718F0B4123117A085109);
+    return address(0xcfE62d271Dd3Ea21BF824f7A61Ae9b2443b85480);
   }
 
   // NOTE: This has to be updated to the correct address every time a new contract is added to be
@@ -121,7 +121,7 @@ library Constants {
   }
 
   function getSampleERC20() internal pure returns (address) {
-    return address(0x5a5DbB0515Cb2af1945E731B86BB5e34E4d0d3A3);
+    return address(0x5C713b4c94a426d12D82430EC48dac77A92b335f);
   }
 
   function getSampleERC20_L2() internal pure returns (address) {
