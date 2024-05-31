@@ -67,7 +67,7 @@
     "@holographxyz/environment": "0.1.10",
     "@holographxyz/hardhat-deploy-holographed": "^0.0.6",
     "@holographxyz/holograph-genesis": "0.2.2",
-    "@holographxyz/networks": "0.2.13",
+    "@holographxyz/networks": "0.2.14",
     "@safe-global/api-kit": "^2.3.1",
     "@safe-global/protocol-kit": "^3.1.0",
     "@safe-global/safe-core-sdk-types": "^4.1.0",

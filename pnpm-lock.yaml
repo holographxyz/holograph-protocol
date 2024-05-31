@@ -33,8 +33,8 @@ dependencies:
     specifier: 0.2.2
     version: 0.2.2(@ethersproject/abi@5.7.0)(eslint@8.57.0)(hardhat@2.14.0)(lodash@4.17.21)
   '@holographxyz/networks':
-    specifier: 0.2.13
-    version: 0.2.13
+    specifier: 0.2.14
+    version: 0.2.14
   '@safe-global/api-kit':
     specifier: ^2.3.1
     version: 2.3.1
@@ -805,7 +805,7 @@ packages:
       '@holographxyz/environment': 0.1.10
       '@holographxyz/hardhat-deploy-holographed': 0.0.6
       '@holographxyz/hardhat-holograph-contract-builder': 0.0.4(hardhat@2.14.0)
-      '@holographxyz/networks': 0.2.13
+      '@holographxyz/networks': 0.2.14
       '@typechain/ethers-v5': 9.0.0(@ethersproject/abi@5.7.0)(@ethersproject/bytes@5.7.0)(@ethersproject/providers@5.7.2)(ethers@5.7.2)(typechain@7.0.1)(typescript@4.9.5)
       '@typechain/hardhat': 4.0.0(hardhat@2.14.0)(lodash@4.17.21)(typechain@7.0.1)
       '@types/chai': 4.3.4
@@ -836,8 +836,8 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@holographxyz/networks@0.2.13:
-    resolution: {integrity: sha512-i94OGeKManrqGOf/+ALqS3gsCr7dZqnGRRfAVCq1RyCWGcCMz90/Ry79uHChe6kFjWPDI5OdV4MKxwOm976M7g==}
+  /@holographxyz/networks@0.2.14:
+    resolution: {integrity: sha512-u82zVC31iuPlbk5HwlAdSFa1NACZyJUTeN8ZFMLGZPVNFun2chJf1H3EASa8eKWqvbqreZ0Dlg54mhjza21yXg==}
     dependencies:
       '@ethersproject/bignumber': 5.7.0
       '@holographxyz/environment': 0.1.10
