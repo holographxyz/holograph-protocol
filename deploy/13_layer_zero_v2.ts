@@ -87,9 +87,6 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       deployerAddress
     )) as Contract;
 
-    console.log(`NNN`);
-    console.log(layerZeroModuleV2.getLZExecutor);
-
     if ((await layerZeroModuleV2.getLZExecutor()).toLowerCase() !== lzExecutor) {
       console.log(`Setting lzExecutor to: ${lzExecutor} via multisig aware tx`);
       const lzTx = await MultisigAwareTx(
