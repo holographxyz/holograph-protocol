@@ -23,7 +23,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   console.log(`Checking lzEndpoint for ${hre1.network.name} network`);
   console.log(`LZ Endpoint ${networks[hre.networkName].lzEndpoint}`);
 
-  let lzEndpoint = networks[hre.networkName].lzEndpoint.toLowerCase();
+  let lzEndpoint = networks[hre.networkName].lzEndpoint;
 
   if (lzEndpoint && lzEndpoint !== zeroAddress) {
     if (currentNetworkType === NetworkType.local && lzEndpoint === zeroAddress) {
@@ -77,10 +77,10 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   }
 
   console.log(`Setting lzExecutor for ${hre1.network.name} network`);
-  console.log(networks[hre.networkName].lzExecutor.toLowerCase());
+  console.log(networks[hre.networkName].lzExecutor);
 
   // LZ Executor
-  let lzExecutor = networks[hre.networkName].lzExecutor.toLowerCase();
+  let lzExecutor = networks[hre.networkName].lzExecutor;
 
   if (lzExecutor && lzExecutor !== zeroAddress) {
     console.log(`lzExecutor is set to: ${lzExecutor}`);
