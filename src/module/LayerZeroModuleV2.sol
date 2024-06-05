@@ -483,4 +483,28 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
       }
     }
   }
+
+  /**
+   * @dev function to set the LayerZero send MessageLib
+   * @param _version the version of the messaging library
+   */
+  function setSendVersion(uint16 _version) external /* onlyOwner */ {
+    LayerZeroOverrides lzEndpoint;
+    assembly {
+      lzEndpoint := sload(_lZEndpointSlot)
+    }
+    lzEndpoint.setSendVersion(_version);
+  }
+
+  /**
+   * @dev function to set the LayerZero receive MessageLib
+   * @param _version the version of the messaging library
+   */
+  function setReceiveVersion(uint16 _version) external /* onlyOwner */ {
+    LayerZeroOverrides lzEndpoint;
+    assembly {
+      lzEndpoint := sload(_lZEndpointSlot)
+    }
+    lzEndpoint.setReceiveVersion(_version);
+  }
 }

@@ -25,8 +25,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
 
   let lzEndpoint = networks[hre.networkName].lzEndpoint;
 
-  if (lzEndpoint && lzEndpoint !== zeroAddress) {
-    if (currentNetworkType === NetworkType.local && lzEndpoint === zeroAddress) {
+  if (lzEndpoint) {
+    if (currentNetworkType === NetworkType.local && lzEndpoint === undefined) {
       lzEndpoint = (await hre.getNamedAccounts()).lzEndpoint;
       const mockLZEndpoint = await hre.deployments.deploy('MockLZEndpoint', {
         ...(await txParams({
@@ -72,17 +72,62 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     } else {
       console.log(`lzEndpoint is already registered to: ${await layerZeroModuleV2.getLZEndpoint()}`);
     }
+
+    // Migrate from LayerZero Endpoint to use the new V2 MessageLib (UltraLightNode301)
+    // TODO: We need to wire up the Endpoint.sol abi to the address of the Endpoint.sol contract on the network
+    //       to be able to call the latestVersion() function to get the latest version of the contract dynamically
+    //       For now we will just hardcode this to 5 as we know that is the latest version
+    // const latestVersion = await endpointContract.latestVersion();
+    const latestVersion = 5;
+    const receiveUln301Version = latestVersion;
+    const sendUln301Version = latestVersion - 1;
+
+    console.log(`Setting sendVersion to ${sendUln301Version} and receiveVersion to ${receiveUln301Version}`);
+    const sendTxParams = await txParams({
+      hre,
+      from: deployerAddress,
+      to: layerZeroModuleV2,
+      data: layerZeroModuleV2.populateTransaction.setSendVersion(sendUln301Version),
+    });
+
+    const receiveTxParams = await txParams({
+      hre,
+      from: deployerAddress,
+      to: layerZeroModuleV2,
+      data: layerZeroModuleV2.populateTransaction.setReceiveVersion(receiveUln301Version),
+    });
+
+    const sendTx = await MultisigAwareTx(
+      hre,
+      'LayerZeroModuleV2',
+      layerZeroModuleV2,
+      await layerZeroModuleV2.populateTransaction.setSendVersion(sendUln301Version, {
+        ...sendTxParams,
+      })
+    );
+    console.log('Send Transaction hash:', sendTx.hash);
+    await sendTx.wait();
+
+    const receiveTx = await MultisigAwareTx(
+      hre,
+      'LayerZeroModuleV2',
+      layerZeroModuleV2,
+      await layerZeroModuleV2.populateTransaction.setReceiveVersion(receiveUln301Version, {
+        ...receiveTxParams,
+      })
+    );
+    console.log('Receive Transaction hash:', receiveTx.hash);
+    await receiveTx.wait();
+
+    console.log(`Successfully set sendVersion to ${sendUln301Version} and receiveVersion to ${receiveUln301Version}`);
   } else {
     console.log(`Skipping for ${hre1.network.name} network because lzEndpoint is not set`);
   }
 
-  console.log(`Setting lzExecutor for ${hre1.network.name} network`);
-  console.log(networks[hre.networkName].lzExecutor);
-
   // LZ Executor
   let lzExecutor = networks[hre.networkName].lzExecutor;
 
-  if (lzExecutor && lzExecutor !== zeroAddress) {
+  if (lzExecutor) {
     console.log(`lzExecutor is set to: ${lzExecutor}`);
     const layerZeroModuleV2ProxyV2 = await hre.ethers.getContract('LayerZeroModuleProxyV2', deployerAddress);
     const layerZeroModuleV2 = (await hre.ethers.getContractAt(
