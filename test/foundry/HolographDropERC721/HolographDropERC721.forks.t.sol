@@ -16,6 +16,7 @@ import {HolographDropERC721V2} from "src/drops/token/HolographDropERC721V2.sol";
  *      reverting with an EvmError: OutOfFunds
  */
 contract HolographDropERC721Test is Test {
+  string OP_RPC_URL = vm.envString("OP_RPC_URL");
   string SEPOLIA_RPC_URL = vm.envString("SEPOLIA_RPC_URL");
   string OP_SEPOLIA_RPC_URL = vm.envString("OP_SEPOLIA_RPC_URL");
   string BASE_SEPOLIA_RPC_URL = vm.envString("BASE_SEPOLIA_RPC_URL");
@@ -24,6 +25,7 @@ contract HolographDropERC721Test is Test {
   string BNB_TESTNET_RPC_URL = vm.envString("BNB_TESTNET_RPC_URL");
   string FUJI_RPC_URL = vm.envString("FUJI_RPC_URL");
 
+  uint256 optimismFork;
   uint256 sepoliaFork;
   uint256 opSepoliaFork;
   uint256 baseSepoliaFork;
@@ -33,6 +35,7 @@ contract HolographDropERC721Test is Test {
   uint256 fujiFork;
 
   function setUp() public {
+    optimismFork = vm.createFork(OP_RPC_URL);
     sepoliaFork = vm.createFork(SEPOLIA_RPC_URL);
     opSepoliaFork = vm.createFork(OP_SEPOLIA_RPC_URL);
     baseSepoliaFork = vm.createFork(BASE_SEPOLIA_RPC_URL);
@@ -304,6 +307,40 @@ contract HolographDropERC721Test is Test {
     // Doing the exact same call as the target transaction
     vm.prank(0xa57106357F9A487F6AfBaA3758e7fCcB787113c4);
     (bool success, bytes memory data) = address(0x731F5129F241edAc48fA088c5DE3b3149dF822FD).call{value: 191136596600000000}(
+      abi.encodeWithSelector(
+        IHolographDropERC721V2.purchase.selector,
+        1
+      )
+    );
+
+    assertTrue(success);
+  }
+
+
+  /* -------------------------------------------------------------------------- */
+  /*                              Optimism Mainnet                              */
+  /* -------------------------------------------------------------------------- */
+  
+  /* ------------------------- Reproduced transaction ------------------------- */
+
+  /**
+   * @dev This test reproduce the exact transaction made at block 118904615
+   *      => https://optimistic.etherscan.io/tx/0xd0d76dc3ca15a2906009b2932a6dea1ddb1e1ab6f81117fd7eab3ca47b8e1f9a
+   * @dev To run this test you need to use a fork of optimism at the block 118904615 and to use -vvvv flag to see
+   *     the logs. You should see the transfer to 0x0030c8bB598997Da40626eA01BC70350a8f33f25 with a value of 353262998514953 wei
+   *    failing with an EvmError: OutOfFunds
+   */
+  function test_OptimismMainnet_V2PurchaseFreeMoeWithOldVersion() public {
+    vm.selectFork(optimismFork);
+
+    /// @dev To run this test you need to use a fork of optimism at the block 118904616
+    ///      You can create a fork like that using tenderly and creating a new fork at block 118904615
+    assertEq(block.number, 118904616);
+    assertEq(block.chainid, 10);
+
+    // Doing the exact same call as the target transaction
+    vm.prank(0x0030c8bB598997Da40626eA01BC70350a8f33f25);
+    (bool success, bytes memory data) = address(0xc0C0a215bCC25E617ecA4674833A3Df1bc66A6A6).call{value: 353262998514953}(
       abi.encodeWithSelector(
         IHolographDropERC721V2.purchase.selector,
         1
