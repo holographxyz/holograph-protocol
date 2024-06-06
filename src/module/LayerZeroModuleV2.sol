@@ -20,6 +20,17 @@ import "../struct/GasParameters.sol";
 
 import "./OVM_GasPriceOracle.sol";
 
+struct MessagingParams {
+  uint16 version;
+  uint256 gasLimit;
+  uint256 gasPrice;
+  uint16 dstEid;
+  address sender;
+  bytes message;
+  bool payInLzToken;
+  bytes options;
+}
+
 /**
  * @title Holograph LayerZero Module
  * @author https://github.com/holographxyz
@@ -142,9 +153,10 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
   /**
    * @dev Need to add an extra function to get LZ gas amount needed for their internal cross-chain message verification
    */
+
   function send(
-    uint256 /* gasLimit*/,
-    uint256 /* gasPrice*/,
+    uint256 gasLimit,
+    uint256 gasPrice,
     uint32 toChain,
     address msgSender,
     uint256 msgValue,
@@ -156,18 +168,27 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
       lZEndpoint := sload(_lZEndpointSlot)
     }
     GasParameters memory gasParameters = _gasParameters(toChain);
-    // need to recalculate the gas amounts for LZ to deliver message
+    uint16 lzEid = uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)) +
+      30000; // Adjust for V2
+
+    MessagingParams memory params = MessagingParams({
+      version: 1,
+      gasLimit: gasParameters.msgBaseGas + (crossChainPayload.length * gasParameters.msgGasPerByte),
+      gasPrice: gasPrice,
+      dstEid: lzEid,
+      sender: msgSender,
+      message: crossChainPayload,
+      payInLzToken: false,
+      options: ""
+    });
+
     lZEndpoint.send{value: msgValue}(
-      // uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
-      40245, // TEMPORARY: hardcoded LZ V2 chain eid for Base Sepolia
+      params.dstEid,
       abi.encodePacked(address(this), address(this)),
-      crossChainPayload,
-      payable(msgSender),
+      params.message,
+      payable(params.sender),
       address(this),
-      abi.encodePacked(
-        uint16(1),
-        uint256(gasParameters.msgBaseGas + (crossChainPayload.length * gasParameters.msgGasPerByte))
-      )
+      abi.encodePacked(params.version, uint256(params.gasLimit))
     );
   }
 
@@ -188,7 +209,7 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
   ) external view returns (uint256 hlgFee, uint256 msgFee, uint256 dstGasPrice) {
     uint16 lzEid = uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO));
     uint16 lzV2Eid = lzEid + 30000; // 30000 is the difference between LZ V1 and LZ V2 chain eids (i.e. Ethereum eid is 101 on V1 and 30101 on V2)
-    
+
     LayerZeroOverrides lZEndpoint;
     assembly {
       lZEndpoint := sload(_lZEndpointSlot)
