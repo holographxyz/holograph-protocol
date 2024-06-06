@@ -24,6 +24,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   console.log(`LZ Endpoint ${networks[hre.networkName].lzEndpoint}`);
 
   let lzEndpoint = networks[hre.networkName].lzEndpoint;
+  // let lzEndpoint = '0x55370E0fBB5f5b8dAeD978BA1c075a499eB107B8'; // Override this for base sepolia network to use the V1 Endpoint until we update the networks package
 
   if (lzEndpoint) {
     if (currentNetworkType === NetworkType.local && lzEndpoint === undefined) {
@@ -88,6 +89,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       from: deployerAddress,
       to: layerZeroModuleV2,
       data: layerZeroModuleV2.populateTransaction.setSendVersion(sendUln301Version),
+      // gasLimit: BigNumber.from(50000),
     });
 
     const receiveTxParams = await txParams({
@@ -95,6 +97,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       from: deployerAddress,
       to: layerZeroModuleV2,
       data: layerZeroModuleV2.populateTransaction.setReceiveVersion(receiveUln301Version),
+      // gasLimit: BigNumber.from(50000),
     });
 
     const sendTx = await MultisigAwareTx(

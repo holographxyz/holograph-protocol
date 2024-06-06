@@ -158,7 +158,8 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
     GasParameters memory gasParameters = _gasParameters(toChain);
     // need to recalculate the gas amounts for LZ to deliver message
     lZEndpoint.send{value: msgValue}(
-      uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
+      // uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
+      40245, // TEMPORARY: hardcoded LZ V2 chain eid for Base Sepolia
       abi.encodePacked(address(this), address(this)),
       crossChainPayload,
       payable(msgSender),

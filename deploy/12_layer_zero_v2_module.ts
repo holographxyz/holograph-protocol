@@ -416,8 +416,39 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     );
   } else {
     console.log('"LayerZeroModuleProxyV2" is already deployed..');
+
+    // Check if the LayerZeroModuleProxyV2 has correct LayerZeroModuleV2 set
+    const layerZeroModuleProxyV2 = await hre.ethers.getContract('LayerZeroModuleProxyV2', deployerAddress);
+    const currentLayerZeroModuleV2Address = await layerZeroModuleProxyV2.getLayerZeroModule();
+
+    if (currentLayerZeroModuleV2Address.toLowerCase() !== futureLayerZeroModuleV2Address.toLowerCase()) {
+      console.log(`Setting LayerZeroModuleV2 to: ${futureLayerZeroModuleV2Address} via multisig aware tx`);
+
+      const setLayerZeroModuleTxParams = await txParams({
+        hre,
+        from: deployerAddress,
+        to: layerZeroModuleProxyV2,
+        data: layerZeroModuleProxyV2.populateTransaction.setLayerZeroModule(futureLayerZeroModuleV2Address),
+      });
+
+      const setLayerZeroModuleTx = await MultisigAwareTx(
+        hre,
+        'LayerZeroModuleProxyV2',
+        layerZeroModuleProxyV2,
+        await layerZeroModuleProxyV2.populateTransaction.setLayerZeroModule(futureLayerZeroModuleV2Address, {
+          ...setLayerZeroModuleTxParams,
+        })
+      );
+
+      console.log('Transaction hash:', setLayerZeroModuleTx.hash);
+      await setLayerZeroModuleTx.wait();
+      console.log(`Registered LayerZeroModuleV2 to: ${await layerZeroModuleProxyV2.getLayerZeroModule()}`);
+    } else {
+      console.log(`LayerZeroModuleProxyV2 is already pointed to: ${await layerZeroModuleProxyV2.getLayerZeroModule()}`);
+    }
   }
 
+  // HolographOperator
   const holographOperator = ((await hre.ethers.getContract('HolographOperator', deployerAddress)) as Contract).attach(
     await holograph.getOperator()
   );
@@ -566,4 +597,4 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
 
 export default func;
 func.tags = ['LayerZeroModuleV2'];
-func.dependencies = ['HolographGenesis', 'DeploySources'];
+// func.dependencies = ['HolographGenesis', 'DeploySources'];
