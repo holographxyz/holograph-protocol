@@ -188,35 +188,28 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
   ) external view returns (uint256 hlgFee, uint256 msgFee, uint256 dstGasPrice) {
     uint16 lzEid = uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO));
     uint16 lzV2Eid = lzEid + 30000; // 30000 is the difference between LZ V1 and LZ V2 chain eids (i.e. Ethereum eid is 101 on V1 and 30101 on V2)
-
-    (ILayerZeroPriceFeed lzPriceFeed, ILayerZeroPriceFeed.Price memory price) = _getPriceFeed(lzEid);
-
-    if (gasPrice == 0) {
-      gasPrice = price.gasPriceInUnit;
+    
+    LayerZeroOverrides lZEndpoint;
+    assembly {
+      lZEndpoint := sload(_lZEndpointSlot)
     }
 
-    GasParameters memory gasParameters = _gasParameters(toChain);
-    require(gasPrice > gasParameters.minGasPrice, "HOLOGRAPH: gas price too low");
-
-    uint256 totalGas = gasLimit + gasParameters.jobBaseGas + (crossChainPayload.length * gasParameters.jobGasPerByte);
-    totalGas += totalGas / 10; // Add 10% buffer
-    require(totalGas < gasParameters.maxGasLimit, "HOLOGRAPH: gas limit over max");
-
-    (uint256 nativeFee, , , ) = lzPriceFeed.estimateFeeByEid(
-      uint32(lzEid), // estimateFeeByEid expects the LZ V1 eid
-      crossChainPayload.length,
-      totalGas
+    (uint256 nativeFee, uint256 lzTokenFee) = lZEndpoint.estimateFees(
+      lzEid,
+      address(this),
+      crossChainPayload,
+      false,
+      ""
     );
 
-    hlgFee = ((gasPrice * totalGas) * price.priceRatio) / (10 ** 20);
+    GasParameters memory gasParameters = _gasParameters(toChain);
+    uint256 totalGas = gasLimit + gasParameters.jobBaseGas + (crossChainPayload.length * gasParameters.jobGasPerByte);
+    totalGas += totalGas / 10; // Add 10% buffer
 
-    // Special handling for Optimism chains
-    if (toChain == uint32(7) || toChain == uint32(4000000074)) {
-      hlgFee += (_optimismGasPriceOracle().getL1Fee(crossChainPayload) * price.priceRatio) / (10 ** 20);
-    }
+    hlgFee = ((gasPrice * totalGas) * nativeFee) / (10 ** 20);
 
     msgFee = nativeFee;
-    dstGasPrice = (price.gasPriceInUnit * price.priceRatio) / (10 ** 20);
+    dstGasPrice = (gasPrice * totalGas) / (10 ** 20);
   }
 
   function getHlgFee(
