@@ -69,14 +69,23 @@ interface LayerZeroOverrides {
     bytes calldata _adapterParams
   ) external payable;
 
+  // NOTE: This is the V1 version of the estimateFees function
   // @dev estimate LayerZero message cost
+  // function estimateFees(
+  //   uint16 _dstChainId,
+  //   address _userApplication,
+  //   bytes calldata _payload,
+  //   bool _payInZRO,
+  //   bytes calldata _adapterParam
+  // ) external view returns (uint256 nativeFee, uint256 zroFee);
+
   function estimateFees(
-    uint16 _dstChainId,
-    address _userApplication,
-    bytes calldata _payload,
-    bool _payInZRO,
-    bytes calldata _adapterParam
-  ) external view returns (uint256 nativeFee, uint256 zroFee);
+    uint16 _dstEid,
+    address _sender,
+    bytes calldata _message,
+    bool _payInLzToken,
+    bytes calldata _options
+  ) external view returns (uint256 nativeFee, uint256 lzTokenFee);
 
   // @notice set the configuration of the LayerZero messaging library of the specified version
   // @param _version - messaging library version
