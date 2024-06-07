@@ -160,6 +160,7 @@ contract Holograph is Admin, Initializable, HolographInterface {
    * @notice Used internally to initialize the contract instead of through a constructor
    * @dev This function is called by the deployer/factory when creating a contract
    * @param initPayload abi encoded payload to use for contract initilaization
+   * @return bytes4 selector for the init function
    */
   function init(bytes memory initPayload) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
@@ -192,6 +193,7 @@ contract Holograph is Admin, Initializable, HolographInterface {
   /**
    * @notice Get the address of the Holograph Bridge module
    * @dev Used for beaming holographable assets cross-chain
+   * @return bridge The address of the Holograph Bridge module
    */
   function getBridge() external view returns (address bridge) {
     assembly {
@@ -212,6 +214,7 @@ contract Holograph is Admin, Initializable, HolographInterface {
   /**
    * @notice Get the chain ID that the Protocol was deployed on
    * @dev Useful for checking if/when a hard fork occurs
+   * @return chainId The chain ID that the Protocol was deployed on
    */
   function getChainId() external view returns (uint256 chainId) {
     assembly {
@@ -233,6 +236,7 @@ contract Holograph is Admin, Initializable, HolographInterface {
   /**
    * @notice Get the address of the Holograph Factory module
    * @dev Used for deploying holographable smart contracts
+   * @return factory The address of the Holograph Factory module
    */
   function getFactory() external view returns (address factory) {
     assembly {
@@ -253,6 +257,7 @@ contract Holograph is Admin, Initializable, HolographInterface {
   /**
    * @notice Get the Holograph chain Id
    * @dev Holograph uses an internal chain id mapping
+   * @return holographChainId The Holograph Chain ID
    */
   function getHolographChainId() external view returns (uint32 holographChainId) {
     assembly {
@@ -274,6 +279,7 @@ contract Holograph is Admin, Initializable, HolographInterface {
   /**
    * @notice Get the address of the Holograph Interfaces module
    * @dev Holograph uses this contract to store data that needs to be accessed by a large portion of the modules
+   * @return interfaces The interfaces
    */
   function getInterfaces() external view returns (address interfaces) {
     assembly {
@@ -294,6 +300,7 @@ contract Holograph is Admin, Initializable, HolographInterface {
   /**
    * @notice Get the address of the Holograph Operator module
    * @dev All cross-chain Holograph Bridge beams are handled by the Holograph Operator module
+   * @return operator The operator
    */
   function getOperator() external view returns (address operator) {
     assembly {
@@ -314,6 +321,7 @@ contract Holograph is Admin, Initializable, HolographInterface {
   /**
    * @notice Get the Holograph Registry module
    * @dev This module stores a reference for all deployed holographable smart contracts
+   * @return registry The registry
    */
   function getRegistry() external view returns (address registry) {
     assembly {
@@ -334,6 +342,7 @@ contract Holograph is Admin, Initializable, HolographInterface {
   /**
    * @notice Get the Holograph Treasury module
    * @dev All of the Holograph Protocol assets are stored and managed by this module
+   * @return treasury The treasury
    */
   function getTreasury() external view returns (address treasury) {
     assembly {
@@ -354,6 +363,7 @@ contract Holograph is Admin, Initializable, HolographInterface {
   /**
    * @notice Get the Holograph Utility Token address
    * @dev This is the official utility token of the Holograph Protocol
+   * @return utilityToken The utility token
    */
   function getUtilityToken() external view returns (address utilityToken) {
     assembly {

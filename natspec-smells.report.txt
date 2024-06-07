@@ -1,0 +1,5451 @@
+ WARN  Unsupported engine: wanted: {"node":"v20"} (current: {"node":"v21.7.3","pnpm":"8.15.6"})
+src/HolographBridge.sol:462
+HolographBridge:getMessageFee
+  @param  is duplicated
+  @param  is duplicated
+  @param  is duplicated
+  @param  is duplicated
+
+src/HolographFactory.sol:211
+HolographFactory:bridgeOut
+  @param  is duplicated
+  @param  is duplicated
+
+src/HolographGenesis.sol:280
+HolographGenesis:getMessageHash
+  @param nonce is missing
+  @param newDeployer is missing
+  @param approve is missing
+
+src/HolographGenesis.sol:303
+HolographGenesis:recoverSigner
+  @param nonce is missing
+  @param newDeployer is missing
+  @param approve is missing
+  @param signature is missing
+
+src/HolographGenesis.sol:142
+HolographGenesis:deployer2
+  Natspec is missing
+
+src/HolographGenesis.sol:147
+HolographGenesis:deployer3
+  Natspec is missing
+
+src/HolographGenesis.sol:149
+HolographGenesis:deployer4
+  Natspec is missing
+
+src/HolographGenesis.sol:151
+HolographGenesis:deployer5
+  Natspec is missing
+
+src/HolographGenesisLocal.sol:153
+HolographGenesisLocal:Message
+  Natspec is missing
+
+src/HolographGenesisLocal.sol:154
+HolographGenesisLocal:ContractDeployed
+  Natspec is missing
+
+src/HolographGenesisLocal.sol:157
+HolographGenesisLocal:onlyDeployer
+  Natspec is missing
+
+src/HolographGenesisLocal.sol:144
+HolographGenesisLocal:_version
+  Natspec is missing
+
+src/HolographGenesisLocal.sol:146
+HolographGenesisLocal:deployer1
+  Natspec is missing
+
+src/HolographGenesisLocal.sol:150
+HolographGenesisLocal:_approvedDeployers
+  Natspec is missing
+
+src/HolographInterfaces.sol:234
+HolographInterfaces:getUriPrepend
+  @param uriType is missing
+  @return prepend is missing
+
+src/HolographInterfaces.sol:259
+HolographInterfaces:getChainId
+  Natspec is missing
+
+src/HolographInterfaces.sol:267
+HolographInterfaces:updateChainIdMap
+  Natspec is missing
+
+src/HolographInterfaces.sol:273
+HolographInterfaces:updateChainIdMaps
+  Natspec is missing
+
+src/HolographInterfaces.sol:290
+HolographInterfaces:supportsInterface
+  Natspec is missing
+
+src/HolographInterfaces.sol:290
+HolographInterfaces:updateInterface
+  Natspec is missing
+
+src/HolographInterfaces.sol:290
+HolographInterfaces:updateInterfaces
+  Natspec is missing
+
+src/HolographOperator.sol:724
+HolographOperator:getMessageFee
+  @param  is duplicated
+  @param  is duplicated
+  @param  is duplicated
+  @param  is duplicated
+
+src/HolographOperator.sol:1269
+HolographOperator:_getBaseBondAmount
+  @return missing for unnamed return №1
+
+src/HolographOperator.sol:1277
+HolographOperator:_getCurrentBondAmount
+  @return missing for unnamed return №1
+
+src/HolographOperator.sol:1302
+HolographOperator:_randomBlockHash
+  @param podSize is missing
+  @param n is missing
+  @return missing for unnamed return №1
+
+src/HolographRegistry.sol:210
+HolographRegistry:isHolographedContract
+  Natspec is missing
+
+src/HolographRegistry.sol:213
+HolographRegistry:isHolographedHashDeployed
+  Natspec is missing
+
+src/HolographRegistry.sol:215
+HolographRegistry:holographableEvent
+  Natspec is missing
+
+src/HolographRegistry.sol:228
+HolographRegistry:referenceContractTypeAddress
+  @param contractAddress is missing
+  @return missing for unnamed return №1
+
+src/HolographRegistry.sol:249
+HolographRegistry:getContractTypeAddress
+  @param contractType is missing
+  @return missing for unnamed return №1
+
+src/HolographRegistry.sol:256
+HolographRegistry:setContractTypeAddress
+  @param contractType is missing
+  @param contractAddress is missing
+
+src/HolographRegistry.sol:265
+HolographRegistry:getHolograph
+  @return holograph is missing
+
+src/HolographRegistry.sol:301
+HolographRegistry:getHolographableContractsLength
+  @return missing for unnamed return №1
+
+src/HolographRegistry.sol:309
+HolographRegistry:getHolographedHashAddress
+  @param hash is missing
+  @return missing for unnamed return №1
+
+src/HolographRegistry.sol:316
+HolographRegistry:setHolographedHashAddress
+  @param hash is missing
+  @param contractAddress is missing
+
+src/HolographRegistry.sol:332
+HolographRegistry:getHToken
+  @param chainId is missing
+  @return missing for unnamed return №1
+
+src/HolographRegistry.sol:339
+HolographRegistry:setHToken
+  @param chainId is missing
+  @param hToken is missing
+
+src/HolographRegistry.sol:345
+HolographRegistry:getReservedContractTypeAddress
+  @param contractType is missing
+  @return contractTypeAddress is missing
+
+src/HolographRegistry.sol:357
+HolographRegistry:setReservedContractTypeAddress
+  @param hash is missing
+  @param reserved is missing
+
+src/HolographRegistry.sol:365
+HolographRegistry:setReservedContractTypeAddresses
+  @param hashes is missing
+  @param reserved is missing
+
+src/HolographRegistry.sol:371
+HolographRegistry:getUtilityToken
+  @return utilityToken is missing
+
+src/HolographTreasury.sol:221
+HolographTreasury:getBridge
+  @return bridge is missing
+
+src/HolographTreasury.sol:241
+HolographTreasury:getHolograph
+  @return holograph is missing
+
+src/HolographTreasury.sol:260
+HolographTreasury:getOperator
+  @return operator is missing
+
+src/HolographTreasury.sol:286
+HolographTreasury:getRegistry
+  @return registry is missing
+
+src/HolographTreasury.sol:302
+HolographTreasury:_bridge
+  Natspec is missing
+
+src/HolographTreasury.sol:305
+HolographTreasury:_holograph
+  Natspec is missing
+
+src/HolographTreasury.sol:308
+HolographTreasury:_operator
+  Natspec is missing
+
+src/HolographTreasury.sol:313
+HolographTreasury:_registry
+  Natspec is missing
+
+src/HolographTreasury.sol:318
+HolographTreasury:getHolographMintFee
+  @return missing for unnamed return №1
+
+src/abstract/Admin.sol:148
+Admin:admin
+  Natspec is missing
+
+src/abstract/Admin.sol:148
+Admin:getAdmin
+  Natspec is missing
+
+src/abstract/Admin.sol:148
+Admin:setAdmin
+  Natspec is missing
+
+src/abstract/Admin.sol:148
+Admin:adminCall
+  Natspec is missing
+
+src/abstract/Admin.sol:148
+Admin:onlyAdmin
+  Natspec is missing
+
+src/abstract/ContractMetadata.sol:36
+ContractMetadata:_setupContractURI
+  @param _uri is missing
+
+src/abstract/ContractMetadata.sol:44
+ContractMetadata:_canSetContractURI
+  @return missing for unnamed return №1
+
+src/abstract/DelayedReveal.sol:19
+DelayedReveal:DelayedRevealIncorrectResultHash
+  @param expected is missing
+  @param actual is missing
+
+src/abstract/DelayedReveal.sol:25
+DelayedReveal:_setEncryptedData
+  @param _batchId is missing
+  @param _encryptedData is missing
+
+src/abstract/DelayedReveal.sol:108
+DelayedReveal:isEncryptedBatch
+  @return missing for unnamed return №1
+
+src/abstract/EIP712.sol:60
+EIP712:_eip712_init
+  Natspec is missing
+
+src/abstract/EIP712.sol:75
+EIP712:_domainSeparatorV4
+  @return missing for unnamed return №1
+
+src/abstract/EIP712.sol:83
+EIP712:_buildDomainSeparator
+  Natspec is missing
+
+src/abstract/EIP712.sol:106
+EIP712:_hashTypedDataV4
+  @param structHash is missing
+  @return missing for unnamed return №1
+
+src/abstract/EIP712.sol:33
+EIP712:_CACHED_DOMAIN_SEPARATOR
+  Natspec is missing
+
+src/abstract/EIP712.sol:34
+EIP712:_CACHED_CHAIN_ID
+  Natspec is missing
+
+src/abstract/EIP712.sol:35
+EIP712:_CACHED_THIS
+  Natspec is missing
+
+src/abstract/EIP712.sol:37
+EIP712:_HASHED_NAME
+  Natspec is missing
+
+src/abstract/EIP712.sol:38
+EIP712:_HASHED_VERSION
+  Natspec is missing
+
+src/abstract/EIP712.sol:39
+EIP712:_TYPE_HASH
+  Natspec is missing
+
+src/abstract/ERC1155H.sol:239
+ERC1155H:FundsReceived
+  Natspec is missing
+
+src/abstract/ERC1155H.sol:174
+ERC1155H:_init
+  Natspec is missing
+
+src/abstract/ERC1155H.sol:197
+ERC1155H:msgSender
+  @return sender is missing
+
+src/abstract/ERC1155H.sol:213
+ERC1155H:holographer
+  @return _holographer is missing
+
+src/abstract/ERC1155H.sol:217
+ERC1155H:supportsInterface
+  Natspec is missing
+
+src/abstract/ERC1155H.sol:224
+ERC1155H:owner
+  @return missing for unnamed return №1
+
+src/abstract/ERC1155H.sol:226
+ERC1155H:isOwner
+  Natspec is missing
+
+src/abstract/ERC1155H.sol:230
+ERC1155H:isOwner
+  Natspec is missing
+
+src/abstract/ERC1155H.sol:231
+ERC1155H:_getOwner
+  Natspec is missing
+
+src/abstract/ERC1155H.sol:239
+ERC1155H:_setOwner
+  Natspec is missing
+
+src/abstract/ERC1155H.sol:239
+ERC1155H:withdraw
+  Natspec is missing
+
+src/abstract/ERC1155H.sol:146
+ERC1155H:onlyHolographer
+  Natspec is missing
+
+src/abstract/ERC1155H.sol:149
+ERC1155H:onlyOwner
+  Natspec is missing
+
+src/abstract/ERC20H.sol:239
+ERC20H:FundsReceived
+  Natspec is missing
+
+src/abstract/ERC20H.sol:174
+ERC20H:_init
+  Natspec is missing
+
+src/abstract/ERC20H.sol:197
+ERC20H:msgSender
+  @return sender is missing
+
+src/abstract/ERC20H.sol:213
+ERC20H:holographer
+  @return _holographer is missing
+
+src/abstract/ERC20H.sol:217
+ERC20H:supportsInterface
+  Natspec is missing
+
+src/abstract/ERC20H.sol:224
+ERC20H:owner
+  @return missing for unnamed return №1
+
+src/abstract/ERC20H.sol:226
+ERC20H:isOwner
+  Natspec is missing
+
+src/abstract/ERC20H.sol:230
+ERC20H:isOwner
+  Natspec is missing
+
+src/abstract/ERC20H.sol:231
+ERC20H:_getOwner
+  Natspec is missing
+
+src/abstract/ERC20H.sol:239
+ERC20H:_setOwner
+  Natspec is missing
+
+src/abstract/ERC20H.sol:239
+ERC20H:withdraw
+  Natspec is missing
+
+src/abstract/ERC20H.sol:147
+ERC20H:onlyHolographer
+  Natspec is missing
+
+src/abstract/ERC20H.sol:150
+ERC20H:onlyOwner
+  Natspec is missing
+
+src/abstract/ERC721H.sol:239
+ERC721H:FundsReceived
+  Natspec is missing
+
+src/abstract/ERC721H.sol:174
+ERC721H:_init
+  Natspec is missing
+
+src/abstract/ERC721H.sol:197
+ERC721H:msgSender
+  @return sender is missing
+
+src/abstract/ERC721H.sol:213
+ERC721H:holographer
+  @return _holographer is missing
+
+src/abstract/ERC721H.sol:217
+ERC721H:supportsInterface
+  Natspec is missing
+
+src/abstract/ERC721H.sol:224
+ERC721H:owner
+  @return missing for unnamed return №1
+
+src/abstract/ERC721H.sol:226
+ERC721H:isOwner
+  Natspec is missing
+
+src/abstract/ERC721H.sol:230
+ERC721H:isOwner
+  Natspec is missing
+
+src/abstract/ERC721H.sol:231
+ERC721H:_getOwner
+  Natspec is missing
+
+src/abstract/ERC721H.sol:239
+ERC721H:_setOwner
+  Natspec is missing
+
+src/abstract/ERC721H.sol:239
+ERC721H:withdraw
+  Natspec is missing
+
+src/abstract/ERC721H.sol:147
+ERC721H:onlyHolographer
+  Natspec is missing
+
+src/abstract/ERC721H.sol:149
+ERC721H:onlyOwner
+  Natspec is missing
+
+src/abstract/GenericH.sol:239
+GenericH:FundsReceived
+  Natspec is missing
+
+src/abstract/GenericH.sol:174
+GenericH:_init
+  Natspec is missing
+
+src/abstract/GenericH.sol:197
+GenericH:msgSender
+  @return sender is missing
+
+src/abstract/GenericH.sol:213
+GenericH:holographer
+  @return _holographer is missing
+
+src/abstract/GenericH.sol:217
+GenericH:supportsInterface
+  Natspec is missing
+
+src/abstract/GenericH.sol:224
+GenericH:owner
+  @return missing for unnamed return №1
+
+src/abstract/GenericH.sol:226
+GenericH:isOwner
+  Natspec is missing
+
+src/abstract/GenericH.sol:230
+GenericH:isOwner
+  Natspec is missing
+
+src/abstract/GenericH.sol:231
+GenericH:_getOwner
+  Natspec is missing
+
+src/abstract/GenericH.sol:239
+GenericH:_setOwner
+  Natspec is missing
+
+src/abstract/GenericH.sol:239
+GenericH:withdraw
+  Natspec is missing
+
+src/abstract/GenericH.sol:146
+GenericH:onlyHolographer
+  Natspec is missing
+
+src/abstract/GenericH.sol:149
+GenericH:onlyOwner
+  Natspec is missing
+
+src/abstract/HLGERC20H.sol:177
+HLGERC20H:_init
+  Natspec is missing
+
+src/abstract/HLGERC20H.sol:201
+HLGERC20H:msgSender
+  @return sender is missing
+
+src/abstract/HLGERC20H.sol:212
+HLGERC20H:holographer
+  @return _holographer is missing
+
+src/abstract/HLGERC20H.sol:216
+HLGERC20H:supportsInterface
+  Natspec is missing
+
+src/abstract/HLGERC20H.sol:224
+HLGERC20H:owner
+  @return missing for unnamed return №1
+
+src/abstract/HLGERC20H.sol:226
+HLGERC20H:isOwner
+  Natspec is missing
+
+src/abstract/HLGERC20H.sol:231
+HLGERC20H:isOwner
+  Natspec is missing
+
+src/abstract/HLGERC20H.sol:239
+HLGERC20H:_getOwner
+  Natspec is missing
+
+src/abstract/HLGERC20H.sol:239
+HLGERC20H:_setOwner
+  Natspec is missing
+
+src/abstract/HLGERC20H.sol:239
+HLGERC20H:withdraw
+  Natspec is missing
+
+src/abstract/HLGERC20H.sol:146
+HLGERC20H:onlyHolographer
+  Natspec is missing
+
+src/abstract/HLGERC20H.sol:150
+HLGERC20H:onlyOwner
+  Natspec is missing
+
+src/abstract/Initializable.sol:143
+Initializable:_isInitialized
+  Natspec is missing
+
+src/abstract/Initializable.sol:143
+Initializable:_setInitialized
+  Natspec is missing
+
+src/abstract/NonReentrant.sol:131
+NonReentrant:getStatus
+  Natspec is missing
+
+src/abstract/NonReentrant.sol:131
+NonReentrant:setStatus
+  Natspec is missing
+
+src/abstract/NonReentrant.sol:131
+NonReentrant:nonReentrant
+  Natspec is missing
+
+src/abstract/Owner.sol:149
+Owner:OwnershipTransferred
+  @param previousOwner is missing
+  @param newOwner is missing
+
+src/abstract/Owner.sol:156
+Owner:owner
+  Natspec is missing
+
+src/abstract/Owner.sol:162
+Owner:getOwner
+  Natspec is missing
+
+src/abstract/Owner.sol:162
+Owner:setOwner
+  Natspec is missing
+
+src/abstract/Owner.sol:162
+Owner:transferOwnership
+  Natspec is missing
+
+src/abstract/Owner.sol:162
+Owner:ownerCall
+  Natspec is missing
+
+src/abstract/Owner.sol:151
+Owner:onlyOwner
+  Natspec is missing
+
+src/abstract/StrictERC1155H.sol:155
+StrictERC1155H:bridgeIn
+  Natspec is missing
+
+src/abstract/StrictERC1155H.sol:168
+StrictERC1155H:bridgeOut
+  Natspec is missing
+
+src/abstract/StrictERC1155H.sol:178
+StrictERC1155H:afterApprove
+  Natspec is missing
+
+src/abstract/StrictERC1155H.sol:189
+StrictERC1155H:beforeApprove
+  Natspec is missing
+
+src/abstract/StrictERC1155H.sol:200
+StrictERC1155H:afterApprovalAll
+  Natspec is missing
+
+src/abstract/StrictERC1155H.sol:207
+StrictERC1155H:beforeApprovalAll
+  Natspec is missing
+
+src/abstract/StrictERC1155H.sol:215
+StrictERC1155H:afterBurn
+  Natspec is missing
+
+src/abstract/StrictERC1155H.sol:224
+StrictERC1155H:beforeBurn
+  Natspec is missing
+
+src/abstract/StrictERC1155H.sol:233
+StrictERC1155H:afterMint
+  Natspec is missing
+
+src/abstract/StrictERC1155H.sol:242
+StrictERC1155H:beforeMint
+  Natspec is missing
+
+src/abstract/StrictERC1155H.sol:248
+StrictERC1155H:afterSafeTransfer
+  Natspec is missing
+
+src/abstract/StrictERC1155H.sol:260
+StrictERC1155H:beforeSafeTransfer
+  Natspec is missing
+
+src/abstract/StrictERC1155H.sol:271
+StrictERC1155H:afterTransfer
+  Natspec is missing
+
+src/abstract/StrictERC1155H.sol:277
+StrictERC1155H:beforeTransfer
+  Natspec is missing
+
+src/abstract/StrictERC1155H.sol:277
+StrictERC1155H:afterOnERC1155Received
+  Natspec is missing
+
+src/abstract/StrictERC1155H.sol:277
+StrictERC1155H:beforeOnERC1155Received
+  Natspec is missing
+
+src/abstract/StrictERC20H.sol:156
+StrictERC20H:bridgeIn
+  Natspec is missing
+
+src/abstract/StrictERC20H.sol:164
+StrictERC20H:bridgeOut
+  Natspec is missing
+
+src/abstract/StrictERC20H.sol:180
+StrictERC20H:afterApprove
+  Natspec is missing
+
+src/abstract/StrictERC20H.sol:189
+StrictERC20H:beforeApprove
+  Natspec is missing
+
+src/abstract/StrictERC20H.sol:197
+StrictERC20H:afterOnERC20Received
+  Natspec is missing
+
+src/abstract/StrictERC20H.sol:210
+StrictERC20H:beforeOnERC20Received
+  Natspec is missing
+
+src/abstract/StrictERC20H.sol:221
+StrictERC20H:afterBurn
+  Natspec is missing
+
+src/abstract/StrictERC20H.sol:227
+StrictERC20H:beforeBurn
+  Natspec is missing
+
+src/abstract/StrictERC20H.sol:235
+StrictERC20H:afterMint
+  Natspec is missing
+
+src/abstract/StrictERC20H.sol:243
+StrictERC20H:beforeMint
+  Natspec is missing
+
+src/abstract/StrictERC20H.sol:252
+StrictERC20H:afterSafeTransfer
+  Natspec is missing
+
+src/abstract/StrictERC20H.sol:257
+StrictERC20H:beforeSafeTransfer
+  Natspec is missing
+
+src/abstract/StrictERC20H.sol:257
+StrictERC20H:afterTransfer
+  Natspec is missing
+
+src/abstract/StrictERC20H.sol:257
+StrictERC20H:beforeTransfer
+  Natspec is missing
+
+src/abstract/StrictERC20H.sol:257
+StrictERC20H:onAllowance
+  Natspec is missing
+
+src/abstract/StrictERC721H.sol:157
+StrictERC721H:bridgeIn
+  Natspec is missing
+
+src/abstract/StrictERC721H.sol:166
+StrictERC721H:bridgeOut
+  Natspec is missing
+
+src/abstract/StrictERC721H.sol:177
+StrictERC721H:afterApprove
+  Natspec is missing
+
+src/abstract/StrictERC721H.sol:188
+StrictERC721H:beforeApprove
+  Natspec is missing
+
+src/abstract/StrictERC721H.sol:197
+StrictERC721H:afterApprovalAll
+  Natspec is missing
+
+src/abstract/StrictERC721H.sol:205
+StrictERC721H:beforeApprovalAll
+  Natspec is missing
+
+src/abstract/StrictERC721H.sol:214
+StrictERC721H:afterBurn
+  Natspec is missing
+
+src/abstract/StrictERC721H.sol:220
+StrictERC721H:beforeBurn
+  Natspec is missing
+
+src/abstract/StrictERC721H.sol:228
+StrictERC721H:afterMint
+  Natspec is missing
+
+src/abstract/StrictERC721H.sol:237
+StrictERC721H:beforeMint
+  Natspec is missing
+
+src/abstract/StrictERC721H.sol:244
+StrictERC721H:afterSafeTransfer
+  Natspec is missing
+
+src/abstract/StrictERC721H.sol:254
+StrictERC721H:beforeSafeTransfer
+  Natspec is missing
+
+src/abstract/StrictERC721H.sol:262
+StrictERC721H:afterTransfer
+  Natspec is missing
+
+src/abstract/StrictERC721H.sol:273
+StrictERC721H:beforeTransfer
+  Natspec is missing
+
+src/abstract/StrictERC721H.sol:277
+StrictERC721H:afterOnERC721Received
+  Natspec is missing
+
+src/abstract/StrictERC721H.sol:277
+StrictERC721H:beforeOnERC721Received
+  Natspec is missing
+
+src/abstract/StrictERC721H.sol:277
+StrictERC721H:onIsApprovedForAll
+  Natspec is missing
+
+src/abstract/StrictERC721H.sol:277
+StrictERC721H:contractURI
+  Natspec is missing
+
+src/drops/interface/IDropsPriceOracle.sol:6
+IDropsPriceOracle:convertUsdToWei
+  Natspec is missing
+
+src/drops/interface/IHolographDropERC721.sol:17
+IHolographDropERC721:Access_MissingRoleOrAdmin
+  @param role is missing
+
+src/drops/interface/IHolographDropERC721.sol:30
+IHolographDropERC721:OperatorNotAllowed
+  @param operator is missing
+
+src/drops/interface/IHolographDropERC721.sol:48
+IHolographDropERC721:Purchase_WrongPrice
+  @param correctPrice is missing
+
+src/drops/interface/IHolographDropERC721.sol:60
+IHolographDropERC721:Setup_RoyaltyPercentageTooHigh
+  @param maxRoyaltyBPS is missing
+
+src/drops/interface/IHolographDropERC721.sol:62
+IHolographDropERC721:Admin_InvalidUpgradeAddress
+  @param proposedAddress is missing
+
+src/drops/interface/IHolographDropERC721.sol:147
+IHolographDropERC721:saleDetails
+  @return missing for unnamed return №1
+
+src/drops/interface/IHolographDropERC721.sol:151
+IHolographDropERC721:mintedPerAddress
+  @return missing for unnamed return №1
+
+src/drops/interface/IHolographDropERC721.sol:154
+IHolographDropERC721:owner
+  @return missing for unnamed return №1
+
+src/drops/interface/IHolographDropERC721.sol:174
+IHolographDropERC721:isAdmin
+  @param user is missing
+
+src/drops/interface/IHolographDropERC721V2.sol:17
+IHolographDropERC721V2:Access_MissingRoleOrAdmin
+  @param role is missing
+
+src/drops/interface/IHolographDropERC721V2.sol:36
+IHolographDropERC721V2:Purchase_WrongPrice
+  @param correctPrice is missing
+
+src/drops/interface/IHolographDropERC721V2.sol:48
+IHolographDropERC721V2:Setup_RoyaltyPercentageTooHigh
+  @param maxRoyaltyBPS is missing
+
+src/drops/interface/IHolographDropERC721V2.sol:50
+IHolographDropERC721V2:Admin_InvalidUpgradeAddress
+  @param proposedAddress is missing
+
+src/drops/interface/IHolographDropERC721V2.sol:141
+IHolographDropERC721V2:saleDetails
+  @return missing for unnamed return №1
+
+src/drops/interface/IHolographDropERC721V2.sol:145
+IHolographDropERC721V2:mintedPerAddress
+  @return missing for unnamed return №1
+
+src/drops/interface/IHolographDropERC721V2.sol:148
+IHolographDropERC721V2:owner
+  @return missing for unnamed return №1
+
+src/drops/interface/IHolographDropERC721V2.sol:168
+IHolographDropERC721V2:isAdmin
+  @param user is missing
+
+src/drops/interface/IMetadataRenderer.sol:6
+IMetadataRenderer:tokenURI
+  Natspec is missing
+
+src/drops/interface/IMetadataRenderer.sol:8
+IMetadataRenderer:contractURI
+  Natspec is missing
+
+src/drops/interface/IMetadataRenderer.sol:10
+IMetadataRenderer:initializeWithData
+  Natspec is missing
+
+src/drops/interface/IOperatorFilterRegistry.sol:6
+IOperatorFilterRegistry:isOperatorAllowed
+  Natspec is missing
+
+src/drops/interface/IOperatorFilterRegistry.sol:8
+IOperatorFilterRegistry:register
+  Natspec is missing
+
+src/drops/interface/IOperatorFilterRegistry.sol:10
+IOperatorFilterRegistry:registerAndSubscribe
+  Natspec is missing
+
+src/drops/interface/IOperatorFilterRegistry.sol:12
+IOperatorFilterRegistry:registerAndCopyEntries
+  Natspec is missing
+
+src/drops/interface/IOperatorFilterRegistry.sol:14
+IOperatorFilterRegistry:updateOperator
+  Natspec is missing
+
+src/drops/interface/IOperatorFilterRegistry.sol:16
+IOperatorFilterRegistry:updateOperators
+  Natspec is missing
+
+src/drops/interface/IOperatorFilterRegistry.sol:18
+IOperatorFilterRegistry:updateCodeHash
+  Natspec is missing
+
+src/drops/interface/IOperatorFilterRegistry.sol:20
+IOperatorFilterRegistry:updateCodeHashes
+  Natspec is missing
+
+src/drops/interface/IOperatorFilterRegistry.sol:22
+IOperatorFilterRegistry:subscribe
+  Natspec is missing
+
+src/drops/interface/IOperatorFilterRegistry.sol:24
+IOperatorFilterRegistry:unsubscribe
+  Natspec is missing
+
+src/drops/interface/IOperatorFilterRegistry.sol:26
+IOperatorFilterRegistry:subscriptionOf
+  Natspec is missing
+
+src/drops/interface/IOperatorFilterRegistry.sol:28
+IOperatorFilterRegistry:subscribers
+  Natspec is missing
+
+src/drops/interface/IOperatorFilterRegistry.sol:30
+IOperatorFilterRegistry:subscriberAt
+  Natspec is missing
+
+src/drops/interface/IOperatorFilterRegistry.sol:32
+IOperatorFilterRegistry:copyEntriesOf
+  Natspec is missing
+
+src/drops/interface/IOperatorFilterRegistry.sol:34
+IOperatorFilterRegistry:isOperatorFiltered
+  Natspec is missing
+
+src/drops/interface/IOperatorFilterRegistry.sol:36
+IOperatorFilterRegistry:isCodeHashOfFiltered
+  Natspec is missing
+
+src/drops/interface/IOperatorFilterRegistry.sol:38
+IOperatorFilterRegistry:isCodeHashFiltered
+  Natspec is missing
+
+src/drops/interface/IOperatorFilterRegistry.sol:40
+IOperatorFilterRegistry:filteredOperators
+  Natspec is missing
+
+src/drops/interface/IOperatorFilterRegistry.sol:42
+IOperatorFilterRegistry:filteredCodeHashes
+  Natspec is missing
+
+src/drops/interface/IOperatorFilterRegistry.sol:44
+IOperatorFilterRegistry:filteredOperatorAt
+  Natspec is missing
+
+src/drops/interface/IOperatorFilterRegistry.sol:46
+IOperatorFilterRegistry:filteredCodeHashAt
+  Natspec is missing
+
+src/drops/interface/IOperatorFilterRegistry.sol:48
+IOperatorFilterRegistry:isRegistered
+  Natspec is missing
+
+src/drops/interface/IOperatorFilterRegistry.sol:50
+IOperatorFilterRegistry:codeHashOf
+  Natspec is missing
+
+src/drops/interface/IOperatorFilterRegistry.sol:52
+IOperatorFilterRegistry:unregister
+  Natspec is missing
+
+src/drops/library/Address.sol:6
+Address:isContract
+  Natspec is missing
+
+src/drops/library/Address.sol:20
+Address:functionDelegateCall
+  @param target is missing
+  @param data is missing
+  @return missing for unnamed return №1
+
+src/drops/library/Address.sol:30
+Address:functionDelegateCall
+  @param target is missing
+  @param data is missing
+  @param errorMessage is missing
+  @return missing for unnamed return №1
+
+src/drops/library/Address.sol:45
+Address:verifyCallResultFromTarget
+  @param target is missing
+  @param success is missing
+  @param returndata is missing
+  @param errorMessage is missing
+  @return missing for unnamed return №1
+
+src/drops/library/Address.sol:63
+Address:_revert
+  Natspec is missing
+
+src/drops/library/MerkleProof.sol:12
+MerkleProof:verify
+  @param proof is missing
+  @param root is missing
+  @param leaf is missing
+  @return missing for unnamed return №1
+
+src/drops/library/MerkleProof.sol:24
+MerkleProof:processProof
+  @param proof is missing
+  @param leaf is missing
+  @return missing for unnamed return №1
+
+src/drops/library/MerkleProof.sol:39
+MerkleProof:_efficientHash
+  Natspec is missing
+
+src/drops/library/Strings.sol:11
+Strings:toString
+  @param value is missing
+  @return missing for unnamed return №1
+
+src/drops/library/Strings.sol:36
+Strings:toHexString
+  @param value is missing
+  @return missing for unnamed return №1
+
+src/drops/library/Strings.sol:52
+Strings:toHexString
+  @param value is missing
+  @param length is missing
+  @return missing for unnamed return №1
+
+src/drops/library/Strings.sol:6
+Strings:_HEX_SYMBOLS
+  Natspec is missing
+
+src/drops/metadata/DropsMetadataRenderer.sol:15
+DropsMetadataRenderer:MetadataFrozen
+  Natspec is missing
+
+src/drops/metadata/DropsMetadataRenderer.sol:18
+DropsMetadataRenderer:MetadataUpdated
+  Natspec is missing
+
+src/drops/metadata/DropsMetadataRenderer.sol:27
+DropsMetadataRenderer:ProvenanceHashUpdated
+  @param target is missing
+  @param provenanceHash is missing
+
+src/drops/metadata/DropsMetadataRenderer.sol:49
+DropsMetadataRenderer:init
+  @param  is missing
+  @return missing for unnamed return №1
+
+src/drops/metadata/DropsMetadataRenderer.sol:72
+DropsMetadataRenderer:updateMetadataBase
+  @param target is missing
+
+src/drops/metadata/DropsMetadataRenderer.sol:85
+DropsMetadataRenderer:updateMetadataBaseWithDetails
+  @param newContractURI is missing
+
+src/drops/metadata/DropsMetadataRenderer.sol:99
+DropsMetadataRenderer:_updateMetadataDetails
+  @param target is missing
+  @param newContractURI is missing
+
+src/drops/metadata/DropsMetadataRenderer.sol:137
+DropsMetadataRenderer:tokenURI
+  @param tokenId is missing
+
+src/drops/metadata/DropsMetadataRenderer.sol:30
+DropsMetadataRenderer:MetadataURIInfo
+  @param base is missing
+  @param extension is missing
+  @param contractURI is missing
+  @param freezeAt is missing
+
+src/drops/metadata/EditionsMetadataRenderer.sol:16
+DropConfigGetter:config
+  Natspec is missing
+
+src/drops/metadata/EditionsMetadataRenderer.sol:29
+EditionsMetadataRenderer:MediaURIsUpdated
+  @param target is missing
+  @param sender is missing
+  @param imageURI is missing
+  @param animationURI is missing
+
+src/drops/metadata/EditionsMetadataRenderer.sol:33
+EditionsMetadataRenderer:EditionInitialized
+  @param target is missing
+  @param description is missing
+  @param imageURI is missing
+  @param animationURI is missing
+
+src/drops/metadata/EditionsMetadataRenderer.sol:37
+EditionsMetadataRenderer:DescriptionUpdated
+  @param target is missing
+  @param sender is missing
+  @param newDescription is missing
+
+src/drops/metadata/EditionsMetadataRenderer.sol:48
+EditionsMetadataRenderer:init
+  @param  is missing
+  @return missing for unnamed return №1
+
+src/drops/metadata/EditionsMetadataRenderer.sol:22
+EditionsMetadataRenderer:TokenEditionInfo
+  @param description is missing
+  @param imageURI is missing
+  @param animationURI is missing
+
+src/drops/metadata/MetadataRenderAdminCheck.sol:8
+MetadataRenderAdminCheck:Access_OnlyAdmin
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleArbitrumNova.sol:31
+DropsPriceOracleArbitrumNova:init
+  @param  is missing
+  @return missing for unnamed return №1
+
+src/drops/oracle/DropsPriceOracleArbitrumNova.sol:45
+DropsPriceOracleArbitrumNova:convertUsdToWei
+  @return weiAmount is missing
+
+src/drops/oracle/DropsPriceOracleArbitrumNova.sol:51
+DropsPriceOracleArbitrumNova:_getSushiUSDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleArbitrumNova.sol:66
+DropsPriceOracleArbitrumNova:_getSushiUSDT
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleArbitrumNova.sol:81
+DropsPriceOracleArbitrumNova:_getUniUSDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleArbitrumNova.sol:96
+DropsPriceOracleArbitrumNova:_getUniUSDT
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleArbitrumNova.sol:12
+DropsPriceOracleArbitrumNova:WETH
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleArbitrumNova.sol:13
+DropsPriceOracleArbitrumNova:USDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleArbitrumNova.sol:14
+DropsPriceOracleArbitrumNova:USDT
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleArbitrumNova.sol:16
+DropsPriceOracleArbitrumNova:SushiV2UsdcPool
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleArbitrumNova.sol:17
+DropsPriceOracleArbitrumNova:SushiV2UsdtPool
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleArbitrumNova.sol:19
+DropsPriceOracleArbitrumNova:UniV2UsdcPool
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleArbitrumNova.sol:20
+DropsPriceOracleArbitrumNova:UniV2UsdtPool
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleArbitrumOne.sol:28
+DropsPriceOracleArbitrumOne:init
+  @param  is missing
+  @return missing for unnamed return №1
+
+src/drops/oracle/DropsPriceOracleArbitrumOne.sol:42
+DropsPriceOracleArbitrumOne:convertUsdToWei
+  @return weiAmount is missing
+
+src/drops/oracle/DropsPriceOracleArbitrumOne.sol:46
+DropsPriceOracleArbitrumOne:_getSushiUSDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleArbitrumOne.sol:61
+DropsPriceOracleArbitrumOne:_getSushiUSDT
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleArbitrumOne.sol:12
+DropsPriceOracleArbitrumOne:WETH
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleArbitrumOne.sol:13
+DropsPriceOracleArbitrumOne:USDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleArbitrumOne.sol:14
+DropsPriceOracleArbitrumOne:USDT
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleArbitrumOne.sol:16
+DropsPriceOracleArbitrumOne:SushiV2UsdcPool
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleArbitrumOne.sol:17
+DropsPriceOracleArbitrumOne:SushiV2UsdtPool
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleArbitrumTestnetSepolia.sol:32
+DropsPriceOracleArbitrumTestnetSepolia:init
+  @param  is missing
+  @return missing for unnamed return №1
+
+src/drops/oracle/DropsPriceOracleArbitrumTestnetSepolia.sol:46
+DropsPriceOracleArbitrumTestnetSepolia:convertUsdToWei
+  @return weiAmount is missing
+
+src/drops/oracle/DropsPriceOracleArbitrumTestnetSepolia.sol:52
+DropsPriceOracleArbitrumTestnetSepolia:_getSushiUSDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleArbitrumTestnetSepolia.sol:69
+DropsPriceOracleArbitrumTestnetSepolia:_getSushiUSDT
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleArbitrumTestnetSepolia.sol:86
+DropsPriceOracleArbitrumTestnetSepolia:_getUniUSDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleArbitrumTestnetSepolia.sol:103
+DropsPriceOracleArbitrumTestnetSepolia:_getUniUSDT
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleAvalanche.sol:30
+DropsPriceOracleAvalanche:init
+  @param  is missing
+  @return missing for unnamed return №1
+
+src/drops/oracle/DropsPriceOracleAvalanche.sol:44
+DropsPriceOracleAvalanche:convertUsdToWei
+  @return weiAmount is missing
+
+src/drops/oracle/DropsPriceOracleAvalanche.sol:52
+DropsPriceOracleAvalanche:_getTraderJoeUSDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleAvalanche.sol:63
+DropsPriceOracleAvalanche:_getTraderJoeUSDT
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleAvalanche.sol:13
+DropsPriceOracleAvalanche:WAVAX
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleAvalanche.sol:14
+DropsPriceOracleAvalanche:USDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleAvalanche.sol:15
+DropsPriceOracleAvalanche:USDT
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleAvalanche.sol:17
+DropsPriceOracleAvalanche:TraderJoeRouter
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleAvalanche.sol:18
+DropsPriceOracleAvalanche:TraderJoeUsdcPool
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleAvalanche.sol:19
+DropsPriceOracleAvalanche:TraderJoeUsdtPool
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleAvalancheTestnet.sol:28
+DropsPriceOracleAvalancheTestnet:init
+  @param  is missing
+  @return missing for unnamed return №1
+
+src/drops/oracle/DropsPriceOracleAvalancheTestnet.sol:42
+DropsPriceOracleAvalancheTestnet:convertUsdToWei
+  @return weiAmount is missing
+
+src/drops/oracle/DropsPriceOracleAvalancheTestnet.sol:46
+DropsPriceOracleAvalancheTestnet:_getSushiUSDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleAvalancheTestnet.sol:63
+DropsPriceOracleAvalancheTestnet:_getSushiUSDT
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleAvalancheTestnet.sol:12
+DropsPriceOracleAvalancheTestnet:WAVAX
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleAvalancheTestnet.sol:13
+DropsPriceOracleAvalancheTestnet:USDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleAvalancheTestnet.sol:14
+DropsPriceOracleAvalancheTestnet:USDT
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleAvalancheTestnet.sol:16
+DropsPriceOracleAvalancheTestnet:SushiV2UsdcPool
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleAvalancheTestnet.sol:17
+DropsPriceOracleAvalancheTestnet:SushiV2UsdtPool
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBase.sol:23
+DropsPriceOracleBase:init
+  @param  is missing
+  @return missing for unnamed return №1
+
+src/drops/oracle/DropsPriceOracleBase.sol:33
+DropsPriceOracleBase:setQuoter
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBase.sol:42
+DropsPriceOracleBase:convertUsdToWei
+  @return weiAmount is missing
+
+src/drops/oracle/DropsPriceOracleBase.sol:9
+DropsPriceOracleBase:quoterV2
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBase.sol:11
+DropsPriceOracleBase:WETH9
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBase.sol:12
+DropsPriceOracleBase:USDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBase.sol:15
+DropsPriceOracleBase:poolFee
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBaseTestnetSepolia.sol:23
+DropsPriceOracleBaseTestnetSepolia:init
+  @param  is missing
+  @return missing for unnamed return №1
+
+src/drops/oracle/DropsPriceOracleBaseTestnetSepolia.sol:33
+DropsPriceOracleBaseTestnetSepolia:setQuoter
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBaseTestnetSepolia.sol:42
+DropsPriceOracleBaseTestnetSepolia:convertUsdToWei
+  @return weiAmount is missing
+
+src/drops/oracle/DropsPriceOracleBaseTestnetSepolia.sol:9
+DropsPriceOracleBaseTestnetSepolia:quoterV2
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBaseTestnetSepolia.sol:11
+DropsPriceOracleBaseTestnetSepolia:WETH9
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBaseTestnetSepolia.sol:12
+DropsPriceOracleBaseTestnetSepolia:USDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBaseTestnetSepolia.sol:15
+DropsPriceOracleBaseTestnetSepolia:poolFee
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBinanceSmartChain.sol:30
+DropsPriceOracleBinanceSmartChain:init
+  @param  is missing
+  @return missing for unnamed return №1
+
+src/drops/oracle/DropsPriceOracleBinanceSmartChain.sol:44
+DropsPriceOracleBinanceSmartChain:convertUsdToWei
+  @return weiAmount is missing
+
+src/drops/oracle/DropsPriceOracleBinanceSmartChain.sol:48
+DropsPriceOracleBinanceSmartChain:_getUSDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBinanceSmartChain.sol:63
+DropsPriceOracleBinanceSmartChain:_getUSDT
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBinanceSmartChain.sol:78
+DropsPriceOracleBinanceSmartChain:_getBUSD
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBinanceSmartChain.sol:12
+DropsPriceOracleBinanceSmartChain:WBNB
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBinanceSmartChain.sol:13
+DropsPriceOracleBinanceSmartChain:USDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBinanceSmartChain.sol:14
+DropsPriceOracleBinanceSmartChain:USDT
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBinanceSmartChain.sol:15
+DropsPriceOracleBinanceSmartChain:BUSD
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBinanceSmartChain.sol:17
+DropsPriceOracleBinanceSmartChain:SushiV2UsdcPool
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBinanceSmartChain.sol:18
+DropsPriceOracleBinanceSmartChain:SushiV2UsdtPool
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBinanceSmartChain.sol:19
+DropsPriceOracleBinanceSmartChain:SushiV2BusdPool
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBinanceSmartChainTestnet.sol:30
+DropsPriceOracleBinanceSmartChainTestnet:init
+  @param  is missing
+  @return missing for unnamed return №1
+
+src/drops/oracle/DropsPriceOracleBinanceSmartChainTestnet.sol:44
+DropsPriceOracleBinanceSmartChainTestnet:convertUsdToWei
+  @return weiAmount is missing
+
+src/drops/oracle/DropsPriceOracleBinanceSmartChainTestnet.sol:48
+DropsPriceOracleBinanceSmartChainTestnet:_getUSDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBinanceSmartChainTestnet.sol:65
+DropsPriceOracleBinanceSmartChainTestnet:_getUSDT
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBinanceSmartChainTestnet.sol:82
+DropsPriceOracleBinanceSmartChainTestnet:_getBUSD
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBinanceSmartChainTestnet.sol:12
+DropsPriceOracleBinanceSmartChainTestnet:WBNB
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBinanceSmartChainTestnet.sol:13
+DropsPriceOracleBinanceSmartChainTestnet:USDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBinanceSmartChainTestnet.sol:14
+DropsPriceOracleBinanceSmartChainTestnet:USDT
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBinanceSmartChainTestnet.sol:15
+DropsPriceOracleBinanceSmartChainTestnet:BUSD
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBinanceSmartChainTestnet.sol:17
+DropsPriceOracleBinanceSmartChainTestnet:SushiV2UsdcPool
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBinanceSmartChainTestnet.sol:18
+DropsPriceOracleBinanceSmartChainTestnet:SushiV2UsdtPool
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleBinanceSmartChainTestnet.sol:19
+DropsPriceOracleBinanceSmartChainTestnet:SushiV2BusdPool
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleEthereum.sol:31
+DropsPriceOracleEthereum:init
+  @param  is missing
+  @return missing for unnamed return №1
+
+src/drops/oracle/DropsPriceOracleEthereum.sol:45
+DropsPriceOracleEthereum:convertUsdToWei
+  @return weiAmount is missing
+
+src/drops/oracle/DropsPriceOracleEthereum.sol:51
+DropsPriceOracleEthereum:_getSushiUSDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleEthereum.sol:66
+DropsPriceOracleEthereum:_getSushiUSDT
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleEthereum.sol:81
+DropsPriceOracleEthereum:_getUniUSDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleEthereum.sol:96
+DropsPriceOracleEthereum:_getUniUSDT
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleEthereum.sol:12
+DropsPriceOracleEthereum:WETH
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleEthereum.sol:13
+DropsPriceOracleEthereum:USDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleEthereum.sol:14
+DropsPriceOracleEthereum:USDT
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleEthereum.sol:16
+DropsPriceOracleEthereum:SushiV2UsdcPool
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleEthereum.sol:17
+DropsPriceOracleEthereum:SushiV2UsdtPool
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleEthereum.sol:19
+DropsPriceOracleEthereum:UniV2UsdcPool
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleEthereum.sol:20
+DropsPriceOracleEthereum:UniV2UsdtPool
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleEthereumTestnetSepolia.sol:32
+DropsPriceOracleEthereumTestnetSepolia:init
+  @param  is missing
+  @return missing for unnamed return №1
+
+src/drops/oracle/DropsPriceOracleEthereumTestnetSepolia.sol:46
+DropsPriceOracleEthereumTestnetSepolia:convertUsdToWei
+  @return weiAmount is missing
+
+src/drops/oracle/DropsPriceOracleEthereumTestnetSepolia.sol:52
+DropsPriceOracleEthereumTestnetSepolia:_getSushiUSDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleEthereumTestnetSepolia.sol:69
+DropsPriceOracleEthereumTestnetSepolia:_getSushiUSDT
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleEthereumTestnetSepolia.sol:86
+DropsPriceOracleEthereumTestnetSepolia:_getUniUSDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleEthereumTestnetSepolia.sol:103
+DropsPriceOracleEthereumTestnetSepolia:_getUniUSDT
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleLinea.sol:20
+DropsPriceOracleLinea:init
+  @param  is missing
+  @return missing for unnamed return №1
+
+src/drops/oracle/DropsPriceOracleLinea.sol:36
+DropsPriceOracleLinea:convertUsdToWei
+  @param usdAmount is missing
+  @return weiAmount is missing
+
+src/drops/oracle/DropsPriceOracleLinea.sol:40
+DropsPriceOracleLinea:_getUSDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleLinea.sol:57
+DropsPriceOracleLinea:_getUSDT
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleLinea.sol:74
+DropsPriceOracleLinea:_returnStaticUSDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleLineaTestnetGoerli.sol:20
+DropsPriceOracleLineaTestnetGoerli:init
+  @param  is missing
+  @return missing for unnamed return №1
+
+src/drops/oracle/DropsPriceOracleLineaTestnetGoerli.sol:36
+DropsPriceOracleLineaTestnetGoerli:convertUsdToWei
+  @param usdAmount is missing
+  @return weiAmount is missing
+
+src/drops/oracle/DropsPriceOracleLineaTestnetGoerli.sol:40
+DropsPriceOracleLineaTestnetGoerli:_getUSDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleLineaTestnetGoerli.sol:57
+DropsPriceOracleLineaTestnetGoerli:_getUSDT
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleLineaTestnetGoerli.sol:74
+DropsPriceOracleLineaTestnetGoerli:_returnStaticUSDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleLineaTestnetSepolia.sol:20
+DropsPriceOracleLineaTestnetSepolia:init
+  @param  is missing
+  @return missing for unnamed return №1
+
+src/drops/oracle/DropsPriceOracleLineaTestnetSepolia.sol:36
+DropsPriceOracleLineaTestnetSepolia:convertUsdToWei
+  @param usdAmount is missing
+  @return weiAmount is missing
+
+src/drops/oracle/DropsPriceOracleLineaTestnetSepolia.sol:40
+DropsPriceOracleLineaTestnetSepolia:_getUSDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleLineaTestnetSepolia.sol:57
+DropsPriceOracleLineaTestnetSepolia:_getUSDT
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleLineaTestnetSepolia.sol:74
+DropsPriceOracleLineaTestnetSepolia:_returnStaticUSDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleMantle.sol:25
+DropsPriceOracleMantle:init
+  @param  is missing
+  @return missing for unnamed return №1
+
+src/drops/oracle/DropsPriceOracleMantle.sol:39
+DropsPriceOracleMantle:convertUsdToWei
+  @return weiAmount is missing
+
+src/drops/oracle/DropsPriceOracleMantle.sol:63
+DropsPriceOracleMantle:getTokenPriceRatio
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleMantle.sol:69
+DropsPriceOracleMantle:setTokenPriceRatio
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleMantleTestnet.sol:25
+DropsPriceOracleMantleTestnet:init
+  @param  is missing
+  @return missing for unnamed return №1
+
+src/drops/oracle/DropsPriceOracleMantleTestnet.sol:39
+DropsPriceOracleMantleTestnet:convertUsdToWei
+  @return weiAmount is missing
+
+src/drops/oracle/DropsPriceOracleMantleTestnet.sol:63
+DropsPriceOracleMantleTestnet:getTokenPriceRatio
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleMantleTestnet.sol:69
+DropsPriceOracleMantleTestnet:setTokenPriceRatio
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleOptimism.sol:26
+DropsPriceOracleOptimism:init
+  @param  is missing
+  @return missing for unnamed return №1
+
+src/drops/oracle/DropsPriceOracleOptimism.sol:40
+DropsPriceOracleOptimism:convertUsdToWei
+  @return weiAmount is missing
+
+src/drops/oracle/DropsPriceOracleOptimism.sol:44
+DropsPriceOracleOptimism:_getSushiUSDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleOptimism.sol:12
+DropsPriceOracleOptimism:WETH
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleOptimism.sol:13
+DropsPriceOracleOptimism:USDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleOptimism.sol:15
+DropsPriceOracleOptimism:SushiV2UsdcPool
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleOptimismTestnetSepolia.sol:32
+DropsPriceOracleOptimismTestnetSepolia:init
+  @param  is missing
+  @return missing for unnamed return №1
+
+src/drops/oracle/DropsPriceOracleOptimismTestnetSepolia.sol:46
+DropsPriceOracleOptimismTestnetSepolia:convertUsdToWei
+  @return weiAmount is missing
+
+src/drops/oracle/DropsPriceOracleOptimismTestnetSepolia.sol:52
+DropsPriceOracleOptimismTestnetSepolia:_getSushiUSDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleOptimismTestnetSepolia.sol:69
+DropsPriceOracleOptimismTestnetSepolia:_getSushiUSDT
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleOptimismTestnetSepolia.sol:86
+DropsPriceOracleOptimismTestnetSepolia:_getUniUSDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleOptimismTestnetSepolia.sol:103
+DropsPriceOracleOptimismTestnetSepolia:_getUniUSDT
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOraclePolygon.sol:28
+DropsPriceOraclePolygon:init
+  @param  is missing
+  @return missing for unnamed return №1
+
+src/drops/oracle/DropsPriceOraclePolygon.sol:42
+DropsPriceOraclePolygon:convertUsdToWei
+  @return weiAmount is missing
+
+src/drops/oracle/DropsPriceOraclePolygon.sol:46
+DropsPriceOraclePolygon:_getUSDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOraclePolygon.sol:61
+DropsPriceOraclePolygon:_getUSDT
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOraclePolygon.sol:12
+DropsPriceOraclePolygon:WMATIC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOraclePolygon.sol:13
+DropsPriceOraclePolygon:USDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOraclePolygon.sol:14
+DropsPriceOraclePolygon:USDT
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOraclePolygon.sol:16
+DropsPriceOraclePolygon:SushiV2UsdcPool
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOraclePolygon.sol:17
+DropsPriceOraclePolygon:SushiV2UsdtPool
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOraclePolygonTestnet.sol:28
+DropsPriceOraclePolygonTestnet:init
+  @param  is missing
+  @return missing for unnamed return №1
+
+src/drops/oracle/DropsPriceOraclePolygonTestnet.sol:42
+DropsPriceOraclePolygonTestnet:convertUsdToWei
+  @return weiAmount is missing
+
+src/drops/oracle/DropsPriceOraclePolygonTestnet.sol:46
+DropsPriceOraclePolygonTestnet:_getUSDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOraclePolygonTestnet.sol:63
+DropsPriceOraclePolygonTestnet:_getUSDT
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOraclePolygonTestnet.sol:12
+DropsPriceOraclePolygonTestnet:WMATIC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOraclePolygonTestnet.sol:13
+DropsPriceOraclePolygonTestnet:USDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOraclePolygonTestnet.sol:14
+DropsPriceOraclePolygonTestnet:USDT
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOraclePolygonTestnet.sol:16
+DropsPriceOraclePolygonTestnet:SushiV2UsdcPool
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOraclePolygonTestnet.sol:17
+DropsPriceOraclePolygonTestnet:SushiV2UsdtPool
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleZora.sol:25
+DropsPriceOracleZora:init
+  @param  is missing
+  @return missing for unnamed return №1
+
+src/drops/oracle/DropsPriceOracleZora.sol:39
+DropsPriceOracleZora:convertUsdToWei
+  @return weiAmount is missing
+
+src/drops/oracle/DropsPriceOracleZora.sol:63
+DropsPriceOracleZora:getTokenPriceRatio
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleZora.sol:69
+DropsPriceOracleZora:setTokenPriceRatio
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleZoraTestnetSepolia.sol:20
+DropsPriceOracleZoraTestnetSepolia:init
+  @param  is missing
+  @return missing for unnamed return №1
+
+src/drops/oracle/DropsPriceOracleZoraTestnetSepolia.sol:34
+DropsPriceOracleZoraTestnetSepolia:convertUsdToWei
+  @return weiAmount is missing
+
+src/drops/oracle/DropsPriceOracleZoraTestnetSepolia.sol:38
+DropsPriceOracleZoraTestnetSepolia:_getUSDC
+  Natspec is missing
+
+src/drops/oracle/DropsPriceOracleZoraTestnetSepolia.sol:55
+DropsPriceOracleZoraTestnetSepolia:_getUSDT
+  Natspec is missing
+
+src/drops/oracle/DummyDropsPriceOracle.sol:21
+DummyDropsPriceOracle:init
+  @param  is missing
+  @return missing for unnamed return №1
+
+src/drops/oracle/DummyDropsPriceOracle.sol:35
+DummyDropsPriceOracle:convertUsdToWei
+  @return weiAmount is missing
+
+src/drops/oracle/interface/ILBPair.sol:6
+ILBPair:tokenX
+  Natspec is missing
+
+src/drops/oracle/interface/ILBPair.sol:8
+ILBPair:tokenY
+  Natspec is missing
+
+src/drops/oracle/interface/ILBPair.sol:10
+ILBPair:getReservesAndId
+  Natspec is missing
+
+src/drops/oracle/interface/ILBRouter.sol:8
+ILBRouter:getSwapIn
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:6
+IUniswapV2Pair:Approval
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:7
+IUniswapV2Pair:Transfer
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:43
+IUniswapV2Pair:Mint
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:44
+IUniswapV2Pair:Burn
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:45
+IUniswapV2Pair:Swap
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:53
+IUniswapV2Pair:Sync
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:9
+IUniswapV2Pair:name
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:11
+IUniswapV2Pair:symbol
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:13
+IUniswapV2Pair:decimals
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:15
+IUniswapV2Pair:totalSupply
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:17
+IUniswapV2Pair:balanceOf
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:19
+IUniswapV2Pair:allowance
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:21
+IUniswapV2Pair:approve
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:23
+IUniswapV2Pair:transfer
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:25
+IUniswapV2Pair:transferFrom
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:27
+IUniswapV2Pair:DOMAIN_SEPARATOR
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:29
+IUniswapV2Pair:PERMIT_TYPEHASH
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:31
+IUniswapV2Pair:nonces
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:33
+IUniswapV2Pair:permit
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:55
+IUniswapV2Pair:MINIMUM_LIQUIDITY
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:57
+IUniswapV2Pair:factory
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:59
+IUniswapV2Pair:token0
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:61
+IUniswapV2Pair:token1
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:63
+IUniswapV2Pair:getReserves
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:65
+IUniswapV2Pair:price0CumulativeLast
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:67
+IUniswapV2Pair:price1CumulativeLast
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:69
+IUniswapV2Pair:kLast
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:71
+IUniswapV2Pair:mint
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:73
+IUniswapV2Pair:burn
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:75
+IUniswapV2Pair:swap
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:77
+IUniswapV2Pair:skim
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:79
+IUniswapV2Pair:sync
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV2Pair.sol:81
+IUniswapV2Pair:initialize
+  Natspec is missing
+
+src/drops/oracle/interface/IUniswapV3Pair.sol:50
+IUniswapV3PoolState:slot0
+  @return tick is missing
+  @return observationIndex is missing
+  @return observationCardinality is missing
+  @return observationCardinalityNext is missing
+  @return feeProtocol is missing
+  @return unlocked is missing
+
+src/drops/oracle/interface/IUniswapV3Pair.sol:65
+IUniswapV3PoolState:feeGrowthGlobal0X128
+  @return missing for unnamed return №1
+
+src/drops/oracle/interface/IUniswapV3Pair.sol:69
+IUniswapV3PoolState:feeGrowthGlobal1X128
+  @return missing for unnamed return №1
+
+src/drops/oracle/interface/IUniswapV3Pair.sol:73
+IUniswapV3PoolState:protocolFees
+  @return token0 is missing
+  @return token1 is missing
+
+src/drops/oracle/interface/IUniswapV3Pair.sol:77
+IUniswapV3PoolState:liquidity
+  @return missing for unnamed return №1
+
+src/drops/oracle/interface/IUniswapV3Pair.sol:93
+IUniswapV3PoolState:ticks
+  @return liquidityNet is missing
+  @return feeGrowthOutside0X128 is missing
+  @return feeGrowthOutside1X128 is missing
+  @return tickCumulativeOutside is missing
+  @return secondsPerLiquidityOutsideX128 is missing
+  @return secondsOutside is missing
+  @return initialized is missing
+
+src/drops/oracle/interface/IUniswapV3Pair.sol:110
+IUniswapV3PoolState:tickBitmap
+  @param wordPosition is missing
+  @return missing for unnamed return №1
+
+src/drops/oracle/interface/IUniswapV3Pair.sol:119
+IUniswapV3PoolState:positions
+  @return feeGrowthInside0LastX128 is missing
+  @return feeGrowthInside1LastX128 is missing
+  @return tokensOwed0 is missing
+  @return tokensOwed1 is missing
+
+src/drops/oracle/interface/IUniswapV3Pair.sol:140
+IUniswapV3PoolState:observations
+  @return tickCumulative is missing
+  @return secondsPerLiquidityCumulativeX128 is missing
+  @return initialized is missing
+
+src/drops/oracle/interface/IUniswapV3Pair.sol:319
+IUniswapV3PoolEvents:Collect
+  @param recipient is missing
+
+src/drops/oracle/interface/IUniswapV3Pair.sol:398
+IUniswapV3PoolEvents:CollectProtocol
+  @param amount0 is duplicated
+  @param amount1 is missing
+
+src/drops/proxy/DropsMetadataRendererProxy.sol:139
+DropsMetadataRendererProxy:init
+  Natspec is missing
+
+src/drops/proxy/DropsMetadataRendererProxy.sol:161
+DropsMetadataRendererProxy:getDropsMetadataRenderer
+  Natspec is missing
+
+src/drops/proxy/DropsMetadataRendererProxy.sol:161
+DropsMetadataRendererProxy:setDropsMetadataRenderer
+  Natspec is missing
+
+src/drops/proxy/DropsPriceOracleProxy.sol:143
+DropsPriceOracleProxy:init
+  Natspec is missing
+
+src/drops/proxy/DropsPriceOracleProxy.sol:161
+DropsPriceOracleProxy:getDropsPriceOracle
+  Natspec is missing
+
+src/drops/proxy/DropsPriceOracleProxy.sol:161
+DropsPriceOracleProxy:setDropsPriceOracle
+  Natspec is missing
+
+src/drops/proxy/EditionsMetadataRendererProxy.sol:138
+EditionsMetadataRendererProxy:init
+  Natspec is missing
+
+src/drops/proxy/EditionsMetadataRendererProxy.sol:161
+EditionsMetadataRendererProxy:getEditionsMetadataRenderer
+  Natspec is missing
+
+src/drops/proxy/EditionsMetadataRendererProxy.sol:161
+EditionsMetadataRendererProxy:setEditionsMetadataRenderer
+  Natspec is missing
+
+src/drops/proxy/HolographDropERC721Proxy.sol:145
+HolographDropERC721Proxy:init
+  Natspec is missing
+
+src/drops/proxy/HolographDropERC721Proxy.sol:166
+HolographDropERC721Proxy:getHolographDropERC721Source
+  Natspec is missing
+
+src/drops/token/HolographDropERC721.sol:371
+HolographDropERC721:supportsInterface
+  Natspec is missing
+
+src/drops/token/HolographDropERC721.sol:384
+HolographDropERC721:owner
+  Natspec is missing
+
+src/drops/token/HolographDropERC721.sol:388
+HolographDropERC721:isAdmin
+  Natspec is missing
+
+src/drops/token/HolographDropERC721.sol:392
+HolographDropERC721:beforeSafeTransfer
+  Natspec is missing
+
+src/drops/token/HolographDropERC721.sol:413
+HolographDropERC721:beforeTransfer
+  Natspec is missing
+
+src/drops/token/HolographDropERC721.sol:430
+HolographDropERC721:onIsApprovedForAll
+  Natspec is missing
+
+src/drops/token/HolographDropERC721.sol:459
+HolographDropERC721:getHolographFeeUsd
+  @param quantity is missing
+  @return fee is missing
+
+src/drops/token/HolographDropERC721.sol:471
+HolographDropERC721:getHolographFeeWei
+  @param quantity is missing
+  @return missing for unnamed return №1
+
+src/drops/token/HolographDropERC721.sol:478
+HolographDropERC721:mintedPerAddress
+  @return missing for unnamed return №1
+
+src/drops/token/HolographDropERC721.sol:498
+HolographDropERC721:metadataRenderer
+  @return missing for unnamed return №1
+
+src/drops/token/HolographDropERC721.sol:504
+HolographDropERC721:getNativePrice
+  @return missing for unnamed return №1
+
+src/drops/token/HolographDropERC721.sol:511
+HolographDropERC721:name
+  @return missing for unnamed return №1
+
+src/drops/token/HolographDropERC721.sol:523
+HolographDropERC721:multicall
+  Natspec is missing
+
+src/drops/token/HolographDropERC721.sol:536
+HolographDropERC721:purchase
+  @param quantity is missing
+  @return missing for unnamed return №1
+
+src/drops/token/HolographDropERC721.sol:598
+HolographDropERC721:purchasePresale
+  @return missing for unnamed return №1
+
+src/drops/token/HolographDropERC721.sol:706
+HolographDropERC721:modifyMarketFilterAddress
+  Natspec is missing
+
+src/drops/token/HolographDropERC721.sol:713
+HolographDropERC721:adminMint
+  @return missing for unnamed return №1
+
+src/drops/token/HolographDropERC721.sol:723
+HolographDropERC721:adminMintAirdrop
+  @return missing for unnamed return №1
+
+src/drops/token/HolographDropERC721.sol:833
+HolographDropERC721:_presaleActive
+  Natspec is missing
+
+src/drops/token/HolographDropERC721.sol:838
+HolographDropERC721:_publicSaleActive
+  Natspec is missing
+
+src/drops/token/HolographDropERC721.sol:844
+HolographDropERC721:_usdToWei
+  Natspec is missing
+
+src/drops/token/HolographDropERC721.sol:851
+HolographDropERC721:_mintNFTs
+  Natspec is missing
+
+src/drops/token/HolographDropERC721.sol:867
+HolographDropERC721:_payoutHolographFee
+  Natspec is missing
+
+src/drops/token/HolographDropERC721.sol:261
+HolographDropERC721:canMintTokens
+  @param quantity is missing
+
+src/drops/token/HolographDropERC721V2.sol:304
+HolographDropERC721V2:supportsInterface
+  Natspec is missing
+
+src/drops/token/HolographDropERC721V2.sol:311
+HolographDropERC721V2:owner
+  Natspec is missing
+
+src/drops/token/HolographDropERC721V2.sol:312
+HolographDropERC721V2:isAdmin
+  Natspec is missing
+
+src/drops/token/HolographDropERC721V2.sol:336
+HolographDropERC721V2:getHolographFeeFromTreasury
+  @return missing for unnamed return №1
+
+src/drops/token/HolographDropERC721V2.sol:351
+HolographDropERC721V2:getHolographFeeUsd
+  @param quantity is missing
+  @return fee is missing
+
+src/drops/token/HolographDropERC721V2.sol:363
+HolographDropERC721V2:getHolographFeeWei
+  @param quantity is missing
+  @return missing for unnamed return №1
+
+src/drops/token/HolographDropERC721V2.sol:370
+HolographDropERC721V2:mintedPerAddress
+  @return missing for unnamed return №1
+
+src/drops/token/HolographDropERC721V2.sol:390
+HolographDropERC721V2:metadataRenderer
+  @return missing for unnamed return №1
+
+src/drops/token/HolographDropERC721V2.sol:396
+HolographDropERC721V2:getNativePrice
+  @return missing for unnamed return №1
+
+src/drops/token/HolographDropERC721V2.sol:403
+HolographDropERC721V2:name
+  @return missing for unnamed return №1
+
+src/drops/token/HolographDropERC721V2.sol:414
+HolographDropERC721V2:multicall
+  Natspec is missing
+
+src/drops/token/HolographDropERC721V2.sol:423
+HolographDropERC721V2:purchase
+  @param quantity is missing
+  @return missing for unnamed return №1
+
+src/drops/token/HolographDropERC721V2.sol:491
+HolographDropERC721V2:purchasePresale
+  @return missing for unnamed return №1
+
+src/drops/token/HolographDropERC721V2.sol:554
+HolographDropERC721V2:adminMint
+  @return missing for unnamed return №1
+
+src/drops/token/HolographDropERC721V2.sol:564
+HolographDropERC721V2:adminMintAirdrop
+  @return missing for unnamed return №1
+
+src/drops/token/HolographDropERC721V2.sol:674
+HolographDropERC721V2:_presaleActive
+  Natspec is missing
+
+src/drops/token/HolographDropERC721V2.sol:680
+HolographDropERC721V2:_publicSaleActive
+  Natspec is missing
+
+src/drops/token/HolographDropERC721V2.sol:686
+HolographDropERC721V2:_usdToWei
+  Natspec is missing
+
+src/drops/token/HolographDropERC721V2.sol:691
+HolographDropERC721V2:_mintNFTs
+  Natspec is missing
+
+src/drops/token/HolographDropERC721V2.sol:710
+HolographDropERC721V2:_payoutHolographFee
+  Natspec is missing
+
+src/drops/token/HolographDropERC721V2.sol:226
+HolographDropERC721V2:canMintTokens
+  @param quantity is missing
+
+src/drops/utils/NFTMetadataRenderer.sol:6
+Math:Rounding
+  Natspec is missing
+
+src/drops/utils/NFTMetadataRenderer.sol:15
+Math:max
+  @param a is missing
+  @param b is missing
+  @return missing for unnamed return №1
+
+src/drops/utils/NFTMetadataRenderer.sol:22
+Math:min
+  @param a is missing
+  @param b is missing
+  @return missing for unnamed return №1
+
+src/drops/utils/NFTMetadataRenderer.sol:30
+Math:average
+  @param a is missing
+  @param b is missing
+  @return missing for unnamed return №1
+
+src/drops/utils/NFTMetadataRenderer.sol:41
+Math:ceilDiv
+  @param a is missing
+  @param b is missing
+  @return missing for unnamed return №1
+
+src/drops/utils/NFTMetadataRenderer.sol:51
+Math:mulDiv
+  @param x is missing
+  @param y is missing
+  @param denominator is missing
+  @return result is missing
+
+src/drops/utils/NFTMetadataRenderer.sol:132
+Math:mulDiv
+  @param x is missing
+  @param y is missing
+  @param denominator is missing
+  @param rounding is missing
+  @return missing for unnamed return №1
+
+src/drops/utils/NFTMetadataRenderer.sol:145
+Math:sqrt
+  @param a is missing
+  @return missing for unnamed return №1
+
+src/drops/utils/NFTMetadataRenderer.sol:181
+Math:sqrt
+  @param a is missing
+  @param rounding is missing
+  @return missing for unnamed return №1
+
+src/drops/utils/NFTMetadataRenderer.sol:192
+Math:log2
+  @param value is missing
+  @return missing for unnamed return №1
+
+src/drops/utils/NFTMetadataRenderer.sol:234
+Math:log2
+  @param value is missing
+  @param rounding is missing
+  @return missing for unnamed return №1
+
+src/drops/utils/NFTMetadataRenderer.sol:245
+Math:log10
+  @param value is missing
+  @return missing for unnamed return №1
+
+src/drops/utils/NFTMetadataRenderer.sol:283
+Math:log10
+  @param value is missing
+  @param rounding is missing
+  @return missing for unnamed return №1
+
+src/drops/utils/NFTMetadataRenderer.sol:296
+Math:log256
+  @param value is missing
+  @return missing for unnamed return №1
+
+src/drops/utils/NFTMetadataRenderer.sol:326
+Math:log256
+  @param value is missing
+  @param rounding is missing
+  @return missing for unnamed return №1
+
+src/drops/utils/NFTMetadataRenderer.sol:341
+Strings:toString
+  @param value is missing
+  @return missing for unnamed return №1
+
+src/drops/utils/NFTMetadataRenderer.sol:366
+Strings:toHexString
+  @param value is missing
+  @return missing for unnamed return №1
+
+src/drops/utils/NFTMetadataRenderer.sol:375
+Strings:toHexString
+  @param value is missing
+  @param length is missing
+  @return missing for unnamed return №1
+
+src/drops/utils/NFTMetadataRenderer.sol:390
+Strings:toHexString
+  @param addr is missing
+  @return missing for unnamed return №1
+
+src/drops/utils/NFTMetadataRenderer.sol:335
+Strings:_SYMBOLS
+  Natspec is missing
+
+src/drops/utils/NFTMetadataRenderer.sol:336
+Strings:_ADDRESS_LENGTH
+  Natspec is missing
+
+src/drops/utils/NFTMetadataRenderer.sol:404
+Base64:encode
+  @param data is missing
+  @return missing for unnamed return №1
+
+src/drops/utils/NFTMetadataRenderer.sol:488
+NFTMetadataRenderer:createMetadataEdition
+  Natspec is missing
+
+src/drops/utils/NFTMetadataRenderer.sol:501
+NFTMetadataRenderer:encodeContractURIJSON
+  Natspec is missing
+
+src/drops/utils/NFTMetadataRenderer.sol:545
+NFTMetadataRenderer:createMetadataJSON
+  Natspec is missing
+
+src/drops/utils/NFTMetadataRenderer.sol:578
+NFTMetadataRenderer:encodeMetadataJSON
+  Natspec is missing
+
+src/drops/utils/NFTMetadataRenderer.sol:586
+NFTMetadataRenderer:tokenMediaData
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:308
+HolographERC20:_sourceCall
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:329
+HolographERC20:decimals
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:342
+HolographERC20:supportsInterface
+  @param interfaceId is missing
+  @return missing for unnamed return №1
+
+src/enforcer/HolographERC20.sol:358
+HolographERC20:allowance
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:362
+HolographERC20:balanceOf
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:367
+HolographERC20:DOMAIN_SEPARATOR
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:369
+HolographERC20:name
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:369
+HolographERC20:nonces
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:372
+HolographERC20:symbol
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:373
+HolographERC20:totalSupply
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:377
+HolographERC20:approve
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:391
+HolographERC20:burn
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:402
+HolographERC20:_allowance
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:417
+HolographERC20:burnFrom
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:430
+HolographERC20:decreaseAllowance
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:455
+HolographERC20:bridgeIn
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:470
+HolographERC20:bridgeOut
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:518
+HolographERC20:holographBridgeMint
+  @param to is missing
+  @param amount is missing
+  @return missing for unnamed return №1
+
+src/enforcer/HolographERC20.sol:529
+HolographERC20:increaseAllowance
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:555
+HolographERC20:onERC20Received
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:594
+HolographERC20:permit
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:626
+HolographERC20:safeTransfer
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:632
+HolographERC20:safeTransfer
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:649
+HolographERC20:safeTransferFrom
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:657
+HolographERC20:safeTransferFrom
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:695
+HolographERC20:sourceBurn
+  @param from is missing
+  @param amount is missing
+
+src/enforcer/HolographERC20.sol:699
+HolographERC20:sourceMint
+  @param to is missing
+  @param amount is missing
+
+src/enforcer/HolographERC20.sol:703
+HolographERC20:sourceMintBatch
+  @param wallets is missing
+  @param amounts is missing
+
+src/enforcer/HolographERC20.sol:714
+HolographERC20:sourceTransfer
+  @param from is missing
+  @param to is missing
+  @param amount is missing
+
+src/enforcer/HolographERC20.sol:719
+HolographERC20:sourceTransfer
+  @param destination is missing
+  @param amount is missing
+
+src/enforcer/HolographERC20.sol:727
+HolographERC20:sourceExternalCall
+  @param target is missing
+  @param data is missing
+
+src/enforcer/HolographERC20.sol:736
+HolographERC20:transfer
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:749
+HolographERC20:transferFrom
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:773
+HolographERC20:_approve
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:781
+HolographERC20:_burn
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:805
+HolographERC20:_transfer
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:823
+HolographERC20:_registryTransfer
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:833
+HolographERC20:_useNonce
+  @param account is missing
+  @return current is missing
+
+src/enforcer/HolographERC20.sol:840
+HolographERC20:_isContract
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:853
+HolographERC20:_recover
+  @param r is missing
+  @param s is missing
+  @param v is missing
+  @param hash is missing
+  @return signer is missing
+
+src/enforcer/HolographERC20.sol:875
+HolographERC20:_interfaces
+  @return missing for unnamed return №1
+
+src/enforcer/HolographERC20.sol:875
+HolographERC20:owner
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:875
+HolographERC20:_holograph
+  Natspec is missing
+
+src/enforcer/HolographERC20.sol:875
+HolographERC20:_isEventRegistered
+  Natspec is missing
+
+src/enforcer/HolographERC721.sol:1105
+HolographERC721:FundsReceived
+  @param source is missing
+  @param amount is missing
+
+src/enforcer/HolographERC721.sol:370
+HolographERC721:tokenURI
+  @param tokenId is missing
+
+src/enforcer/HolographERC721.sol:449
+HolographERC721:bridgeIn
+  Natspec is missing
+
+src/enforcer/HolographERC721.sol:465
+HolographERC721:bridgeOut
+  Natspec is missing
+
+src/enforcer/HolographERC721.sol:533
+HolographERC721:safeTransferFrom
+  @param data is missing
+
+src/enforcer/HolographERC721.sol:585
+HolographERC721:sourceBurn
+  @param tokenId is missing
+
+src/enforcer/HolographERC721.sol:589
+HolographERC721:sourceMint
+  @param to is missing
+  @param tokenId is missing
+
+src/enforcer/HolographERC721.sol:601
+HolographERC721:sourceGetChainPrepend
+  @return missing for unnamed return №1
+
+src/enforcer/HolographERC721.sol:606
+HolographERC721:sourceMintBatch
+  @param to is missing
+  @param tokenIds is missing
+
+src/enforcer/HolographERC721.sol:625
+HolographERC721:sourceMintBatch
+  @param wallets is missing
+  @param tokenIds is missing
+
+src/enforcer/HolographERC721.sol:638
+HolographERC721:sourceMintBatchIncremental
+  @param to is missing
+  @param startingTokenId is missing
+  @param length is missing
+
+src/enforcer/HolographERC721.sol:658
+HolographERC721:sourceTransfer
+  @param to is missing
+  @param tokenId is missing
+
+src/enforcer/HolographERC721.sol:666
+HolographERC721:sourceExternalCall
+  @param target is missing
+  @param data is missing
+
+src/enforcer/HolographERC721.sol:733
+HolographERC721:burned
+  Natspec is missing
+
+src/enforcer/HolographERC721.sol:743
+HolographERC721:exists
+  Natspec is missing
+
+src/enforcer/HolographERC721.sol:842
+HolographERC721:onERC721Received
+  @param _operator is missing
+  @param _from is missing
+  @param _tokenId is missing
+  @param _data is missing
+
+src/enforcer/HolographERC721.sol:930
+HolographERC721:_removeTokenFromAllTokensEnumeration
+  Natspec is missing
+
+src/enforcer/HolographERC721.sol:983
+HolographERC721:_chain
+  Natspec is missing
+
+src/enforcer/HolographERC721.sol:1002
+HolographERC721:_sourceApproved
+  Natspec is missing
+
+src/enforcer/HolographERC721.sol:1030
+HolographERC721:_isApprovedStrict
+  Natspec is missing
+
+src/enforcer/HolographERC721.sol:1044
+HolographERC721:_isContract
+  Natspec is missing
+
+src/enforcer/HolographERC721.sol:1055
+HolographERC721:_interfaces
+  @return missing for unnamed return №1
+
+src/enforcer/HolographERC721.sol:1059
+HolographERC721:owner
+  Natspec is missing
+
+src/enforcer/HolographERC721.sol:1073
+HolographERC721:_holograph
+  Natspec is missing
+
+src/enforcer/HolographERC721.sol:1081
+HolographERC721:_royalties
+  @return missing for unnamed return №1
+
+src/enforcer/HolographERC721.sol:1088
+HolographERC721:_registryTransfer
+  Natspec is missing
+
+src/enforcer/HolographERC721.sol:1152
+HolographERC721:_sourceCall
+  Natspec is missing
+
+src/enforcer/HolographERC721.sol:1152
+HolographERC721:_isEventRegistered
+  Natspec is missing
+
+src/enforcer/HolographGeneric.sol:224
+HolographGeneric:sourceTransfer
+  @param destination is missing
+  @param amount is missing
+
+src/enforcer/HolographGeneric.sol:227
+HolographGeneric:sourceExternalCall
+  @param target is missing
+  @param data is missing
+
+src/enforcer/HolographGeneric.sol:268
+HolographGeneric:_sourceCall
+  Natspec is missing
+
+src/enforcer/HolographGeneric.sol:297
+HolographGeneric:supportsInterface
+  @param interfaceId is missing
+  @return missing for unnamed return №1
+
+src/enforcer/HolographGeneric.sol:308
+HolographGeneric:bridgeIn
+  Natspec is missing
+
+src/enforcer/HolographGeneric.sol:318
+HolographGeneric:bridgeOut
+  Natspec is missing
+
+src/enforcer/HolographGeneric.sol:367
+HolographGeneric:sourceEmit
+  @param eventData is missing
+
+src/enforcer/HolographGeneric.sol:375
+HolographGeneric:sourceEmit
+  Natspec is missing
+
+src/enforcer/HolographGeneric.sol:380
+HolographGeneric:sourceEmit
+  Natspec is missing
+
+src/enforcer/HolographGeneric.sol:391
+HolographGeneric:sourceEmit
+  Natspec is missing
+
+src/enforcer/HolographGeneric.sol:401
+HolographGeneric:sourceEmit
+  Natspec is missing
+
+src/enforcer/HolographGeneric.sol:409
+HolographGeneric:SourceGeneric
+  @return sourceContract is missing
+
+src/enforcer/HolographGeneric.sol:409
+HolographGeneric:_interfaces
+  @return missing for unnamed return №1
+
+src/enforcer/HolographGeneric.sol:409
+HolographGeneric:owner
+  Natspec is missing
+
+src/enforcer/HolographGeneric.sol:409
+HolographGeneric:_holograph
+  Natspec is missing
+
+src/enforcer/HolographGeneric.sol:409
+HolographGeneric:_isEventRegistered
+  Natspec is missing
+
+src/enforcer/HolographRoyalties.sol:221
+HolographRoyalties:initHolographRoyalties
+  Natspec is missing
+
+src/enforcer/HolographRoyalties.sol:264
+HolographRoyalties:getSourceContract
+  @return sourceContract is missing
+
+src/enforcer/HolographRoyalties.sol:305
+HolographRoyalties:_getReceiver
+  @param tokenId is missing
+
+src/enforcer/HolographRoyalties.sol:332
+HolographRoyalties:_getBp
+  @param tokenId is missing
+
+src/enforcer/HolographRoyalties.sol:358
+HolographRoyalties:_getPayoutAddresses
+  Natspec is missing
+
+src/enforcer/HolographRoyalties.sol:381
+HolographRoyalties:_setPayoutAddresses
+  Natspec is missing
+
+src/enforcer/HolographRoyalties.sol:394
+HolographRoyalties:_getPayoutBps
+  Natspec is missing
+
+src/enforcer/HolographRoyalties.sol:407
+HolographRoyalties:_setPayoutBps
+  Natspec is missing
+
+src/enforcer/HolographRoyalties.sol:410
+HolographRoyalties:_getTokenAddress
+  Natspec is missing
+
+src/enforcer/HolographRoyalties.sol:415
+HolographRoyalties:_setTokenAddress
+  Natspec is missing
+
+src/enforcer/HolographRoyalties.sol:649
+HolographRoyalties:royaltyInfo
+  Natspec is missing
+
+src/enforcer/HolographRoyalties.sol:660
+HolographRoyalties:getFeeBps
+  Natspec is missing
+
+src/enforcer/HolographRoyalties.sol:667
+HolographRoyalties:getFeeRecipients
+  Natspec is missing
+
+src/enforcer/HolographRoyalties.sol:688
+HolographRoyalties:getRoyalties
+  Natspec is missing
+
+src/enforcer/HolographRoyalties.sol:696
+HolographRoyalties:getFees
+  Natspec is missing
+
+src/enforcer/HolographRoyalties.sol:727
+HolographRoyalties:tokenCreator
+  Natspec is missing
+
+src/enforcer/HolographRoyalties.sol:736
+HolographRoyalties:calculateRoyaltyFee
+  Natspec is missing
+
+src/enforcer/HolographRoyalties.sol:748
+HolographRoyalties:marketContract
+  Natspec is missing
+
+src/enforcer/HolographRoyalties.sol:751
+HolographRoyalties:tokenCreators
+  Natspec is missing
+
+src/enforcer/HolographRoyalties.sol:758
+HolographRoyalties:bidSharesForToken
+  Natspec is missing
+
+src/enforcer/HolographRoyalties.sol:782
+HolographRoyalties:_callOptionalReturn
+  @param target is missing
+  @param functionSignature is missing
+  @param payload is missing
+
+src/enforcer/HolographRoyalties.sol:163
+HolographRoyalties:_bpString
+  Natspec is missing
+
+src/enforcer/HolographRoyalties.sol:166
+HolographRoyalties:_receiverString
+  Natspec is missing
+
+src/enforcer/HolographRoyalties.sol:171
+HolographRoyalties:_tokenAddressString
+  Natspec is missing
+
+src/enforcer/Holographer.sol:207
+Holographer:getContractType
+  @return contractType is missing
+
+src/enforcer/Holographer.sol:216
+Holographer:getDeploymentBlock
+  @return deploymentBlock is missing
+
+src/enforcer/Holographer.sol:224
+Holographer:getHolograph
+  @return holograph is missing
+
+src/enforcer/Holographer.sol:233
+Holographer:getHolographEnforcer
+  @return missing for unnamed return №1
+
+src/enforcer/Holographer.sol:245
+Holographer:getOriginChain
+  @return originChain is missing
+
+src/enforcer/Holographer.sol:254
+Holographer:getSourceContract
+  @return sourceContract is missing
+
+src/extension/BatchMintMetadata.sol:15
+BatchMintMetadata:BatchMintInvalidBatchId
+  @param index is missing
+
+src/extension/BatchMintMetadata.sol:18
+BatchMintMetadata:BatchMintInvalidTokenId
+  @param tokenId is missing
+
+src/extension/BatchMintMetadata.sol:21
+BatchMintMetadata:BatchMintMetadataFrozen
+  @param batchId is missing
+
+src/extension/BatchMintMetadata.sol:40
+BatchMintMetadata:BatchMetadataUpdate
+  Natspec is missing
+
+src/extension/BatchMintMetadata.sol:47
+BatchMintMetadata:getBaseURICount
+  @return missing for unnamed return №1
+
+src/extension/BatchMintMetadata.sol:56
+BatchMintMetadata:getBatchIdAtIndex
+  @return missing for unnamed return №1
+
+src/extension/BatchMintMetadata.sol:64
+BatchMintMetadata:_getBatchId
+  @param _tokenId is missing
+  @return batchId is missing
+  @return index is missing
+
+src/extension/BatchMintMetadata.sol:81
+BatchMintMetadata:_getBaseURI
+  @param _tokenId is missing
+  @return missing for unnamed return №1
+
+src/extension/BatchMintMetadata.sol:95
+BatchMintMetadata:_getBatchStartId
+  @param _batchID is missing
+  @return missing for unnamed return №1
+
+src/extension/BatchMintMetadata.sol:112
+BatchMintMetadata:_setBaseURI
+  @param _batchId is missing
+  @param _baseURIs is missing
+
+src/extension/BatchMintMetadata.sol:121
+BatchMintMetadata:_freezeBaseURI
+  @param _batchId is missing
+
+src/extension/BatchMintMetadata.sol:131
+BatchMintMetadata:_batchMintMetadata
+  @param _startId is missing
+  @param _amountToMint is missing
+  @param _baseURIsForTokens is missing
+  @return nextTokenIdToMint is missing
+  @return batchId is missing
+
+src/extension/InitializableLazyMint.sol:142
+InitializableLazyMint:syncLazyMint
+  @return missing for unnamed return №1
+
+src/extension/InitializableLazyMint.sol:142
+InitializableLazyMint:_isLazyMintInitialized
+  Natspec is missing
+
+src/extension/InitializableLazyMint.sol:142
+InitializableLazyMint:_setLazyMintInitialized
+  Natspec is missing
+
+src/extension/LazyMint.sol:18
+LazyMint:LazyMintInvalidAmount
+  Natspec is missing
+
+src/extension/LazyMint.sol:55
+LazyMint:_canLazyMint
+  @return missing for unnamed return №1
+
+src/faucet/Faucet.sol:168
+Faucet:setToken
+  @param tokenAddress is missing
+
+src/faucet/Faucet.sol:173
+Faucet:grantTokens
+  @param _address is missing
+
+src/faucet/Faucet.sol:178
+Faucet:grantTokens
+  Natspec is missing
+
+src/faucet/Faucet.sol:185
+Faucet:withdrawAllTokens
+  @param _receiver is missing
+
+src/faucet/Faucet.sol:193
+Faucet:withdrawTokens
+  @param _receiver is missing
+  @param _amountWei is missing
+
+src/faucet/Faucet.sol:202
+Faucet:setWithdrawCooldown
+  @param _waitTimeSeconds is missing
+
+src/faucet/Faucet.sol:202
+Faucet:setWithdrawAmount
+  @param _amountWei is missing
+
+src/faucet/Faucet.sol:202
+Faucet:isAllowedToWithdraw
+  @param _address is missing
+  @return missing for unnamed return №1
+
+src/faucet/Faucet.sol:202
+Faucet:getLastAccessTime
+  @param _address is missing
+  @return missing for unnamed return №1
+
+src/faucet/Faucet.sol:202
+Faucet:onlyOwner
+  Natspec is missing
+
+src/faucet/Faucet.sol:134
+Faucet:owner
+  Natspec is missing
+
+src/faucet/Faucet.sol:137
+Faucet:token
+  Natspec is missing
+
+src/faucet/Faucet.sol:137
+Faucet:faucetDripAmount
+  Natspec is missing
+
+src/faucet/Faucet.sol:139
+Faucet:faucetCooldown
+  Natspec is missing
+
+src/faucet/Faucet.sol:139
+Faucet:lastAccessTime
+  Natspec is missing
+
+src/interface/CollectionURI.sol:107
+CollectionURI:contractURI
+  Natspec is missing
+
+src/interface/CrossChainMessageInterface.sol:128
+CrossChainMessageInterface:send
+  Natspec is missing
+
+src/interface/CrossChainMessageInterface.sol:128
+CrossChainMessageInterface:getMessageFee
+  Natspec is missing
+
+src/interface/CrossChainMessageInterface.sol:128
+CrossChainMessageInterface:getHlgFee
+  Natspec is missing
+
+src/interface/ERC1271.sol:18
+ERC1271:isValidSignature
+  @return magicValue is missing
+
+src/interface/ERC20.sol:18
+ERC20:Transfer
+  Natspec is missing
+
+src/interface/ERC20.sol:20
+ERC20:Approval
+  Natspec is missing
+
+src/interface/ERC20.sol:6
+ERC20:totalSupply
+  Natspec is missing
+
+src/interface/ERC20.sol:8
+ERC20:balanceOf
+  Natspec is missing
+
+src/interface/ERC20.sol:10
+ERC20:transfer
+  Natspec is missing
+
+src/interface/ERC20.sol:12
+ERC20:transferFrom
+  Natspec is missing
+
+src/interface/ERC20.sol:14
+ERC20:approve
+  Natspec is missing
+
+src/interface/ERC20.sol:16
+ERC20:allowance
+  Natspec is missing
+
+src/interface/ERC20Burnable.sol:6
+ERC20Burnable:burn
+  Natspec is missing
+
+src/interface/ERC20Burnable.sol:8
+ERC20Burnable:burnFrom
+  Natspec is missing
+
+src/interface/ERC20Metadata.sol:6
+ERC20Metadata:decimals
+  Natspec is missing
+
+src/interface/ERC20Metadata.sol:8
+ERC20Metadata:name
+  Natspec is missing
+
+src/interface/ERC20Metadata.sol:10
+ERC20Metadata:symbol
+  Natspec is missing
+
+src/interface/ERC20Permit.sol:36
+ERC20Permit:permit
+  @param account is missing
+  @param spender is missing
+  @param value is missing
+  @param deadline is missing
+  @param v is missing
+  @param r is missing
+  @param s is missing
+
+src/interface/ERC20Permit.sol:53
+ERC20Permit:nonces
+  @param account is missing
+  @return missing for unnamed return №1
+
+src/interface/ERC20Permit.sol:59
+ERC20Permit:DOMAIN_SEPARATOR
+  @return missing for unnamed return №1
+
+src/interface/ERC20Receiver.sol:6
+ERC20Receiver:onERC20Received
+  Natspec is missing
+
+src/interface/ERC20Safer.sol:6
+ERC20Safer:safeTransfer
+  Natspec is missing
+
+src/interface/ERC20Safer.sol:8
+ERC20Safer:safeTransfer
+  Natspec is missing
+
+src/interface/ERC20Safer.sol:10
+ERC20Safer:safeTransferFrom
+  Natspec is missing
+
+src/interface/ERC20Safer.sol:12
+ERC20Safer:safeTransferFrom
+  Natspec is missing
+
+src/interface/ERC721.sol:15
+ERC721:Transfer
+  @param _from is missing
+  @param _to is missing
+  @param _tokenId is missing
+
+src/interface/ERC721.sol:21
+ERC721:Approval
+  @param _owner is missing
+  @param _approved is missing
+  @param _tokenId is missing
+
+src/interface/ERC721.sol:25
+ERC721:ApprovalForAll
+  @param _owner is missing
+  @param _operator is missing
+  @param _approved is missing
+
+src/interface/ERC721Metadata.sol:11
+ERC721Metadata:name
+  @return _name is missing
+
+src/interface/ERC721Metadata.sol:14
+ERC721Metadata:symbol
+  @return _symbol is missing
+
+src/interface/ERC721Metadata.sol:20
+ERC721Metadata:tokenURI
+  @param _tokenId is missing
+  @return missing for unnamed return №1
+
+src/interface/HolographBridgeInterface.sol:144
+HolographBridgeInterface:bridgeInRequest
+  @param nonce is missing
+
+src/interface/HolographBridgeInterface.sol:179
+HolographBridgeInterface:revertedBridgeOutRequest
+  @return revertReason is missing
+
+src/interface/HolographBridgeInterface.sol:237
+HolographBridgeInterface:getFactory
+  @return factory is missing
+
+src/interface/HolographBridgeInterface.sol:249
+HolographBridgeInterface:getHolograph
+  @return holograph is missing
+
+src/interface/HolographBridgeInterface.sol:259
+HolographBridgeInterface:getJobNonce
+  @return jobNonce is missing
+
+src/interface/HolographBridgeInterface.sol:259
+HolographBridgeInterface:getOperator
+  @return operator is missing
+
+src/interface/HolographBridgeInterface.sol:259
+HolographBridgeInterface:getRegistry
+  @return registry is missing
+
+src/interface/HolographERC20Interface.sol:137
+HolographERC20Interface:holographBridgeMint
+  Natspec is missing
+
+src/interface/HolographERC20Interface.sol:137
+HolographERC20Interface:sourceBurn
+  Natspec is missing
+
+src/interface/HolographERC20Interface.sol:137
+HolographERC20Interface:sourceMint
+  Natspec is missing
+
+src/interface/HolographERC20Interface.sol:137
+HolographERC20Interface:sourceMintBatch
+  Natspec is missing
+
+src/interface/HolographERC20Interface.sol:137
+HolographERC20Interface:sourceTransfer
+  Natspec is missing
+
+src/interface/HolographERC20Interface.sol:137
+HolographERC20Interface:sourceTransfer
+  Natspec is missing
+
+src/interface/HolographERC20Interface.sol:137
+HolographERC20Interface:sourceExternalCall
+  Natspec is missing
+
+src/interface/HolographERC721Interface.sol:150
+HolographERC721Interface:approve
+  Natspec is missing
+
+src/interface/HolographERC721Interface.sol:153
+HolographERC721Interface:burn
+  Natspec is missing
+
+src/interface/HolographERC721Interface.sol:153
+HolographERC721Interface:safeTransferFrom
+  Natspec is missing
+
+src/interface/HolographERC721Interface.sol:157
+HolographERC721Interface:setApprovalForAll
+  Natspec is missing
+
+src/interface/HolographERC721Interface.sol:157
+HolographERC721Interface:sourceBurn
+  Natspec is missing
+
+src/interface/HolographERC721Interface.sol:159
+HolographERC721Interface:sourceMint
+  Natspec is missing
+
+src/interface/HolographERC721Interface.sol:161
+HolographERC721Interface:sourceGetChainPrepend
+  Natspec is missing
+
+src/interface/HolographERC721Interface.sol:163
+HolographERC721Interface:sourceTransfer
+  Natspec is missing
+
+src/interface/HolographERC721Interface.sol:165
+HolographERC721Interface:sourceExternalCall
+  Natspec is missing
+
+src/interface/HolographERC721Interface.sol:167
+HolographERC721Interface:transfer
+  Natspec is missing
+
+src/interface/HolographERC721Interface.sol:167
+HolographERC721Interface:contractURI
+  Natspec is missing
+
+src/interface/HolographERC721Interface.sol:171
+HolographERC721Interface:getApproved
+  Natspec is missing
+
+src/interface/HolographERC721Interface.sol:171
+HolographERC721Interface:isApprovedForAll
+  Natspec is missing
+
+src/interface/HolographERC721Interface.sol:171
+HolographERC721Interface:name
+  Natspec is missing
+
+src/interface/HolographERC721Interface.sol:171
+HolographERC721Interface:burned
+  Natspec is missing
+
+src/interface/HolographERC721Interface.sol:171
+HolographERC721Interface:decimals
+  Natspec is missing
+
+src/interface/HolographERC721Interface.sol:171
+HolographERC721Interface:exists
+  Natspec is missing
+
+src/interface/HolographERC721Interface.sol:171
+HolographERC721Interface:ownerOf
+  Natspec is missing
+
+src/interface/HolographERC721Interface.sol:171
+HolographERC721Interface:supportsInterface
+  Natspec is missing
+
+src/interface/HolographERC721Interface.sol:171
+HolographERC721Interface:symbol
+  Natspec is missing
+
+src/interface/HolographERC721Interface.sol:171
+HolographERC721Interface:tokenByIndex
+  Natspec is missing
+
+src/interface/HolographERC721Interface.sol:171
+HolographERC721Interface:tokenOfOwnerByIndex
+  Natspec is missing
+
+src/interface/HolographERC721Interface.sol:171
+HolographERC721Interface:tokensOfOwner
+  Natspec is missing
+
+src/interface/HolographERC721Interface.sol:171
+HolographERC721Interface:tokenURI
+  Natspec is missing
+
+src/interface/HolographERC721Interface.sol:171
+HolographERC721Interface:totalSupply
+  Natspec is missing
+
+src/interface/HolographFactoryInterface.sol:142
+HolographFactoryInterface:BridgeableContractDeployed
+  @param contractAddress is missing
+  @param hash is missing
+
+src/interface/HolographFactoryInterface.sol:156
+HolographFactoryInterface:getHolograph
+  @return holograph is missing
+
+src/interface/HolographFactoryInterface.sol:156
+HolographFactoryInterface:getRegistry
+  @return registry is missing
+
+src/interface/HolographGenericInterface.sol:124
+HolographGenericInterface:sourceEmit
+  Natspec is missing
+
+src/interface/HolographGenericInterface.sol:124
+HolographGenericInterface:sourceEmit
+  Natspec is missing
+
+src/interface/HolographGenericInterface.sol:124
+HolographGenericInterface:sourceEmit
+  Natspec is missing
+
+src/interface/HolographGenericInterface.sol:124
+HolographGenericInterface:sourceEmit
+  Natspec is missing
+
+src/interface/HolographGenericInterface.sol:124
+HolographGenericInterface:sourceEmit
+  Natspec is missing
+
+src/interface/HolographInterface.sol:146
+HolographInterface:getBridge
+  @return bridge is missing
+
+src/interface/HolographInterface.sol:158
+HolographInterface:getChainId
+  @return chainId is missing
+
+src/interface/HolographInterface.sol:169
+HolographInterface:getFactory
+  @return factory is missing
+
+src/interface/HolographInterface.sol:177
+HolographInterface:getHolographChainId
+  @return holographChainId is missing
+
+src/interface/HolographInterface.sol:193
+HolographInterface:getInterfaces
+  @return interfaces is missing
+
+src/interface/HolographInterface.sol:205
+HolographInterface:getOperator
+  @return operator is missing
+
+src/interface/HolographInterface.sol:217
+HolographInterface:getRegistry
+  @return registry is missing
+
+src/interface/HolographInterface.sol:221
+HolographInterface:getTreasury
+  @return treasury is missing
+
+src/interface/HolographInterface.sol:221
+HolographInterface:getUtilityToken
+  @return utilityToken is missing
+
+src/interface/HolographInterfacesInterface.sol:143
+HolographInterfacesInterface:contractURI
+  Natspec is missing
+
+src/interface/HolographInterfacesInterface.sol:147
+HolographInterfacesInterface:getUriPrepend
+  Natspec is missing
+
+src/interface/HolographInterfacesInterface.sol:147
+HolographInterfacesInterface:updateUriPrepend
+  Natspec is missing
+
+src/interface/HolographInterfacesInterface.sol:149
+HolographInterfacesInterface:updateUriPrepends
+  Natspec is missing
+
+src/interface/HolographInterfacesInterface.sol:149
+HolographInterfacesInterface:getChainId
+  Natspec is missing
+
+src/interface/HolographInterfacesInterface.sol:149
+HolographInterfacesInterface:updateChainIdMap
+  Natspec is missing
+
+src/interface/HolographInterfacesInterface.sol:149
+HolographInterfacesInterface:updateChainIdMaps
+  Natspec is missing
+
+src/interface/HolographInterfacesInterface.sol:149
+HolographInterfacesInterface:supportsInterface
+  Natspec is missing
+
+src/interface/HolographInterfacesInterface.sol:149
+HolographInterfacesInterface:updateInterface
+  Natspec is missing
+
+src/interface/HolographInterfacesInterface.sol:149
+HolographInterfacesInterface:updateInterfaces
+  Natspec is missing
+
+src/interface/HolographOperatorInterface.sol:140
+HolographOperatorInterface:AvailableOperatorJob
+  @param jobHash is missing
+  @param payload is missing
+
+src/interface/HolographOperatorInterface.sol:143
+HolographOperatorInterface:FinishedOperatorJob
+  @param jobHash is missing
+  @param operator is missing
+
+src/interface/HolographOperatorInterface.sol:145
+HolographOperatorInterface:CrossChainMessageSent
+  @param messageHash is missing
+
+src/interface/HolographOperatorInterface.sol:147
+HolographOperatorInterface:FailedOperatorJob
+  @param jobHash is missing
+
+src/interface/HolographOperatorInterface.sol:154
+HolographOperatorInterface:nonRevertingBridgeCall
+  Natspec is missing
+
+src/interface/HolographOperatorInterface.sol:156
+HolographOperatorInterface:crossChainMessage
+  @param bridgeInRequestPayload is missing
+
+src/interface/HolographOperatorInterface.sol:181
+HolographOperatorInterface:send
+  @param msgSender is missing
+
+src/interface/HolographOperatorInterface.sol:226
+HolographOperatorInterface:getTotalPods
+  @return totalPods is missing
+
+src/interface/HolographOperatorInterface.sol:324
+HolographOperatorInterface:getBridge
+  @return bridge is missing
+
+src/interface/HolographOperatorInterface.sol:335
+HolographOperatorInterface:getHolograph
+  @return holograph is missing
+
+src/interface/HolographOperatorInterface.sol:348
+HolographOperatorInterface:getInterfaces
+  @return interfaces is missing
+
+src/interface/HolographOperatorInterface.sol:360
+HolographOperatorInterface:getMessagingModule
+  @return messagingModule is missing
+
+src/interface/HolographOperatorInterface.sol:372
+HolographOperatorInterface:getRegistry
+  @return registry is missing
+
+src/interface/HolographOperatorInterface.sol:376
+HolographOperatorInterface:getUtilityToken
+  @return utilityToken is missing
+
+src/interface/HolographOperatorInterface.sol:376
+HolographOperatorInterface:getMinGasPrice
+  @return minGasPrice is missing
+
+src/interface/HolographRegistryInterface.sol:127
+HolographRegistryInterface:HolographableContractEvent
+  Natspec is missing
+
+src/interface/HolographRegistryInterface.sol:131
+HolographRegistryInterface:isHolographedContract
+  Natspec is missing
+
+src/interface/HolographRegistryInterface.sol:133
+HolographRegistryInterface:isHolographedHashDeployed
+  Natspec is missing
+
+src/interface/HolographRegistryInterface.sol:133
+HolographRegistryInterface:referenceContractTypeAddress
+  Natspec is missing
+
+src/interface/HolographRegistryInterface.sol:137
+HolographRegistryInterface:getContractTypeAddress
+  Natspec is missing
+
+src/interface/HolographRegistryInterface.sol:137
+HolographRegistryInterface:setContractTypeAddress
+  Natspec is missing
+
+src/interface/HolographRegistryInterface.sol:141
+HolographRegistryInterface:getHolograph
+  Natspec is missing
+
+src/interface/HolographRegistryInterface.sol:143
+HolographRegistryInterface:setHolograph
+  Natspec is missing
+
+src/interface/HolographRegistryInterface.sol:144
+HolographRegistryInterface:getHolographableContracts
+  Natspec is missing
+
+src/interface/HolographRegistryInterface.sol:145
+HolographRegistryInterface:getHolographableContractsLength
+  Natspec is missing
+
+src/interface/HolographRegistryInterface.sol:145
+HolographRegistryInterface:getHolographedHashAddress
+  Natspec is missing
+
+src/interface/HolographRegistryInterface.sol:145
+HolographRegistryInterface:setHolographedHashAddress
+  Natspec is missing
+
+src/interface/HolographRegistryInterface.sol:145
+HolographRegistryInterface:getHToken
+  Natspec is missing
+
+src/interface/HolographRegistryInterface.sol:145
+HolographRegistryInterface:setHToken
+  Natspec is missing
+
+src/interface/HolographRegistryInterface.sol:145
+HolographRegistryInterface:getReservedContractTypeAddress
+  Natspec is missing
+
+src/interface/HolographRegistryInterface.sol:145
+HolographRegistryInterface:setReservedContractTypeAddress
+  Natspec is missing
+
+src/interface/HolographRegistryInterface.sol:145
+HolographRegistryInterface:setReservedContractTypeAddresses
+  Natspec is missing
+
+src/interface/HolographRegistryInterface.sol:145
+HolographRegistryInterface:getUtilityToken
+  Natspec is missing
+
+src/interface/HolographRegistryInterface.sol:145
+HolographRegistryInterface:setUtilityToken
+  Natspec is missing
+
+src/interface/HolographRegistryInterface.sol:145
+HolographRegistryInterface:holographableEvent
+  Natspec is missing
+
+src/interface/HolographRoyaltiesInterface.sol:131
+HolographRoyaltiesInterface:initHolographRoyalties
+  Natspec is missing
+
+src/interface/HolographRoyaltiesInterface.sol:131
+HolographRoyaltiesInterface:configurePayouts
+  Natspec is missing
+
+src/interface/HolographRoyaltiesInterface.sol:133
+HolographRoyaltiesInterface:getPayoutInfo
+  Natspec is missing
+
+src/interface/HolographRoyaltiesInterface.sol:137
+HolographRoyaltiesInterface:getEthPayout
+  Natspec is missing
+
+src/interface/HolographRoyaltiesInterface.sol:139
+HolographRoyaltiesInterface:getTokenPayout
+  Natspec is missing
+
+src/interface/HolographRoyaltiesInterface.sol:141
+HolographRoyaltiesInterface:getTokensPayout
+  Natspec is missing
+
+src/interface/HolographRoyaltiesInterface.sol:143
+HolographRoyaltiesInterface:supportsInterface
+  Natspec is missing
+
+src/interface/HolographRoyaltiesInterface.sol:145
+HolographRoyaltiesInterface:setRoyalties
+  Natspec is missing
+
+src/interface/HolographRoyaltiesInterface.sol:147
+HolographRoyaltiesInterface:royaltyInfo
+  Natspec is missing
+
+src/interface/HolographRoyaltiesInterface.sol:149
+HolographRoyaltiesInterface:getFeeBps
+  Natspec is missing
+
+src/interface/HolographRoyaltiesInterface.sol:151
+HolographRoyaltiesInterface:getFeeRecipients
+  Natspec is missing
+
+src/interface/HolographRoyaltiesInterface.sol:151
+HolographRoyaltiesInterface:getRoyalties
+  Natspec is missing
+
+src/interface/HolographRoyaltiesInterface.sol:151
+HolographRoyaltiesInterface:getFees
+  Natspec is missing
+
+src/interface/HolographRoyaltiesInterface.sol:151
+HolographRoyaltiesInterface:tokenCreator
+  Natspec is missing
+
+src/interface/HolographRoyaltiesInterface.sol:151
+HolographRoyaltiesInterface:calculateRoyaltyFee
+  Natspec is missing
+
+src/interface/HolographRoyaltiesInterface.sol:151
+HolographRoyaltiesInterface:marketContract
+  Natspec is missing
+
+src/interface/HolographRoyaltiesInterface.sol:151
+HolographRoyaltiesInterface:tokenCreators
+  Natspec is missing
+
+src/interface/HolographRoyaltiesInterface.sol:151
+HolographRoyaltiesInterface:bidSharesForToken
+  Natspec is missing
+
+src/interface/HolographRoyaltiesInterface.sol:151
+HolographRoyaltiesInterface:getStorageSlot
+  Natspec is missing
+
+src/interface/HolographRoyaltiesInterface.sol:151
+HolographRoyaltiesInterface:getTokenAddress
+  Natspec is missing
+
+src/interface/Holographable.sol:113
+Holographable:bridgeIn
+  Natspec is missing
+
+src/interface/Holographable.sol:113
+Holographable:bridgeOut
+  Natspec is missing
+
+src/interface/HolographedERC1155.sol:147
+HolographedERC1155:bridgeIn
+  Natspec is missing
+
+src/interface/HolographedERC1155.sol:151
+HolographedERC1155:bridgeOut
+  Natspec is missing
+
+src/interface/HolographedERC1155.sol:156
+HolographedERC1155:afterApprove
+  Natspec is missing
+
+src/interface/HolographedERC1155.sol:163
+HolographedERC1155:beforeApprove
+  Natspec is missing
+
+src/interface/HolographedERC1155.sol:170
+HolographedERC1155:afterApprovalAll
+  Natspec is missing
+
+src/interface/HolographedERC1155.sol:175
+HolographedERC1155:beforeApprovalAll
+  Natspec is missing
+
+src/interface/HolographedERC1155.sol:181
+HolographedERC1155:afterBurn
+  Natspec is missing
+
+src/interface/HolographedERC1155.sol:187
+HolographedERC1155:beforeBurn
+  Natspec is missing
+
+src/interface/HolographedERC1155.sol:193
+HolographedERC1155:afterMint
+  Natspec is missing
+
+src/interface/HolographedERC1155.sol:198
+HolographedERC1155:beforeMint
+  Natspec is missing
+
+src/interface/HolographedERC1155.sol:204
+HolographedERC1155:afterSafeTransfer
+  Natspec is missing
+
+src/interface/HolographedERC1155.sol:212
+HolographedERC1155:beforeSafeTransfer
+  Natspec is missing
+
+src/interface/HolographedERC1155.sol:212
+HolographedERC1155:afterTransfer
+  Natspec is missing
+
+src/interface/HolographedERC1155.sol:212
+HolographedERC1155:beforeTransfer
+  Natspec is missing
+
+src/interface/HolographedERC1155.sol:212
+HolographedERC1155:afterOnERC1155Received
+  Natspec is missing
+
+src/interface/HolographedERC1155.sol:212
+HolographedERC1155:beforeOnERC1155Received
+  Natspec is missing
+
+src/interface/HolographedERC20.sol:150
+HolographedERC20:bridgeIn
+  Natspec is missing
+
+src/interface/HolographedERC20.sol:156
+HolographedERC20:bridgeOut
+  Natspec is missing
+
+src/interface/HolographedERC20.sol:159
+HolographedERC20:afterApprove
+  Natspec is missing
+
+src/interface/HolographedERC20.sol:165
+HolographedERC20:beforeApprove
+  Natspec is missing
+
+src/interface/HolographedERC20.sol:171
+HolographedERC20:afterOnERC20Received
+  Natspec is missing
+
+src/interface/HolographedERC20.sol:178
+HolographedERC20:beforeOnERC20Received
+  Natspec is missing
+
+src/interface/HolographedERC20.sol:184
+HolographedERC20:afterBurn
+  Natspec is missing
+
+src/interface/HolographedERC20.sol:186
+HolographedERC20:beforeBurn
+  Natspec is missing
+
+src/interface/HolographedERC20.sol:186
+HolographedERC20:afterMint
+  Natspec is missing
+
+src/interface/HolographedERC20.sol:186
+HolographedERC20:beforeMint
+  Natspec is missing
+
+src/interface/HolographedERC20.sol:186
+HolographedERC20:afterSafeTransfer
+  Natspec is missing
+
+src/interface/HolographedERC20.sol:186
+HolographedERC20:beforeSafeTransfer
+  Natspec is missing
+
+src/interface/HolographedERC20.sol:186
+HolographedERC20:afterTransfer
+  Natspec is missing
+
+src/interface/HolographedERC20.sol:186
+HolographedERC20:beforeTransfer
+  Natspec is missing
+
+src/interface/HolographedERC20.sol:186
+HolographedERC20:onAllowance
+  Natspec is missing
+
+src/interface/HolographedERC721.sol:141
+HolographedERC721:bridgeIn
+  Natspec is missing
+
+src/interface/HolographedERC721.sol:147
+HolographedERC721:bridgeOut
+  Natspec is missing
+
+src/interface/HolographedERC721.sol:153
+HolographedERC721:afterApprove
+  Natspec is missing
+
+src/interface/HolographedERC721.sol:159
+HolographedERC721:beforeApprove
+  Natspec is missing
+
+src/interface/HolographedERC721.sol:165
+HolographedERC721:afterApprovalAll
+  Natspec is missing
+
+src/interface/HolographedERC721.sol:171
+HolographedERC721:beforeApprovalAll
+  Natspec is missing
+
+src/interface/HolographedERC721.sol:177
+HolographedERC721:afterBurn
+  Natspec is missing
+
+src/interface/HolographedERC721.sol:182
+HolographedERC721:beforeBurn
+  Natspec is missing
+
+src/interface/HolographedERC721.sol:187
+HolographedERC721:afterMint
+  Natspec is missing
+
+src/interface/HolographedERC721.sol:192
+HolographedERC721:beforeMint
+  Natspec is missing
+
+src/interface/HolographedERC721.sol:197
+HolographedERC721:afterSafeTransfer
+  Natspec is missing
+
+src/interface/HolographedERC721.sol:202
+HolographedERC721:beforeSafeTransfer
+  Natspec is missing
+
+src/interface/HolographedERC721.sol:205
+HolographedERC721:afterTransfer
+  Natspec is missing
+
+src/interface/HolographedERC721.sol:205
+HolographedERC721:beforeTransfer
+  Natspec is missing
+
+src/interface/HolographedERC721.sol:205
+HolographedERC721:afterOnERC721Received
+  Natspec is missing
+
+src/interface/HolographedERC721.sol:205
+HolographedERC721:beforeOnERC721Received
+  Natspec is missing
+
+src/interface/HolographedERC721.sol:205
+HolographedERC721:onIsApprovedForAll
+  Natspec is missing
+
+src/interface/HolographedERC721.sol:205
+HolographedERC721:contractURI
+  Natspec is missing
+
+src/interface/HolographedGeneric.sol:112
+HolographedGeneric:bridgeIn
+  Natspec is missing
+
+src/interface/HolographedGeneric.sol:112
+HolographedGeneric:bridgeOut
+  Natspec is missing
+
+src/interface/HolographerInterface.sol:117
+HolographerInterface:getContractType
+  Natspec is missing
+
+src/interface/HolographerInterface.sol:117
+HolographerInterface:getDeploymentBlock
+  Natspec is missing
+
+src/interface/HolographerInterface.sol:117
+HolographerInterface:getHolograph
+  Natspec is missing
+
+src/interface/HolographerInterface.sol:117
+HolographerInterface:getHolographEnforcer
+  Natspec is missing
+
+src/interface/HolographerInterface.sol:117
+HolographerInterface:getOriginChain
+  Natspec is missing
+
+src/interface/HolographerInterface.sol:117
+HolographerInterface:getSourceContract
+  Natspec is missing
+
+src/interface/IContractMetadata.sol:24
+IContractMetadata:ContractURIUpdated
+  @param prevURI is missing
+  @param newURI is missing
+
+src/interface/IContractMetadata.sol:15
+IContractMetadata:contractURI
+  @return missing for unnamed return №1
+
+src/interface/IContractMetadata.sol:21
+IContractMetadata:setContractURI
+  @param _uri is missing
+
+src/interface/ICountdownERC721.sol:16
+ICountdownERC721:Access_MissingRoleOrAdmin
+  @param role is missing
+
+src/interface/ICountdownERC721.sol:33
+ICountdownERC721:Purchase_WrongPrice
+  @param correctPrice is missing
+
+src/interface/ICountdownERC721.sol:44
+ICountdownERC721:CountdownEndMustBeDivisibleByMintTimeCost
+  Natspec is missing
+
+src/interface/ICountdownERC721.sol:48
+ICountdownERC721:Setup_RoyaltyPercentageTooHigh
+  @param maxRoyaltyBPS is missing
+
+src/interface/ICountdownERC721.sol:50
+ICountdownERC721:Admin_InvalidUpgradeAddress
+  @param proposedAddress is missing
+
+src/interface/ICountdownERC721.sol:105
+ICountdownERC721:DESCRIPTION
+  @return missing for unnamed return №1
+
+src/interface/ICountdownERC721.sol:108
+ICountdownERC721:START_DATE
+  @return missing for unnamed return №1
+
+src/interface/ICountdownERC721.sol:111
+ICountdownERC721:INITIAL_MAX_SUPPLY
+  @return missing for unnamed return №1
+
+src/interface/ICountdownERC721.sol:114
+ICountdownERC721:MINT_INTERVAL
+  @return missing for unnamed return №1
+
+src/interface/ICountdownERC721.sol:117
+ICountdownERC721:minter
+  @return missing for unnamed return №1
+
+src/interface/ICountdownERC721.sol:130
+ICountdownERC721:saleDetails
+  @return missing for unnamed return №1
+
+src/interface/ICountdownERC721.sol:133
+ICountdownERC721:currentTheoricalMaxSupply
+  @return missing for unnamed return №1
+
+src/interface/ICountdownERC721.sol:137
+ICountdownERC721:mintedPerAddress
+  @return missing for unnamed return №1
+
+src/interface/ICountdownERC721.sol:140
+ICountdownERC721:owner
+  @return missing for unnamed return №1
+
+src/interface/ICountdownERC721.sol:144
+ICountdownERC721:isAdmin
+  @param user is missing
+
+src/interface/ICustomERC721.sol:16
+ICustomERC721:Access_MissingRoleOrAdmin
+  @param role is missing
+
+src/interface/ICustomERC721.sol:35
+ICustomERC721:Purchase_WrongPrice
+  @param correctPrice is missing
+
+src/interface/ICustomERC721.sol:46
+ICustomERC721:CountdownEndMustBeDivisibleByMintTimeCost
+  Natspec is missing
+
+src/interface/ICustomERC721.sol:50
+ICustomERC721:Setup_RoyaltyPercentageTooHigh
+  @param maxRoyaltyBPS is missing
+
+src/interface/ICustomERC721.sol:52
+ICustomERC721:Admin_InvalidUpgradeAddress
+  @param proposedAddress is missing
+
+src/interface/ICustomERC721.sol:102
+ICustomERC721:START_DATE
+  @return missing for unnamed return №1
+
+src/interface/ICustomERC721.sol:105
+ICustomERC721:INITIAL_MAX_SUPPLY
+  @return missing for unnamed return №1
+
+src/interface/ICustomERC721.sol:108
+ICustomERC721:MINT_INTERVAL
+  @return missing for unnamed return №1
+
+src/interface/ICustomERC721.sol:111
+ICustomERC721:minter
+  @return missing for unnamed return №1
+
+src/interface/ICustomERC721.sol:124
+ICustomERC721:saleDetails
+  @return missing for unnamed return №1
+
+src/interface/ICustomERC721.sol:127
+ICustomERC721:currentTheoricalMaxSupply
+  @return missing for unnamed return №1
+
+src/interface/ICustomERC721.sol:131
+ICustomERC721:mintedPerAddress
+  @return missing for unnamed return №1
+
+src/interface/ICustomERC721.sol:134
+ICustomERC721:owner
+  @return missing for unnamed return №1
+
+src/interface/ICustomERC721.sol:138
+ICustomERC721:isAdmin
+  @param user is missing
+
+src/interface/IDelayedReveal.sol:13
+IDelayedReveal:TokenURIRevealed
+  @param index is missing
+  @param revealedURI is missing
+
+src/interface/IDelayedReveal.sol:22
+IDelayedReveal:reveal
+  @return revealedURI is missing
+
+src/interface/IDelayedReveal.sol:32
+IDelayedReveal:encryptDecrypt
+  @return result is missing
+
+src/interface/ILazyMint.sol:14
+ILazyMint:TokensLazyMinted
+  @param startTokenId is missing
+  @param endTokenId is missing
+  @param baseURI is missing
+  @param encryptedBaseURI is missing
+
+src/interface/IQuoterV2.sol:74
+IQuoterV2:QuoteExactOutputSingleParams
+  Natspec is missing
+
+src/interface/LayerZeroEndpointInterface.sol:15
+LayerZeroEndpointInterface:send
+  Natspec is missing
+
+src/interface/LayerZeroEndpointInterface.sol:31
+LayerZeroEndpointInterface:receivePayload
+  Natspec is missing
+
+src/interface/LayerZeroEndpointInterface.sol:43
+LayerZeroEndpointInterface:getInboundNonce
+  Natspec is missing
+
+src/interface/LayerZeroEndpointInterface.sol:47
+LayerZeroEndpointInterface:getOutboundNonce
+  Natspec is missing
+
+src/interface/LayerZeroEndpointInterface.sol:55
+LayerZeroEndpointInterface:estimateFees
+  Natspec is missing
+
+src/interface/LayerZeroEndpointInterface.sol:64
+LayerZeroEndpointInterface:getChainId
+  Natspec is missing
+
+src/interface/LayerZeroEndpointInterface.sol:70
+LayerZeroEndpointInterface:retryPayload
+  Natspec is missing
+
+src/interface/LayerZeroEndpointInterface.sol:75
+LayerZeroEndpointInterface:hasStoredPayload
+  Natspec is missing
+
+src/interface/LayerZeroEndpointInterface.sol:79
+LayerZeroEndpointInterface:getSendLibraryAddress
+  Natspec is missing
+
+src/interface/LayerZeroEndpointInterface.sol:83
+LayerZeroEndpointInterface:getReceiveLibraryAddress
+  Natspec is missing
+
+src/interface/LayerZeroEndpointInterface.sol:87
+LayerZeroEndpointInterface:isSendingPayload
+  Natspec is missing
+
+src/interface/LayerZeroEndpointInterface.sol:91
+LayerZeroEndpointInterface:isReceivingPayload
+  Natspec is missing
+
+src/interface/LayerZeroEndpointInterface.sol:98
+LayerZeroEndpointInterface:getConfig
+  Natspec is missing
+
+src/interface/LayerZeroEndpointInterface.sol:107
+LayerZeroEndpointInterface:getSendVersion
+  Natspec is missing
+
+src/interface/LayerZeroEndpointInterface.sol:111
+LayerZeroEndpointInterface:getReceiveVersion
+  Natspec is missing
+
+src/interface/LayerZeroModuleInterface.sol:124
+LayerZeroModuleInterface:lzReceive
+  Natspec is missing
+
+src/interface/LayerZeroModuleInterface.sol:124
+LayerZeroModuleInterface:getInterfaces
+  Natspec is missing
+
+src/interface/LayerZeroModuleInterface.sol:124
+LayerZeroModuleInterface:setInterfaces
+  Natspec is missing
+
+src/interface/LayerZeroModuleInterface.sol:124
+LayerZeroModuleInterface:getLZEndpoint
+  Natspec is missing
+
+src/interface/LayerZeroModuleInterface.sol:124
+LayerZeroModuleInterface:setLZEndpoint
+  Natspec is missing
+
+src/interface/LayerZeroModuleInterface.sol:124
+LayerZeroModuleInterface:getOperator
+  Natspec is missing
+
+src/interface/LayerZeroModuleInterface.sol:124
+LayerZeroModuleInterface:setOperator
+  Natspec is missing
+
+src/interface/LayerZeroOverrides.sol:159
+LayerZeroOverrides:defaultSendLibrary
+  Natspec is missing
+
+src/interface/LayerZeroOverrides.sol:162
+LayerZeroOverrides:getAppConfig
+  Natspec is missing
+
+src/interface/LayerZeroOverrides.sol:171
+LayerZeroOverrides:defaultAppConfig
+  Natspec is missing
+
+src/interface/LayerZeroOverrides.sol:180
+LayerZeroOverrides:dstPriceLookup
+  Natspec is missing
+
+src/interface/LayerZeroOverrides.sol:180
+LayerZeroOverrides:dstConfigLookup
+  Natspec is missing
+
+src/interface/LayerZeroOverrides.sol:180
+LayerZeroOverrides:send
+  Natspec is missing
+
+src/interface/LayerZeroOverrides.sol:180
+LayerZeroOverrides:estimateFees
+  Natspec is missing
+
+src/interface/LayerZeroOverrides.sol:144
+LayerZeroOverrides:ApplicationConfiguration
+  Natspec is missing
+
+src/interface/LayerZeroOverrides.sol:153
+LayerZeroOverrides:DstPrice
+  Natspec is missing
+
+src/interface/LayerZeroOverrides.sol:155
+LayerZeroOverrides:DstConfig
+  Natspec is missing
+
+src/interface/LayerZeroReceiverInterface.sol:11
+LayerZeroReceiverInterface:lzReceive
+  Natspec is missing
+
+src/interface/LayerZeroUserApplicationConfigInterface.sol:11
+LayerZeroUserApplicationConfigInterface:setConfig
+  Natspec is missing
+
+src/interface/LayerZeroUserApplicationConfigInterface.sol:15
+LayerZeroUserApplicationConfigInterface:setSendVersion
+  Natspec is missing
+
+src/interface/LayerZeroUserApplicationConfigInterface.sol:19
+LayerZeroUserApplicationConfigInterface:setReceiveVersion
+  Natspec is missing
+
+src/interface/LayerZeroUserApplicationConfigInterface.sol:24
+LayerZeroUserApplicationConfigInterface:forceResumeReceive
+  Natspec is missing
+
+src/interface/LazyMintInitializableInterface.sol:117
+LazyMintInitializableInterface:syncLazyMint
+  @return missing for unnamed return №1
+
+src/interface/Ownable.sol:115
+Ownable:OwnershipTransferred
+  Natspec is missing
+
+src/interface/Ownable.sol:115
+Ownable:owner
+  Natspec is missing
+
+src/interface/Ownable.sol:115
+Ownable:transferOwnership
+  Natspec is missing
+
+src/interface/Ownable.sol:115
+Ownable:isOwner
+  Natspec is missing
+
+src/interface/Ownable.sol:115
+Ownable:isOwner
+  Natspec is missing
+
+src/library/Base64.sol:149
+Base64:encode
+  Natspec is missing
+
+src/library/Base64.sol:154
+Base64:encode
+  Natspec is missing
+
+src/library/Base64.sol:165
+Base64:encode3
+  Natspec is missing
+
+src/library/Base64.sol:136
+Base64:base64stdchars
+  Natspec is missing
+
+src/library/Base64.sol:140
+Base64:base64urlchars
+  Natspec is missing
+
+src/library/Bytes.sol:130
+Bytes:getBoolean
+  Natspec is missing
+
+src/library/Bytes.sol:136
+Bytes:setBoolean
+  Natspec is missing
+
+src/library/Bytes.sol:149
+Bytes:slice
+  Natspec is missing
+
+src/library/Bytes.sol:159
+Bytes:trim
+  Natspec is missing
+
+src/library/ECDSA.sol:15
+ECDSA:RecoverError
+  Natspec is missing
+
+src/library/ECDSA.sol:23
+ECDSA:_throwError
+  Natspec is missing
+
+src/library/ECDSA.sol:57
+ECDSA:tryRecover
+  @param hash is missing
+  @param signature is missing
+  @return missing for unnamed return №1
+  @return missing for unnamed return №2
+
+src/library/ECDSA.sol:102
+ECDSA:recover
+  @param hash is missing
+  @param signature is missing
+  @return missing for unnamed return №1
+
+src/library/ECDSA.sol:115
+ECDSA:tryRecover
+  @param hash is missing
+  @param r is missing
+  @param vs is missing
+  @return missing for unnamed return №1
+  @return missing for unnamed return №2
+
+src/library/ECDSA.sol:126
+ECDSA:recover
+  @param hash is missing
+  @param r is missing
+  @param vs is missing
+  @return missing for unnamed return №1
+
+src/library/ECDSA.sol:138
+ECDSA:tryRecover
+  @param hash is missing
+  @param v is missing
+  @param r is missing
+  @param s is missing
+  @return missing for unnamed return №1
+  @return missing for unnamed return №2
+
+src/library/ECDSA.sol:168
+ECDSA:recover
+  @param hash is missing
+  @param v is missing
+  @param r is missing
+  @param s is missing
+  @return missing for unnamed return №1
+
+src/library/ECDSA.sol:182
+ECDSA:toEthSignedMessageHash
+  @param hash is missing
+  @return missing for unnamed return №1
+
+src/library/ECDSA.sol:196
+ECDSA:toEthSignedMessageHash
+  @param s is missing
+  @return missing for unnamed return №1
+
+src/library/ECDSA.sol:209
+ECDSA:toTypedDataHash
+  @param domainSeparator is missing
+  @param structHash is missing
+  @return missing for unnamed return №1
+
+src/library/NFTMetadataRenderer.sol:8
+Math:Rounding
+  Natspec is missing
+
+src/library/NFTMetadataRenderer.sol:17
+Math:max
+  @param a is missing
+  @param b is missing
+  @return missing for unnamed return №1
+
+src/library/NFTMetadataRenderer.sol:24
+Math:min
+  @param a is missing
+  @param b is missing
+  @return missing for unnamed return №1
+
+src/library/NFTMetadataRenderer.sol:32
+Math:average
+  @param a is missing
+  @param b is missing
+  @return missing for unnamed return №1
+
+src/library/NFTMetadataRenderer.sol:43
+Math:ceilDiv
+  @param a is missing
+  @param b is missing
+  @return missing for unnamed return №1
+
+src/library/NFTMetadataRenderer.sol:53
+Math:mulDiv
+  @param x is missing
+  @param y is missing
+  @param denominator is missing
+  @return result is missing
+
+src/library/NFTMetadataRenderer.sol:134
+Math:mulDiv
+  @param x is missing
+  @param y is missing
+  @param denominator is missing
+  @param rounding is missing
+  @return missing for unnamed return №1
+
+src/library/NFTMetadataRenderer.sol:147
+Math:sqrt
+  @param a is missing
+  @return missing for unnamed return №1
+
+src/library/NFTMetadataRenderer.sol:183
+Math:sqrt
+  @param a is missing
+  @param rounding is missing
+  @return missing for unnamed return №1
+
+src/library/NFTMetadataRenderer.sol:194
+Math:log2
+  @param value is missing
+  @return missing for unnamed return №1
+
+src/library/NFTMetadataRenderer.sol:236
+Math:log2
+  @param value is missing
+  @param rounding is missing
+  @return missing for unnamed return №1
+
+src/library/NFTMetadataRenderer.sol:247
+Math:log10
+  @param value is missing
+  @return missing for unnamed return №1
+
+src/library/NFTMetadataRenderer.sol:285
+Math:log10
+  @param value is missing
+  @param rounding is missing
+  @return missing for unnamed return №1
+
+src/library/NFTMetadataRenderer.sol:298
+Math:log256
+  @param value is missing
+  @return missing for unnamed return №1
+
+src/library/NFTMetadataRenderer.sol:328
+Math:log256
+  @param value is missing
+  @param rounding is missing
+  @return missing for unnamed return №1
+
+src/library/NFTMetadataRenderer.sol:343
+Strings:toString
+  @param value is missing
+  @return missing for unnamed return №1
+
+src/library/NFTMetadataRenderer.sol:368
+Strings:toHexString
+  @param value is missing
+  @return missing for unnamed return №1
+
+src/library/NFTMetadataRenderer.sol:377
+Strings:toHexString
+  @param value is missing
+  @param length is missing
+  @return missing for unnamed return №1
+
+src/library/NFTMetadataRenderer.sol:392
+Strings:toHexString
+  @param addr is missing
+  @return missing for unnamed return №1
+
+src/library/NFTMetadataRenderer.sol:337
+Strings:_SYMBOLS
+  Natspec is missing
+
+src/library/NFTMetadataRenderer.sol:338
+Strings:_ADDRESS_LENGTH
+  Natspec is missing
+
+src/library/NFTMetadataRenderer.sol:406
+Base64:encode
+  @param data is missing
+  @return missing for unnamed return №1
+
+src/library/NFTMetadataRenderer.sol:484
+NFTMetadataRenderer:createMetadataEdition
+  Natspec is missing
+
+src/library/NFTMetadataRenderer.sol:489
+NFTMetadataRenderer:encodeContractURIJSON
+  Natspec is missing
+
+src/library/NFTMetadataRenderer.sol:529
+NFTMetadataRenderer:createMetadataJSON
+  Natspec is missing
+
+src/library/NFTMetadataRenderer.sol:577
+NFTMetadataRenderer:encodeMetadataJSON
+  Natspec is missing
+
+src/library/NFTMetadataRenderer.sol:585
+NFTMetadataRenderer:tokenMediaData
+  Natspec is missing
+
+src/library/Strings.sol:137
+Strings:toHexString
+  Natspec is missing
+
+src/library/Strings.sol:139
+Strings:toHexString
+  Natspec is missing
+
+src/library/Strings.sol:153
+Strings:toHexString
+  Natspec is missing
+
+src/library/Strings.sol:170
+Strings:toAsciiString
+  Natspec is missing
+
+src/library/Strings.sol:189
+Strings:char
+  Natspec is missing
+
+src/library/Strings.sol:195
+Strings:uint2str
+  Natspec is missing
+
+src/library/Strings.sol:195
+Strings:toString
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:280
+ERC20Mock:toggleWorks
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:284
+ERC20Mock:transferTokens
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:296
+ERC20Mock:decimals
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:309
+ERC20Mock:supportsInterface
+  @param interfaceId is missing
+  @return missing for unnamed return №1
+
+src/mock/ERC20Mock.sol:313
+ERC20Mock:allowance
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:315
+ERC20Mock:balanceOf
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:320
+ERC20Mock:DOMAIN_SEPARATOR
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:323
+ERC20Mock:name
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:325
+ERC20Mock:nonces
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:327
+ERC20Mock:symbol
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:330
+ERC20Mock:totalSupply
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:334
+ERC20Mock:approve
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:336
+ERC20Mock:burn
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:338
+ERC20Mock:burnFrom
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:353
+ERC20Mock:decreaseAllowance
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:363
+ERC20Mock:increaseAllowance
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:383
+ERC20Mock:mint
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:384
+ERC20Mock:onERC20Received
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:406
+ERC20Mock:permit
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:429
+ERC20Mock:safeTransfer
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:431
+ERC20Mock:safeTransfer
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:440
+ERC20Mock:safeTransferFrom
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:443
+ERC20Mock:safeTransferFrom
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:459
+ERC20Mock:transfer
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:462
+ERC20Mock:transferFrom
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:477
+ERC20Mock:_approve
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:482
+ERC20Mock:_burn
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:494
+ERC20Mock:_checkOnERC20Received
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:549
+ERC20Mock:_transfer
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:552
+ERC20Mock:_useNonce
+  @param account is missing
+  @return current is missing
+
+src/mock/ERC20Mock.sol:552
+ERC20Mock:_isContract
+  Natspec is missing
+
+src/mock/ERC20Mock.sol:184
+ERC20Mock:_works
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:185
+LZEndpointMock:UaForceResumeReceive
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:187
+LZEndpointMock:PayloadCleared
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:189
+LZEndpointMock:PayloadStored
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:201
+LZEndpointMock:setEstimatedFees
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:205
+LZEndpointMock:getChainId
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:207
+LZEndpointMock:setDestLzEndpoint
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:210
+LZEndpointMock:send
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:250
+LZEndpointMock:receivePayload
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:303
+LZEndpointMock:blockNextMsg
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:303
+LZEndpointMock:getLengthOfQueue
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:331
+LZEndpointMock:estimateFees
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:339
+LZEndpointMock:packedBytesToAddr
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:348
+LZEndpointMock:addrToPackedBytes
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:352
+LZEndpointMock:setConfig
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:356
+LZEndpointMock:getConfig
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:359
+LZEndpointMock:setSendVersion
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:360
+LZEndpointMock:setReceiveVersion
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:362
+LZEndpointMock:getSendVersion
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:365
+LZEndpointMock:getReceiveVersion
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:372
+LZEndpointMock:getInboundNonce
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:374
+LZEndpointMock:getOutboundNonce
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:381
+LZEndpointMock:_clearMsgQue
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:392
+LZEndpointMock:forceResumeReceive
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:411
+LZEndpointMock:retryPayload
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:427
+LZEndpointMock:hasStoredPayload
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:427
+LZEndpointMock:isSendingPayload
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:427
+LZEndpointMock:isReceivingPayload
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:427
+LZEndpointMock:getSendLibraryAddress
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:427
+LZEndpointMock:getReceiveLibraryAddress
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:147
+LZEndpointMock:lzEndpointLookup
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:149
+LZEndpointMock:mockChainId
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:149
+LZEndpointMock:mockOracle
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:150
+LZEndpointMock:mockRelayer
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:150
+LZEndpointMock:mockBlockConfirmations
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:150
+LZEndpointMock:mockLibraryVersion
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:152
+LZEndpointMock:mockStaticNativeFee
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:154
+LZEndpointMock:mockLayerZeroVersion
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:156
+LZEndpointMock:nativeFee
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:157
+LZEndpointMock:zroFee
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:160
+LZEndpointMock:nextMsgBLocked
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:168
+LZEndpointMock:inboundNonce
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:173
+LZEndpointMock:outboundNonce
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:177
+LZEndpointMock:storedPayload
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:183
+LZEndpointMock:msgsToDeliver
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:161
+LZEndpointMock:StoredPayload
+  Natspec is missing
+
+src/mock/LZEndpointMock.sol:166
+LZEndpointMock:QueuedPayload
+  Natspec is missing
+
+src/mock/Mock.sol:148
+Mock:init
+  Natspec is missing
+
+src/mock/Mock.sol:170
+Mock:getStorage
+  Natspec is missing
+
+src/mock/Mock.sol:175
+Mock:setStorage
+  Natspec is missing
+
+src/mock/Mock.sol:178
+Mock:mockCall
+  Natspec is missing
+
+src/mock/Mock.sol:195
+Mock:mockStaticCall
+  Natspec is missing
+
+src/mock/Mock.sol:207
+Mock:mockDelegateCall
+  Natspec is missing
+
+src/mock/MockERC721Receiver.sol:144
+MockERC721Receiver:toggleWorks
+  Natspec is missing
+
+src/mock/MockERC721Receiver.sol:144
+MockERC721Receiver:supportsInterface
+  Natspec is missing
+
+src/mock/MockERC721Receiver.sol:144
+MockERC721Receiver:onERC721Received
+  Natspec is missing
+
+src/mock/MockERC721Receiver.sol:144
+MockERC721Receiver:transferNFT
+  Natspec is missing
+
+src/mock/MockERC721Receiver.sol:144
+MockERC721Receiver:_works
+  Natspec is missing
+
+src/mock/MockExternalCall.sol:110
+MockExternalCall:callExternalFn
+  Natspec is missing
+
+src/mock/MockHolographChild.sol:113
+MockHolographChild:emptyFunction
+  Natspec is missing
+
+src/mock/MockHolographGenesisChild.sol:121
+MockHolographGenesisChild:approveDeployerMock
+  Natspec is missing
+
+src/mock/MockHolographGenesisChild.sol:121
+MockHolographGenesisChild:isApprovedDeployerMock
+  Natspec is missing
+
+src/mock/MockLZEndpoint.sol:146
+MockLZEndpoint:LzEvent
+  Natspec is missing
+
+src/mock/MockLZEndpoint.sol:149
+MockLZEndpoint:send
+  Natspec is missing
+
+src/mock/MockLZEndpoint.sol:163
+MockLZEndpoint:estimateFees
+  Natspec is missing
+
+src/mock/MockLZEndpoint.sol:167
+MockLZEndpoint:defaultSendLibrary
+  Natspec is missing
+
+src/mock/MockLZEndpoint.sol:167
+MockLZEndpoint:getAppConfig
+  Natspec is missing
+
+src/mock/MockLZEndpoint.sol:167
+MockLZEndpoint:dstPriceLookup
+  Natspec is missing
+
+src/mock/MockLZEndpoint.sol:167
+MockLZEndpoint:dstConfigLookup
+  Natspec is missing
+
+src/mock/MockLZEndpoint.sol:167
+MockLZEndpoint:crossChainMessage
+  Natspec is missing
+
+src/module/LayerZeroModule.sol:218
+LayerZeroModule:lzReceive
+  @param  is missing
+  @param _srcAddress is missing
+  @param  is missing
+  @param _payload is missing
+
+src/module/LayerZeroModule.sol:270
+LayerZeroModule:send
+  @param  is missing
+  @param  is missing
+  @param toChain is missing
+  @param msgSender is missing
+  @param msgValue is missing
+  @param crossChainPayload is missing
+
+src/module/LayerZeroModule.sol:291
+LayerZeroModule:getMessageFee
+  Natspec is missing
+
+src/module/LayerZeroModule.sol:332
+LayerZeroModule:getHlgFee
+  Natspec is missing
+
+src/module/LayerZeroModule.sol:372
+LayerZeroModule:_getPricing
+  Natspec is missing
+
+src/module/LayerZeroModule.sol:391
+LayerZeroModule:getBridge
+  @return bridge is missing
+
+src/module/LayerZeroModule.sol:411
+LayerZeroModule:getInterfaces
+  @return interfaces is missing
+
+src/module/LayerZeroModule.sol:431
+LayerZeroModule:getLZEndpoint
+  @return lZEndpoint is missing
+
+src/module/LayerZeroModule.sol:444
+LayerZeroModule:getOperator
+  @return operator is missing
+
+src/module/LayerZeroModule.sol:469
+LayerZeroModule:getOptimismGasPriceOracle
+  @return optimismGasPriceOracle is missing
+
+src/module/LayerZeroModule.sol:489
+LayerZeroModule:_bridge
+  @return bridge is missing
+
+src/module/LayerZeroModule.sol:501
+LayerZeroModule:_interfaces
+  @return interfaces is missing
+
+src/module/LayerZeroModule.sol:505
+LayerZeroModule:_operator
+  @return operator is missing
+
+src/module/LayerZeroModule.sol:511
+LayerZeroModule:_optimismGasPriceOracle
+  @return optimismGasPriceOracle is missing
+
+src/module/LayerZeroModule.sol:525
+LayerZeroModule:getGasParameters
+  @return gasParameters is missing
+
+src/module/LayerZeroModule.sol:568
+LayerZeroModule:_gasParameters
+  @return gasParameters is missing
+
+src/module/LayerZeroModuleProxy.sol:143
+LayerZeroModuleProxy:init
+  Natspec is missing
+
+src/module/LayerZeroModuleProxy.sol:161
+LayerZeroModuleProxy:getLayerZeroModule
+  Natspec is missing
+
+src/module/LayerZeroModuleProxy.sol:161
+LayerZeroModuleProxy:setLayerZeroModule
+  Natspec is missing
+
+src/module/OVM_GasPriceOracle.sol:60
+OVM_GasPriceOracle:GasPriceUpdated
+  Natspec is missing
+
+src/module/OVM_GasPriceOracle.sol:61
+OVM_GasPriceOracle:L1BaseFeeUpdated
+  Natspec is missing
+
+src/module/OVM_GasPriceOracle.sol:62
+OVM_GasPriceOracle:OverheadUpdated
+  Natspec is missing
+
+src/module/OVM_GasPriceOracle.sol:63
+OVM_GasPriceOracle:ScalarUpdated
+  Natspec is missing
+
+src/module/OVM_GasPriceOracle.sol:64
+OVM_GasPriceOracle:DecimalsUpdated
+  Natspec is missing
+
+src/module/OVM_GasPriceOracle.sol:70
+OVM_GasPriceOracle:setGasPrice
+  Natspec is missing
+
+src/module/OVM_GasPriceOracle.sol:79
+OVM_GasPriceOracle:setL1BaseFee
+  Natspec is missing
+
+src/module/OVM_GasPriceOracle.sol:88
+OVM_GasPriceOracle:setOverhead
+  Natspec is missing
+
+src/module/OVM_GasPriceOracle.sol:97
+OVM_GasPriceOracle:setScalar
+  Natspec is missing
+
+src/module/OVM_GasPriceOracle.sol:106
+OVM_GasPriceOracle:setDecimals
+  Natspec is missing
+
+src/module/OVM_GasPriceOracle.sol:118
+OVM_GasPriceOracle:getL1Fee
+  Natspec is missing
+
+src/module/OVM_GasPriceOracle.sol:149
+OVM_GasPriceOracle:getL1GasUsed
+  Natspec is missing
+
+src/module/OVM_GasPriceOracle.sol:21
+OVM_GasPriceOracle:gasPrice
+  Natspec is missing
+
+src/module/OVM_GasPriceOracle.sol:23
+OVM_GasPriceOracle:l1BaseFee
+  Natspec is missing
+
+src/module/OVM_GasPriceOracle.sol:25
+OVM_GasPriceOracle:overhead
+  Natspec is missing
+
+src/module/OVM_GasPriceOracle.sol:27
+OVM_GasPriceOracle:scalar
+  Natspec is missing
+
+src/module/OVM_GasPriceOracle.sol:29
+OVM_GasPriceOracle:decimals
+  Natspec is missing
+
+src/proxy/CountdownERC721Proxy.sol:22
+CountdownERC721Proxy:init
+  Natspec is missing
+
+src/proxy/CountdownERC721Proxy.sol:39
+CountdownERC721Proxy:getCountdownERC721Source
+  Natspec is missing
+
+src/proxy/CustomERC721Proxy.sol:145
+CustomERC721Proxy:init
+  Natspec is missing
+
+src/proxy/CustomERC721Proxy.sol:166
+CustomERC721Proxy:getCustomERC721Source
+  Natspec is missing
+
+src/proxy/CxipERC721Proxy.sol:146
+CxipERC721Proxy:init
+  Natspec is missing
+
+src/proxy/CxipERC721Proxy.sol:167
+CxipERC721Proxy:getCxipERC721Source
+  Natspec is missing
+
+src/proxy/HolographBridgeProxy.sol:147
+HolographBridgeProxy:init
+  Natspec is missing
+
+src/proxy/HolographBridgeProxy.sol:161
+HolographBridgeProxy:getBridge
+  Natspec is missing
+
+src/proxy/HolographBridgeProxy.sol:161
+HolographBridgeProxy:setBridge
+  Natspec is missing
+
+src/proxy/HolographFactoryProxy.sol:147
+HolographFactoryProxy:init
+  Natspec is missing
+
+src/proxy/HolographFactoryProxy.sol:161
+HolographFactoryProxy:getFactory
+  Natspec is missing
+
+src/proxy/HolographFactoryProxy.sol:161
+HolographFactoryProxy:setFactory
+  Natspec is missing
+
+src/proxy/HolographLegacyERC721Proxy.sol:23
+HolographLegacyERC721Proxy:init
+  Natspec is missing
+
+src/proxy/HolographLegacyERC721Proxy.sol:40
+HolographLegacyERC721Proxy:getHolographLegacyERC721Source
+  Natspec is missing
+
+src/proxy/HolographOperatorProxy.sol:147
+HolographOperatorProxy:init
+  Natspec is missing
+
+src/proxy/HolographOperatorProxy.sol:161
+HolographOperatorProxy:getOperator
+  Natspec is missing
+
+src/proxy/HolographOperatorProxy.sol:161
+HolographOperatorProxy:setOperator
+  Natspec is missing
+
+src/proxy/HolographRegistryProxy.sol:147
+HolographRegistryProxy:init
+  Natspec is missing
+
+src/proxy/HolographRegistryProxy.sol:161
+HolographRegistryProxy:getRegistry
+  Natspec is missing
+
+src/proxy/HolographRegistryProxy.sol:161
+HolographRegistryProxy:setRegistry
+  Natspec is missing
+
+src/proxy/HolographTreasuryProxy.sol:147
+HolographTreasuryProxy:init
+  Natspec is missing
+
+src/proxy/HolographTreasuryProxy.sol:161
+HolographTreasuryProxy:getTreasury
+  Natspec is missing
+
+src/proxy/HolographTreasuryProxy.sol:161
+HolographTreasuryProxy:setTreasury
+  Natspec is missing
+
+src/proxy/hTokenProxy.sol:148
+hTokenProxy:init
+  Natspec is missing
+
+src/proxy/hTokenProxy.sol:166
+hTokenProxy:getHTokenSource
+  Natspec is missing
+
+src/token/CountdownERC721.sol:183
+CountdownERC721:init
+  @return missing for unnamed return №1
+
+src/token/CountdownERC721.sol:285
+CountdownERC721:supportsInterface
+  Natspec is missing
+
+src/token/CountdownERC721.sol:294
+CountdownERC721:owner
+  Natspec is missing
+
+src/token/CountdownERC721.sol:298
+CountdownERC721:isAdmin
+  Natspec is missing
+
+src/token/CountdownERC721.sol:327
+CountdownERC721:totalMinted
+  @return missing for unnamed return №1
+
+src/token/CountdownERC721.sol:352
+CountdownERC721:mintedPerAddress
+  @return missing for unnamed return №1
+
+src/token/CountdownERC721.sol:391
+CountdownERC721:name
+  @return missing for unnamed return №1
+
+src/token/CountdownERC721.sol:400
+CountdownERC721:multicall
+  Natspec is missing
+
+src/token/CountdownERC721.sol:411
+CountdownERC721:purchase
+  @return missing for unnamed return №1
+
+src/token/CountdownERC721.sol:466
+CountdownERC721:setMetadataParams
+  @param params is missing
+
+src/token/CountdownERC721.sol:497
+CountdownERC721:mintTo
+  @return missing for unnamed return №1
+
+src/token/CountdownERC721.sol:568
+CountdownERC721:_canSetContractURI
+  @return missing for unnamed return №1
+
+src/token/CountdownERC721.sol:575
+CountdownERC721:_publicSaleActive
+  @return missing for unnamed return №1
+
+src/token/CountdownERC721.sol:585
+CountdownERC721:_setupContractURI
+  @param _uri is missing
+
+src/token/CountdownERC721.sol:592
+CountdownERC721:_mintNFTs
+  Natspec is missing
+
+src/token/CountdownERC721.sol:148
+CountdownERC721:canMintTokens
+  @param quantity is missing
+
+src/token/CustomERC721.sol:145
+CustomERC721:init
+  @return missing for unnamed return №1
+
+src/token/CustomERC721.sol:279
+CustomERC721:supportsInterface
+  Natspec is missing
+
+src/token/CustomERC721.sol:288
+CustomERC721:owner
+  Natspec is missing
+
+src/token/CustomERC721.sol:292
+CustomERC721:isAdmin
+  Natspec is missing
+
+src/token/CustomERC721.sol:339
+CustomERC721:mintedPerAddress
+  @return missing for unnamed return №1
+
+src/token/CustomERC721.sol:374
+CustomERC721:getNativePrice
+  @return missing for unnamed return №1
+
+src/token/CustomERC721.sol:381
+CustomERC721:name
+  @return missing for unnamed return №1
+
+src/token/CustomERC721.sol:390
+CustomERC721:multicall
+  Natspec is missing
+
+src/token/CustomERC721.sol:402
+CustomERC721:reveal
+  @return revealedURI is missing
+
+src/token/CustomERC721.sol:425
+CustomERC721:purchase
+  @return missing for unnamed return №1
+
+src/token/CustomERC721.sol:481
+CustomERC721:mintTo
+  @return missing for unnamed return №1
+
+src/token/CustomERC721.sol:546
+CustomERC721:_publicSaleActive
+  @return missing for unnamed return №1
+
+src/token/CustomERC721.sol:554
+CustomERC721:_usdToWei
+  @return weiAmount is missing
+
+src/token/CustomERC721.sol:562
+CustomERC721:_canLazyMint
+  @return missing for unnamed return №1
+
+src/token/CustomERC721.sol:567
+CustomERC721:_canSetContractURI
+  @return missing for unnamed return №1
+
+src/token/CustomERC721.sol:574
+CustomERC721:totalMinted
+  @return missing for unnamed return №1
+
+src/token/CustomERC721.sol:579
+CustomERC721:nextTokenIdToMint
+  @return missing for unnamed return №1
+
+src/token/CustomERC721.sol:584
+CustomERC721:nextTokenIdToClaim
+  @return missing for unnamed return №1
+
+src/token/CustomERC721.sol:603
+CustomERC721:lazyMint
+  @return batchId is missing
+
+src/token/CustomERC721.sol:624
+CustomERC721:_canReveal
+  @return missing for unnamed return №1
+
+src/token/CustomERC721.sol:628
+CustomERC721:_mintNFTs
+  Natspec is missing
+
+src/token/CustomERC721.sol:110
+CustomERC721:canMintTokens
+  @param quantity is missing
+
+src/token/CxipERC721.sol:194
+CxipERC721:tokenURI
+  @param _tokenId is missing
+
+src/token/CxipERC721.sol:212
+CxipERC721:cxipMint
+  Natspec is missing
+
+src/token/CxipERC721.sol:236
+CxipERC721:bridgeIn
+  Natspec is missing
+
+src/token/CxipERC721.sol:240
+CxipERC721:bridgeOut
+  Natspec is missing
+
+src/token/CxipERC721.sol:240
+CxipERC721:afterBurn
+  Natspec is missing
+
+src/token/HolographLegacyERC721.sol:65
+HolographLegacyERC721:tokenURI
+  @param _tokenId is missing
+
+src/token/HolographLegacyERC721.sol:113
+HolographLegacyERC721:bridgeIn
+  @param  is missing
+  @param  is missing
+  @param  is missing
+
+src/token/HolographLegacyERC721.sol:132
+HolographLegacyERC721:bridgeOut
+  @param  is missing
+  @param  is missing
+  @param  is missing
+
+src/token/HolographLegacyERC721.sol:148
+HolographLegacyERC721:afterBurn
+  @param  is missing
+
+src/token/HolographUtilityToken.sol:155
+HolographUtilityToken:isHLG
+  @return missing for unnamed return №1
+
+src/token/SampleERC20.sol:178
+SampleERC20:mint
+  @param to is missing
+  @param amount is missing
+
+src/token/SampleERC20.sol:178
+SampleERC20:bridgeIn
+  Natspec is missing
+
+src/token/SampleERC20.sol:178
+SampleERC20:bridgeOut
+  Natspec is missing
+
+src/token/SampleERC721.sol:183
+SampleERC721:tokenURI
+  @param _tokenId is missing
+
+src/token/SampleERC721.sol:192
+SampleERC721:mint
+  @param to is missing
+  @param tokenId is missing
+  @param URI is missing
+
+src/token/SampleERC721.sol:202
+SampleERC721:bridgeIn
+  Natspec is missing
+
+src/token/SampleERC721.sol:202
+SampleERC721:bridgeOut
+  Natspec is missing
+
+src/token/SampleERC721.sol:202
+SampleERC721:afterBurn
+  Natspec is missing
+
+src/token/hToken.sol:164
+hToken:Deposit
+  @param from is missing
+  @param amount is missing
+
+src/token/hToken.sol:168
+hToken:TokenDeposit
+  @param token is missing
+  @param from is missing
+  @param amount is missing
+
+src/token/hToken.sol:172
+hToken:Withdrawal
+  @param to is missing
+  @param amount is missing
+
+src/token/hToken.sol:179
+hToken:TokenWithdrawal
+  @param token is missing
+  @param to is missing
+  @param amount is missing
+
+src/token/hToken.sol:217
+hToken:extractNativeToken
+  @param amount is missing
+
+src/token/hToken.sol:241
+hToken:isSupportedChain
+  Natspec is missing
+
+src/token/hToken.sol:241
+hToken:isSupportedWrapper
+  Natspec is missing
+
+src/token/hToken.sol:241
+hToken:updateSupportedWrapper
+  Natspec is missing
+
+src/token/hToken.sol:241
+hToken:updateSupportedChain
+  Natspec is missing
+

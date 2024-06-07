@@ -108,26 +108,31 @@ import "./interface/InitializableInterface.sol";
  * @dev In the beginning there was a smart contract...
  */
 contract HolographGenesis {
+  /// @notice The version number of the Genesis contract
   uint32 private immutable _version;
 
-  // Nonce to prevent replay attacks on deployer approvals
+  /// @notice Nonce to prevent replay attacks on deployer approvals
   uint256 private _approveDeployerNonce;
 
-  // Immutable addresses of the initial deployers
+  /// @notice Immutable addresses of the initial deployers
   address private immutable deployer1 = 0xBB566182f35B9E5Ae04dB02a5450CC156d2f89c1;
   address private immutable deployer2 = 0x22ED36947DDd1ae317F7816c410D3c0c58Bb9b90;
   address private immutable deployer3 = 0xFfCA0d6986099FbDb3b6AD9b6aa5DF5ed1d44f0C;
   address private immutable deployer4 = 0xDF9013a9Af763b181EF8acFC0e3229494004e001;
   address private immutable deployer5 = 0x00Ac9Fd50C63f176B49F05FfedA324bD68C7cD69;
 
-  // Mapping of addresses that are approved deployers
+  /// @notice Mapping of addresses that are approved deployers
   mapping(address => bool) private _approvedDeployers;
 
-  // Events
+  /// @notice Event emitted when a message is logged
+  /// @param message The message logged
   event Message(string message);
+
+  /// @notice Event emitted when a contract is deployed
+  /// @param deployedContract The address of the deployed contract
   event ContractDeployed(address deployedContract);
 
-  // Modifier to restrict function calls to approved deployers
+  /// @notice Modifier to restrict function calls to approved deployers
   modifier onlyDeployer() {
     require(_approvedDeployers[msg.sender], "HOLOGRAPH: deployer not approved");
     _;
@@ -150,7 +155,7 @@ contract HolographGenesis {
   }
 
   /**
-   * @dev Deploy a contract using the EIP-1014 (create2) opcode for deterministic addresses.
+   * @notice Deploy a contract using the EIP-1014 (create2) opcode for deterministic addresses.
    * @param chainId The chain on which to deploy
    * @param saltHash A unique salt for contract creation
    * @param secret A secret part of the salt
@@ -183,7 +188,7 @@ contract HolographGenesis {
   }
 
   /**
-   * @dev Check if an address is an approved deployer.
+   * @notice Check if an address is an approved deployer.
    * @param deployer Address to check
    * @return bool representing approval status
    */
@@ -192,7 +197,7 @@ contract HolographGenesis {
   }
 
   /**
-   * @dev Internal function to determine if an address is a deployed contract.
+   * @notice Internal function to determine if an address is a deployed contract.
    * @param contractAddress The address to check
    * @return bool representing if the address is a contract
    */
@@ -205,7 +210,7 @@ contract HolographGenesis {
   }
 
   /**
-   * @dev Approve or disapprove a deployer using multi-signature verification.
+   * @notice Approve or disapprove a deployer using multi-signature verification.
    * @param nonce A unique nonce
    * @param newDeployer The address of the deployer to approve or disapprove
    * @param approve Boolean representing the approval status
@@ -240,10 +245,10 @@ contract HolographGenesis {
   }
 
   /**
-   * @dev Generates a hash of the message containing nonce, deployer address, and approval status.
-   * @param nonce Nonce used in the message
-   * @param newDeployer Address of the deployer in the message
-   * @param approve Approval status in the message
+   * @notice Generates a hash of the message containing nonce, deployer address, and approval status.
+   * @param -nonce Nonce used in the message
+   * @param -newDeployer Address of the deployer in the message
+   * @param -approve Approval status in the message
    * @return bytes32 Ethereum signed message hash
    */
   function getMessageHash(uint256 nonce, address newDeployer, bool approve) public pure returns (bytes32) {
@@ -251,7 +256,7 @@ contract HolographGenesis {
   }
 
   /**
-   * @dev Recreates the Ethereum signed message hash from the plain message hash.
+   * @notice Recreates the Ethereum signed message hash from the plain message hash.
    * @param _messageHash The hash of the original message
    * @return bytes32 Ethereum signed message hash
    */
@@ -260,11 +265,11 @@ contract HolographGenesis {
   }
 
   /**
-   * @dev Recovers the signer from the signature.
-   * @param nonce Nonce used in the message
-   * @param newDeployer Address of the deployer in the message
-   * @param approve Approval status in the message
-   * @param signature The signature to recover
+   * @notice Recovers the signer from the signature.
+   * @param -nonce Nonce used in the message
+   * @param -newDeployer Address of the deployer in the message
+   * @param -approve Approval status in the message
+   * @param -signature The signature to recover
    * @return address of the signer
    */
   function recoverSigner(
@@ -281,7 +286,7 @@ contract HolographGenesis {
   }
 
   /**
-   * @dev Splits a signature into its r, s, and v components.
+   * @notice Splits a signature into its r, s, and v components.
    * @param sig The signature to split.
    * @return r The r component of the signature.
    * @return s The s component of the signature.
@@ -301,7 +306,7 @@ contract HolographGenesis {
   }
 
   /**
-   * @dev Returns the current nonce for deployer approvals.
+   * @notice Returns the current nonce for deployer approvals.
    * @return uint256 representing the current nonce
    */
   function getApproveDeployerNonce() external view onlyDeployer returns (uint256) {
@@ -309,7 +314,7 @@ contract HolographGenesis {
   }
 
   /**
-   * @dev Returns the version number of the Genesis contract
+   * @notice Returns the version number of the Genesis contract
    * @return uint32 representing the version number
    */
   function getVersion() external view returns (uint32) {

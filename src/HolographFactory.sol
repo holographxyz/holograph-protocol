@@ -144,6 +144,7 @@ contract HolographFactory is Admin, Initializable, Holographable, HolographFacto
    * @notice Used internally to initialize the contract instead of through a constructor
    * @dev This function is called by the deployer/factory when creating a contract
    * @param initPayload abi encoded payload to use for contract initilaization
+   * @return bytes4 selector for the init function
    */
   function init(bytes memory initPayload) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
@@ -161,6 +162,9 @@ contract HolographFactory is Admin, Initializable, Holographable, HolographFacto
    * @notice Deploy holographable contract via bridge request
    * @dev This function directly forwards the calldata to the deployHolographableContract function
    *      It is used to allow for Holograph Bridge to make cross-chain deployments
+   * @param - fromChain The originating chain of the bridge request
+   * @param payload The calldata payload containing the contract deployment details
+   * @return Returns the selector for the bridgeIn function
    */
   function bridgeIn(uint32 /* fromChain*/, bytes calldata payload) external returns (bytes4) {
     (DeploymentConfig memory config, Verification memory signature, address signer) = abi.decode(
@@ -175,6 +179,11 @@ contract HolographFactory is Admin, Initializable, Holographable, HolographFacto
    * @notice Deploy holographable contract via bridge request
    * @dev This function directly returns the calldata
    *      It is used to allow for Holograph Bridge to make cross-chain deployments
+   * @param - toChain The destination chain of the bridge request
+   * @param - sender The address of the sender initiating the bridge request
+   * @param payload The calldata payload containing the contract deployment details
+   * @return selector The function selector for the bridgeOut function
+   * @return data The calldata payload to be sent to the destination chain
    */
   function bridgeOut(
     uint32 /* toChain*/,
@@ -184,6 +193,15 @@ contract HolographFactory is Admin, Initializable, Holographable, HolographFacto
     return (Holographable.bridgeOut.selector, payload);
   }
 
+  /**
+   * @notice Deploy holographable contract on multiple chains
+   * @dev This function allows for deploying the contract on the current chain and also on multiple other chains
+   * @param config The deployment configuration for the contract
+   * @param signature The verification signature for the deployment
+   * @param signer The address of the signer who authorized the deployment
+   * @param deployOnCurrentChain Flag indicating whether to deploy on the current chain
+   * @param bridgeSettings An array of bridge settings for each destination chain
+   */
   function deployHolographableContractMultiChain(
     DeploymentConfig memory config,
     Verification memory signature,
@@ -296,6 +314,7 @@ contract HolographFactory is Admin, Initializable, Holographable, HolographFacto
   /**
    * @notice Get the Holograph Protocol contract
    * @dev Used for storing a reference to all the primary modules and variables of the protocol
+   * @return holograph The address of the Holograph Protocol contract
    */
   function getHolograph() external view returns (address holograph) {
     assembly {
@@ -316,6 +335,7 @@ contract HolographFactory is Admin, Initializable, Holographable, HolographFacto
   /**
    * @notice Get the Holograph Registry module
    * @dev This module stores a reference for all deployed holographable smart contracts
+   * @return registry The address of the Holograph Registry module
    */
   function getRegistry() external view returns (address registry) {
     assembly {
@@ -335,6 +355,8 @@ contract HolographFactory is Admin, Initializable, Holographable, HolographFacto
 
   /**
    * @dev Internal function used for checking if a contract has been deployed at address
+   * @param contractAddress address to check if a contract has been deployed
+   * @return bool indicating if the address is a contract
    */
   function _isContract(address contractAddress) private view returns (bool) {
     bytes32 codehash;
@@ -346,6 +368,12 @@ contract HolographFactory is Admin, Initializable, Holographable, HolographFacto
 
   /**
    * @dev Internal function used for verifying a signature
+   * @param r The r value of the signature
+   * @param s The s value of the signature
+   * @param v The v value of the signature
+   * @param hash The hash of the data being signed
+   * @param signer The address of the signer to verify against
+   * @return Returns true if the signature is valid and corresponds to the signer, false otherwise
    */
   function _verifySigner(bytes32 r, bytes32 s, uint8 v, bytes32 hash, address signer) private pure returns (bool) {
     if (v < 27) {

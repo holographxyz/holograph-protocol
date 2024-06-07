@@ -37,6 +37,7 @@ contract OVM_GasPriceOracle is Admin, Initializable {
    * @notice Used internally to initialize the contract instead of through a constructor
    * @dev This function is called by the deployer/factory when creating a contract
    * @param initPayload abi encoded payload to use for contract initilaization
+   * @return bytes4 selector for the init function
    */
   function init(bytes memory initPayload) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");

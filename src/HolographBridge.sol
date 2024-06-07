@@ -158,6 +158,7 @@ contract HolographBridge is Admin, Initializable, HolographBridgeInterface {
    * @notice Used internally to initialize the contract instead of through a constructor
    * @dev This function is called by the deployer/factory when creating a contract
    * @param initPayload abi encoded payload to use for contract initilaization
+   * @return bytes4 selector for the init function
    */
   function init(bytes memory initPayload) external override returns (bytes4) {
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
@@ -179,6 +180,7 @@ contract HolographBridge is Admin, Initializable, HolographBridgeInterface {
   /**
    * @notice Receive a beam from another chain
    * @dev This function can only be called by the Holograph Operator module
+   * @param - nonce the unique identifier for the bridge request
    * @param fromChain Holograph Chain ID where the brigeOutRequest was created
    * @param holographableContract address of the destination contract that the bridgeInRequest is targeted for
    * @param hToken address of the hToken contract that wrapped the origin chain native gas token
@@ -292,6 +294,7 @@ contract HolographBridge is Admin, Initializable, HolographBridgeInterface {
    * @param toChain holograph chain id of destination chain
    * @param holographableContract address of the contract for which the bridge request is being made
    * @param bridgeOutPayload actual abi encoded bytes of the data that the holographable contract bridgeOut function will receive
+   * @return revertReason the reason why the bridge out request failed
    */
   function revertedBridgeOutRequest(
     address sender,
@@ -416,10 +419,10 @@ contract HolographBridge is Admin, Initializable, HolographBridgeInterface {
   /**
    * @notice Get the fees associated with sending specific payload
    * @dev Will provide exact costs on protocol and message side, combine the two to get total
-   * @dev @param toChain holograph chain id of destination chain for payload
-   * @dev @param gasLimit amount of gas to provide for executing payload on destination chain
-   * @dev @param gasPrice maximum amount to pay for gas price, can be set to 0 and will be chose automatically
-   * @dev @param crossChainPayload the entire packet being sent cross-chain
+   * @param - toChain holograph chain id of destination chain for payload
+   * @param - gasLimit amount of gas to provide for executing payload on destination chain
+   * @param - gasPrice maximum amount to pay for gas price, can be set to 0 and will be chose automatically
+   * @param - crossChainPayload the entire packet being sent cross-chain
    * @return hlgFee the amount (in wei) of native gas token that will cost for finalizing job on destiantion chain
    * @return msgFee the amount (in wei) of native gas token that will cost for sending message to destiantion chain
    * @return dstGasPrice the amount (in wei) that destination message maximum gas price will be
@@ -442,6 +445,7 @@ contract HolographBridge is Admin, Initializable, HolographBridgeInterface {
   /**
    * @notice Get the address of the Holograph Factory module
    * @dev Used for deploying holographable smart contracts
+   * @return factory the address of the Holograph Factory module
    */
   function getFactory() external view returns (address factory) {
     assembly {
@@ -462,6 +466,7 @@ contract HolographBridge is Admin, Initializable, HolographBridgeInterface {
   /**
    * @notice Get the Holograph Protocol contract
    * @dev Used for storing a reference to all the primary modules and variables of the protocol
+   * @return holograph the address of the Holograph Protocol contract
    */
   function getHolograph() external view returns (address holograph) {
     assembly {
@@ -482,6 +487,7 @@ contract HolographBridge is Admin, Initializable, HolographBridgeInterface {
   /**
    * @notice Get the latest job nonce
    * @dev You can use the job nonce as a way to calculate total amount of bridge requests that have been made
+   * @return jobNonce the latest job nonce
    */
   function getJobNonce() external view returns (uint256 jobNonce) {
     assembly {
@@ -492,6 +498,7 @@ contract HolographBridge is Admin, Initializable, HolographBridgeInterface {
   /**
    * @notice Get the address of the Holograph Operator module
    * @dev All cross-chain Holograph Bridge beams are handled by the Holograph Operator module
+   * @return operator the address of the Holograph Operator module
    */
   function getOperator() external view returns (address operator) {
     assembly {
@@ -512,6 +519,7 @@ contract HolographBridge is Admin, Initializable, HolographBridgeInterface {
   /**
    * @notice Get the Holograph Registry module
    * @dev This module stores a reference for all deployed holographable smart contracts
+   * @return registry the address of the Holograph Registry module
    */
   function getRegistry() external view returns (address registry) {
     assembly {
@@ -531,6 +539,7 @@ contract HolographBridge is Admin, Initializable, HolographBridgeInterface {
 
   /**
    * @dev Internal function used for getting the Holograph Factory Interface
+   * @return factory the address of the Holograph Factory module
    */
   function _factory() private view returns (HolographFactoryInterface factory) {
     assembly {
@@ -540,6 +549,7 @@ contract HolographBridge is Admin, Initializable, HolographBridgeInterface {
 
   /**
    * @dev Internal function used for getting the Holograph Interface
+   * @return holograph the address of the Holograph Protocol contract
    */
   function _holograph() private view returns (HolographInterface holograph) {
     assembly {
@@ -549,6 +559,7 @@ contract HolographBridge is Admin, Initializable, HolographBridgeInterface {
 
   /**
    * @dev Internal nonce, that increments on each call, used for randomness
+   * @return jobNonce the latest job nonce
    */
   function _jobNonce() private returns (uint256 jobNonce) {
     assembly {
@@ -559,6 +570,7 @@ contract HolographBridge is Admin, Initializable, HolographBridgeInterface {
 
   /**
    * @dev Internal function used for getting the Holograph Operator Interface
+   * @return operator the address of the Holograph Operator module
    */
   function _operator() private view returns (HolographOperatorInterface operator) {
     assembly {
@@ -568,6 +580,7 @@ contract HolographBridge is Admin, Initializable, HolographBridgeInterface {
 
   /**
    * @dev Internal function used for getting the Holograph Registry Interface
+   * @return registry the address of the Holograph Registry module
    */
   function _registry() private view returns (HolographRegistryInterface registry) {
     assembly {

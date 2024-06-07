@@ -51,7 +51,7 @@
     "prettier:check": "prettier --ignore-unknown --check \"deploy/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.ts\"",
     "prettier:fix": "prettier --loglevel error --ignore-path .gitignore --ignore-path **/lib --write .",
     "prettier:deployments": "hardhat deploymentsPrettier",
-    "natspec": "npx natspec-smells &> natspec-smells.report.txt",
+    "natspec": "bash scripts/natspec-smells.sh",
     "snapshot": "FOUNDRY_PROFILE=ci forge snapshot --no-match-test \"(FFI|Fork|Fuzz)\" --offline",
     "snapshot:check": "FOUNDRY_PROFILE=ci forge snapshot --no-match-test \"(FFI|Fork|Fuzz)\" --check --offline",
     "start": "bash ./scripts/stop-protocol.sh && bash ./scripts/start-protocol.sh",
