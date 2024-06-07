@@ -23,8 +23,9 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   console.log(`Checking lzEndpoint for ${hre1.network.name} network`);
   console.log(`LZ Endpoint ${networks[hre.networkName].lzEndpoint}`);
 
-  let lzEndpoint = networks[hre.networkName].lzEndpoint;
-  // let lzEndpoint = '0x55370E0fBB5f5b8dAeD978BA1c075a499eB107B8'; // Override this for base sepolia network to use the V1 Endpoint until we update the networks package
+  // let lzEndpoint = networks[hre.networkName].lzEndpoint;
+  let lzEndpoint = '0x55370E0fBB5f5b8dAeD978BA1c075a499eB107B8'; // Override this for base sepolia network to use the V1 Endpoint until we update the networks package
+  // let lzEndpoint = '0x6Fcb97553D41516Cb228ac03FdC8B9a0a9df04A1'; // OVerride this for bsc testnet to use the V1 Endpoint until we update the networks package
 
   if (lzEndpoint) {
     if (currentNetworkType === NetworkType.local && lzEndpoint === undefined) {
@@ -75,11 +76,13 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     }
 
     // Migrate from LayerZero Endpoint to use the new V2 MessageLib (UltraLightNode301)
-    // TODO: We need to wire up the Endpoint.sol abi to the address of the Endpoint.sol contract on the network
-    //       to be able to call the latestVersion() function to get the latest version of the contract dynamically
-    //       For now we will just hardcode this to 5 as we know that is the latest version
-    // const latestVersion = await endpointContract.latestVersion();
-    const latestVersion = 5;
+    const endpointContractABI = ['function latestVersion() view returns (uint256)'];
+    const endpointContract = new Contract(lzEndpoint, endpointContractABI, hre.ethers.provider);
+    const latestVersion = await endpointContract.latestVersion();
+    console.log(`Latest version of the Endpoint contract is: ${latestVersion}`);
+
+    // Set the send and receive versions to the latest version of the endpoint contract
+    // The LZ docs specify tha tthe send version is one less than the receive version
     const receiveUln301Version = latestVersion;
     const sendUln301Version = latestVersion - 1;
 
@@ -89,7 +92,6 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       from: deployerAddress,
       to: layerZeroModuleV2,
       data: layerZeroModuleV2.populateTransaction.setSendVersion(sendUln301Version),
-      // gasLimit: BigNumber.from(50000),
     });
 
     const receiveTxParams = await txParams({
@@ -97,7 +99,6 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       from: deployerAddress,
       to: layerZeroModuleV2,
       data: layerZeroModuleV2.populateTransaction.setReceiveVersion(receiveUln301Version),
-      // gasLimit: BigNumber.from(50000),
     });
 
     const sendTx = await MultisigAwareTx(

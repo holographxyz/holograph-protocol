@@ -233,6 +233,39 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
     dstGasPrice = (gasPrice * totalGas) / (10 ** 20);
   }
 
+  function _getLayerZeroOverrides() internal view returns (LayerZeroOverrides lz) {
+    assembly {
+      lz := sload(_lZEndpointSlot)
+    }
+  }
+
+  function _getPrice(uint16 lzEid) internal view returns (ILayerZeroPriceFeed.Price memory price) {
+    (, price) = _getPriceFeed(lzEid);
+  }
+
+  function _getGasParameters(uint32 toChain) internal view returns (GasParameters memory gasParameters) {
+    return _gasParameters(toChain);
+  }
+
+  function _createOptions(
+    GasParameters memory gasParameters,
+    bytes calldata crossChainPayload
+  ) internal pure returns (bytes memory options) {
+    options = abi.encodePacked(
+      uint16(1),
+      uint256(gasParameters.msgBaseGas + (crossChainPayload.length * gasParameters.msgGasPerByte))
+    );
+  }
+
+  function _estimateFees(
+    uint16 lzEidV2,
+    bytes calldata crossChainPayload,
+    bytes memory options
+  ) internal view returns (uint256 nativeFee, uint256 lzFee) {
+    LayerZeroOverrides lz = _getLayerZeroOverrides();
+    return lz.estimateFees(lzEidV2, address(this), crossChainPayload, false, options);
+  }
+
   function getHlgFee(
     uint32 toChain,
     uint256 gasLimit,
@@ -241,7 +274,7 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
   ) external view returns (uint256 hlgFee) {
     uint16 lzEid = uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO));
 
-    (, ILayerZeroPriceFeed.Price memory price) = _getPriceFeed(lzEid);
+    (, ILayerZeroPriceFeed.Price memory price) = _getPriceFeed(lzEid); // Use the LZ V1 eid for the price feed
 
     if (gasPrice == 0) {
       gasPrice = price.gasPriceInUnit;
