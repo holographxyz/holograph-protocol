@@ -74,54 +74,54 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     }
 
     // Migrate from LayerZero Endpoint to use the new V2 MessageLib (UltraLightNode301)
-    const endpointContractABI = ['function latestVersion() view returns (uint256)'];
-    const endpointContract = new Contract(lzEndpoint, endpointContractABI, hre.ethers.provider);
-    const latestVersion = await endpointContract.latestVersion();
-    console.log(`Latest version of the Endpoint contract is: ${latestVersion}`);
+    // const endpointContractABI = ['function latestVersion() view returns (uint256)'];
+    // const endpointContract = new Contract(lzEndpoint, endpointContractABI, hre.ethers.provider);
+    // const latestVersion = await endpointContract.latestVersion();
+    // console.log(`Latest version of the Endpoint contract is: ${latestVersion}`);
 
-    // Set the send and receive versions to the latest version of the endpoint contract
-    // The LZ docs specify tha tthe send version is one less than the receive version
-    const receiveUln301Version = latestVersion;
-    const sendUln301Version = latestVersion - 1;
+    // // Set the send and receive versions to the latest version of the endpoint contract
+    // // The LZ docs specify tha tthe send version is one less than the receive version
+    // const receiveUln301Version = latestVersion;
+    // const sendUln301Version = latestVersion - 1;
 
-    console.log(`Setting sendVersion to ${sendUln301Version} and receiveVersion to ${receiveUln301Version}`);
-    const sendTxParams = await txParams({
-      hre,
-      from: deployerAddress,
-      to: layerZeroModuleV2,
-      data: layerZeroModuleV2.populateTransaction.setSendVersion(sendUln301Version),
-    });
+    // console.log(`Setting sendVersion to ${sendUln301Version} and receiveVersion to ${receiveUln301Version}`);
+    // const sendTxParams = await txParams({
+    //   hre,
+    //   from: deployerAddress,
+    //   to: layerZeroModuleV2,
+    //   data: layerZeroModuleV2.populateTransaction.setSendVersion(sendUln301Version),
+    // });
 
-    const receiveTxParams = await txParams({
-      hre,
-      from: deployerAddress,
-      to: layerZeroModuleV2,
-      data: layerZeroModuleV2.populateTransaction.setReceiveVersion(receiveUln301Version),
-    });
+    // const receiveTxParams = await txParams({
+    //   hre,
+    //   from: deployerAddress,
+    //   to: layerZeroModuleV2,
+    //   data: layerZeroModuleV2.populateTransaction.setReceiveVersion(receiveUln301Version),
+    // });
 
-    const sendTx = await MultisigAwareTx(
-      hre,
-      'LayerZeroModuleV2',
-      layerZeroModuleV2,
-      await layerZeroModuleV2.populateTransaction.setSendVersion(sendUln301Version, {
-        ...sendTxParams,
-      })
-    );
-    console.log('Send Transaction hash:', sendTx.hash);
-    await sendTx.wait();
+    // const sendTx = await MultisigAwareTx(
+    //   hre,
+    //   'LayerZeroModuleV2',
+    //   layerZeroModuleV2,
+    //   await layerZeroModuleV2.populateTransaction.setSendVersion(sendUln301Version, {
+    //     ...sendTxParams,
+    //   })
+    // );
+    // console.log('Send Transaction hash:', sendTx.hash);
+    // await sendTx.wait();
 
-    const receiveTx = await MultisigAwareTx(
-      hre,
-      'LayerZeroModuleV2',
-      layerZeroModuleV2,
-      await layerZeroModuleV2.populateTransaction.setReceiveVersion(receiveUln301Version, {
-        ...receiveTxParams,
-      })
-    );
-    console.log('Receive Transaction hash:', receiveTx.hash);
-    await receiveTx.wait();
+    // const receiveTx = await MultisigAwareTx(
+    //   hre,
+    //   'LayerZeroModuleV2',
+    //   layerZeroModuleV2,
+    //   await layerZeroModuleV2.populateTransaction.setReceiveVersion(receiveUln301Version, {
+    //     ...receiveTxParams,
+    //   })
+    // );
+    // console.log('Receive Transaction hash:', receiveTx.hash);
+    // await receiveTx.wait();
 
-    console.log(`Successfully set sendVersion to ${sendUln301Version} and receiveVersion to ${receiveUln301Version}`);
+    // console.log(`Successfully set sendVersion to ${sendUln301Version} and receiveVersion to ${receiveUln301Version}`);
   } else {
     console.log(`Skipping for ${hre1.network.name} network because lzEndpoint is not set`);
   }

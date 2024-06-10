@@ -144,7 +144,7 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
    */
   function send(
     uint256 /* gasLimit*/,
-    uint256 /* gasPrice*/,
+    uint256 gasPrice,
     uint32 toChain,
     address msgSender,
     uint256 msgValue,
@@ -156,18 +156,17 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
       lZEndpoint := sload(_lZEndpointSlot)
     }
     GasParameters memory gasParameters = _gasParameters(toChain);
-    // need to recalculate the gas amounts for LZ to deliver message
-    lZEndpoint.send{value: msgValue}(
-      uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
-      abi.encodePacked(address(this), address(this)),
-      crossChainPayload,
-      payable(msgSender),
-      address(this),
-      abi.encodePacked(
-        uint16(1),
-        uint256(gasParameters.msgBaseGas + (crossChainPayload.length * gasParameters.msgGasPerByte))
-      )
-    );
+    uint16 lzEid = uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO));
+
+    MessagingParams memory params = MessagingParams({
+      dstEid: lzEid,
+      receiver: bytes32(uint256(uint160(address(this)))),
+      message: crossChainPayload,
+      options: "",
+      payInLzToken: false
+    });
+
+    lZEndpoint.send{value: msgValue}(params, msgSender);
   }
 
   function _getPriceFeed(uint16 lzEidV1) internal view returns (ILayerZeroPriceFeed, ILayerZeroPriceFeed.Price memory) {
