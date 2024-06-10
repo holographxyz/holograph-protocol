@@ -158,8 +158,7 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
     GasParameters memory gasParameters = _gasParameters(toChain);
     // need to recalculate the gas amounts for LZ to deliver message
     lZEndpoint.send{value: msgValue}(
-      // uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
-      40245, // TEMPORARY: hardcoded LZ V2 chain eid for Base Sepolia
+      uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
       abi.encodePacked(address(this), address(this)),
       crossChainPayload,
       payable(msgSender),
@@ -171,13 +170,13 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
     );
   }
 
-  function _getPriceFeed(uint16 lzEid) internal view returns (ILayerZeroPriceFeed, ILayerZeroPriceFeed.Price memory) {
+  function _getPriceFeed(uint16 lzEidV1) internal view returns (ILayerZeroPriceFeed, ILayerZeroPriceFeed.Price memory) {
     IWorker lzExecutor;
     assembly {
       lzExecutor := sload(_lzExecutorSlot)
     }
     ILayerZeroPriceFeed lzPriceFeed = ILayerZeroPriceFeed(lzExecutor.priceFeed());
-    return (lzPriceFeed, lzPriceFeed.getPrice(lzEid));
+    return (lzPriceFeed, lzPriceFeed.getPrice(lzEidV1));
   }
 
   function getMessageFee(
@@ -186,9 +185,9 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
     uint256 gasPrice,
     bytes calldata crossChainPayload
   ) external view returns (uint256 hlgFee, uint256 msgFee, uint256 dstGasPrice) {
-    uint16 lzEid = uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO));
-    uint16 lzEidV2 = lzEid + 30000;
-    ILayerZeroPriceFeed.Price memory price = _getPrice(lzEid);
+    uint16 lzEidV2 = uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO));
+    uint16 lzEidV1 = lzEidV2 - 30000; // Convert LZ V2 eid to LZ V1 eid
+    ILayerZeroPriceFeed.Price memory price = _getPrice(lzEidV1);
 
     if (gasPrice == 0) {
       gasPrice = price.gasPriceInUnit;
@@ -219,8 +218,8 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
     }
   }
 
-  function _getPrice(uint16 lzEid) internal view returns (ILayerZeroPriceFeed.Price memory price) {
-    (, price) = _getPriceFeed(lzEid);
+  function _getPrice(uint16 lzEidV1) internal view returns (ILayerZeroPriceFeed.Price memory price) {
+    (, price) = _getPriceFeed(lzEidV1);
   }
 
   function _getGasParameters(uint32 toChain) internal view returns (GasParameters memory gasParameters) {
@@ -252,9 +251,9 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
     uint256 gasPrice,
     bytes calldata crossChainPayload
   ) external view returns (uint256 hlgFee) {
-    uint16 lzEid = uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO));
+    uint16 lzEidV1 = uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO));
 
-    (, ILayerZeroPriceFeed.Price memory price) = _getPriceFeed(lzEid); // Use the LZ V1 eid for the price feed
+    (, ILayerZeroPriceFeed.Price memory price) = _getPriceFeed(lzEidV1); // Use the LZ V1 eid for the price feed
 
     if (gasPrice == 0) {
       gasPrice = price.gasPriceInUnit;
