@@ -2,6 +2,14 @@
 
 pragma solidity 0.8.13;
 
+struct MessagingParams {
+  uint32 dstEid;
+  bytes32 receiver;
+  bytes message;
+  bytes options;
+  bool payInLzToken;
+}
+
 interface LayerZeroOverrides {
   // @dev defaultAppConfig struct
   struct ApplicationConfiguration {
@@ -59,6 +67,7 @@ interface LayerZeroOverrides {
     uint16 outboundProofType
   ) external view returns (uint128 dstNativeAmtCap, uint64 baseGas, uint64 gasPerByte);
 
+  // NOTE: This is the V1 version of the send function
   // @dev send message to LayerZero Endpoint
   function send(
     uint16 _dstChainId,
@@ -68,6 +77,9 @@ interface LayerZeroOverrides {
     address _zroPaymentAddress,
     bytes calldata _adapterParams
   ) external payable;
+
+  // @dev send message to LayerZero Endpoint
+  function send(MessagingParams calldata _params, address _refundAddress) external payable;
 
   // NOTE: This is the V1 version of the estimateFees function
   // @dev estimate LayerZero message cost
