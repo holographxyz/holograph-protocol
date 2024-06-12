@@ -20,6 +20,12 @@ import "../struct/GasParameters.sol";
 
 import "./OVM_GasPriceOracle.sol";
 
+struct Origin {
+  uint32 srcEid;
+  bytes32 sender;
+  uint64 nonce;
+}
+
 /**
  * @title Holograph LayerZero Module
  * @author https://github.com/holographxyz
@@ -55,6 +61,10 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.gasParameters')) - 1)
    */
   bytes32 constant _optimismGasPriceOracleSlot = 0x46043c284a96474ab4a54c741ea0d0fce54e98eea878b99d4b85808fa6f71a5f;
+  /**
+   * @dev mapping of trusted remote chains to their respective LayerZero Endpoint addresses
+   */
+  mapping(uint16 => bytes) public trustedRemoteLookup;
 
   /**
    * @dev Constructor is left empty and init is used instead
@@ -156,7 +166,6 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
       lZEndpoint := sload(_lZEndpointSlot)
     }
     GasParameters memory gasParameters = _gasParameters(toChain);
-    // need to recalculate the gas amounts for LZ to deliver message
     lZEndpoint.send{value: msgValue}(
       uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
       abi.encodePacked(address(this), address(this)),
@@ -185,8 +194,8 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
     uint256 gasPrice,
     bytes calldata crossChainPayload
   ) external view returns (uint256 hlgFee, uint256 msgFee, uint256 dstGasPrice) {
-    uint16 lzEidV2 = uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO));
-    uint16 lzEidV1 = lzEidV2 - 30000; // Convert LZ V2 eid to LZ V1 eid
+    uint16 lzEidV1 = uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO));
+    uint16 lzEidV2 = lzEidV1 + 30000; // Convert LZ V2 eid to LZ V1 eid
     ILayerZeroPriceFeed.Price memory price = _getPrice(lzEidV1);
 
     if (gasPrice == 0) {
@@ -533,5 +542,21 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
       lzEndpoint := sload(_lZEndpointSlot)
     }
     lzEndpoint.setReceiveVersion(_version);
+  }
+
+  // @dev LayerZero Receiver library (UltraLightNode / Uln)
+  // requires this to be exposed and return true to pass message validation
+  function allowInitializePath(Origin calldata _origin) external view returns (bool) {
+    return true;
+  }
+
+  // Function to set trusted remote address
+  function setTrustedRemote(uint16 _remoteChainId, bytes calldata _remoteAddress) external onlyAdmin {
+    trustedRemoteLookup[_remoteChainId] = _remoteAddress;
+  }
+
+  // Function to get trusted remote address
+  function getTrustedRemote(uint16 _remoteChainId) external view returns (bytes memory) {
+    return trustedRemoteLookup[_remoteChainId];
   }
 }

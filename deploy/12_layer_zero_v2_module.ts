@@ -1,7 +1,7 @@
 declare var global: any;
 import path from 'path';
 
-import { BigNumber, Contract } from 'ethers';
+import { BigNumber, Contract, ethers } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { DeployFunction } from '@holographxyz/hardhat-deploy-holographed/types';
@@ -445,6 +445,52 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       console.log(`Registered LayerZeroModuleV2 to: ${await layerZeroModuleProxyV2.getLayerZeroModule()}`);
     } else {
       console.log(`LayerZeroModuleProxyV2 is already pointed to: ${await layerZeroModuleProxyV2.getLayerZeroModule()}`);
+    }
+
+    // Set trusted remotes for LayerZeroModuleProxyV2
+    console.log(`Setting trusted remotes for LayerZeroModuleProxyV2...`);
+
+    const lzModule = ((await hre.ethers.getContract('LayerZeroModuleV2', deployerAddress)) as Contract).attach(
+      futureLayerZeroModuleProxyV2Address
+    );
+
+    const endpointIds = [10245]; // LayerZero V1 endpoint IDs
+
+    const encodeTrustedRemote = (remoteAddr: string, localAddr: string): string => {
+      return ethers.utils.solidityPack(['address', 'address'], [remoteAddr, localAddr]);
+    };
+
+    for (const remoteChainId of endpointIds) {
+      const localAddress = futureLayerZeroModuleProxyV2Address; // Local address
+      const trustedRemote = encodeTrustedRemote(localAddress, localAddress);
+
+      const currentTrustedRemote = await lzModule.getTrustedRemote(remoteChainId);
+
+      // if (currentTrustedRemote !== trustedRemote) {
+      console.log(`Setting trusted remote for chain ID ${remoteChainId} with path ${trustedRemote}...`);
+
+      const setTrustedRemoteTxParams = await txParams({
+        hre,
+        from: deployerAddress,
+        to: lzModule,
+        data: lzModule.populateTransaction.setTrustedRemote(remoteChainId, trustedRemote),
+      });
+
+      const setTrustedRemoteTx = await MultisigAwareTx(
+        hre,
+        'LayerZeroModuleProxyV2',
+        lzModule,
+        await lzModule.populateTransaction.setTrustedRemote(remoteChainId, trustedRemote, {
+          ...setTrustedRemoteTxParams,
+        })
+      );
+
+      console.log('Transaction hash:', setTrustedRemoteTx.hash);
+      await setTrustedRemoteTx.wait();
+      console.log(`Trusted remote set for chain ID ${remoteChainId}:`, await lzModule.getTrustedRemote(remoteChainId));
+      // } else {
+      //   console.log(`Trusted remote for chain ID ${remoteChainId} is already set to ${trustedRemote}.`);
+      // }
     }
   }
 
