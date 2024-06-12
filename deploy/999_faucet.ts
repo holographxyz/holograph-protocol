@@ -84,41 +84,42 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       }
       console.log(`Checking if HLG reference is updated in Faucet contract`);
       const faucetContract = await hre.ethers.getContract('Faucet', deployerAddress);
-      if ((await faucetContract.token()) !== hlgTokenAddress) {
-        console.log('HLG reference not updated in Faucet contract, updating now...');
-        const tx = await MultisigAwareTx(
-          hre,
-          'Faucet',
-          faucetContract,
-          await faucetContract.populateTransaction.setToken(hlgTokenAddress, {
-            ...(await txParams({
-              hre,
-              from: deployerAddress,
-              to: faucetContract,
-              data: faucetContract.populateTransaction.setToken(hlgTokenAddress),
-            })),
-          })
-        );
-        await tx.wait();
-        console.log('Updated HLG reference');
-        console.log('Transferring 5M HLG to faucet');
-        const transferTx = await hlgContract.transfer(futureFaucetAddress, BigNumber.from(FIVE_MILLION_TOKENS), {
-          ...(await txParams({
-            hre,
-            from: deployerAddress,
-            to: hlgContract,
-            gasLimit: (
-              await hre.ethers.provider.estimateGas(
-                await hlgContract.populateTransaction.transfer(futureFaucetAddress, BigNumber.from(FIVE_MILLION_TOKENS))
-              )
-            ).mul(BigNumber.from('2')),
-          })),
-        });
-        const receipt = await transferTx.wait();
-        console.log(`Transfer tx hash: ${receipt.transactionHash}`);
-      } else {
-        console.log('HLG reference already updated in Faucet contract');
-      }
+      // DISABLED: This is not needed as the faucet contract is already deployed with the correct HLG token address
+      // if ((await faucetContract.token()) !== hlgTokenAddress) {
+      //   console.log('HLG reference not updated in Faucet contract, updating now...');
+      //   const tx = await MultisigAwareTx(
+      //     hre,
+      //     'Faucet',
+      //     faucetContract,
+      //     await faucetContract.populateTransaction.setToken(hlgTokenAddress, {
+      //       ...(await txParams({
+      //         hre,
+      //         from: deployerAddress,
+      //         to: faucetContract,
+      //         data: faucetContract.populateTransaction.setToken(hlgTokenAddress),
+      //       })),
+      //     })
+      //   );
+      //   await tx.wait();
+      //   console.log('Updated HLG reference');
+      //   console.log('Transferring 5M HLG to faucet');
+      //   const transferTx = await hlgContract.transfer(futureFaucetAddress, BigNumber.from(FIVE_MILLION_TOKENS), {
+      //     ...(await txParams({
+      //       hre,
+      //       from: deployerAddress,
+      //       to: hlgContract,
+      //       gasLimit: (
+      //         await hre.ethers.provider.estimateGas(
+      //           await hlgContract.populateTransaction.transfer(futureFaucetAddress, BigNumber.from(FIVE_MILLION_TOKENS))
+      //         )
+      //       ).mul(BigNumber.from('2')),
+      //     })),
+      //   });
+      //   const receipt = await transferTx.wait();
+      //   console.log(`Transfer tx hash: ${receipt.transactionHash}`);
+      // } else {
+      //   console.log('HLG reference already updated in Faucet contract');
+      // }
     }
   } else {
     console.log(`Skipping faucet deployment on ${currentNetworkType} network`);
