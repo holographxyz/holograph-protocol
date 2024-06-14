@@ -299,6 +299,8 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
    * @param bridgeInRequestPayload the entire cross chain message payload
    */
   function executeJob(bytes calldata bridgeInRequestPayload) external payable {
+    revert("HOLOGRAPH: executeJob is currently disabled");
+
     /**
      * @dev derive the payload hash for use in mappings
      */
