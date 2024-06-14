@@ -57,7 +57,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       // 'hToken',
       // 'hTokenProxy',
       // 'Holograph',
-      // 'HolographBridge',
+      'HolographBridge',
       // 'HolographBridgeProxy',
       // 'Holographer',
       // 'HolographERC20',
