@@ -4,6 +4,7 @@ pragma solidity 0.8.13;
 import {Test, Vm, console} from "forge-std/Test.sol";
 import {Constants} from "../utils/Constants.sol";
 import {HelperDeploymentConfig} from "../utils/HelperDeploymentConfig.sol";
+import {HelperSignEthMessage} from "../utils/HelperSignEthMessage.sol";
 
 import {HolographOperator, OperatorJob} from "../../../src/HolographOperator.sol";
 import {HolographFactory} from "../../../src/HolographFactory.sol";
@@ -14,6 +15,7 @@ import {HolographERC20} from "../../../src/enforcer/HolographERC20.sol";
 import {MockLZEndpoint} from "../../../src/mock/MockLZEndpoint.sol";
 import {LayerZeroModule, GasParameters} from "../../../src/module/LayerZeroModule.sol";
 import {DeploymentConfig} from "../../../src/struct/DeploymentConfig.sol";
+import {Verification} from "../../../src/struct/Verification.sol";
 
 contract HolographOperatorTests is Test {
   event BridgeableContractDeployed(address indexed contractAddress, bytes32 indexed hash);
@@ -338,7 +340,99 @@ contract HolographOperatorTests is Test {
     return (deployConfig, hashSampleERC721);
   }
 
-  function test_dummy() public {
-    assertTrue(true);
+  /**
+   * @notice Get the configuration for hTokenETH contract
+   * @dev Returns the deployment configuration and hash for hTokenETH contract
+   * @param isL1 Boolean indicating if it's chain1 or chain2
+   * @return deployConfig The deployment configuration for hTokenETH contract
+   * @return hashHtokenTest The hash of the deployment configuration for hTokenETH contract
+   */
+  function getConfigHtokenETH(
+    bool isL1
+  ) private returns (DeploymentConfig memory deployConfig, bytes32 hashHtokenTest) {
+    string memory tokenName = string.concat("Holographed TestToken chain ", ((isL1) ? "one" : "two"));
+
+    deployConfig = HelperDeploymentConfig.getDeployConfigERC20(
+      bytes32(0x000000000000000000000000000000000000486f6c6f67726170684552433230), //hToken hash
+      (isL1) ? Constants.getHolographIdL1() : Constants.getHolographIdL2(),
+      vm.getCode("hTokenProxy.sol:hTokenProxy"),
+      tokenName,
+      "hTTC1",
+      bytes32(0x0000000000000000000000000000000000000000000000000000000000000000),
+      tokenName,
+      HelperDeploymentConfig.getInitCodeHtokenETH()
+    );
+    hashHtokenTest = HelperDeploymentConfig.getDeployConfigHash(deployConfig, Constants.getDeployer());
+
+    (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+      Constants.getPKDeployer(),
+      HelperSignEthMessage.toEthSignedMessageHash(hashHtokenTest)
+    );
+    Verification memory signature = Verification({v: v, r: r, s: s});
+
+    if ((isL1)) {
+      vm.selectFork(chain1);
+      holographFactoryChain1.deployHolographableContract(deployConfig, signature, Constants.getDeployer());
+    } else {
+      vm.selectFork(chain2);
+      holographFactoryChain2.deployHolographableContract(deployConfig, signature, Constants.getDeployer());
+    }
+
+    return (deployConfig, hashHtokenTest);
+  }
+
+  /**
+   * Deploy cross-chain contracts
+   * hToken
+   */
+
+  /**
+   * @notice deploy chain1 equivalent on chain2
+   * @dev deploy the hTokenETH equivalent on chain2 and check if it's deployed
+   */
+  function testHTokenChain2() public {
+    (DeploymentConfig memory erc20Config, bytes32 erc20ConfigHash) = getConfigHtokenETH(true);
+    (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKeyDeployer, erc20ConfigHash);
+    Verification memory signature = Verification({r: r, s: s, v: v});
+
+    vm.selectFork(chain2);
+    address hTokenErc20Address = holographRegistryChain2.getHolographedHashAddress(erc20ConfigHash);
+
+    assertEq(hTokenErc20Address, address(0), "ERC20 contract not deployed on chain2");
+
+    vm.selectFork(chain1);
+    hTokenErc20Address = holographRegistryChain1.getHolographedHashAddress(erc20ConfigHash);
+
+    vm.expectEmit(true, true, false, false);
+    emit BridgeableContractDeployed(hTokenErc20Address, erc20ConfigHash);
+
+    vm.selectFork(chain2);
+    vm.prank(deployer);
+    holographFactoryChain2.deployHolographableContract(erc20Config, signature, deployer);
+  }
+
+  /**
+   * @notice deploy chain2 equivalent on chain1
+   * @dev deploy the hTokenETH equivalent on chain1 and check if it's deployed
+   */
+  function testHTokenChain1() public {
+    (DeploymentConfig memory erc20Config, bytes32 erc20ConfigHash) = getConfigHtokenETH(false);
+    (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKeyDeployer, erc20ConfigHash);
+    Verification memory signature = Verification({r: r, s: s, v: v});
+
+    vm.selectFork(chain1);
+    address hTokenErc20Address = holographRegistryChain1.getHolographedHashAddress(erc20ConfigHash);
+
+    assertEq(hTokenErc20Address, address(0), "ERC20 contract not deployed on chain1");
+
+    vm.selectFork(chain2);
+    hTokenErc20Address = holographRegistryChain2.getHolographedHashAddress(erc20ConfigHash);
+
+    vm.expectEmit(true, true, false, false);
+    emit BridgeableContractDeployed(hTokenErc20Address, erc20ConfigHash);
+
+    vm.selectFork(chain1);
+    vm.prank(deployer);
+    holographFactoryChain1.deployHolographableContract(erc20Config, signature, deployer);
   }
 }
