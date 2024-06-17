@@ -59,12 +59,8 @@ contract CrossChainMinting is Test {
   uint256 jobBaseGas;
   uint256 jobGasPerByte;
 
-  Holograph holographChain1;
-  Holograph holographChain2;
   HolographOperator holographOperatorChain1;
   HolographOperator holographOperatorChain2;
-  Holographer utilityTokenHolographerChain1;
-  Holographer utilityTokenHolographerChain2;
   MockLZEndpoint mockLZEndpointChain1;
   MockLZEndpoint mockLZEndpointChain2;
   HolographFactory holographFactoryChain1;
@@ -72,11 +68,8 @@ contract CrossChainMinting is Test {
   HolographBridge holographBridgeChain1;
   HolographBridge holographBridgeChain2;
   LayerZeroModule lzModuleChain1;
-  LayerZeroModule lzModuleChain2;
   Holographer sampleErc721HolographerChain1;
   Holographer sampleErc721HolographerChain2;
-  HolographERC721 sampleErc721EnforcerChain1;
-  HolographERC721 sampleErc721EnforcerChain2;
   HolographERC20 HLGCHAIN1;
   HolographERC20 HLGCHAIN2;
 
@@ -287,7 +280,6 @@ contract CrossChainMinting is Test {
     operator = vm.addr(2);
 
     vm.selectFork(chain1);
-    holographChain1 = Holograph(payable(Constants.getHolograph()));
     holographOperatorChain1 = HolographOperator(payable(Constants.getHolographOperatorProxy()));
     holographRegistryChain1 = HolographRegistry(payable(Constants.getHolographRegistryProxy()));
     mockLZEndpointChain1 = MockLZEndpoint(payable(Constants.getMockLZEndpoint()));
@@ -297,7 +289,6 @@ contract CrossChainMinting is Test {
     (, bytes32 erc721ConfigHash1) = getConfigSampleERC721(true);
     address sampleErc721HolographerChain1Address = holographRegistryChain1.getHolographedHashAddress(erc721ConfigHash1);
     sampleErc721HolographerChain1 = Holographer(payable(sampleErc721HolographerChain1Address));
-    sampleErc721EnforcerChain1 = HolographERC721(payable(sampleErc721HolographerChain1.getHolographEnforcer()));
     HLGCHAIN1 = HolographERC20(payable(Constants.getHolographUtilityToken()));
 
     GasParameters memory gasParams = lzModuleChain1.getGasParameters(holographIdL1);
@@ -307,17 +298,14 @@ contract CrossChainMinting is Test {
     jobGasPerByte = gasParams.jobGasPerByte;
 
     vm.selectFork(chain2);
-    holographChain2 = Holograph(payable(Constants.getHolograph()));
     holographOperatorChain2 = HolographOperator(payable(Constants.getHolographOperatorProxy()));
     holographRegistryChain2 = HolographRegistry(payable(Constants.getHolographRegistryProxy()));
     mockLZEndpointChain2 = MockLZEndpoint(payable(Constants.getMockLZEndpoint()));
     holographFactoryChain2 = HolographFactory(payable(Constants.getHolographFactoryProxy()));
     holographBridgeChain2 = HolographBridge(payable(Constants.getHolographBridgeProxy()));
-    lzModuleChain2 = LayerZeroModule(payable(Constants.getLayerZeroModuleProxy()));
     (, bytes32 erc721ConfigHash2) = getConfigSampleERC721(false);
     address sampleErc721HolographerChain2Address = holographRegistryChain2.getHolographedHashAddress(erc721ConfigHash2);
     sampleErc721HolographerChain2 = Holographer(payable(sampleErc721HolographerChain2Address));
-    sampleErc721EnforcerChain2 = HolographERC721(payable(sampleErc721HolographerChain2.getHolographEnforcer()));
     HLGCHAIN2 = HolographERC20(payable(Constants.getHolographUtilityToken()));
 
     addOperator(operator);
