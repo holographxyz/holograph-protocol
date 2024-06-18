@@ -285,7 +285,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
    * @dev If a job fails, it can be manually recovered
    * @param bridgeInRequestPayload the entire cross chain message payload
    */
-  function recoverJob(bytes calldata bridgeInRequestPayload) external payable {
+  function recoverJob(bytes calldata bridgeInRequestPayload) external payable onlyAdmin {
     bytes32 hash = keccak256(bridgeInRequestPayload);
     require(_failedJobs[hash], "HOLOGRAPH: invalid recovery job");
     (bool success, ) = _bridge().call{value: msg.value}(bridgeInRequestPayload);
@@ -299,6 +299,8 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
    * @param bridgeInRequestPayload the entire cross chain message payload
    */
   function executeJob(bytes calldata bridgeInRequestPayload) external payable {
+    revert("HOLOGRAPH: executeJob is currently disabled");
+
     /**
      * @dev derive the payload hash for use in mappings
      */
