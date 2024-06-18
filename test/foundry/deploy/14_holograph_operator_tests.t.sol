@@ -125,4 +125,66 @@ contract HolographOperatorTests is CrossChainUtils {
     bytes memory deployedCode = address(mockOperator).code;
     assertNotEq(deployedCode.length, 0, "HolographOperator contract code not deployed");
   }
+
+  /**
+   * init()
+   */
+
+  /**
+   * @notice should successfully be initialized once
+   * @dev check if the HolographOperator contract is initialized
+   */
+  function testInit() public {
+    vm.selectFork(chain1);
+
+    HolographOperator mockOperator = new HolographOperator();
+
+    bytes memory initPayload = abi.encode(
+        holographOperatorChain1.getBridge(),
+        holographOperatorChain1.getHolograph(),
+        holographOperatorChain1.getInterfaces(),
+        holographOperatorChain1.getRegistry(),
+        holographOperatorChain1.getUtilityToken(),
+        holographOperatorChain1.getMinGasPrice()
+    );
+
+    mockOperator.init(initPayload);
+
+    assertEq(mockOperator.getBridge(), holographOperatorChain1.getBridge(), "Bridge not set");
+    assertEq(mockOperator.getHolograph(), holographOperatorChain1.getHolograph(), "Holograph not set");
+    assertEq(mockOperator.getInterfaces(), holographOperatorChain1.getInterfaces(), "Interfaces not set");
+    assertEq(mockOperator.getRegistry(), holographOperatorChain1.getRegistry(), "Registry not set");
+    assertEq(mockOperator.getUtilityToken(), holographOperatorChain1.getUtilityToken(), "UtilityToken not set");
+    assertEq(mockOperator.getMinGasPrice(), holographOperatorChain1.getMinGasPrice(), "MinGasPrice not set");
+
+    // should fail if already initialized
+    bytes memory initPayload2 = abi.encode(
+        address(0),
+        address(0),
+        address(0),
+        address(0),
+        address(0),
+        0
+    );
+
+    vm.expectRevert("HOLOGRAPH: already initialized");
+    mockOperator.init(initPayload2);
+
+    // Should allow external contract to call fn
+    // notice that the external contract is this test contract
+    vm.expectRevert("HOLOGRAPH: already initialized");
+    (bool success,) = address(mockOperator).call(abi.encodeWithSelector(mockOperator.init.selector, initPayload2));
+  }
+
+  /**
+   * @notice should fail if already initialized
+   * @dev this test is included in testInit() to avoid duplicate code
+   */
+
+  /**
+   * @notice Should allow external contract to call fn
+   * @dev this test is included in testInit() to avoid duplicate code
+   */
+
+
 }
