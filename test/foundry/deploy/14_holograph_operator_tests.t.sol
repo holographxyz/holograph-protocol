@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.13;
 
-import { CrossChainUtils } from "../utils/CrossChainUtils.sol";
+import {CrossChainUtils} from "../utils/CrossChainUtils.sol";
 import {Vm, console} from "forge-std/Test.sol";
 import {Constants} from "../utils/Constants.sol";
 import {HelperDeploymentConfig} from "../utils/HelperDeploymentConfig.sol";
@@ -19,7 +19,6 @@ import {DeploymentConfig} from "../../../src/struct/DeploymentConfig.sol";
 import {Verification} from "../../../src/struct/Verification.sol";
 
 contract HolographOperatorTests is CrossChainUtils {
-
   function setUp() public {
     chain1 = vm.createFork(LOCALHOST_RPC_URL);
     chain2 = vm.createFork(LOCALHOST2_RPC_URL);
@@ -109,5 +108,21 @@ contract HolographOperatorTests is CrossChainUtils {
     vm.selectFork(chain1);
     vm.prank(deployer);
     holographFactoryChain1.deployHolographableContract(erc20Config, signature, deployer);
+  }
+
+  /**
+   * constructor
+   */
+
+  /**
+   * @notice should successfully deploy
+   * @dev check if the HolographOperator contract is deployed
+   */
+  function testConstructor() public {
+    vm.selectFork(chain1);
+    HolographOperator mockOperator = new HolographOperator();
+    assertNotEq(address(mockOperator), address(0), "HolographOperator contract not deployed");
+    bytes memory deployedCode = address(mockOperator).code;
+    assertNotEq(deployedCode.length, 0, "HolographOperator contract code not deployed");
   }
 }
