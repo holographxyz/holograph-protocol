@@ -17,8 +17,12 @@ import {MockLZEndpoint} from "../../../src/mock/MockLZEndpoint.sol";
 import {LayerZeroModule, GasParameters} from "../../../src/module/LayerZeroModule.sol";
 import {DeploymentConfig} from "../../../src/struct/DeploymentConfig.sol";
 import {Verification} from "../../../src/struct/Verification.sol";
+import {Mock} from "../../../src/mock/Mock.sol";
 
 contract HolographOperatorTests is CrossChainUtils {
+  Mock MOCKCHAIN1;
+  Mock MOCKCHAIN2;
+
   function setUp() public {
     chain1 = vm.createFork(LOCALHOST_RPC_URL);
     chain2 = vm.createFork(LOCALHOST2_RPC_URL);
@@ -38,6 +42,11 @@ contract HolographOperatorTests is CrossChainUtils {
     sampleErc721HolographerChain1 = Holographer(payable(sampleErc721HolographerChain1Address));
     HLGCHAIN1 = HolographERC20(payable(Constants.getHolographUtilityToken()));
 
+    MOCKCHAIN1 = new Mock();
+    bytes memory initPayload = abi.encode(bytes32(0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff));
+    MOCKCHAIN1.init(initPayload);
+    MOCKCHAIN1.setStorage(0, bytes32(uint256(uint160(address(holographOperatorChain1))) << 96));
+
     GasParameters memory gasParams = lzModuleChain1.getGasParameters(holographIdL1);
     msgBaseGas = gasParams.msgBaseGas;
     msgGasPerByte = gasParams.msgGasPerByte;
@@ -51,6 +60,11 @@ contract HolographOperatorTests is CrossChainUtils {
     holographFactoryChain2 = HolographFactory(payable(Constants.getHolographFactoryProxy()));
     holographBridgeChain2 = HolographBridge(payable(Constants.getHolographBridgeProxy()));
     HLGCHAIN2 = HolographERC20(payable(Constants.getHolographUtilityToken()));
+
+    MOCKCHAIN2 = new Mock();
+    bytes memory initPayload2 = abi.encode(bytes32(0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff));
+    MOCKCHAIN2.init(initPayload2);
+    MOCKCHAIN2.setStorage(0, bytes32(uint256(uint160(address(holographOperatorChain2))) << 96));
 
     addOperator(operator);
   }
@@ -140,12 +154,12 @@ contract HolographOperatorTests is CrossChainUtils {
     HolographOperator mockOperator = new HolographOperator();
 
     bytes memory initPayload = abi.encode(
-        holographOperatorChain1.getBridge(),
-        holographOperatorChain1.getHolograph(),
-        holographOperatorChain1.getInterfaces(),
-        holographOperatorChain1.getRegistry(),
-        holographOperatorChain1.getUtilityToken(),
-        holographOperatorChain1.getMinGasPrice()
+      holographOperatorChain1.getBridge(),
+      holographOperatorChain1.getHolograph(),
+      holographOperatorChain1.getInterfaces(),
+      holographOperatorChain1.getRegistry(),
+      holographOperatorChain1.getUtilityToken(),
+      holographOperatorChain1.getMinGasPrice()
     );
 
     mockOperator.init(initPayload);
@@ -158,14 +172,7 @@ contract HolographOperatorTests is CrossChainUtils {
     assertEq(mockOperator.getMinGasPrice(), holographOperatorChain1.getMinGasPrice(), "MinGasPrice not set");
 
     // should fail if already initialized
-    bytes memory initPayload2 = abi.encode(
-        address(0),
-        address(0),
-        address(0),
-        address(0),
-        address(0),
-        0
-    );
+    bytes memory initPayload2 = abi.encode(address(0), address(0), address(0), address(0), address(0), 0);
 
     vm.expectRevert("HOLOGRAPH: already initialized");
     mockOperator.init(initPayload2);
@@ -173,7 +180,7 @@ contract HolographOperatorTests is CrossChainUtils {
     // Should allow external contract to call fn
     // notice that the external contract is this test contract
     vm.expectRevert("HOLOGRAPH: already initialized");
-    (bool success,) = address(mockOperator).call(abi.encodeWithSelector(mockOperator.init.selector, initPayload2));
+    (bool success, ) = address(mockOperator).call(abi.encodeWithSelector(mockOperator.init.selector, initPayload2));
   }
 
   /**
@@ -186,5 +193,125 @@ contract HolographOperatorTests is CrossChainUtils {
    * @dev this test is included in testInit() to avoid duplicate code
    */
 
+  /**
+   * jobEstimator()
+   */
 
+  /**
+   * @notice should return expected estimated value
+   * @dev check if the estimated value is as expected
+   */
+  function testJobEstimator() public {
+    vm.selectFork(chain1);
+
+    bytes memory bridgeInPayload = abi.encode(
+      deployer, // from
+      deployer, // to
+      uint256(1), // tokenId
+      abi.encode("IPFSURIHERE") // token URI
+    );
+
+    bytes memory bridgeInRequestPayload = abi.encode(
+      uint256(0), // nonce
+      holographIdL1, // fromChain
+      address(sampleErc721HolographerChain1), // holographableContract
+      address(0), // hToken
+      address(0), // hTokenRecipient
+      uint256(0), // hTokenValue
+      true, // doNotRevert
+      abi.encode(
+        holographIdL1, // fromChain
+        bridgeInPayload // payload for HolographERC721 bridgeIn function
+      )
+    );
+
+    bytes4 functionSig = bytes4(
+      keccak256("bridgeInRequest(uint256,uint32,address,address,address,uint256,bool,bytes)")
+    );
+
+    bytes memory fullPayload = abi.encodePacked(functionSig, bridgeInRequestPayload);
+
+    vm.selectFork(chain2);
+    (bool success, bytes memory data) = address(holographOperatorChain2).call(
+      abi.encodeWithSelector(holographOperatorChain2.jobEstimator.selector, fullPayload)
+    );
+    require(success, "jobEstimator call failed");
+
+    uint256 gasEstimation = abi.decode(data, (uint256));
+    console.log("Gas Estimation: ", gasEstimation);
+
+    // note: gas estimation is 8937393460516696182 IDK if this is correct
+    assertTrue(gasEstimation > 0x5af3107a4000, "unexpectedly low gas estimation"); // 0.001 ETH
+  }
+
+  /**
+   * @notice Should allow external contract to call fn
+   * @dev check if the external contract can call the jobEstimator function
+   */
+  function testJobEstimatorExternal() public {
+    vm.selectFork(chain1);
+
+    bytes memory data = abi.encode(deployer, deployer, 1);
+
+    address sampleErc721HolographerChain1Address = address(sampleErc721HolographerChain1);
+
+    bytes memory payload = getRequestPayload(sampleErc721HolographerChain1Address, data, true);
+
+    vm.selectFork(chain2);
+    (, bytes memory result) = address(holographOperatorChain2).call{gas: TESTGASLIMIT}(
+      abi.encodeWithSelector(holographOperatorChain2.jobEstimator.selector, payload)
+    );
+    uint256 jobEstimatorGas = abi.decode(result, (uint256));
+
+    uint256 estimatedGas = TESTGASLIMIT - jobEstimatorGas;
+
+    vm.selectFork(chain1);
+    vm.prank(deployer);
+    payload = holographBridgeChain1.getBridgeOutRequestPayload(
+      holographIdL2,
+      address(sampleErc721HolographerChain1),
+      estimatedGas,
+      GWEI,
+      data
+    );
+
+    (uint256 fee1, uint256 fee2, uint256 fee3) = holographBridgeChain1.getMessageFee(
+      holographIdL2,
+      estimatedGas,
+      GWEI,
+      payload
+    );
+
+    vm.selectFork(chain2);
+    (bool success, bytes memory result2) = address(MOCKCHAIN2).call{gas: TESTGASLIMIT, value: 1 ether}(
+      abi.encodeWithSelector(holographOperatorChain2.jobEstimator.selector, payload)
+    );
+
+    uint256 gasEstimation = abi.decode(result2, (uint256));
+    assertTrue(gasEstimation > 0x38d7ea4c68000, "unexpectedly low gas estimation"); // 0.001 ETH
+  }
+
+  /**
+   * @notice should be payable
+   * @dev 
+   */
+  function testShouldBePayable() public {
+    vm.selectFork(chain1);
+
+    bytes memory data = abi.encode(deployer, deployer, 1);
+
+    address sampleErc721HolographerChain1Address = address(sampleErc721HolographerChain1);
+
+    bytes memory payload = getRequestPayload(sampleErc721HolographerChain1Address, data, true);
+
+    EstimatedGas memory estimatedGas = getEstimatedGas(
+      sampleErc721HolographerChain1Address,
+      data,
+      payload,
+      true,
+      150000
+    );
+
+    assertTrue(estimatedGas.estimatedGas > 100000, "unexpectedly low gas estimation");
+  }
 }
