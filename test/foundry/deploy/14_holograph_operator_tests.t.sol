@@ -314,4 +314,44 @@ contract HolographOperatorTests is CrossChainUtils {
 
     assertTrue(estimatedGas.estimatedGas > 100000, "unexpectedly low gas estimation");
   }
+
+  /**
+   * getTotalPods()
+   */
+
+  /**
+   * @notice should return expected number of pods
+   * @dev check if the number of pods is as expected
+   */
+  function testGetTotalPods() public {
+    vm.selectFork(chain1);
+    uint256 totalPods = holographOperatorChain1.getTotalPods();
+    assertEq(totalPods, 1, "unexpected number of pods");
+  }
+
+  /**
+   * getPodOperatorsLength()
+   */
+
+  /**
+   * @notice should return expected pod length
+   * @dev check if the pod length is as expected
+   */
+  function testGetPodOperatorsLength() public {
+    vm.selectFork(chain1);
+    uint256 podOperatorsLength = holographOperatorChain1.getPodOperatorsLength(1);
+    // is returning 2 IDK why
+    assertEq(podOperatorsLength, 1, "unexpected pod operators length");
+  }
+
+  /**
+   * @notice should fail if pod does not exist
+   * @dev check if the pod does not exist
+   */
+  function testGetPodOperatorsLengthFail() public {
+    vm.selectFork(chain1);
+    vm.expectRevert("HOLOGRAPH: pod does not exist");
+    holographOperatorChain1.getPodOperatorsLength(2);
+  }
+
 }
