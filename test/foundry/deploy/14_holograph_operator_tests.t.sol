@@ -293,7 +293,7 @@ contract HolographOperatorTests is CrossChainUtils {
 
   /**
    * @notice should be payable
-   * @dev 
+   * @dev
    */
   function testShouldBePayable() public {
     vm.selectFork(chain1);
@@ -387,11 +387,9 @@ contract HolographOperatorTests is CrossChainUtils {
    */
   function testGetPodOperatorsExternal() public {
     vm.selectFork(chain1);
-    
+
     bytes4 selector = bytes4(keccak256("getPodOperators(uint256)"));
-    (bool success, bytes memory result) = address(holographOperatorChain1).call(
-        abi.encodeWithSelector(selector, 1)
-    );
+    (, bytes memory result) = address(holographOperatorChain1).call(abi.encodeWithSelector(selector, 1));
 
     address[] memory operators = abi.decode(result, (address[]));
 
@@ -400,4 +398,96 @@ contract HolographOperatorTests is CrossChainUtils {
     assertEq(operators[0], address(0), "Operator should be zero address");
   }
 
+  /**
+   * getPodOperators(pod, index, length)
+   */
+
+  /**
+   * @notice should return expected operators for a valid pod
+   * @dev check if the operators for a valid pod are as expected
+   */
+  function testGetPodOperatorsIndexLength() public {
+    vm.selectFork(chain1);
+
+    bytes4 selector = bytes4(keccak256("getPodOperators(uint256,uint256,uint256)"));
+    (, bytes memory result) = address(holographOperatorChain1).staticcall(abi.encodeWithSelector(selector, 1, 0, 10));
+
+    address[] memory operators = abi.decode(result, (address[]));
+    assertEq(operators[0], address(0), "Operator should be zero address");
+  }
+
+  /**
+   * @notice should fail to return operators for an INVALID pod
+   * @dev check if the operators for an INVALID pod are as expected
+   */
+  function testGetPodOperatorsIndexLengthFail() public {
+    vm.selectFork(chain1);
+
+    bytes4 selector = bytes4(keccak256("getPodOperators(uint256,uint256,uint256)"));
+
+    vm.expectRevert("HOLOGRAPH: pod does not exist");
+    (bool success, ) = address(holographOperatorChain1).staticcall(abi.encodeWithSelector(selector, 2, 0, 10));
+  }
+
+  /**
+   * @notice should fail if index out of bounds
+   * @dev check if the index is out of bounds
+   */
+  function testGetPodOperatorsIndexLengthOutOfBounds() public {
+    vm.selectFork(chain1);
+
+    bytes4 selector = bytes4(keccak256("getPodOperators(uint256,uint256,uint256)"));
+
+    vm.expectRevert();
+    (bool success, ) = address(holographOperatorChain1).staticcall(abi.encodeWithSelector(selector, 1, 10, 10));
+  }
+
+  /**
+   * @notice Should allow external contract to call fn
+   * @dev check if the external contract can call the getPodOperators function
+   */
+  function testGetPodOperatorsIndexLengthExternal() public {
+    vm.selectFork(chain1);
+
+    bytes4 selector = bytes4(keccak256("getPodOperators(uint256,uint256,uint256)"));
+    (, bytes memory result) = address(holographOperatorChain1).call(abi.encodeWithSelector(selector, 1, 0, 10));
+
+    address[] memory operators = abi.decode(result, (address[]));
+    assertEq(operators[0], address(0), "Operator should be zero address");
+  }
+
+  /**
+   * getPodBondAmounts(pod)
+   */
+
+  /**
+   * @notice should return expected base and current value
+   * @dev check if the base and current value are as expected
+   */
+  function testGetPodBondAmounts() public {
+    vm.selectFork(chain1);
+
+    (uint256 baseBond1, uint256 currentBond1) = holographOperatorChain1.getPodBondAmounts(1);
+    assertEq(baseBond1, 0x056bc75e2d63100000, "Base bond for pod 1 should be 0x056bc75e2d63100000");
+    assertEq(currentBond1, 0x056bc75e2d63100000, "Current bond for pod 1 should be 0x056bc75e2d63100000");
+
+    (uint256 baseBond2, uint256 currentBond2) = holographOperatorChain1.getPodBondAmounts(2);
+    assertEq(baseBond2, 0x0ad78ebc5ac6200000, "Base bond for pod 2 should be 0x0ad78ebc5ac6200000");
+    assertEq(currentBond2, 0x0ad78ebc5ac6200000, "Current bond for pod 2 should be 0x0ad78ebc5ac6200000");
+  }
+
+  /**
+   * @notice Should allow external contract to call fn
+   * @dev check if the external contract can call the getPodBondAmounts function
+   */
+  function testGetPodBondAmountsExternal() public {
+    vm.selectFork(chain1);
+
+    bytes4 selector = bytes4(keccak256("getPodBondAmounts(uint256)"));
+    (, bytes memory result) = address(holographOperatorChain1).call(abi.encodeWithSelector(selector, 1));
+
+    (uint256 baseBond1, uint256 currentBond1) = abi.decode(result, (uint256, uint256));
+    assertEq(baseBond1, 0x056bc75e2d63100000, "Base bond for pod 1 should be 0x056bc75e2d63100000");
+    assertEq(currentBond1, 0x056bc75e2d63100000, "Current bond for pod 1 should be 0x056bc75e2d63100000");
+  }
 }
