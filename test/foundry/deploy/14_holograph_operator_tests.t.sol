@@ -490,4 +490,121 @@ contract HolographOperatorTests is CrossChainUtils {
     assertEq(baseBond1, 0x056bc75e2d63100000, "Base bond for pod 1 should be 0x056bc75e2d63100000");
     assertEq(currentBond1, 0x056bc75e2d63100000, "Current bond for pod 1 should be 0x056bc75e2d63100000");
   }
+
+  /**
+   * bondUtilityToken()
+   */
+
+  /**
+   * @notice should successfully allow bonding
+   * @dev check if the bonding is successful
+   */
+  function testBondUtilityToken() public {
+    vm.selectFork(chain1);
+
+    (, uint256 currentBond1) = holographOperatorChain1.getPodBondAmounts(1);
+
+    // vm.expectEmit(true, true, true, false);
+    // emit Transfer(deployer, address(holographOperatorChain1), currentBond1);
+
+    vm.prank(deployer);
+    holographOperatorChain1.bondUtilityToken(deployer, currentBond1, 1);
+
+    assertEq(
+      holographOperatorChain1.getBondedAmount(deployer),
+      currentBond1,
+      "Bonded amount should be equal to the current bond amount"
+    );
+    assertEq(holographOperatorChain1.getBondedPod(deployer), 1, "Bonded pod should be 1");
+  }
+
+  /**
+   * @notice should successfully allow bonding a contract
+   * @dev check if the bonding is successful
+   */
+  function testBondUtilityTokenContract() public {
+    vm.selectFork(chain1);
+
+    (, uint256 currentBond1) = holographOperatorChain1.getPodBondAmounts(1);
+
+    // vm.expectEmit(true, true, true, false);
+    // emit Transfer(deployer, address(holographOperatorChain1), currentBond1);
+
+    vm.prank(deployer);
+    holographOperatorChain1.bondUtilityToken(address(sampleErc721HolographerChain1), currentBond1, 1);
+
+    assertEq(
+      holographOperatorChain1.getBondedAmount(address(sampleErc721HolographerChain1)),
+      currentBond1,
+      "Bonded amount should be equal to the current bond amount"
+    );
+
+    assertEq(holographOperatorChain1.getBondedPod(address(sampleErc721HolographerChain1)), 1, "Bonded pod should be 1");
+  }
+
+  /**
+   * @notice should fail if the operator is already bonded
+   * @dev check if the operator is already bonded
+   */
+  function testBondUtilityTokenFail() public {
+    vm.selectFork(chain1);
+
+    (, uint256 currentBond1) = holographOperatorChain1.getPodBondAmounts(1);
+
+    vm.prank(deployer);
+    holographOperatorChain1.bondUtilityToken(deployer, currentBond1, 1);
+
+    vm.expectRevert("HOLOGRAPH: operator is bonded");
+    vm.prank(deployer);
+    holographOperatorChain1.bondUtilityToken(deployer, currentBond1, 1);
+
+    (, uint256 currentBond2) = holographOperatorChain1.getPodBondAmounts(2);
+
+    vm.expectRevert("HOLOGRAPH: operator is bonded");
+    vm.prank(deployer);
+    holographOperatorChain1.bondUtilityToken(deployer, currentBond2, 2);
+  }
+
+  /**
+   * @notice Should fail if the provided bond amount is too low
+   * @dev check if the bond amount is too low
+   */
+  function testBondUtilityTokenFailLowBond() public {
+    vm.selectFork(chain1);
+
+    (, uint256 currentBond1) = holographOperatorChain1.getPodBondAmounts(1);
+
+    vm.expectRevert("HOLOGRAPH: bond amount too small");
+    vm.prank(alice);
+    holographOperatorChain1.bondUtilityToken(alice, currentBond1, 2);
+  }
+
+  /**
+   * @notice Should fail if operator does not have enough utility tokens
+   * @dev check if the operator has enough utility tokens
+   */
+  function testBondUtilityTokenFailLowBalance() public {
+    vm.selectFork(chain1);
+
+    (, uint256 currentBond1) = holographOperatorChain1.getPodBondAmounts(1);
+
+    vm.expectRevert("ERC20: amount exceeds balance");
+    vm.prank(alice);
+    holographOperatorChain1.bondUtilityToken(alice, currentBond1, 1);
+  }
+
+  /**
+   * @notice should fail if the token transfer failed
+   * @dev check if the token transfer failed
+   */
+  function testBondUtilityTokenFailTransfer() public {
+    vm.selectFork(chain1);
+    address bob = vm.addr(3);
+
+    (, uint256 currentBond1) = holographOperatorChain1.getPodBondAmounts(1);
+
+    vm.expectRevert("ERC20: amount exceeds balance");
+    vm.prank(alice);
+    holographOperatorChain1.bondUtilityToken(bob, currentBond1, 1);
+  }
 }
