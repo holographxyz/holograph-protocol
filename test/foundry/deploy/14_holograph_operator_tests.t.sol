@@ -607,4 +607,53 @@ contract HolographOperatorTests is CrossChainUtils {
     vm.prank(alice);
     holographOperatorChain1.bondUtilityToken(bob, currentBond1, 1);
   }
+
+  /**
+   * topupUtilityToken()
+   */
+
+  /**
+   * @notice should fail if operator is not bonded
+   * @dev check if the operator is not bonded
+   */
+  function testTopupUtilityTokenFailNotBonded() public {
+    vm.selectFork(chain1);
+
+    (, uint256 currentBond1) = holographOperatorChain1.getPodBondAmounts(1);
+
+    assertEq(holographOperatorChain1.getBondedPod(alice), 0, "wallet1 should not be bonded");
+
+    vm.expectRevert("HOLOGRAPH: operator not bonded");
+    vm.prank(alice);
+    holographOperatorChain1.topupUtilityToken(alice, currentBond1);
+  }
+
+  /**
+   * @notice successfully top up utility tokens
+   * @dev check if the top up is successful
+   */
+  function testTopupUtilityToken() public {
+    vm.selectFork(chain1);
+
+    (, uint256 currentBond1) = holographOperatorChain1.getPodBondAmounts(1);
+
+    vm.prank(deployer);
+    HLGCHAIN1.transfer(alice, currentBond1);
+
+    vm.prank(deployer);
+    holographOperatorChain1.bondUtilityToken(deployer, currentBond1, 1);
+
+    assertEq(holographOperatorChain1.getBondedPod(deployer), 1, "Deployer should be bonded to pod 1");
+
+    // vm.expectEmit(true, true, false, true);
+    // emit Transfer(alice, address(holographOperatorChain1), currentBond1);
+    vm.prank(alice);
+    holographOperatorChain1.topupUtilityToken(deployer, currentBond1);
+
+    assertEq(
+      holographOperatorChain1.getBondedAmount(deployer),
+      currentBond1 * 2,
+      "Bonded amount should be doubled after top-up"
+    );
+  }
 }
