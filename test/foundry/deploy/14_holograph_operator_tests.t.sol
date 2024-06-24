@@ -609,6 +609,29 @@ contract HolographOperatorTests is CrossChainUtils {
   }
 
   /**
+   * @notice Should allow external contract to call fn
+   * @dev check if the external contract can call the bondUtilityToken function
+   */
+  function testBondUtilityTokenExternal() public {
+    vm.selectFork(chain1);
+    (, uint256 currentBond1) = holographOperatorChain1.getPodBondAmounts(1);
+    console.log("address(MOCKCHAIN1)");
+    console.logAddress(address(MOCKCHAIN1));
+    vm.prank(deployer);
+    HLGCHAIN1.transfer(address(MOCKCHAIN1), currentBond1);
+
+    HolographOperator mockOperator = HolographOperator(payable(address(MOCKCHAIN1)));
+
+    // vm.expectEmit(true, true, false, true);
+    // emit Transfer(address(MOCKCHAIN1), address(holographOperatorChain1), currentBond1);
+    vm.prank(deployer);
+    mockOperator.bondUtilityToken(address(MOCKCHAIN1), currentBond1, 1);
+
+    assertEq(holographOperatorChain1.getBondedAmount(address(MOCKCHAIN1)), currentBond1, "Bonded amount should be correct");
+    assertEq(holographOperatorChain1.getBondedPod(address(MOCKCHAIN1)), 1, "Bonded pod should be 1");
+  }
+
+  /**
    * topupUtilityToken()
    */
 
@@ -655,5 +678,161 @@ contract HolographOperatorTests is CrossChainUtils {
       currentBond1 * 2,
       "Bonded amount should be doubled after top-up"
     );
+  }
+
+  /**
+   * unbondUtilityToken()
+   */
+
+  /**
+   * @notice should fail if the operator has not bonded
+   * @dev check if the operator has not bonded
+   */
+  function testUnbondUtilityTokenFailNotBonded() public {
+    vm.selectFork(chain1);
+
+    vm.expectRevert("HOLOGRAPH: operator not bonded");
+    vm.prank(alice);
+    holographOperatorChain1.unbondUtilityToken(alice, alice);
+  }
+
+  /**
+   * @notice should fail if the operator is not sender, and operator is not contract
+   * @dev check if the operator is not the sender, and the operator is not a contract
+   */
+  function testUnbondUtilityTokenFailNotSender() public {
+    vm.selectFork(chain1);
+
+    vm.expectRevert("HOLOGRAPH: operator not contract");
+    vm.prank(alice);
+    holographOperatorChain1.unbondUtilityToken(operator, alice);
+  }
+
+  /**
+   * @notice Should succeed if operator is contract and owned by sender
+   * @dev check if the operator is a contract and owned by the sender
+   */
+  function testUnbondUtilityToken() public {
+    vm.selectFork(chain1);
+    address sampleErc20Holographer = address(sampleErc721HolographerChain1);
+
+    (, uint256 currentBond1) = holographOperatorChain1.getPodBondAmounts(1);
+    vm.prank(deployer);
+    holographOperatorChain1.bondUtilityToken(sampleErc20Holographer, currentBond1, 1);
+
+    uint256 currentBondAmount = holographOperatorChain1.getBondedAmount(sampleErc20Holographer);
+
+    // vm.expectEmit(true, true, false, true);
+    // emit Transfer(address(holographOperatorChain1), deployer, currentBondAmount);
+    vm.prank(deployer);
+    holographOperatorChain1.unbondUtilityToken(sampleErc20Holographer, deployer);
+
+    assertEq(
+      holographOperatorChain1.getBondedAmount(sampleErc20Holographer),
+      0,
+      "Bonded amount should be zero after unbonding"
+    );
+  }
+
+  /**
+   * @notice Should fail if operator is contract and not owned by sender
+   * @dev check if the operator is a contract and not owned by the sender
+   */
+  function testUnbondUtilityTokenFailNotOwned() public {
+    vm.selectFork(chain1);
+    address sampleErc20Holographer = address(sampleErc721HolographerChain1);
+
+    (, uint256 currentBond1) = holographOperatorChain1.getPodBondAmounts(1);
+
+    // vm.expectEmit(true, true, false, true);
+    // emit Transfer(deployer, address(holographOperatorChain1), currentBond1);
+    vm.prank(deployer);
+    holographOperatorChain1.bondUtilityToken(sampleErc20Holographer, currentBond1, 1);
+
+    assertEq(
+      holographOperatorChain1.getBondedAmount(sampleErc20Holographer),
+      currentBond1,
+      "Bonded amount should be correct"
+    );
+    assertEq(holographOperatorChain1.getBondedPod(sampleErc20Holographer), 1, "Bonded pod should be 1");
+
+    vm.expectRevert("HOLOGRAPH: sender not owner");
+    vm.prank(alice);
+    holographOperatorChain1.unbondUtilityToken(sampleErc20Holographer, deployer);
+  }
+
+  /**
+   * @notice should fail if the token transfer failed
+   * @dev check if the token transfer failed
+   */
+  function testUnbondUtilityTokenFailTransfer() public {
+    vm.selectFork(chain1);
+
+    (, uint256 currentBond1) = holographOperatorChain1.getPodBondAmounts(1);
+    vm.prank(deployer);
+    holographOperatorChain1.bondUtilityToken(deployer, currentBond1, 1);
+
+    uint256 currentBalance = HLGCHAIN1.balanceOf(address(holographOperatorChain1));
+
+    bytes memory transferData = abi.encodeWithSelector(HLGCHAIN1.transfer.selector, deployer, currentBalance);
+    vm.prank(deployer);
+    holographOperatorChain1.adminCall(address(HLGCHAIN1), transferData);
+
+    // vm.expectEmit(true, true, false, true);
+    // emit Transfer(address(holographOperatorChain1), deployer, currentBalance);
+
+    assertEq(HLGCHAIN1.balanceOf(address(holographOperatorChain1)), 0, "Operator balance should be 0");
+
+    vm.expectRevert("ERC20: amount exceeds balance");
+    vm.prank(deployer);
+    holographOperatorChain1.unbondUtilityToken(deployer, deployer);
+
+    vm.prank(deployer);
+    HLGCHAIN1.transfer(address(holographOperatorChain1), currentBalance);
+  }
+
+  /**
+   * @notice should successfully allow unbonding
+   * @dev check if the unbonding is successful
+   */
+  function testUnbondUtilityTokenSuccess() public {
+    vm.selectFork(chain1);
+
+    (, uint256 currentBond1) = holographOperatorChain1.getPodBondAmounts(1);
+    vm.prank(deployer);
+    holographOperatorChain1.bondUtilityToken(deployer, currentBond1, 1);
+
+    uint256 currentBondAmount = holographOperatorChain1.getBondedAmount(deployer);
+
+    // vm.expectEmit(true, true, false, true);
+    // emit Transfer(address(holographOperatorChain1), deployer, currentBondAmount);
+    vm.prank(deployer);
+    holographOperatorChain1.unbondUtilityToken(deployer, deployer);
+
+    assertEq(holographOperatorChain1.getBondedAmount(deployer), 0, "Bonded amount should be zero after unbonding");
+  }
+
+  /**
+   * @notice Should allow external contract to call fn
+   * @dev check if the external contract can call the unbondUtilityToken function
+   */
+  function testUnbondUtilityTokenExternal() public {
+    vm.selectFork(chain1);
+
+    (, uint256 currentBond1) = holographOperatorChain1.getPodBondAmounts(1);
+    holographOperatorChain1.bondUtilityToken(address(this), currentBond1, 1);
+
+    uint256 currentBondAmount = holographOperatorChain1.getBondedAmount(address(this));
+
+    bytes4 selector = bytes4(keccak256("unbondUtilityToken(address,address)"));
+
+    // vm.expectEmit(true, true, false, true);
+    // emit Transfer(address(holographOperatorChain1), deployer, currentBondAmount);
+    (, bytes memory result) = address(holographOperatorChain1).call(
+      abi.encodeWithSelector(selector, address(this), address(this))
+    );
+
+    // Verificar que la cantidad vinculada después de la desvinculación sea cero
+    assertEq(holographOperatorChain1.getBondedAmount(address(this)), 0, "Bonded amount should be zero after unbonding");
   }
 }
