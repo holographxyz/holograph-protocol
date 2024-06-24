@@ -40,12 +40,15 @@ contract HolographOperatorTests is CrossChainUtils {
     (, bytes32 erc721ConfigHash1) = getConfigSampleERC721(true);
     address sampleErc721HolographerChain1Address = holographRegistryChain1.getHolographedHashAddress(erc721ConfigHash1);
     sampleErc721HolographerChain1 = Holographer(payable(sampleErc721HolographerChain1Address));
+    (, bytes32 erc20ConfigHash1) = getConfigSampleERC20(true);
+    address sampleErc20HolographerChain1Address = holographRegistryChain1.getHolographedHashAddress(erc20ConfigHash1);
+    sampleErc20HolographerChain1 = Holographer(payable(sampleErc20HolographerChain1Address));
     HLGCHAIN1 = HolographERC20(payable(Constants.getHolographUtilityToken()));
 
     MOCKCHAIN1 = new Mock();
     bytes memory initPayload = abi.encode(bytes32(0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff));
     MOCKCHAIN1.init(initPayload);
-    MOCKCHAIN1.setStorage(0, bytes32(uint256(uint160(address(holographOperatorChain1))) << 96));
+    MOCKCHAIN1.setStorage(0, bytes32(uint256(uint160(address(holographOperatorChain1)))));
 
     GasParameters memory gasParams = lzModuleChain1.getGasParameters(holographIdL1);
     msgBaseGas = gasParams.msgBaseGas;
@@ -64,7 +67,7 @@ contract HolographOperatorTests is CrossChainUtils {
     MOCKCHAIN2 = new Mock();
     bytes memory initPayload2 = abi.encode(bytes32(0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff));
     MOCKCHAIN2.init(initPayload2);
-    MOCKCHAIN2.setStorage(0, bytes32(uint256(uint160(address(holographOperatorChain2))) << 96));
+    MOCKCHAIN2.setStorage(0, bytes32(uint256(uint160(address(holographOperatorChain2)))));
 
     addOperator(operator);
   }
@@ -172,15 +175,22 @@ contract HolographOperatorTests is CrossChainUtils {
     assertEq(mockOperator.getMinGasPrice(), holographOperatorChain1.getMinGasPrice(), "MinGasPrice not set");
 
     // should fail if already initialized
-    bytes memory initPayload2 = abi.encode(address(0), address(0), address(0), address(0), address(0), 0);
+    bytes memory initPayload2 = abi.encode(address(0), address(0), address(0), address(0), address(0), bytes32(0));
 
     vm.expectRevert("HOLOGRAPH: already initialized");
     mockOperator.init(initPayload2);
 
     // Should allow external contract to call fn
-    // notice that the external contract is this test contract
+    MOCKCHAIN1.setStorage(0, bytes32(uint256(uint160(address(mockOperator)))));
+
+    bytes memory callData = abi.encodeWithSelector(mockOperator.init.selector, initPayload);
+
     vm.expectRevert("HOLOGRAPH: already initialized");
-    (bool success, ) = address(mockOperator).call(abi.encodeWithSelector(mockOperator.init.selector, initPayload2));
+    (bool success, ) = address(MOCKCHAIN1).call(abi.encodeWithSelector(
+        MOCKCHAIN1.mockCall.selector,
+        address(mockOperator),
+        callData
+    ));
   }
 
   /**
@@ -387,9 +397,8 @@ contract HolographOperatorTests is CrossChainUtils {
    */
   function testGetPodOperatorsExternal() public {
     vm.selectFork(chain1);
-
     bytes4 selector = bytes4(keccak256("getPodOperators(uint256)"));
-    (, bytes memory result) = address(holographOperatorChain1).call(abi.encodeWithSelector(selector, 1));
+    (, bytes memory result) = address(MOCKCHAIN1).call(abi.encodeWithSelector(selector, 1));
 
     address[] memory operators = abi.decode(result, (address[]));
 
@@ -450,7 +459,7 @@ contract HolographOperatorTests is CrossChainUtils {
     vm.selectFork(chain1);
 
     bytes4 selector = bytes4(keccak256("getPodOperators(uint256,uint256,uint256)"));
-    (, bytes memory result) = address(holographOperatorChain1).call(abi.encodeWithSelector(selector, 1, 0, 10));
+    (, bytes memory result) = address(MOCKCHAIN1).call(abi.encodeWithSelector(selector, 1, 0, 10));
 
     address[] memory operators = abi.decode(result, (address[]));
     assertEq(operators[0], address(0), "Operator should be zero address");
@@ -484,7 +493,7 @@ contract HolographOperatorTests is CrossChainUtils {
     vm.selectFork(chain1);
 
     bytes4 selector = bytes4(keccak256("getPodBondAmounts(uint256)"));
-    (, bytes memory result) = address(holographOperatorChain1).call(abi.encodeWithSelector(selector, 1));
+    (, bytes memory result) = address(MOCKCHAIN1).call(abi.encodeWithSelector(selector, 1));
 
     (uint256 baseBond1, uint256 currentBond1) = abi.decode(result, (uint256, uint256));
     assertEq(baseBond1, 0x056bc75e2d63100000, "Base bond for pod 1 should be 0x056bc75e2d63100000");
@@ -615,19 +624,19 @@ contract HolographOperatorTests is CrossChainUtils {
   function testBondUtilityTokenExternal() public {
     vm.selectFork(chain1);
     (, uint256 currentBond1) = holographOperatorChain1.getPodBondAmounts(1);
-    console.log("address(MOCKCHAIN1)");
-    console.logAddress(address(MOCKCHAIN1));
     vm.prank(deployer);
     HLGCHAIN1.transfer(address(MOCKCHAIN1), currentBond1);
 
-    HolographOperator mockOperator = HolographOperator(payable(address(MOCKCHAIN1)));
-
     // vm.expectEmit(true, true, false, true);
     // emit Transfer(address(MOCKCHAIN1), address(holographOperatorChain1), currentBond1);
-    vm.prank(deployer);
-    mockOperator.bondUtilityToken(address(MOCKCHAIN1), currentBond1, 1);
+    bytes4 selector = bytes4(keccak256("bondUtilityToken(address,uint256,uint256)"));
+    (bool success, ) = address(MOCKCHAIN1).call(abi.encodeWithSelector(selector, address(MOCKCHAIN1), currentBond1, 1));
 
-    assertEq(holographOperatorChain1.getBondedAmount(address(MOCKCHAIN1)), currentBond1, "Bonded amount should be correct");
+    assertEq(
+      holographOperatorChain1.getBondedAmount(address(MOCKCHAIN1)),
+      currentBond1,
+      "Bonded amount should be correct"
+    );
     assertEq(holographOperatorChain1.getBondedPod(address(MOCKCHAIN1)), 1, "Bonded pod should be 1");
   }
 
@@ -819,8 +828,7 @@ contract HolographOperatorTests is CrossChainUtils {
   function testUnbondUtilityTokenExternal() public {
     vm.selectFork(chain1);
 
-    (, uint256 currentBond1) = holographOperatorChain1.getPodBondAmounts(1);
-    holographOperatorChain1.bondUtilityToken(address(this), currentBond1, 1);
+    testBondUtilityTokenExternal();
 
     uint256 currentBondAmount = holographOperatorChain1.getBondedAmount(address(this));
 
@@ -828,11 +836,8 @@ contract HolographOperatorTests is CrossChainUtils {
 
     // vm.expectEmit(true, true, false, true);
     // emit Transfer(address(holographOperatorChain1), deployer, currentBondAmount);
-    (, bytes memory result) = address(holographOperatorChain1).call(
-      abi.encodeWithSelector(selector, address(this), address(this))
-    );
+    (bool success, ) = address(MOCKCHAIN1).call(abi.encodeWithSelector(selector, address(MOCKCHAIN1), deployer));
 
-    // Verificar que la cantidad vinculada después de la desvinculación sea cero
     assertEq(holographOperatorChain1.getBondedAmount(address(this)), 0, "Bonded amount should be zero after unbonding");
   }
 }
