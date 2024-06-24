@@ -875,4 +875,43 @@ contract HolographOperatorTests is CrossChainUtils {
     uint256 bondedAmount = abi.decode(result, (uint256));
     assertEq(bondedAmount, baseBond1, "Bonded amount should be equal to base bond amount");
   }
+
+  /**
+   * getBondedPod()
+   */
+
+  /**
+   * @notice should return expected _bondedOperators
+   * @dev check if the bonded operators are as expected
+   */
+  function testGetBondedPod() public {
+    vm.selectFork(chain1);
+
+    (uint256 baseBond1, ) = holographOperatorChain1.getPodBondAmounts(1);
+    vm.prank(deployer);
+    holographOperatorChain1.bondUtilityToken(address(sampleErc20HolographerChain1), baseBond1, 1);
+
+    uint256 bondedPod = holographOperatorChain1.getBondedPod(address(sampleErc20HolographerChain1));
+    assertEq(bondedPod, 1, "Bonded pod should be 1");
+  }
+
+
+  /**
+   * @notice Should allow external contract to call fn
+   * @dev check if the external contract can call the getBondedPod function
+   */
+  function testGetBondedPodExternal() public {
+    vm.selectFork(chain1);
+
+    (uint256 baseBond1, ) = holographOperatorChain1.getPodBondAmounts(1);
+    vm.prank(deployer);
+    holographOperatorChain1.bondUtilityToken(address(sampleErc20HolographerChain1), baseBond1, 1);
+
+    bytes4 selector = bytes4(keccak256("getBondedPod(address)"));
+    (, bytes memory result) = address(MOCKCHAIN1).call(
+      abi.encodeWithSelector(selector, address(sampleErc20HolographerChain1))
+    );
+    uint256 bondedPod = abi.decode(result, (uint256));
+    assertEq(bondedPod, 1, "Bonded pod should be 1");
+  }
 }
