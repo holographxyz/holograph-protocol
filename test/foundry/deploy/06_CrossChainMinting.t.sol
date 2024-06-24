@@ -92,26 +92,6 @@ contract CrossChainMinting is CrossChainUtils {
   }
 
   /**
-   * @notice Get the configuration for SampleERC20 contract
-   * @dev Returns the deployment configuration and hash for SampleERC20 contract
-   * @param isL1 Boolean indicating if it's chain1 or chain2
-   * @return deployConfig The deployment configuration for SampleERC20 contract
-   * @return hashSampleERC20 The hash of the deployment configuration for SampleERC20 contract
-   */
-  function getConfigSampleERC20(
-    bool isL1
-  ) public view returns (DeploymentConfig memory deployConfig, bytes32 hashSampleERC20) {
-    deployConfig = HelperDeploymentConfig.getERC20(
-      isL1 ? Constants.getHolographIdL1() : Constants.getHolographIdL2(),
-      vm.getCode("SampleERC20.sol:SampleERC20"),
-      isL1
-    );
-
-    hashSampleERC20 = HelperDeploymentConfig.getDeployConfigHash(deployConfig, deployer);
-    return (deployConfig, hashSampleERC20);
-  }
-
-  /**
    * @notice Get the configuration for CxipERC721 contract
    * @dev Returns the deployment configuration and hash for CxipERC721 contract
    * @param isL1 Boolean indicating if it's chain1 or chain2
