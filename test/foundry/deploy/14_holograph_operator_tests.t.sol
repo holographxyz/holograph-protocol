@@ -186,11 +186,9 @@ contract HolographOperatorTests is CrossChainUtils {
     bytes memory callData = abi.encodeWithSelector(mockOperator.init.selector, initPayload);
 
     vm.expectRevert("HOLOGRAPH: already initialized");
-    (bool success, ) = address(MOCKCHAIN1).call(abi.encodeWithSelector(
-        MOCKCHAIN1.mockCall.selector,
-        address(mockOperator),
-        callData
-    ));
+    (bool success, ) = address(MOCKCHAIN1).call(
+      abi.encodeWithSelector(MOCKCHAIN1.mockCall.selector, address(mockOperator), callData)
+    );
   }
 
   /**
@@ -839,5 +837,42 @@ contract HolographOperatorTests is CrossChainUtils {
     (bool success, ) = address(MOCKCHAIN1).call(abi.encodeWithSelector(selector, address(MOCKCHAIN1), deployer));
 
     assertEq(holographOperatorChain1.getBondedAmount(address(this)), 0, "Bonded amount should be zero after unbonding");
+  }
+
+  /**
+   * getBondedAmount()
+   */
+
+  /**
+   * @notice should return expected _bondedOperators
+   * @dev check if the bonded operators are as expected
+   */
+  function testGetBondedAmount() public {
+    vm.selectFork(chain1);
+
+    (uint256 baseBond1, ) = holographOperatorChain1.getPodBondAmounts(1);
+    vm.prank(deployer);
+    holographOperatorChain1.bondUtilityToken(address(sampleErc20HolographerChain1), baseBond1, 1);
+    uint256 bondedAmount = holographOperatorChain1.getBondedAmount(address(sampleErc20HolographerChain1));
+    assertEq(bondedAmount, baseBond1, "Bonded amount should be equal to base bond amount");
+  }
+
+  /**
+   * @notice Should allow external contract to call fn
+   * @dev check if the external contract can call the getBondedAmount function
+   */
+  function testGetBondedAmountExternal() public {
+    vm.selectFork(chain1);
+
+    (uint256 baseBond1, ) = holographOperatorChain1.getPodBondAmounts(1);
+    vm.prank(deployer);
+    holographOperatorChain1.bondUtilityToken(address(sampleErc20HolographerChain1), baseBond1, 1);
+
+    bytes4 selector = bytes4(keccak256("getBondedAmount(address)"));
+    (, bytes memory result) = address(MOCKCHAIN1).call(
+      abi.encodeWithSelector(selector, address(sampleErc20HolographerChain1))
+    );
+    uint256 bondedAmount = abi.decode(result, (uint256));
+    assertEq(bondedAmount, baseBond1, "Bonded amount should be equal to base bond amount");
   }
 }
