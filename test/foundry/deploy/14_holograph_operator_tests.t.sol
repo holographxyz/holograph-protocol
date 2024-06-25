@@ -895,7 +895,6 @@ contract HolographOperatorTests is CrossChainUtils {
     assertEq(bondedPod, 1, "Bonded pod should be 1");
   }
 
-
   /**
    * @notice Should allow external contract to call fn
    * @dev check if the external contract can call the getBondedPod function
@@ -913,5 +912,304 @@ contract HolographOperatorTests is CrossChainUtils {
     );
     uint256 bondedPod = abi.decode(result, (uint256));
     assertEq(bondedPod, 1, "Bonded pod should be 1");
+  }
+
+  /**
+   * SampleERC20
+   */
+
+  /**
+   * TODO: refactoring in progress, re-engineering of tests.
+   * @notice deploy chain1 equivalent on chain2
+   * @dev deploy the SampleERC20 equivalent on chain2 and check if it's deployed
+   */
+  function testSampleERC20Chain2() public {
+    (DeploymentConfig memory erc20Config, bytes32 erc20ConfigHash) = getConfigSampleERC20(true);
+    (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKeyDeployer, erc20ConfigHash);
+    Verification memory signature = Verification({r: r, s: s, v: v});
+
+    vm.selectFork(chain2);
+    address sampleErc20Address = holographRegistryChain2.getHolographedHashAddress(erc20ConfigHash);
+
+    assertEq(sampleErc20Address, address(0), "ERC20 contract not deployed on chain2");
+
+    vm.selectFork(chain1);
+    sampleErc20Address = holographRegistryChain1.getHolographedHashAddress(erc20ConfigHash);
+
+    vm.selectFork(chain2);
+    bytes memory data = abi.encode(erc20Config, signature, deployer);
+
+    address originalMessagingModule = holographOperatorChain2.getMessagingModule();
+
+    vm.prank(deployer);
+    holographOperatorChain2.setMessagingModule(Constants.getMockLZEndpoint());
+
+    bytes memory payload = getRequestPayload(Constants.getHolographFactoryProxy(), data, true);
+
+    EstimatedGas memory estimatedGas = getEstimatedGas(
+      Constants.getHolographFactoryProxy(),
+      data,
+      payload,
+      true,
+      150000
+    );
+
+    payload = estimatedGas.payload;
+
+    (bool success, ) = address(mockLZEndpointChain2).call{gas: TESTGASLIMIT}(
+      abi.encodeWithSelector(
+        mockLZEndpointChain2.crossChainMessage.selector,
+        address(holographOperatorChain2),
+        getLzMsgGas(payload),
+        payload
+      )
+    );
+
+    vm.prank(deployer);
+    holographOperatorChain2.setMessagingModule(originalMessagingModule);
+
+    vm.expectEmit(true, true, false, false);
+    emit BridgeableContractDeployed(sampleErc20Address, erc20ConfigHash);
+
+    vm.prank(operator);
+    (bool success2, ) = address(holographOperatorChain2).call{gas: estimatedGas.estimatedGas}(
+      abi.encodeWithSelector(holographOperatorChain2.executeJob.selector, payload)
+    );
+
+    assertEq(
+      sampleErc20Address,
+      holographRegistryChain2.getHolographedHashAddress(erc20ConfigHash),
+      "ERC20 contract not deployed on chain2"
+    );
+  }
+
+  /**
+   * TODO: refactoring in progress, re-engineering of tests.
+   * @notice deploy chain2 equivalent on chain1
+   * @dev deploy the SampleERC20 equivalent on chain1 and check if it's deployed
+   */
+  function testSampleERC20Chain1() public {
+    (DeploymentConfig memory erc20Config, bytes32 erc20ConfigHash) = getConfigSampleERC20(false);
+    (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKeyDeployer, erc20ConfigHash);
+    Verification memory signature = Verification({r: r, s: s, v: v});
+
+    vm.selectFork(chain1);
+    address sampleErc20Address = holographRegistryChain1.getHolographedHashAddress(erc20ConfigHash);
+
+    assertEq(sampleErc20Address, address(0), "ERC20 contract not deployed on chain1");
+
+    vm.selectFork(chain2);
+    sampleErc20Address = holographRegistryChain2.getHolographedHashAddress(erc20ConfigHash);
+
+    vm.selectFork(chain1);
+    bytes memory data = abi.encode(erc20Config, signature, deployer);
+
+    address originalMessagingModule = holographOperatorChain1.getMessagingModule();
+
+    vm.prank(deployer);
+    holographOperatorChain1.setMessagingModule(Constants.getMockLZEndpoint());
+
+    bytes memory payload = getRequestPayload(Constants.getHolographFactoryProxy(), data, false);
+
+    EstimatedGas memory estimatedGas = getEstimatedGas(
+      Constants.getHolographFactoryProxy(),
+      data,
+      payload,
+      false,
+      150000
+    );
+
+    payload = estimatedGas.payload;
+
+    (bool success, ) = address(mockLZEndpointChain1).call{gas: TESTGASLIMIT}(
+      abi.encodeWithSelector(
+        mockLZEndpointChain1.crossChainMessage.selector,
+        address(holographOperatorChain1),
+        getLzMsgGas(payload),
+        payload
+      )
+    );
+
+    vm.prank(deployer);
+    holographOperatorChain1.setMessagingModule(originalMessagingModule);
+
+    vm.expectEmit(true, true, false, false);
+    emit BridgeableContractDeployed(sampleErc20Address, erc20ConfigHash);
+
+    vm.prank(operator);
+    (bool success2, ) = address(holographOperatorChain1).call{gas: estimatedGas.estimatedGas}(
+      abi.encodeWithSelector(holographOperatorChain1.executeJob.selector, payload)
+    );
+
+    assertEq(
+      sampleErc20Address,
+      holographRegistryChain1.getHolographedHashAddress(erc20ConfigHash),
+      "ERC20 contract not deployed on chain1"
+    );
+  }
+  /**
+   * TODO: refactoring in progress, re-engineering of tests.
+   * @notice deploy chain1 equivalent on chain2
+   * @dev deploy the SampleERC721 equivalent on chain2 and check if it's deployed
+   */
+  function testSampleERC721Chain2() public {
+    (address sampleErc721Address, bytes32 erc721ConfigHash) = sampleERC721HelperChain2();
+
+    vm.selectFork(chain2);
+    assertEq(
+      sampleErc721Address,
+      holographRegistryChain1.getHolographedHashAddress(erc721ConfigHash),
+      "ERC721 contract not deployed on chain2"
+    );
+  }
+
+  /**
+   * TODO: refactoring in progress, re-engineering of tests.
+   * @notice deploy chain2 equivalent on chain1
+   * @dev deploy the SampleERC721 equivalent on chain1 and check if it's deployed
+   */
+  function testSampleERC721Chain1() public {
+    (address sampleErc721Address, bytes32 erc721ConfigHash) = sampleERC721HelperChain1();
+
+    vm.selectFork(chain1);
+    assertEq(
+      sampleErc721Address,
+      holographRegistryChain1.getHolographedHashAddress(erc721ConfigHash),
+      "ERC721 contract not deployed on chain1"
+    );
+  }
+
+  /**
+   * CxipERC721
+   */
+
+  /**
+   * TODO: refactoring in progress, re-engineering of tests.
+   * @notice deploy chain1 equivalent on chain2
+   * @dev deploy the CxipERC721 equivalent on chain2 and check if it's deployed
+   */
+  function testCxipERC721Chain2() public {
+    (DeploymentConfig memory erc721Config, bytes32 erc721ConfigHash) = getConfigCxipERC721(true);
+    (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKeyDeployer, erc721ConfigHash);
+    Verification memory signature = Verification({r: r, s: s, v: v});
+
+    vm.selectFork(chain2);
+    address cxipErc721Address = holographRegistryChain2.getHolographedHashAddress(erc721ConfigHash);
+
+    assertEq(cxipErc721Address, address(0), "ERC721 contract not deployed on chain2");
+
+    vm.selectFork(chain1);
+    cxipErc721Address = holographRegistryChain1.getHolographedHashAddress(erc721ConfigHash);
+
+    vm.selectFork(chain2);
+    bytes memory data = abi.encode(erc721Config, signature, deployer);
+
+    address originalMessagingModule = holographOperatorChain2.getMessagingModule();
+
+    vm.prank(deployer);
+    holographOperatorChain2.setMessagingModule(Constants.getMockLZEndpoint());
+
+    bytes memory payload = getRequestPayload(Constants.getHolographFactoryProxy(), data, true);
+
+    EstimatedGas memory estimatedGas = getEstimatedGas(
+      Constants.getHolographFactoryProxy(),
+      data,
+      payload,
+      true,
+      150000
+    );
+
+    payload = estimatedGas.payload;
+
+    (bool success, ) = address(mockLZEndpointChain2).call{gas: TESTGASLIMIT}(
+      abi.encodeWithSelector(
+        mockLZEndpointChain2.crossChainMessage.selector,
+        address(holographOperatorChain2),
+        getLzMsgGas(payload),
+        payload
+      )
+    );
+
+    vm.prank(deployer);
+    holographOperatorChain2.setMessagingModule(originalMessagingModule);
+
+    vm.expectEmit(true, true, false, false);
+    emit BridgeableContractDeployed(cxipErc721Address, erc721ConfigHash);
+
+    vm.prank(operator);
+    (bool success2, ) = address(holographOperatorChain2).call{gas: estimatedGas.estimatedGas}(
+      abi.encodeWithSelector(holographOperatorChain2.executeJob.selector, payload)
+    );
+
+    assertEq(
+      cxipErc721Address,
+      holographRegistryChain2.getHolographedHashAddress(erc721ConfigHash),
+      "ERC721 contract not deployed on chain2"
+    );
+  }
+
+  /**
+   * TODO: refactoring in progress, re-engineering of tests.
+   * @notice deploy chain2 equivalent on chain1
+   * @dev deploy the CxipERC721 equivalent on chain1 and check if it's deployed
+   */
+  function testCxipERC721Chain1() public {
+    (DeploymentConfig memory erc721Config, bytes32 erc721ConfigHash) = getConfigCxipERC721(false);
+    (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKeyDeployer, erc721ConfigHash);
+    Verification memory signature = Verification({r: r, s: s, v: v});
+
+    vm.selectFork(chain1);
+    address cxipErc721Address = holographRegistryChain1.getHolographedHashAddress(erc721ConfigHash);
+
+    assertEq(cxipErc721Address, address(0), "ERC721 contract not deployed on chain1");
+
+    vm.selectFork(chain2);
+    cxipErc721Address = holographRegistryChain2.getHolographedHashAddress(erc721ConfigHash);
+
+    vm.selectFork(chain1);
+    bytes memory data = abi.encode(erc721Config, signature, deployer);
+
+    address originalMessagingModule = holographOperatorChain1.getMessagingModule();
+
+    vm.prank(deployer);
+    holographOperatorChain1.setMessagingModule(Constants.getMockLZEndpoint());
+
+    bytes memory payload = getRequestPayload(Constants.getHolographFactoryProxy(), data, false);
+
+    EstimatedGas memory estimatedGas = getEstimatedGas(
+      Constants.getHolographFactoryProxy(),
+      data,
+      payload,
+      false,
+      150000
+    );
+
+    payload = estimatedGas.payload;
+
+    (bool success, ) = address(mockLZEndpointChain1).call{gas: TESTGASLIMIT}(
+      abi.encodeWithSelector(
+        mockLZEndpointChain1.crossChainMessage.selector,
+        address(holographOperatorChain1),
+        getLzMsgGas(payload),
+        payload
+      )
+    );
+
+    vm.prank(deployer);
+    holographOperatorChain1.setMessagingModule(originalMessagingModule);
+
+    vm.expectEmit(true, true, false, false);
+    emit BridgeableContractDeployed(cxipErc721Address, erc721ConfigHash);
+
+    vm.prank(operator);
+    (bool success2, ) = address(holographOperatorChain1).call{gas: estimatedGas.estimatedGas}(
+      abi.encodeWithSelector(holographOperatorChain1.executeJob.selector, payload)
+    );
+
+    assertEq(
+      cxipErc721Address,
+      holographRegistryChain1.getHolographedHashAddress(erc721ConfigHash),
+      "ERC721 contract not deployed on chain1"
+    );
   }
 }
