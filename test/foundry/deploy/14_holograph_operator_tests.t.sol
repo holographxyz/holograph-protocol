@@ -3,7 +3,7 @@ pragma solidity 0.8.13;
 
 import {CrossChainUtils} from "../utils/CrossChainUtils.sol";
 import {Vm, console} from "forge-std/Test.sol";
-import {Constants} from "../utils/Constants.sol";
+import {Constants, ErrorConstants} from "../utils/Constants.sol";
 import {HelperDeploymentConfig} from "../utils/HelperDeploymentConfig.sol";
 import {HelperSignEthMessage} from "../utils/HelperSignEthMessage.sol";
 
@@ -13,6 +13,8 @@ import {HolographBridge} from "../../../src/HolographBridge.sol";
 import {HolographRegistry} from "../../../src/HolographRegistry.sol";
 import {Holographer} from "../../../src/enforcer/Holographer.sol";
 import {HolographERC20} from "../../../src/enforcer/HolographERC20.sol";
+import {Holograph} from "../../../src/Holograph.sol";
+import {HolographInterfaces} from "../../../src/HolographInterfaces.sol";
 import {SampleERC721} from "../../../src/token/SampleERC721.sol";
 import {MockLZEndpoint} from "../../../src/mock/MockLZEndpoint.sol";
 import {LayerZeroModule, GasParameters} from "../../../src/module/LayerZeroModule.sol";
@@ -23,6 +25,8 @@ import {Mock} from "../../../src/mock/Mock.sol";
 contract HolographOperatorTests is CrossChainUtils {
   Mock MOCKCHAIN1;
   Mock MOCKCHAIN2;
+  Holograph holograph;
+  HolographInterfaces holographInterfaces;
 
   function setUp() public {
     chain1 = vm.createFork(LOCALHOST_RPC_URL);
@@ -45,6 +49,8 @@ contract HolographOperatorTests is CrossChainUtils {
     address sampleErc20HolographerChain1Address = holographRegistryChain1.getHolographedHashAddress(erc20ConfigHash1);
     sampleErc20HolographerChain1 = Holographer(payable(sampleErc20HolographerChain1Address));
     HLGCHAIN1 = HolographERC20(payable(Constants.getHolographUtilityToken()));
+    holograph = Holograph(payable(Constants.getHolograph()));
+    holographInterfaces = HolographInterfaces(payable(Constants.getHolographInterfaces()));
 
     MOCKCHAIN1 = new Mock();
     bytes memory initPayload = abi.encode(bytes32(0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff));
@@ -287,7 +293,14 @@ contract HolographOperatorTests is CrossChainUtils {
     vm.selectFork(chain1);
     vm.prank(deployer);
     (, bytes memory result1) = address(holographBridgeChain1).call{gas: estimatedGas}(
-      abi.encodeWithSelector(holographBridgeChain1.getBridgeOutRequestPayload.selector, holographIdL2, sampleErc721HolographerChain1Address, estimatedGas, GWEI, data)
+      abi.encodeWithSelector(
+        holographBridgeChain1.getBridgeOutRequestPayload.selector,
+        holographIdL2,
+        sampleErc721HolographerChain1Address,
+        estimatedGas,
+        GWEI,
+        data
+      )
     );
     payload = abi.decode(result1, (bytes));
 
@@ -946,7 +959,7 @@ contract HolographOperatorTests is CrossChainUtils {
    * @dev check if the messaging address can call the function
    */
   function testCrossChainMessage() public {
-    (, bytes memory payload,) = jobHelper();
+    (, bytes memory payload, ) = jobHelper();
 
     vm.selectFork(chain2);
     vm.prank(deployer);
@@ -1034,7 +1047,7 @@ contract HolographOperatorTests is CrossChainUtils {
     );
 
     OperatorJob memory operatorJob = holographOperatorChain2.getJobDetails(payloadHash);
-    
+
     OperatorJob memory emptyJob = OperatorJob({
       pod: 0,
       blockTimes: BLOCKTIME,
@@ -1048,13 +1061,10 @@ contract HolographOperatorTests is CrossChainUtils {
     assertNotEq(keccak256(abi.encode(operatorJob)), keccak256(abi.encode(emptyJob)), "OperatorJob should not be empty");
   }
 
-
   /**
    * @notice should return expected operatorJob from INVALID jobHash
    * @dev check if the operatorJob from an INVALID jobHash is as expected
    */
-
-
 
   /**
    * SampleERC20
@@ -1353,5 +1363,311 @@ contract HolographOperatorTests is CrossChainUtils {
       holographRegistryChain1.getHolographedHashAddress(erc721ConfigHash),
       "ERC721 contract not deployed on chain1"
     );
+  }
+
+  /**
+   * getRegistry()
+   */
+
+  /**
+   * @notice should return expected registrySlot from operator
+   * @dev check if the registrySlot from a operator as expected.
+   * Refers to the hardhat test with the description 'Should return valid _registrySlot'
+   */
+  function testValidRegistrySlot() public {
+    vm.selectFork(chain1);
+    assertEq(holographOperatorChain1.getRegistry(), address(holographRegistryChain1));
+  }
+
+  /**
+   * @notice should return expected registrySlot from operator in external call
+   * @dev check if the registrySlot from a operator in an external call is as expected.
+   * Refers to the hardhat test with the description 'Should allow external contract to call fn'
+
+   */
+  function testValidRegistrySlotExternalCall() public {
+    vm.selectFork(chain1);
+    bytes4 selector = bytes4(keccak256("getRegistry()"));
+    (, bytes memory result) = address(MOCKCHAIN1).call(abi.encodeWithSelector(selector));
+    address registry = abi.decode(result, (address));
+    assertEq(registry, address(holographRegistryChain1), "Registry address is not correct");
+  }
+
+  /**
+   * @notice
+   * @dev
+   * Refers to the hardhat test with the description 'should fail to allow inherited contract to call fn'
+   */
+  function testRegistrySlotExternalCallRevert() public {
+    vm.skip(true);
+  }
+
+  /**
+   * setRegistry()
+   */
+
+  /**
+   * @notice should allow admin to alter _registrySlot
+   * @dev check if the admin can alter the _registrySlot
+   * Refers to the hardhat test with the description 'should allow admin to alter _registrySlot'
+
+   */
+  function testAllowAdminToAlterRegistrySlot() public {
+    vm.selectFork(chain1);
+    vm.prank(deployer);
+    holographOperatorChain1.setRegistry(operator);
+    assertEq(holographOperatorChain1.getRegistry(), operator);
+  }
+
+  /**
+   * @notice should fail to try to alter _registrySlot with owner
+   * @dev check if the owner can alter the _registrySlot
+   * Refers to the hardhat test with the description 'should fail to allow owner to alter _registrySlot'
+   */
+  function testRevertOwnerToAlterRegistrySlot() public {
+    vm.selectFork(chain1);
+    vm.prank(alice);
+    vm.expectRevert(bytes(ErrorConstants.ONLY_ADMIN_ERROR_MSG));
+    holographOperatorChain1.setRegistry(operator);
+  }
+
+  /**
+   * @notice should fail to try to alter _registrySlot with out admin
+   * @dev check if the not admin can alter the _registrySlot
+   * Refers to the hardhat test with the description 'should fail to allow non-owner to alter _registrySlot'
+   */
+  function testRevertNotAdminToAlterRegistrySlot() public {
+    vm.skip(true);
+    vm.selectFork(chain1);
+    vm.prank(alice);
+    vm.expectRevert(bytes(ErrorConstants.ONLY_ADMIN_ERROR_MSG));
+    holographOperatorChain1.setRegistry(operator);
+  }
+
+  /**
+   * @notice should revert external contract to call fn try to alter _registrySlot
+   * @dev check if the external contract can alter the _registrySlot
+   * Refers to the hardhat test with the description 'Should revert external contract to call fn alter _registrySlot'
+   */
+  function testRevertNotAdminToAlterRegistrySlotExternalCall() public {
+    vm.selectFork(chain1);
+    bytes4 selector = bytes4(keccak256("setRegistry(address)"));
+    vm.expectRevert(bytes(ErrorConstants.ONLY_ADMIN_ERROR_MSG));
+    (, bytes memory result) = address(MOCKCHAIN1).call(abi.encodeWithSelector(selector, operator));
+  }
+
+  /**
+   * @notice
+   * @dev
+   * Refers to the hardhat test with the description 'should revert to allow inherited contract to call fn'
+   */
+  function testSetRegistrySlotExternalCallRevert() public {
+    vm.skip(true);
+  }
+
+  /**
+   * getHolograph()
+   */
+
+  /**
+   * @notice should return expected _holographSlot
+   * @dev check if the _holographSlot is as expected
+   * Refers to the hardhat test with the description 'Should return valid _holographSlot'
+   */
+  function testValidHolographSlot() public {
+    vm.selectFork(chain1);
+    assertEq(holographOperatorChain1.getHolograph(), address(holograph));
+  }
+  /**
+   * @notice should return expected _holographSlot
+   * @dev check if the _holographSlot is as expected
+   * Refers to the hardhat test with the description 'Should allow external contract to call fn'
+   */
+  function testValidHolographSlotExternalCall() public {
+    vm.selectFork(chain1);
+    bytes4 selector = bytes4(keccak256("getHolograph()"));
+    (, bytes memory result) = address(MOCKCHAIN1).call(abi.encodeWithSelector(selector));
+    address _holograph = abi.decode(result, (address));
+    assertEq(_holograph, address(holograph));
+  }
+
+  /**
+   * @notice
+   * @dev
+   * Refers to the hardhat test with the description 'should fail to allow inherited contract to call fn'
+   */
+  function testGetHolopgraphSlotExternalCallRevert() public {
+    vm.skip(true);
+  }
+
+  /**
+   * setHolograph()
+   */
+
+  /**
+   * @notice should allow admin to alter _holographSlot
+   * @dev check if the admin can alter the _holographSlot 
+   * Refers to the hardhat test with the description 'should allow admin to alter _holographSlot'
+
+   */
+  function testAllowAdminToAlterHolographSlot() public {
+    vm.selectFork(chain1);
+    vm.prank(deployer);
+    holographOperatorChain1.setHolograph(operator);
+    assertEq(holographOperatorChain1.getHolograph(), operator);
+  }
+
+  /**
+   * @notice should fail to try to alter _holographSlot with owner
+   * @dev check if the non-owner can alter the _holographSlot
+   * Refers to the hardhat test with the description 'should fail to allow non-owner to alter _holographSlot'
+   */
+  function testRevertOwnerToAlterHolographSlot() public {
+    vm.selectFork(chain1);
+    vm.prank(alice);
+    vm.expectRevert(bytes(ErrorConstants.ONLY_ADMIN_ERROR_MSG));
+    holographOperatorChain1.setHolograph(operator);
+  }
+
+  /**
+   * @notice should fail to try to alter _holographSlot with out admin in external call
+   * @dev check if the not admin can alter the _holographSlot in external call
+   * Refers to the hardhat test with the description 'Should revert external contract to call fn alter _holographSlot'
+   */
+  function testRevertNotAdminToAlterHolographSlotExternalCall() public {
+    vm.selectFork(chain1);
+    bytes4 selector = bytes4(keccak256("setHolograph(address)"));
+    vm.expectRevert(bytes(ErrorConstants.ONLY_ADMIN_ERROR_MSG));
+    (, bytes memory result) = address(MOCKCHAIN1).call(abi.encodeWithSelector(selector, operator));
+  }
+
+  /**
+   * @notice
+   * @dev
+   * Refers to the hardhat test with the description 'should revert to allow inherited contract to call fn'
+   */
+  function testSetHolographSlotExternalCallRevert() public {
+    vm.skip(true);
+  }
+
+  /**
+   * getInterfaces()
+   */
+
+  /**
+   * @notice should return expected _interfacesSlot
+   * @dev check if the _interfacesSlot is as expected
+   * Refers to the hardhat test with the description 'Should return valid _interfacesSlot'
+   */
+  function testValidInterfacesSlot() public {
+    vm.selectFork(chain1);
+    assertEq(holographOperatorChain1.getInterfaces(), address(holographInterfaces));
+  }
+  /**
+   * @notice should return expected _interfacesSlot in external call
+   * @dev check if the _interfacesSlot is as expected in external call
+   * Refers to the hardhat test with the description 'Should allow external contract to call fn'
+   */
+  function testValidInterfacesSlotExternalCall() public {
+    vm.selectFork(chain1);
+    bytes4 selector = bytes4(keccak256("getInterfaces()"));
+    (, bytes memory result) = address(MOCKCHAIN1).call(abi.encodeWithSelector(selector));
+    address interfaces = abi.decode(result, (address));
+    assertEq(interfaces, address(holographInterfaces));
+  }
+
+  /**
+   * @notice
+   * @dev
+   * Refers to the hardhat test with the description 'should fail to allow inherited contract to call fn'
+   */
+  function testGetInterfacesSlotExternalCallRevert() public {
+    vm.skip(true);
+  }
+
+  /**
+   * setInterfaces()
+   */
+
+  /**
+   * @notice should allow admin to alter _interfacesSlot
+   * @dev check if the admin can alter the _interfacesSlot
+   * Refers to the hardhat test with the description 'should allow admin to alter _interfacesSlot'
+
+   */
+  function testAllowAdminToAlterInterfacesSlot() public {
+    vm.selectFork(chain1);
+    vm.prank(deployer);
+    holographOperatorChain1.setInterfaces(operator);
+    assertEq(holographOperatorChain1.getInterfaces(), operator);
+  }
+
+  /**
+   * @notice should fail to try to alter _interfacesSlot with non-owner
+   * @dev check if the non-owner can alter the _interfacesSlot
+   * Refers to the hardhat test with the description 'should fail to allow non-owner to alter _interfacesSlot'
+   */
+  function testRevertOwnerToAlterInterfacesSlot() public {
+    vm.selectFork(chain1);
+    vm.prank(alice);
+    vm.expectRevert(bytes(ErrorConstants.ONLY_ADMIN_ERROR_MSG));
+    holographOperatorChain1.setInterfaces(operator);
+  }
+
+  /**
+   * getUtilityToken()
+   */
+
+  /**
+   * TODO:Both test are skiped in hardhat.
+   */
+
+  /**
+   * setUtilityToken()
+   */
+
+  /**
+   * @notice should allow admin to alter _utilityTokenSlot
+   * @dev check if the admin can alter the _utilityTokenSlot
+   * Refers to the hardhat test with the description 'should allow admin to alter _utilityTokenSlot'
+   */
+  function testAllowAdminToAlterUtilitySlot() public {
+    vm.selectFork(chain1);
+    vm.prank(deployer);
+    holographOperatorChain1.setUtilityToken(operator);
+    assertEq(holographOperatorChain1.getUtilityToken(), operator);
+  }
+
+  /**
+   * @notice should fail to try to alter _utilityTokenSlot with non-owner
+   * @dev check if the non-owner can alter the _utilityTokenSlot
+   * Refers to the hardhat test with the description 'should fail to allow non-owner to alter _utilityTokenSlot'
+   */
+  function testRevertOwnerToAlterUtilitySlot() public {
+    vm.selectFork(chain1);
+    vm.prank(alice);
+    vm.expectRevert(bytes(ErrorConstants.ONLY_ADMIN_ERROR_MSG));
+    holographOperatorChain1.setUtilityToken(operator);
+  }
+
+  /**
+   * @notice should fail to try to alter _utilityTokenSlot with out admin in external call
+   * @dev check if the not admin can alter the _utilityTokenSlot in external call
+   * Refers to the hardhat test with the description 'Should fail external contract to call fn'
+   */
+  function testRevertNotAdminToAlterUtilitySlotExternalCall() public {
+    vm.selectFork(chain1);
+    bytes4 selector = bytes4(keccak256("setUtilityToken(address)"));
+    vm.expectRevert(bytes(ErrorConstants.ONLY_ADMIN_ERROR_MSG));
+    (, bytes memory result) = address(MOCKCHAIN1).call(abi.encodeWithSelector(selector, operator));
+  }
+
+  /**
+   * @notice
+   * @dev
+   * Refers to the hardhat test with the description 'should fail to allow inherited contract to call fn'
+   */
+  function testSetUtilityExternalCallRevert() public {
+    vm.skip(true);
   }
 }
