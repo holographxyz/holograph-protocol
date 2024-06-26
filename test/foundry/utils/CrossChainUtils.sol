@@ -42,7 +42,7 @@ contract CrossChainUtils is Test {
   uint32 holographIdL1 = Constants.getHolographIdL1();
   uint32 holographIdL2 = Constants.getHolographIdL2();
 
-  uint256 constant BLOCKTIME = 60;
+  uint16 constant BLOCKTIME = 60;
   uint256 constant GWEI = 1000000000; // 1 Gwei
   uint256 constant TESTGASLIMIT = 10000000; // Gas limit
   uint256 constant GASPRICE = 1000000000; // 1 Gwei as gas price

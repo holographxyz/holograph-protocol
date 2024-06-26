@@ -923,16 +923,8 @@ contract HolographOperatorTests is CrossChainUtils {
    * crossChainMessage()
    */
 
-  /**
-   * @notice Should successfully allow messaging address to call fn
-   * @dev check if the messaging address can call the function
-   */
-  function testCrossChainMessage() public {
+  function jobHelper() public returns (bytes32, bytes memory, EstimatedGas memory) {
     sampleERC721Mint();
-
-    vm.selectFork(chain2);
-    
-    address originalMessagingModule = holographOperatorChain2.getMessagingModule();
 
     bytes memory data = abi.encode(deployer, deployer, uint256(1));
 
@@ -946,6 +938,17 @@ contract HolographOperatorTests is CrossChainUtils {
     );
     bytes32 payloadHash = keccak256(payload);
 
+    return (payloadHash, payload, estimatedGas);
+  }
+
+  /**
+   * @notice Should successfully allow messaging address to call fn
+   * @dev check if the messaging address can call the function
+   */
+  function testCrossChainMessage() public {
+    (, bytes memory payload,) = jobHelper();
+
+    vm.selectFork(chain2);
     vm.prank(deployer);
     holographOperatorChain2.setMessagingModule(Constants.getMockLZEndpoint());
 
@@ -1005,6 +1008,53 @@ contract HolographOperatorTests is CrossChainUtils {
     vm.expectRevert(bytes(""));
     holographOperatorChain1.crossChainMessage(payload);
   }
+
+  /**
+   * getJobDetails()
+   */
+
+  /**
+   * @notice should return expected operatorJob from valid jobHash
+   * @dev check if the operatorJob from a valid jobHash is as expected
+   */
+  function testGetJobDetails() public {
+    (bytes32 payloadHash, bytes memory payload, EstimatedGas memory estimatedGas) = jobHelper();
+    vm.selectFork(chain2);
+
+    vm.prank(deployer);
+    holographOperatorChain2.setMessagingModule(Constants.getMockLZEndpoint());
+
+    (bool success, ) = address(mockLZEndpointChain2).call{gas: TESTGASLIMIT}(
+      abi.encodeWithSelector(
+        mockLZEndpointChain2.crossChainMessage.selector,
+        address(holographOperatorChain2),
+        getLzMsgGas(payload),
+        payload
+      )
+    );
+
+    OperatorJob memory operatorJob = holographOperatorChain2.getJobDetails(payloadHash);
+    
+    OperatorJob memory emptyJob = OperatorJob({
+      pod: 0,
+      blockTimes: BLOCKTIME,
+      operator: address(0),
+      startBlock: 0,
+      startTimestamp: 0,
+      fallbackOperators: [uint16(0), uint16(0), uint16(0), uint16(0), uint16(0)]
+    });
+
+    // operatorJob should not be empty
+    assertNotEq(keccak256(abi.encode(operatorJob)), keccak256(abi.encode(emptyJob)), "OperatorJob should not be empty");
+  }
+
+
+  /**
+   * @notice should return expected operatorJob from INVALID jobHash
+   * @dev check if the operatorJob from an INVALID jobHash is as expected
+   */
+
+
 
   /**
    * SampleERC20
