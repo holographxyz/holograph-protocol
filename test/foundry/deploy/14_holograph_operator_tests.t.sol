@@ -1670,4 +1670,151 @@ contract HolographOperatorTests is CrossChainUtils {
   function testSetUtilityExternalCallRevert() public {
     vm.skip(true);
   }
+
+  /**
+   * validate private functions
+   */
+
+  /**
+   * @notice Tests that the `_bridge()` function is private
+   * @dev This test checks that the `_bridge()` function is private and cannot be called directly.
+   * Refers to the hardhat test with the description '_bridge()'
+   */
+  function testBridgeIsPrivateFunction() public {
+    vm.selectFork(chain1);
+    bytes memory encodedFunctionData = abi.encodeWithSignature("_bridge()");
+    (bool success, bytes memory data) = address(holographOperatorChain1).call(encodedFunctionData);
+    assertFalse(success);
+  }
+
+  /**
+   * @notice Tests that the `_holograph()` function is private
+   * @dev This test checks that the `_holograph()` function is private and cannot be called directly.
+   * Refers to the hardhat test with the description '_bridge()'
+   */
+  function testHolographIsPrivateFunction() public {
+    vm.selectFork(chain1);
+    bytes memory encodedFunctionData = abi.encodeWithSignature("_holograph()");
+    (bool success, bytes memory data) = address(holographOperatorChain1).call(encodedFunctionData);
+    assertFalse(success);
+  }
+
+  /**
+   * @notice Tests that the `_interfaces()` function is private
+   * @dev This test checks that the `_interfaces()` function is private and cannot be called directly.
+   * Refers to the hardhat test with the description '_interfaces()'
+   */
+  function testInterfacesIsPrivateFunction() public {
+    vm.selectFork(chain1);
+    bytes memory encodedFunctionData = abi.encodeWithSignature("_interfaces()");
+    (bool success, bytes memory data) = address(holographOperatorChain1).call(encodedFunctionData);
+    assertFalse(success);
+  }
+
+  /**
+   * @notice Tests that the `_messagingModule()` function is private
+   * @dev This test checks that the `_messagingModule()` function is private and cannot be called directly.
+   * Refers to the hardhat test with the description '_messagingModule()'
+   */
+  function testMessagingModuleIsPrivateFunction() public {
+    vm.selectFork(chain1);
+    bytes memory encodedFunctionData = abi.encodeWithSignature("_messagingModule()");
+    (bool success, bytes memory data) = address(holographOperatorChain1).call(encodedFunctionData);
+    assertFalse(success);
+  }
+
+  /**
+   * @notice Tests that the `_registry()` function is private
+   * @dev This test checks that the `_registry()` function is private and cannot be called directly.
+   * Refers to the hardhat test with the description '_registry()'
+   */
+  function testRegistryIsPrivateFunction() public {
+    vm.selectFork(chain1);
+    bytes memory encodedFunctionData = abi.encodeWithSignature("_registry()");
+    (bool success, bytes memory data) = address(holographOperatorChain1).call(encodedFunctionData);
+    assertFalse(success);
+  }
+  /**
+   * @notice Tests that the `_utilityToken()` function is private
+   * @dev This test checks that the `_utilityToken()` function is private and cannot be called directly.
+   * Refers to the hardhat test with the description '_utilityToken()'
+   */
+  function testUtilityTokenIsPrivateFunction() public {
+    vm.selectFork(chain1);
+    bytes memory encodedFunctionData = abi.encodeWithSignature("_utilityToken()");
+    (bool success, bytes memory data) = address(holographOperatorChain1).call(encodedFunctionData);
+    assertFalse(success);
+  }
+
+  /**
+   * @notice Tests that the `_jobNonce()` function is private
+   * @dev This test checks that the `_jobNonce()` function is private and cannot be called directly.
+   * Refers to the hardhat test with the description '_jobNonce()'
+   */
+  function testJobNonceIsPrivateFunction() public {
+    vm.selectFork(chain1);
+    bytes memory encodedFunctionData = abi.encodeWithSignature("_jobNonce()");
+    (bool success, bytes memory data) = address(holographOperatorChain1).call(encodedFunctionData);
+    assertFalse(success);
+  }
+
+  /**
+   * @notice Tests that the `_popOperator()` function is private
+   * @dev This test checks that the `_popOperator()` function is private and cannot be called directly.
+   * Refers to the hardhat test with the description '_popOperator()'
+   */
+  function testPopOperatorIsPrivateFunction() public {
+    vm.selectFork(chain1);
+    bytes memory encodedFunctionData = abi.encodeWithSignature("_popOperator()");
+    (bool success, bytes memory data) = address(holographOperatorChain1).call(encodedFunctionData);
+    assertFalse(success);
+  }
+
+  /**
+   * @notice Tests that the `_getBaseBondAmount()` function is private
+   * @dev This test checks that the `_getBaseBondAmount()` function is private and cannot be called directly.
+   * Refers to the hardhat test with the description '_getBaseBondAmount()'
+   */
+  function testGetBaseBondAmountIsPrivateFunction() public {
+    vm.selectFork(chain1);
+    bytes memory encodedFunctionData = abi.encodeWithSignature("_getBaseBondAmount()");
+    (bool success, bytes memory data) = address(holographOperatorChain1).call(encodedFunctionData);
+    assertFalse(success);
+  }
+
+  /**
+   * @notice Tests that the `_getCurrentBondAmount()` function is private
+   * @dev This test checks that the `_getCurrentBondAmount()` function is private and cannot be called directly.
+   * Refers to the hardhat test with the description '_getCurrentBondAmount()'
+   */
+  function testGetCurrentBondAmountIsPrivateFunction() public {
+    vm.selectFork(chain1);
+    bytes memory encodedFunctionData = abi.encodeWithSignature("_getCurrentBondAmount()");
+    (bool success, bytes memory data) = address(holographOperatorChain1).call(encodedFunctionData);
+    assertFalse(success);
+  }
+
+  /**
+   * @notice Tests that the `_randomBlockHash()` function is private
+   * @dev This test checks that the `_randomBlockHash()` function is private and cannot be called directly.
+   * Refers to the hardhat test with the description '_randomBlockHash()'
+   */
+  function testRandomBlockHashIsPrivateFunction() public {
+    vm.selectFork(chain1);
+    bytes memory encodedFunctionData = abi.encodeWithSignature("_randomBlockHash()");
+    (bool success, bytes memory data) = address(holographOperatorChain1).call(encodedFunctionData);
+    assertFalse(success);
+  }
+
+  /**
+   * @notice Tests that the `_randomBlockHash()` function is private
+   * @dev This test checks that the `_randomBlockHash()` function is private and cannot be called directly.
+   * Refers to the hardhat test with the description '_randomBlockHash()'
+   */
+  function testIsContractPrivateFunction() public {
+    vm.selectFork(chain1);
+    bytes memory encodedFunctionData = abi.encodeWithSignature("_isContract()");
+    (bool success, bytes memory data) = address(holographOperatorChain1).call(encodedFunctionData);
+    assertFalse(success);
+  }
 }
