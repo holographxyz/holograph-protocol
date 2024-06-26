@@ -244,7 +244,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
    * @param jobHash The hash of the job to check.
    */
   function operatorJobExists(bytes32 jobHash) external view returns (bool) {
-    return _operatorJobsV2[jobHash] > 0;
+    return _deprecatedOperatorJobs[jobHash] > 0;
   }
 
   /**
