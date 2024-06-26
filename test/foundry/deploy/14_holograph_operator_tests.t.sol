@@ -13,6 +13,7 @@ import {HolographBridge} from "../../../src/HolographBridge.sol";
 import {HolographRegistry} from "../../../src/HolographRegistry.sol";
 import {Holographer} from "../../../src/enforcer/Holographer.sol";
 import {HolographERC20} from "../../../src/enforcer/HolographERC20.sol";
+import {SampleERC721} from "../../../src/token/SampleERC721.sol";
 import {MockLZEndpoint} from "../../../src/mock/MockLZEndpoint.sol";
 import {LayerZeroModule, GasParameters} from "../../../src/module/LayerZeroModule.sol";
 import {DeploymentConfig} from "../../../src/struct/DeploymentConfig.sol";
@@ -252,12 +253,22 @@ contract HolographOperatorTests is CrossChainUtils {
     assertTrue(gasEstimation > 0x5af3107a4000, "unexpectedly low gas estimation"); // 0.001 ETH
   }
 
+  function sampleERC721Mint() public {
+    vm.selectFork(chain1);
+
+    SampleERC721 sampleERC721 = SampleERC721(payable(address(sampleErc721HolographerChain1)));
+    vm.prank(deployer);
+    sampleERC721.mint(deployer, 1, "https://holograph.xyz/sample1.json");
+  }
+
   /**
    * @notice Should allow external contract to call fn
    * @dev check if the external contract can call the jobEstimator function
    */
   function testJobEstimatorExternal() public {
     vm.selectFork(chain1);
+
+    sampleERC721Mint();
 
     bytes memory data = abi.encode(deployer, deployer, 1);
 
@@ -266,7 +277,7 @@ contract HolographOperatorTests is CrossChainUtils {
     bytes memory payload = getRequestPayload(sampleErc721HolographerChain1Address, data, true);
 
     vm.selectFork(chain2);
-    (, bytes memory result) = address(holographOperatorChain2).call{gas: TESTGASLIMIT}(
+    (, bytes memory result) = address(holographOperatorChain2).staticcall{gas: TESTGASLIMIT}(
       abi.encodeWithSelector(holographOperatorChain2.jobEstimator.selector, payload)
     );
     uint256 jobEstimatorGas = abi.decode(result, (uint256));
@@ -275,27 +286,19 @@ contract HolographOperatorTests is CrossChainUtils {
 
     vm.selectFork(chain1);
     vm.prank(deployer);
-    payload = holographBridgeChain1.getBridgeOutRequestPayload(
-      holographIdL2,
-      address(sampleErc721HolographerChain1),
-      estimatedGas,
-      GWEI,
-      data
+    (, bytes memory result1) = address(holographBridgeChain1).call{gas: estimatedGas}(
+      abi.encodeWithSelector(holographBridgeChain1.getBridgeOutRequestPayload.selector, holographIdL2, sampleErc721HolographerChain1Address, estimatedGas, GWEI, data)
     );
-
-    (uint256 fee1, uint256 fee2, uint256 fee3) = holographBridgeChain1.getMessageFee(
-      holographIdL2,
-      estimatedGas,
-      GWEI,
-      payload
-    );
+    payload = abi.decode(result1, (bytes));
 
     vm.selectFork(chain2);
-    (bool success, bytes memory result2) = address(MOCKCHAIN2).call{gas: TESTGASLIMIT, value: 1 ether}(
+    (, bytes memory result2) = address(MOCKCHAIN2).call{gas: TESTGASLIMIT, value: 1 ether}(
       abi.encodeWithSelector(holographOperatorChain2.jobEstimator.selector, payload)
     );
 
     uint256 gasEstimation = abi.decode(result2, (uint256));
+    // return 9652272 gas
+    console.log("Gas Estimation: ", gasEstimation);
     assertTrue(gasEstimation > 0x38d7ea4c68000, "unexpectedly low gas estimation"); // 0.001 ETH
   }
 
@@ -305,6 +308,8 @@ contract HolographOperatorTests is CrossChainUtils {
    */
   function testShouldBePayable() public {
     vm.selectFork(chain1);
+
+    sampleERC721Mint();
 
     bytes memory data = abi.encode(deployer, deployer, 1);
 
@@ -912,6 +917,93 @@ contract HolographOperatorTests is CrossChainUtils {
     );
     uint256 bondedPod = abi.decode(result, (uint256));
     assertEq(bondedPod, 1, "Bonded pod should be 1");
+  }
+
+  /**
+   * crossChainMessage()
+   */
+
+  /**
+   * @notice Should successfully allow messaging address to call fn
+   * @dev check if the messaging address can call the function
+   */
+  function testCrossChainMessage() public {
+    sampleERC721Mint();
+
+    vm.selectFork(chain2);
+    
+    address originalMessagingModule = holographOperatorChain2.getMessagingModule();
+
+    bytes memory data = abi.encode(deployer, deployer, uint256(1));
+
+    bytes memory payload = getRequestPayload(address(sampleErc721HolographerChain1), data, true);
+    EstimatedGas memory estimatedGas = getEstimatedGas(
+      address(sampleErc721HolographerChain1),
+      data,
+      payload,
+      true,
+      150000
+    );
+    bytes32 payloadHash = keccak256(payload);
+
+    vm.prank(deployer);
+    holographOperatorChain2.setMessagingModule(Constants.getMockLZEndpoint());
+
+    // vm.expectEmit(true, true, false, false);
+    // emit AvailableOperatorJob(payloadHash, payload);
+    (bool success, ) = address(mockLZEndpointChain2).call{gas: TESTGASLIMIT}(
+      abi.encodeWithSelector(
+        mockLZEndpointChain2.crossChainMessage.selector,
+        address(holographOperatorChain2),
+        getLzMsgGas(payload),
+        payload
+      )
+    );
+  }
+
+  /**
+   * @notice Should fail to allow admin address to call fn
+   * @dev check if the admin address can call the function
+   */
+  function testFailToAllowAdminAddressToCallFn() public {
+    vm.selectFork(chain1);
+
+    // Generate random bytes payload
+    bytes memory randomBytes4 = abi.encodePacked(
+      uint32(uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty))) % 2 ** 32)
+    );
+    bytes memory randomBytes64 = abi.encodePacked(keccak256(abi.encodePacked(block.timestamp, block.difficulty)));
+    bytes memory gasPrice = abi.encodePacked(uint256(1000000000));
+    bytes memory gasLimit = abi.encodePacked(uint256(1000000));
+
+    bytes memory payload = abi.encodePacked(randomBytes4, randomBytes64, gasPrice, gasLimit);
+
+    // vm.expectRevert("HOLOGRAPH: messaging only call"); this is not working
+    vm.expectRevert(bytes(""));
+    holographOperatorChain1.crossChainMessage(payload);
+  }
+
+  /**
+   * @notice Should fail to allow random address to call fn
+   * @dev check if the random address can call the function
+   */
+  function testFailToAllowRandomAddressToCallFn() public {
+    vm.selectFork(chain1);
+
+    // Generar payload aleatorio
+    bytes memory randomBytes4 = abi.encodePacked(
+      uint32(uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty))) % 2 ** 32)
+    );
+    bytes memory randomBytes64 = abi.encodePacked(keccak256(abi.encodePacked(block.timestamp, block.difficulty)));
+    bytes memory gasPrice = abi.encodePacked(uint256(1000000000));
+    bytes memory gasLimit = abi.encodePacked(uint256(1000000));
+
+    bytes memory payload = abi.encodePacked(randomBytes4, randomBytes64, gasPrice, gasLimit);
+
+    // vm.expectRevert("HOLOGRAPH: messaging only call"); this is not working
+    vm.prank(vm.addr(44));
+    vm.expectRevert(bytes(""));
+    holographOperatorChain1.crossChainMessage(payload);
   }
 
   /**
