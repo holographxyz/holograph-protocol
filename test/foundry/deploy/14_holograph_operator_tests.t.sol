@@ -1041,7 +1041,7 @@ contract HolographOperatorTests is CrossChainUtils {
       abi.encodeWithSelector(
         mockLZEndpointChain2.crossChainMessage.selector,
         address(holographOperatorChain2),
-        getLzMsgGas(payload),
+        getLzMsgGas(payload) + 200000,
         payload
       )
     );
@@ -1065,6 +1065,60 @@ contract HolographOperatorTests is CrossChainUtils {
    * @notice should return expected operatorJob from INVALID jobHash
    * @dev check if the operatorJob from an INVALID jobHash is as expected
    */
+  function testxGetJobDetailsFail() public {
+    vm.selectFork(chain2);
+
+    bytes32 invalidPayloadHash = keccak256(abi.encodePacked("invalidPayloadHash"));
+
+    OperatorJob memory operatorJob = holographOperatorChain2.getJobDetails(invalidPayloadHash);
+
+    OperatorJob memory emptyJob = OperatorJob({
+      pod: 0,
+      blockTimes: BLOCKTIME,
+      operator: address(0),
+      startBlock: 0,
+      startTimestamp: 0,
+      fallbackOperators: [uint16(0), uint16(0), uint16(0), uint16(0), uint16(0)]
+    });
+
+    // operatorJob should be empty
+    assertEq(keccak256(abi.encode(operatorJob)), keccak256(abi.encode(emptyJob)), "OperatorJob should not be empty");
+  }
+
+  /**
+   * getPodOperatorsLength()
+   */
+
+  /**
+   * @notice should return expected pod length
+   * @dev duplicate of testGetPodOperatorsLength
+   */
+
+  /**
+   * @notice should fail if pod does not exist
+   * @dev duplicate of testGetPodOperatorsLengthFail
+   */
+
+  /**
+   * ** bond test operators **
+   */
+
+  /**
+   * @notice should add 10 operator wallets on each chain
+   * @dev add 10 operator wallets on each chain | deplicated test from 06_CrossChainMinting
+   */
+  function testShouldAdd10OperatorsForEachChain() public {
+    address[] memory wallets = new address[](10); // Array to hold operator addresses
+
+    // generate 10 operator wallets
+    for (uint i = 0; i < 10; i++) {
+      wallets[i] = address(uint160(uint(keccak256(abi.encodePacked(block.timestamp, i)))));
+    }
+
+    for (uint i = 0; i < wallets.length; i++) {
+      addOperator(wallets[i]);
+    }
+  }
 
   /**
    * SampleERC20
