@@ -947,7 +947,7 @@ contract HolographOperatorTests is CrossChainUtils {
       data,
       payload,
       true,
-      150000
+      270000
     );
     bytes32 payloadHash = keccak256(payload);
 
@@ -1006,7 +1006,7 @@ contract HolographOperatorTests is CrossChainUtils {
   function testFailToAllowRandomAddressToCallFn() public {
     vm.selectFork(chain1);
 
-    // Generar payload aleatorio
+    // generate random bytes payload
     bytes memory randomBytes4 = abi.encodePacked(
       uint32(uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty))) % 2 ** 32)
     );
@@ -1418,6 +1418,178 @@ contract HolographOperatorTests is CrossChainUtils {
       "ERC721 contract not deployed on chain1"
     );
   }
+
+  /**
+   * executeJob()
+   */
+
+  function createOperatorJob(
+    bool skipZeroAddressFallback
+  ) public returns (bytes32 payloadHash, bytes memory payload, EstimatedGas memory estimatedGas) {
+    sampleERC721Mint();
+
+    address sampleErc721HolographerChain1Address = address(sampleErc721HolographerChain1);
+
+    vm.selectFork(chain2);
+
+    address originalMessagingModule = holographOperatorChain2.getMessagingModule();
+
+    bytes memory data = abi.encode(deployer, deployer, uint224(1));
+    payload = getRequestPayload(sampleErc721HolographerChain1Address, data, true);
+
+    estimatedGas = getEstimatedGas(
+      sampleErc721HolographerChain1Address,
+      data,
+      payload,
+      true,
+      270000
+    );
+
+    payload = estimatedGas.payload;
+    payloadHash = keccak256(payload);
+
+    vm.selectFork(chain1);
+    vm.prank(deployer);
+    (bool success0, ) = address(holographBridgeChain1).call{value: estimatedGas.fee}(
+      abi.encodeWithSelector(
+        holographBridgeChain1.bridgeOutRequest.selector,
+        holographIdL2,
+        sampleErc721HolographerChain1Address,
+        estimatedGas.estimatedGas,
+        GWEI,
+        data
+      )
+    );
+
+    vm.prank(deployer);
+    holographOperatorChain2.setMessagingModule(Constants.getMockLZEndpoint());
+
+    (bool success1, ) = address(mockLZEndpointChain2).call{gas: TESTGASLIMIT}(
+      abi.encodeWithSelector(
+        mockLZEndpointChain2.crossChainMessage.selector,
+        address(holographOperatorChain2),
+        getLzMsgGas(payload),
+        payload
+      )
+    );
+
+    vm.prank(deployer);
+    holographOperatorChain2.setMessagingModule(originalMessagingModule);
+
+    if (skipZeroAddressFallback) {
+      vm.prank(operator);
+      (bool success2, ) = address(holographOperatorChain2).call{gas: estimatedGas.estimatedGas}(
+        abi.encodeWithSelector(holographOperatorChain2.executeJob.selector, payload)
+      );
+    }
+  }
+
+  /**
+   * @notice Should fail if job hash is not in _operatorJobs
+   * @dev check if the job hash is not in _operatorJobs
+   */
+  function testExecuteJobFailJobHashNotInOperatorJobs() public {
+    vm.selectFork(chain2);
+
+    // generate random bytes payload
+    bytes memory randomBytes4 = abi.encodePacked(
+      uint32(uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty))) % 2 ** 32)
+    );
+    bytes memory randomBytes64 = abi.encodePacked(keccak256(abi.encodePacked(block.timestamp, block.difficulty)));
+    bytes memory gasPrice = abi.encodePacked(uint256(1000000000));
+    bytes memory gasLimit = abi.encodePacked(uint256(1000000));
+
+    bytes memory payload = abi.encodePacked(randomBytes4, randomBytes64, gasPrice, gasLimit);
+
+    vm.expectRevert("HOLOGRAPH: invalid job");
+    holographOperatorChain1.executeJob(payload);
+  }
+
+  /**
+   * @notice Should fail if there is not enough gas
+   * @dev check if there is not enough gas
+   */
+  function testExecuteJobFailNotEnoughGas() public {
+    (bytes32 payloadHash, bytes memory payload, EstimatedGas memory estimatedGas) = jobHelper();
+    vm.selectFork(chain2);
+
+    vm.prank(deployer);
+    holographOperatorChain2.setMessagingModule(Constants.getMockLZEndpoint());
+
+    (bool success, ) = address(mockLZEndpointChain2).call{gas: TESTGASLIMIT}(
+      abi.encodeWithSelector(
+        mockLZEndpointChain2.crossChainMessage.selector,
+        address(holographOperatorChain2),
+        getLzMsgGas(payload) + 200000,
+        payload
+      )
+    );
+
+    vm.expectRevert("HOLOGRAPH: not enough gas left");
+    vm.prank(operator);
+    holographOperatorChain2.executeJob(payload);
+  }
+
+  /**
+   * @notice Should succeed executing a reverting job
+   * @dev check if the job is executed successfully
+   */
+  function testExecuteJobSuccessRevertingJob() public {
+    (bytes32 payloadHash, bytes memory payload, EstimatedGas memory estimatedGas) = jobHelper();
+    vm.selectFork(chain2);
+
+    vm.expectEmit(true, false, false, false);
+    emit FailedOperatorJob(payloadHash);
+    vm.prank(operator);
+    (bool success2, ) = address(holographOperatorChain2).call{gas: estimatedGas.estimatedGas}(
+      abi.encodeWithSelector(holographOperatorChain2.executeJob.selector, estimatedGas.payload)
+    );
+  }
+
+  /**
+   * @notice Should succeed executing a job
+   * @dev check if the job is executed successfully
+   */
+  function testExecuteJobSuccess() public {
+    (bytes32 payloadHash, bytes memory payload, EstimatedGas memory estimatedGas) = createOperatorJob(false);
+    vm.selectFork(chain2);
+
+    vm.prank(operator);
+    (bool success, ) = address(holographOperatorChain2).call{gas: estimatedGas.estimatedGas}(
+      abi.encodeWithSelector(holographOperatorChain2.executeJob.selector, payload)
+    );
+  }
+
+  /**
+   * @notice Should fail non-operator address tries to execute job
+   * @dev check if the non-operator address can execute the job
+   */
+
+
+  /**
+   * @notice Should fail if there has been a gas spike
+   * @dev check if there has been a gas spike
+   */
+
+  /**
+   * @notice Should fail if fallback is invalid
+   * @dev check if the fallback is invalid
+   */
+
+  /**
+   * @notice Should succeed if fallback is valid (operator slashed)
+   * @dev check if the fallback is valid
+   */
+
+  /**
+   * @notice Should succeed if fallback is valid (operator has enough tokens to stay)
+   * @dev check if the fallback is valid
+   */
+
+  /**
+   * @notice Should succeed executing 100 jobs
+   * @dev check if the 100 jobs are executed successfully
+   */
 
   /**
    * getRegistry()
