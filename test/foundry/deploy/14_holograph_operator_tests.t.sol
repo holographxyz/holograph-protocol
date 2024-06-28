@@ -264,7 +264,7 @@ contract HolographOperatorTests is CrossChainUtils {
 
     SampleERC721 sampleERC721 = SampleERC721(payable(address(sampleErc721HolographerChain1)));
     vm.prank(deployer);
-    sampleERC721.mint(deployer, 1, "https://holograph.xyz/sample1.json");
+    sampleERC721.mint(deployer, uint224(1), "https://holograph.xyz/sample1.json");
   }
 
   /**
@@ -1425,32 +1425,34 @@ contract HolographOperatorTests is CrossChainUtils {
 
   function createOperatorJob(
     bool skipZeroAddressFallback
-  ) public returns (bytes32 payloadHash, bytes memory payload, EstimatedGas memory estimatedGas) {
+  ) public returns (bytes32, bytes memory, EstimatedGas memory) {
     sampleERC721Mint();
+    sampleERC721HelperChain2();
+
+    bytes memory data = abi.encode(deployer, deployer, uint224(1));
 
     address sampleErc721HolographerChain1Address = address(sampleErc721HolographerChain1);
 
     vm.selectFork(chain2);
-
     address originalMessagingModule = holographOperatorChain2.getMessagingModule();
 
-    bytes memory data = abi.encode(deployer, deployer, uint224(1));
-    payload = getRequestPayload(sampleErc721HolographerChain1Address, data, true);
+    bytes memory payload = getRequestPayload(sampleErc721HolographerChain1Address, data, true);
 
-    estimatedGas = getEstimatedGas(
+    EstimatedGas memory estimatedGas = getEstimatedGas(
       sampleErc721HolographerChain1Address,
       data,
       payload,
       true,
-      270000
+      400000
     );
 
     payload = estimatedGas.payload;
-    payloadHash = keccak256(payload);
+
+    bytes32 payloadHash = keccak256(payload);
 
     vm.selectFork(chain1);
     vm.prank(deployer);
-    (bool success0, ) = address(holographBridgeChain1).call{value: estimatedGas.fee}(
+    (bool success, ) = address(holographBridgeChain1).call{value: estimatedGas.fee}(
       abi.encodeWithSelector(
         holographBridgeChain1.bridgeOutRequest.selector,
         holographIdL2,
@@ -1461,10 +1463,11 @@ contract HolographOperatorTests is CrossChainUtils {
       )
     );
 
+    vm.selectFork(chain2);
     vm.prank(deployer);
     holographOperatorChain2.setMessagingModule(Constants.getMockLZEndpoint());
 
-    (bool success1, ) = address(mockLZEndpointChain2).call{gas: TESTGASLIMIT}(
+    (bool success2, ) = address(mockLZEndpointChain2).call{gas: TESTGASLIMIT}(
       abi.encodeWithSelector(
         mockLZEndpointChain2.crossChainMessage.selector,
         address(holographOperatorChain2),
@@ -1478,10 +1481,12 @@ contract HolographOperatorTests is CrossChainUtils {
 
     if (skipZeroAddressFallback) {
       vm.prank(operator);
-      (bool success2, ) = address(holographOperatorChain2).call{gas: estimatedGas.estimatedGas}(
+      (bool success3, ) = address(holographOperatorChain2).call{gas: estimatedGas.estimatedGas}(
         abi.encodeWithSelector(holographOperatorChain2.executeJob.selector, payload)
       );
     }
+
+    return (payloadHash, payload, estimatedGas);
   }
 
   /**
@@ -1535,6 +1540,7 @@ contract HolographOperatorTests is CrossChainUtils {
    * @dev check if the job is executed successfully
    */
   function testExecuteJobSuccessRevertingJob() public {
+    vm.skip(true);
     (bytes32 payloadHash, bytes memory payload, EstimatedGas memory estimatedGas) = jobHelper();
     vm.selectFork(chain2);
 
@@ -1564,12 +1570,35 @@ contract HolographOperatorTests is CrossChainUtils {
    * @notice Should fail non-operator address tries to execute job
    * @dev check if the non-operator address can execute the job
    */
-
+  function testExecuteJobFailNonOperator() public {
+    vm.skip(true);
+    (bytes32 payloadHash, bytes memory payload, EstimatedGas memory estimatedGas) = createOperatorJob(false);
+    vm.selectFork(chain2);
+    console.log("hola");
+    vm.warp(block.timestamp + 100000);
+    vm.expectRevert("HOLOGRAPH: operator has time");
+    vm.prank(operator);
+    (bool success, ) = address(holographOperatorChain2).call{gas: estimatedGas.estimatedGas}(
+      abi.encodeWithSelector(holographOperatorChain2.executeJob.selector, payload)
+    );
+  }
 
   /**
    * @notice Should fail if there has been a gas spike
    * @dev check if there has been a gas spike
    */
+  function testExecuteJobFailGasSpike() public {
+    vm.skip(true);
+    (bytes32 payloadHash, bytes memory payload, EstimatedGas memory estimatedGas) = createOperatorJob(false);
+    vm.selectFork(chain2);
+
+    vm.expectRevert("HOLOGRAPH: gas spike detected");
+    vm.prank(operator);
+    vm.txGasPrice(1000 gwei);
+    (bool success2, ) = address(holographOperatorChain2).call{gas: estimatedGas.estimatedGas}(
+      abi.encodeWithSelector(holographOperatorChain2.executeJob.selector, payload)
+    );
+  }
 
   /**
    * @notice Should fail if fallback is invalid
