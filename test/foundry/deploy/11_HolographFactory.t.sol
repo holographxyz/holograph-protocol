@@ -15,6 +15,12 @@ import {HolographRegistry} from "../../../src/HolographRegistry.sol";
 import {DeploymentConfig} from "../../../src/struct/DeploymentConfig.sol";
 import {Verification} from "../../../src/struct/Verification.sol";
 
+/**
+ * @title Testing the Holograph Factory
+ * @notice Suite of unit tests for Holograph Factory contracts
+ * @dev Translation of a suite of Hardhat tests found in test/11_holograph_factory_tests.ts
+ */
+
 contract HolographFactoryTest is Test {
   uint256 localHostFork;
   string LOCALHOST_RPC_URL = vm.envString("LOCALHOST_RPC_URL");
@@ -30,8 +36,16 @@ contract HolographFactoryTest is Test {
   address owner = vm.addr(1);
   address newOwner = vm.addr(2);
   address alice = vm.addr(3);
-  bytes constant invalidSignature = abi.encode(0x0000000000000000000000000000000000000000000000000000000000000000);
+  bytes invalidSignature = Constants.EMPTY_BYTES;
 
+  /**
+   * @notice Sets up the environment for testing the Holograph Factory
+   * @dev This function performs the following setup steps:
+   * 1. Deploys a new instance of the `Mock` contract, pranking as the `deployer`.
+   * 2. Creates a fork of the local host RPC URL and selects the forked chain.
+   * 3. Retrieves instances of the `HolographRegistry`, `HolographFactory`, and `Holograph` contracts
+   *    using the `Constants` contract and assigns them to the corresponding variables.
+   */
   function setUp() public {
     vm.prank(deployer);
     mock = new Mock();
@@ -51,7 +65,7 @@ contract HolographFactoryTest is Test {
     DeploymentConfig memory deployConfig = HelperDeploymentConfig.getHtokenEth(
       Constants.getHolographIdL1(),
       vm.getCode("hTokenProxy.sol:hTokenProxy"),
-      bytes32(0x0000000000000000000000000000000000000000000000000000000000000000),
+      bytes32(Constants.EMPTY_BYTES),
       true
     );
 
@@ -74,13 +88,16 @@ contract HolographFactoryTest is Test {
     bytes32 hashSampleERC721 = HelperDeploymentConfig.getDeployConfigHash(deployConfig, deployer);
     return (deployConfig, hashSampleERC721);
   }
-  /*
-   * INIT Section
-   */
+
+  /* -------------------------------------------------------------------------- */
+  /*                                INIT Section                                */
+  /* -------------------------------------------------------------------------- */
 
   /**
    * @notice Test the initialization of the HolographFactory contract
-   * @dev  Refers to the hardhat test with the description 'should fail if already initialized'
+   * @dev This test checks that the `init` function of the Holograph Factory reverts  with
+   * the `HOLOGRAPH: already initialized` error message when called multiple times.
+   * Refers to the hardhat test with the description 'should fail if already initialized'
    */
   function testInitRevert() public {
     bytes memory init = abi.encode(Constants.getHolographFactory(), Constants.getHolographRegistry());
@@ -88,13 +105,18 @@ contract HolographFactoryTest is Test {
     holographFactory.init(abi.encode(address(deployer), address(holographERC20)));
   }
 
-  /*
-   * Deploy Holographable Contract Section
-   */
+  /* -------------------------------------------------------------------------- */
+  /*                    Deploy Holographable Contract Section                   */
+  /* -------------------------------------------------------------------------- */
 
   /**
    * @notice Test the deployHolographableContract function Revert if the signature is invalid
-   * @dev  Refers to the hardhat test with the description 'should fail with invalid signature if config is incorrect'
+   * @dev  This test checks that the `deployHolographableContract` function of the Holograph Factory
+   * reverts with the `HOLOGRAPH: invalid signature` error message when the provided signature is invalid.
+   * It first retrieves the deployment configuration and hash for the hToken ETH contract and generates
+   * a new signature with an incorrect private key. Calls the `deployHolographableContract` function with
+   * the invalid signature and expects the function to revert
+   * Refers to the hardhat test with the description 'should fail with invalid signature if config is incorrect'
    */
   function testDeployRevertInvalidSignature() public {
     (DeploymentConfig memory deployConfig, bytes32 hashHtokenEth) = getConfigHtokenETH();
@@ -112,7 +134,9 @@ contract HolographFactoryTest is Test {
 
   /**
    * @notice Test the deployHolographableContract function Revert if the contract was already deployed
-   * @dev  Refers to the hardhat test with the description 'should fail contract was already deployed'
+   * @dev This test checks that the `deployHolographableContract` function of the Holograph Factory
+   * reverts with the `HOLOGRAPH: already deployed` error message when the contract is already deployed.
+   * Refers to the hardhat test with the description 'should fail contract was already deployed'
    */
   function testDeployRevertContractAlreadyDeployed() public {
     (DeploymentConfig memory deployConfig, bytes32 hashHtokenEth) = getConfigHtokenETH();
@@ -128,7 +152,9 @@ contract HolographFactoryTest is Test {
 
   /**
    * @notice Test the deployHolographableContract function Revert if the signature R is invalid
-   * @dev  Refers to the hardhat test with the description 'should fail with invalid signature if signature.r is incorrect'
+   * @dev This test checks that the `deployHolographableContract` function of the Holograph Factory reverts with
+   * the `HOLOGRAPH: invalid signature` error message when the provided signature is invalid.
+   * Refers to the hardhat test with the description 'should fail with invalid signature if signature.r is incorrect'
    */
   function testDeployRevertSignatureRIncorrect() public {
     (DeploymentConfig memory deployConfig, bytes32 hashHtokenEth) = getConfigHtokenETH();
@@ -142,9 +168,12 @@ contract HolographFactoryTest is Test {
     vm.prank(deployer);
     holographFactory.deployHolographableContract(deployConfig, signature, deployer);
   }
+
   /**
    * @notice Test the deployHolographableContract function Revert if the signature S is invalid
-   * @dev  Refers to the hardhat test with the description 'should fail with invalid signature if signature.s is incorrect'
+   * @dev This test checks that the `deployHolographableContract` function of the Holograph Factory reverts with
+   * the `HOLOGRAPH: invalid signature` error message when the provided signature is invalid.
+   * Refers to the hardhat test with the description 'should fail with invalid signature if signature.s is incorrect'
    */
   function testDeployRevertSignatureSIncorrect() public {
     (DeploymentConfig memory deployConfig, bytes32 hashHtokenEth) = getConfigHtokenETH();
@@ -158,9 +187,12 @@ contract HolographFactoryTest is Test {
     vm.prank(deployer);
     holographFactory.deployHolographableContract(deployConfig, signature, deployer);
   }
+
   /**
    * @notice Test the deployHolographableContract function Revert if the signature V is invalid
-   * @dev  Refers to the hardhat test with the description 'should fail with invalid signature if signature.s is incorrect'
+   * @dev This test checks that the `deployHolographableContract` function of the Holograph Factory reverts with
+   * the `HOLOGRAPH: invalid signature` error message when the provided signature is invalid.
+   * Refers to the hardhat test with the description 'should fail with invalid signature if signature.s is incorrect'
    */
   function testDeployRevertSignatureVIncorrect() public {
     (DeploymentConfig memory deployConfig, bytes32 hashHtokenEth) = getConfigHtokenETH();
@@ -174,9 +206,12 @@ contract HolographFactoryTest is Test {
     vm.prank(deployer);
     holographFactory.deployHolographableContract(deployConfig, signature, deployer);
   }
+
   /**
    * @notice Test the deployHolographableContract function Revert if the signer is invalid
-   * @dev  Refers to the hardhat test with the description 'should fail with invalid signature if signer is incorrect'
+   * @dev This test checks that the `deployHolographableContract` function of the Holograph Factory reverts with
+   * the`HOLOGRAPH: invalid signature` error message when the provided signature is invalid.
+   * Refers to the hardhat test with the description 'should fail with invalid signature if signer is incorrect'
    */
   function testDeployRevertSignatureSignIncorrect() public {
     (DeploymentConfig memory deployConfig, bytes32 hashHtokenEth) = getConfigHtokenETH();
@@ -192,12 +227,18 @@ contract HolographFactoryTest is Test {
     holographFactory.deployHolographableContract(deployConfig, signature, alice);
   }
 
-  /*
-   * BridgeIn Section
-   */
+  /* -------------------------------------------------------------------------- */
+  /*                              BridgeIn Section                              */
+  /* -------------------------------------------------------------------------- */
+
   /**
    * @notice Test the bridgeIn function return the expected selector
-   * @dev  Refers to the hardhat test with the description 'should return the expected selector from the input payload'
+   * @dev This test checks that the `bridgeIn` function of the Holograph Factory returns the expected selector
+   * when called with a valid payload.
+   * It retrieves the deployment configuration and hash for the sample ERC721 contract, generates a new valid signature,
+   * and encodes the deployment configuration, signature, and deployer address into a payload.
+   * Then, calls the `bridgeIn` function with the payload and checks that the returned selector matches the expected value.
+   * Refers to the hardhat test with the description 'should return the expected selector from the input payload'
    */
   function testExpectedSelectorFromPayload() public {
     (DeploymentConfig memory deployConfig, bytes32 hashSampleERC721) = getConfigERC721();
@@ -217,22 +258,30 @@ contract HolographFactoryTest is Test {
 
   /**
    * @notice Test the bridgeIn function revert if the payload data is invalid
-   * @dev  Refers to the hardhat test with the description 'should revert if payload data is invalid'
+   * @dev This test checks that the `bridgeIn` function of the Holograph Factory reverts when called with an invalid payload.
+   * It creates an invalid format for the expected payload, calls the `bridgeIn` function and and expects the function to revert.
+   * Refers to the hardhat test with the description 'should revert if payload data is invalid'
    */
   function testRevertDataPayloadInvalid() public {
-    bytes memory payload = "0x0000000000000000000000000000000000000000000000000000000000000000";
+    bytes memory payload = Constants.EMPTY_BYTES;
 
     vm.expectRevert();
     vm.prank(deployer);
     holographFactory.bridgeIn(uint32(block.chainid), payload);
   }
 
-  /*
-   * BridgeOut Section
-   */
+  /* -------------------------------------------------------------------------- */
+  /*                              BridgeOut Section                             */
+  /* -------------------------------------------------------------------------- */
+
   /**
    * @notice Test the bridgeOut function
-   * @dev  Refers to the hardhat test with the description 'should return selector and payload'
+   * @dev This test checks that the `bridgeOut` function of the Holograph Factory returns the expected
+   * selector when called with a valid payload.
+   * It retrieves the deployment configuration and hash for the sample ERC721 contract, generates a new valid signature,
+   * and encodes the deployment configuration, signature, and deployer address into a payload.
+   * Calls the `bridgeOut` function with the payload and checks that the returned selector matches the expected value.
+   * Refers to the hardhat test with the description 'should return selector and payload'
    */
   function testContemplateSelectorFromPayload() public {
     (DeploymentConfig memory deployConfig, bytes32 hashSampleERC721) = getConfigERC721();
@@ -250,12 +299,17 @@ contract HolographFactoryTest is Test {
     assertEq(selector, bytes4(0xb7e03661));
   }
 
-  /*
-   * setHolograph Section
-   */
+  /* -------------------------------------------------------------------------- */
+  /*                            setHolograph Section                            */
+  /* -------------------------------------------------------------------------- */
+
   /**
    * @notice Test the setHolograph function when the owner is the one who calls her
-   * @dev  Refers to the hardhat test with the description ' should allow admin to alter _holographSlot'
+   * @dev This test checks that the `setHolograph` function of the Holograph Factory can be called by the admin
+   * to update the Holograph contract address stored in the factory.
+   * It first pranks as the deployer and calls the `setHolograph` function to update the Holograph address.
+   * It then asserts that the updated Holograph address matches the expected value.
+   * Refers to the hardhat test with the description ' should allow admin to alter _holographSlot'
    */
 
   function testAllowAdminAlterHolographSlot() public {
@@ -266,7 +320,10 @@ contract HolographFactoryTest is Test {
 
   /**
    * @notice Test the setHolograph function when the not owner is the one who calls her and revert
-   * @dev  Refers to the hardhat test with the description 'should fail to allow not owner to alter _holographSlot'
+   * @dev This test checks that the `setHolograph` function of the Holograph Factory reverts when called by a non-admin.
+   * It pranks as a new owner and attempts to call the `setHolograph` function.
+   * The test expects the function to revert with the `HOLOGRAPH: admin only function` error message.
+   * Refers to the hardhat test with the description 'should fail to allow not owner to alter _holographSlot'
    */
 
   function testRevertNotAdminAllowAlterHolographSlot() public {
@@ -275,13 +332,17 @@ contract HolographFactoryTest is Test {
     holographFactory.setHolograph(address(holograph));
   }
 
-  /*
-   * setRegestry Section
-   */
+  /* -------------------------------------------------------------------------- */
+  /*                             setRegestry Section                            */
+  /* -------------------------------------------------------------------------- */
 
   /**
    * @notice Test the setRegistry function when the owner is the one who calls her
-   * @dev  Refers to the hardhat test with the description 'should allow admin to alter _registrySlot'
+   * @dev This test checks that the `setRegistry` function of the Holograph Factory can be called by the admin
+   * to update the registry contract address stored in the factory.
+   * It first pranks as the deployer and calls the `setRegistry` function to update the registry address.
+   * It then asserts that the updated registry address matches the expected value.
+   * Refers to the hardhat test with the description 'should allow admin to alter _registrySlot'
    */
 
   function testAllowAdminAlterRegistrySlot() public {
@@ -292,7 +353,10 @@ contract HolographFactoryTest is Test {
 
   /**
    * @notice Test the setRegistry function when the not owner is the one who calls her and revert
-   * @dev  Refers to the hardhat test with the description 'should fail to allow owner to alter _registrySlot'
+   * @dev This test checks that the `setRegistry` function of the Holograph Factory reverts when called by a non-admin.
+   * It pranks as a new owner and attempts to call the `setRegistry` function.
+   * The test expects the function to revert with the `HOLOGRAPH: admin only function` error message.
+   * Refers to the hardhat test with the description 'should fail to allow owner to alter _registrySlot'
    */
 
   function testRevertNotAdminAllowAlterRegistrySlot() public {
@@ -301,13 +365,15 @@ contract HolographFactoryTest is Test {
     holographFactory.setRegistry(address(holographRegistry));
   }
 
-  /*
-   * Receive/Fallback Section
-   */
+  /* -------------------------------------------------------------------------- */
+  /*                          Receive/Fallback Section                          */
+  /* -------------------------------------------------------------------------- */
 
   /**
    * @notice Test the receive function in the contract must revert
-   * @dev  Refers to the hardhat test with the description 'receive()'
+   * @dev This test checks that the `transfer` function of the Holograph Factory reverts when called by a non-admin.
+   * It pranks as the deployer and attempts to call the `transfer` function. The test expects the function to revert.
+   * Refers to the hardhat test with the description 'receive()'
    */
 
   function testRevertRecive() public {
@@ -315,9 +381,12 @@ contract HolographFactoryTest is Test {
     vm.expectRevert();
     payable(address(Constants.getHolographFactory())).transfer(1 ether);
   }
+
   /**
    * @notice Test the fallback function in the contract must revert
-   * @dev  Refers to the hardhat test with the description 'fallback()'
+   * @dev This test checks that the `transfer` function of the Holograph Factory reverts when called by a non-admin.
+   * It pranks as the deployer and attempts to call the `transfer` function. The test expects the function to revert.
+   * Refers to the hardhat test with the description 'fallback()'
    */
   function testRevertFallback() public {
     vm.prank(deployer);

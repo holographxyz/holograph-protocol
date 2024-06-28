@@ -24,7 +24,7 @@ contract HolographerTests is Test {
   SampleERC721 sampleERC721;
   Holograph holograph;
   Holographer holographer;
-  address zeroAddress = Constants.getZeroAddress();
+  address zeroAddress = Constants.zeroAddress;
   uint256 privateKeyDeployer = Constants.getPKDeployer();
   address deployer = vm.addr(Constants.getPKDeployer());
   uint256 localHostFork;

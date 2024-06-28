@@ -112,6 +112,7 @@ library Constants {
   //       deployed within the hardhat deploy pipeline
   function getERC20Mock() internal pure returns (address) {
     return address(0x4aF55cAE288F8B9867AF8992F5910080D3cebB4f);
+    //return address(0x71B7f5A882F25c7292d0Ae5fa6d78129f431b957);
   }
 
   // NOTE: This has to be updated to the correct address every time a new contract is added to be
@@ -144,22 +145,22 @@ library Constants {
     return address(0x350856f758d9A1b8c24540d8E10cd6AB45B1466d);
   }
 
-  function getZeroAddress() internal pure returns (address) {
-    return address(0x0000000000000000000000000000000000000000);
-  }
-
   function getDropsEventConfig() internal pure returns (uint256) {
     return 0x0000000000000000000000000000000000000000000000000000000000040000;
   }
+
   function getHolographDropERC721V2() internal pure returns (address) {
     return address(0x30F9D1c28584e0874dEE1b2f0101D77077D316e4);
   }
+
   function getEditionsMetadataRendererProxy() internal pure returns (address) {
     return address(0xdF26982B2D5A4904757f6099b939c0eBcFE70668);
   }
+
   function getHolographDropERC721() internal pure returns (address) {
     return address(0xc4aE0619B36BC57227DC258472E57A7265C5f2aA);
   }
+
   function getHolographIdL1() internal pure returns (uint32) {
     return 4294967294;
   }
@@ -172,17 +173,29 @@ library Constants {
     return address(0xdf5295149F367b1FBFD595bdA578BAd22e59f504);
   }
 
+  function getGenesisDeployer() internal pure returns (address) {
+    return address(0xBB566182f35B9E5Ae04dB02a5450CC156d2f89c1);
+  }
+
   function getPKDeployer() internal pure returns (uint256) {
     return uint256(0xff22437ccbedfffafa93a9f1da2e8c19c1711052799acf3b58ae5bebb5c6bd7b);
   }
 
-  address public constant zeroAddress = address(0x0000000000000000000000000000000000000000);
+  address public constant zeroAddress = address(0x0);
   address public constant originAddress = address(0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38);
   bytes32 public constant saltHex = bytes32(0x00000000000000000000000000000000000000000000000000000000000003e8);
+  bytes32 public constant eventConfig = bytes32(0x0000000000000000000000000000000000000000000000000000000000000086);
+  uint256 public constant MAX_UINT256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+  uint256 public constant MIN_UINT256 = 0x0000000000000000000000000000000000000000000000000000000000000000;
+  uint256 public constant HALF_VALUE = 0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff;
+  uint256 public constant HALF_INVERSE_VALUE = 0xffffffffffffffffffffffffffffffff00000000000000000000000000000000;
+  bytes32 public constant EMPTY_BYTES32 = bytes32(0x0);
+  bytes public constant EMPTY_BYTES = abi.encode(0x0);
 }
 
 library ErrorConstants {
   string constant ONLY_ADMIN_ERROR_MSG = "HOLOGRAPH: admin only function";
+  string constant ONLY_OWNER_ERROR_MSG = "HOLOGRAPH: owner only function";
   string constant ALREADY_INITIALIZED_ERROR_MSG = "HOLOGRAPH: already initialized";
   string constant ALREADY_DEPLOYED_ERROR_MSG = "HOLOGRAPH: already deployed";
   string constant INVALID_SIGNATURE_ERROR_MSG = "HOLOGRAPH: invalid signature";
@@ -192,8 +205,26 @@ library ErrorConstants {
   string constant EMPTY_CONTRACT_ERROR_MSG = "HOLOGRAPH: empty contract";
   string constant CONTRACT_ALREADY_SET_ERROR_MSG = "HOLOGRAPH: contract already set";
   string constant ROYALTIES_ONLY_OWNER_ERROR_MSG = "ROYALTIES: caller not an owner";
+  string constant INCORRECT_CHAIN_ID = "HOLOGRAPH: incorrect chain id";
+  string constant DEPLOYMENT_FAIL = "HOLOGRAPH: deployment failed";
+  string constant INITIALIZATION_FAIL = "HOLOGRAPH: initialization failed";
+  string constant DEPLOYER_NOT_APPROVED = "HOLOGRAPH: deployer not approved";
   string constant ROYALTIES_MISSMATCHED_LENGHTS_ERROR_MSG = "ROYALTIES: missmatched lenghts";
   string constant ROYALTIES_MAX_TEN_ADDRESSES_MSG = "ROYALTIES: max 10 addresses";
   string constant ROYALTIES_BPS_MUST_EQUAL_1000 = "ROYALTIES: bps must equal 10000";
   string constant ROYALTIES_SENDER_NOT_AUTORIZED = "ROYALTIES: sender not authorized";
+  string constant ERC20_ALREADY_INITIALIZED_ERROR_MSG = "ERC20: already initialized";
+  string constant ERC20_SPENDER_SERO_ADDRESS_ERROR_MSG = "ERC20: spender is zero address";
+  string constant ERC20_DECREASED_BELOW_ZERO_ERROR_MSG = "ERC20: decreased below zero";
+  string constant ERC20_INCREASED_ABOVE_MAX_ERROR_MSG = "ERC20: increased above max value";
+  string constant ERC20_AMOUNT_EXCEEDS_BALANCE_ERROR_MSG = "ERC20: amount exceeds balance";
+  string constant ERC20_AMOUNT_EXCEEDS_ALLOWANCE_ERROR_MSG = "ERC20: amount exceeds allowance";
+  string constant ERC20_RECIPIENT_SERO_ADDRESS__ERROR_MSG = "ERC20: recipient is zero address";
+  string constant ERC20_OPERATOR_NOT_CONTRACT_ERROR_MSG = "ERC20: operator not contract";
+  string constant ERC20_BALANCE_CHECK_FAILED_ERROR_MSG = "ERC20: balance check failed";
+  string constant ERC20_NON_ERC20RECEIVER_ERROR_MSG = "ERC20: non ERC20Receiver";
+  string constant ERC20_EXPIRED_DEADLINE_ERROR_MSG = "ERC20: expired deadline";
+  string constant ERC20_ZERO_ADDRESS_SIGNER_ERROR_MSG = "ERC20: zero address signer";
+  string constant ERC20_INVALID_V_VALUE_ERROR_MSG = "ERC20: invalid v-value";
+  string constant ERC20_INVALID_SIGNATURE_ERROR_MSG = "ERC20: invalid signature";
 }

@@ -2,6 +2,7 @@
 pragma solidity 0.8.13;
 
 import {Test, Vm, console} from "forge-std/Test.sol";
+import {Constants, ErrorConstants} from "../utils/Constants.sol";
 import {HolographGenesisLocal} from "../../../src/HolographGenesisLocal.sol";
 import {MockHolographGenesisChild} from "../../../src/mock/MockHolographGenesisChild.sol";
 import {Mock} from "../../../src/mock/Mock.sol";
@@ -17,13 +18,13 @@ contract HolographGenesisTests is Test {
   HolographGenesisLocal holographGenesis;
   MockHolographGenesisChild holographGenesisChild;
   Mock mock;
-  address zeroAddress = address(0);
   address newDeployer = vm.addr(1);
   address mockOwner = vm.addr(2);
-  address deployerGenesisLocal = address(0xdf5295149F367b1FBFD595bdA578BAd22e59f504); //deployer approved by contract HolographGenesisLocal
-  address deployerGenesis = address(0xBB566182f35B9E5Ae04dB02a5450CC156d2f89c1); //deployer approved by contract HolographGenesis
+  address deployerGenesisLocal = Constants.getDeployer(); //deployer approved by contract HolographGenesisLocal
+  address deployerGenesis = Constants.getGenesisDeployer(); //deployer approved by contract HolographGenesis
   string public salt;
   string public secret;
+  bytes initCode = abi.encode(0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd);
 
   /**
    * @notice Sets up the initial state for the tests
@@ -36,8 +37,7 @@ contract HolographGenesisTests is Test {
     holographGenesis = new HolographGenesisLocal();
     holographGenesisChild = new MockHolographGenesisChild();
     mock = new Mock();
-    bytes memory initCode = abi.encode(0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
-    mock.init(initCode);
+    mock.init(abi.encode(Constants.MAX_UINT256));
     salt = vm.envString("DEVELOP_DEPLOYMENT_SALT");
     secret = vm.envString("LOCALHOST_DEPLOYER_SECRET");
   }
@@ -55,7 +55,7 @@ contract HolographGenesisTests is Test {
     vm.expectEmit(true, false, false, true);
     emit Message("The future is Holographic");
     HolographGenesisLocal holographGenesisLocal = new HolographGenesisLocal();
-    assertNotEq(address(holographGenesisLocal), zeroAddress);
+    assertNotEq(address(holographGenesisLocal), Constants.zeroAddress);
   }
 
   /* -------------------------------------------------------------------------- */
@@ -71,7 +71,6 @@ contract HolographGenesisTests is Test {
   function testSuccessfulyDeployed() public {
     uint256 chainId = block.chainid;
     bytes memory mockBytecode = vm.getCode("Mock.sol:Mock");
-    bytes memory initCode = abi.encode(0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd);
     vm.prank(deployerGenesisLocal);
     holographGenesis.deploy(
       chainId,
@@ -92,8 +91,7 @@ contract HolographGenesisTests is Test {
   function testDeployWrongChainIdRevert() public {
     uint256 chainId = block.chainid;
     bytes memory mockBytecode = vm.getCode("Mock.sol:Mock");
-    bytes memory initCode = abi.encode(0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd);
-    vm.expectRevert("HOLOGRAPH: incorrect chain id");
+    vm.expectRevert(bytes(ErrorConstants.INCORRECT_CHAIN_ID));
     vm.prank(deployerGenesisLocal);
     holographGenesis.deploy(
       chainId + 1,
@@ -116,8 +114,7 @@ contract HolographGenesisTests is Test {
     testSuccessfulyDeployed();
     uint256 chainId = block.chainid;
     bytes memory mockBytecode = vm.getCode("Mock.sol:Mock");
-    bytes memory initCode = abi.encode(0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd);
-    vm.expectRevert("HOLOGRAPH: already deployed");
+    vm.expectRevert(bytes(ErrorConstants.ALREADY_DEPLOYED_ERROR_MSG));
     vm.prank(deployerGenesisLocal);
     holographGenesis.deploy(
       chainId,
@@ -136,8 +133,7 @@ contract HolographGenesisTests is Test {
    */
   function testDeploymentFailRevert() public {
     uint256 chainId = block.chainid;
-    bytes memory initCode = abi.encode(0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd);
-    vm.expectRevert("HOLOGRAPH: deployment failed");
+    vm.expectRevert(bytes(ErrorConstants.DEPLOYMENT_FAIL));
     vm.prank(deployerGenesisLocal);
     holographGenesis.deploy(
       chainId,
@@ -159,8 +155,8 @@ contract HolographGenesisTests is Test {
   function testInitCodeNotMatchInitSelectorRevert() public {
     uint256 chainId = block.chainid;
     bytes memory mockBytecode = vm.getCode("Mock.sol:Mock");
-    bytes memory initCode = abi.encode(0x00000000000000000000000000000000000000000000000000000000000000);
-    vm.expectRevert("HOLOGRAPH: initialization failed");
+    bytes memory initCode = abi.encode(Constants.MIN_UINT256);
+    vm.expectRevert(bytes(ErrorConstants.INITIALIZATION_FAIL));
     vm.prank(deployerGenesis);
     holographGenesisChild.deploy(
       chainId,
@@ -195,7 +191,7 @@ contract HolographGenesisTests is Test {
    * Refers to the hardhat test with the description 'should fail non-deployer wallet to add approved deployers'
    */
   function testNonDeployerAddApprovedDeployersRevert() public {
-    vm.expectRevert("HOLOGRAPH: deployer not approved");
+    vm.expectRevert(bytes(ErrorConstants.DEPLOYER_NOT_APPROVED));
     vm.prank(mockOwner);
     holographGenesis.approveDeployer(newDeployer, true);
   }
@@ -229,7 +225,7 @@ contract HolographGenesisTests is Test {
     vm.skip(true);
     vm.prank(deployerGenesis);
     holographGenesisChild.approveDeployerMock(newDeployer, true);
-    assertEq(holographGenesisChild.isApprovedDeployer((newDeployer)), true);
+    assertTrue(holographGenesisChild.isApprovedDeployer((newDeployer)));
   }
 
   /* -------------------------------------------------------------------------- */
