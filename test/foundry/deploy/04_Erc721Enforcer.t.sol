@@ -41,7 +41,6 @@ contract Erc721Enforcer is Test {
   string public constant tokenURI2 = "https://holograph.xyz/sample2.json";
   string public constant tokenURI3 = "https://holograph.xyz/sample3.json";
 
-
   /// @notice Set up the testing environment by initializing all necessary contracts and accounts.
   function setUp() public {
     vm.createSelectFork(LOCALHOST_RPC_URL);
@@ -72,9 +71,9 @@ contract Erc721Enforcer is Test {
     sampleERC721.mint(_to, uint224(_tokenId), _tokenURI);
   }
 
-  /*
-   * CHECK INTERFACES
-   */
+  /* -------------------------------------------------------------------------- */
+  /*                              CHECK INTERFACES                              */
+  /* -------------------------------------------------------------------------- */
 
   /// @notice Should support supportsInterface interface
   function testSupportinterface() public {
@@ -152,9 +151,9 @@ contract Erc721Enforcer is Test {
     assertTrue(holographERC721.supportsInterface(computedId));
   }
 
-  /*
-   * ERC721Enumerable
-   */
+  /* -------------------------------------------------------------------------- */
+  /*                              ERC721Enumerable                              */
+  /* -------------------------------------------------------------------------- */
 
   /// @notice Should support totalSupply interface
   function testTotalSupplyInterface() public {
@@ -184,9 +183,9 @@ contract Erc721Enforcer is Test {
     assertTrue(holographERC721.supportsInterface(computedId));
   }
 
-  /*
-   * ERC721Metadata
-   */
+  /* -------------------------------------------------------------------------- */
+  /*                               ERC721Metadata                               */
+  /* -------------------------------------------------------------------------- */
 
   /// @notice Should support name interface
   function testNameInterface() public {
@@ -212,9 +211,9 @@ contract Erc721Enforcer is Test {
     assertTrue(holographERC721.supportsInterface(computedId));
   }
 
-  /*
-   * ERC721TokenReceiver
-   */
+  /* -------------------------------------------------------------------------- */
+  /*                             ERC721TokenReceiver                            */
+  /* -------------------------------------------------------------------------- */
 
   /// @notice Should support onERC721Received interface
   function testOnERC721ReceivedInterface() public {
@@ -228,9 +227,9 @@ contract Erc721Enforcer is Test {
     assertTrue(holographERC721.supportsInterface(computedId));
   }
 
-  /*
-   * CollectionURI
-   */
+  /* -------------------------------------------------------------------------- */
+  /*                                CollectionURI                               */
+  /* -------------------------------------------------------------------------- */
 
   /// @notice Should support contractURI interface
   function testContractURIInterface() public {
@@ -244,9 +243,9 @@ contract Erc721Enforcer is Test {
     assertTrue(holographERC721.supportsInterface(computedId));
   }
 
-  /*
-   * Test Initializer
-   */
+  /* -------------------------------------------------------------------------- */
+  /*                              Test Initializer                              */
+  /* -------------------------------------------------------------------------- */
 
   /// @notice Should fail reinitializing HolographERC721
   function testReinitializationHolographer() public {
@@ -272,9 +271,9 @@ contract Erc721Enforcer is Test {
     sampleERC721.init(initData);
   }
 
-  /*
-   * Test ERC721Metadata
-   */
+  /* -------------------------------------------------------------------------- */
+  /*                             Test ERC721Metadata                            */
+  /* -------------------------------------------------------------------------- */
 
   /// @notice Should return "Sample ERC721 Contract (localhost)" as name
   function testName() public {
@@ -294,9 +293,9 @@ contract Erc721Enforcer is Test {
     assertEq(holographERC721.contractURI(), expectedURI, "The contract URI does not match.");
   }
 
-  /*
-   * Mint ERC721 NFTs
-   */
+  /* -------------------------------------------------------------------------- */
+  /*                              Mint ERC721 NFTs                              */
+  /* -------------------------------------------------------------------------- */
 
   /// @notice should have a total supply of 0 SMPLR NFts
   function testTotalSupply() public {
@@ -354,7 +353,7 @@ contract Erc721Enforcer is Test {
     emit Transfer(address(0), bob, tokenId2);
 
     _mint(bob, tokenId2, tokenURI2);
-    
+
     assertEq(holographERC721.totalSupply(), 2);
   }
 
@@ -484,9 +483,9 @@ contract Erc721Enforcer is Test {
     assertFalse(holographERC721.isApprovedForAll(alice, bob));
   }
 
-  /*
-   * Failed transfer
-   */
+  /* -------------------------------------------------------------------------- */
+  /*                               Failed transfer                              */
+  /* -------------------------------------------------------------------------- */
 
   /// @notice should fail if sender doesn't own #1 SMPLR NFT
   function testTransfer() public {
@@ -550,9 +549,9 @@ contract Erc721Enforcer is Test {
     holographERC721.onERC721Received(address(holographERC721), deployer, tokenId1, "0x");
   }
 
-  /*
-   * Successful transfer
-   */
+  /* -------------------------------------------------------------------------- */
+  /*                             Successful transfer                            */
+  /* -------------------------------------------------------------------------- */
 
   /// @notice deployer should succeed transferring #1 SMPLR NFT to alice
   function testTransferSuccess() public {
@@ -692,9 +691,9 @@ contract Erc721Enforcer is Test {
     assertEq(holographERC721.ownerOf(tokenId2), deployer);
   }
 
-  /*
-   * Burn NFTs
-   */
+  /* -------------------------------------------------------------------------- */
+  /*                                  Burn NFTs                                 */
+  /* -------------------------------------------------------------------------- */
 
   /// @notice should fail burning non-existent #4 SMPLR NFT
   function testBurnNonExistent() public {
@@ -777,9 +776,9 @@ contract Erc721Enforcer is Test {
     assertEq(holographERC721.isApprovedForAll(deployer, alice), true);
   }
 
-  /*
-   * Ownership
-   */
+  /* -------------------------------------------------------------------------- */
+  /*                                  Ownership                                 */
+  /* -------------------------------------------------------------------------- */
 
   /// @notice holographERC721 owner should return deployer address
   function testOwner() public {
@@ -826,9 +825,9 @@ contract Erc721Enforcer is Test {
     assertEq(holographERC721.getOwner(), holographFactoryProxyAddress);
   }
 
-  /*
-   * Admi
-   */
+  /* -------------------------------------------------------------------------- */
+  /*                                    Admin                                   */
+  /* -------------------------------------------------------------------------- */
 
   /// @notice admin() should return "HolographFactoryProxy" address
   function testAdmin() public {
