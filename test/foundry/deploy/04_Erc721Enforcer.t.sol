@@ -7,7 +7,7 @@ import {HolographERC721} from "../../../src/enforcer/HolographERC721.sol";
 import {SampleERC721} from "../../../src/token/SampleERC721.sol";
 import {MockERC721Receiver} from "../../../src/mock/MockERC721Receiver.sol";
 import {Admin} from "../../../src/abstract/Admin.sol";
-import {Constants} from "../utils/Constants.sol";
+import {Constants, ErrorConstants} from "../utils/Constants.sol";
 
 /// @title ERC721 Enforcer Tests Setup
 /// @notice Sets up the testing environment for ERC721 token testing with specific contracts.
@@ -250,7 +250,7 @@ contract Erc721Enforcer is Test {
   /// @notice Should fail reinitializing HolographERC721
   function testReinitializationHolographer() public {
     bytes memory initData = abi.encodePacked(address(0));
-    vm.expectRevert("HOLOGRAPHER: already initialized");
+    vm.expectRevert(bytes(ErrorConstants.HOLOGRAPHER_ALREADY_INITIALIZED_ERROR_MSG));
     holographERC721.init(initData);
   }
 
@@ -267,7 +267,7 @@ contract Erc721Enforcer is Test {
       false,
       bytes("new data")
     );
-    vm.expectRevert("ERC721: already initialized");
+    vm.expectRevert(bytes(ErrorConstants.ERC721_ALREADY_INITIALIZED_ERROR_MSG));
     sampleERC721.init(initData);
   }
 
@@ -310,13 +310,13 @@ contract Erc721Enforcer is Test {
 
   /// @notice NFT index 0 should fail
   function testTokenIndex0() public {
-    vm.expectRevert("ERC721: index out of bounds");
+    vm.expectRevert(bytes(ErrorConstants.ERC721_INDEX_OUT_OF_BOUNDS_ERROR_MSG));
     holographERC721.tokenByIndex(0);
   }
 
   /// @notice NFT owner index 0 should fail
   function testTokenOwnerIndex0() public {
-    vm.expectRevert("ERC721: index out of bounds");
+    vm.expectRevert(bytes(ErrorConstants.ERC721_INDEX_OUT_OF_BOUNDS_ERROR_MSG));
     holographERC721.tokenOfOwnerByIndex(deployer, 0);
   }
 
@@ -359,7 +359,7 @@ contract Erc721Enforcer is Test {
 
   /// @notice should fail minting to zero address
   function testMintToZeroAddress() public {
-    vm.expectRevert("ERC721: minting to burn address");
+    vm.expectRevert(bytes(ErrorConstants.ERC721_MINTING_TO_BURN_ADDRESS_ERROR_MSG));
     _mint(address(0), tokenId1, tokenURI1);
   }
 
@@ -367,7 +367,7 @@ contract Erc721Enforcer is Test {
   function testMintExisting() public {
     _mint(alice, tokenId1, tokenURI1);
 
-    vm.expectRevert("ERC721: token already exists");
+    vm.expectRevert(bytes(ErrorConstants.ERC721_TOKEN_ALREADY_EXISTS_ERROR_MSG));
     _mint(alice, tokenId1, tokenURI1);
   }
 
@@ -381,7 +381,7 @@ contract Erc721Enforcer is Test {
     vm.prank(alice);
     holographERC721.burn(tokenId3);
 
-    vm.expectRevert("ERC721: can't mint burned token");
+    vm.expectRevert(bytes(ErrorConstants.ERC721_CANT_MINT_BURNED_TOKEN_ERROR_MSG));
     _mint(alice, tokenId3, tokenURI3);
 
     /// @notice should mark as burned #3 SMPLR NFT
@@ -491,30 +491,30 @@ contract Erc721Enforcer is Test {
   function testTransfer() public {
     _mint(alice, tokenId1, tokenURI1);
 
-    vm.expectRevert("ERC721: not approved sender");
+    vm.expectRevert(bytes(ErrorConstants.ERC721_NOT_APPROVED_SENDER_ERROR_MSG));
     holographERC721.transfer(bob, tokenId1);
 
     /// @notice should fail if transferring to zero address
-    vm.expectRevert("ERC721: use burn instead");
+    vm.expectRevert(bytes(ErrorConstants.ERC721_USE_BURN_INSTEAD_ERROR_MSG));
 
     vm.prank(alice);
     holographERC721.transfer(address(0), tokenId1);
 
     /// @notice should fail if transferring from zero address
-    vm.expectRevert("ERC721: token not owned");
+    vm.expectRevert(bytes(ErrorConstants.ERC721_TOKEN_NOT_OWNED_ERROR_MSG));
 
     vm.prank(alice);
     holographERC721.transferFrom(address(0), bob, tokenId1);
 
     /// @notice should fail if transferring not owned NFT
-    vm.expectRevert("ERC721: not approved sender");
+    vm.expectRevert(bytes(ErrorConstants.ERC721_NOT_APPROVED_SENDER_ERROR_MSG));
 
     holographERC721.transferFrom(alice, bob, tokenId1);
   }
 
   /// @notice should fail if transferring non-existent #3 SMPLR NFT
   function testTransferNonExistent() public {
-    vm.expectRevert("ERC721: token does not exist");
+    vm.expectRevert(bytes(ErrorConstants.ERC721_TOKEN_NOT_EXISTS_ERROR_MSG));
     holographERC721.transfer(alice, 3);
   }
 
@@ -524,20 +524,20 @@ contract Erc721Enforcer is Test {
 
     mockERC721Receiver.toggleWorks(false);
 
-    vm.expectRevert("ERC721: onERC721Received fail");
+    vm.expectRevert(bytes(ErrorConstants.ERC721_onERC721Received_FAIL_ERROR_MSG));
     vm.prank(deployer);
     holographERC721.safeTransferFrom(deployer, address(mockERC721Receiver), tokenId1);
   }
 
   /// @notice should fail for non-contract onERC721Received call
   function testSafeTransferNonContractReceiver() public {
-    vm.expectRevert("ERC721: operator not contract");
+    vm.expectRevert(bytes(ErrorConstants.ERC721_OPERATOR_NOT_CONTRACT_ERROR_MSG));
     holographERC721.onERC721Received(deployer, deployer, tokenId1, "0x");
   }
 
   /// @notice should fail for non-existant NFT onERC721Received call
   function testSafeTransferNonExistentNFT() public {
-    vm.expectRevert("ERC721: token does not exist");
+    vm.expectRevert(bytes(ErrorConstants.ERC721_TOKEN_NOT_EXISTS_ERROR_MSG));
     holographERC721.onERC721Received(Constants.getCxipERC721(), deployer, tokenId1, "0x");
   }
 
@@ -545,7 +545,7 @@ contract Erc721Enforcer is Test {
   function testSafeTransferFakeReceiver() public {
     _mint(deployer, tokenId1, tokenURI1);
 
-    vm.expectRevert("ERC721: contract not token owner");
+    vm.expectRevert(bytes(ErrorConstants.ERC721_CONTRACT_NOT_TOKEN_OWNER_ERROR_MSG));
     holographERC721.onERC721Received(address(holographERC721), deployer, tokenId1, "0x");
   }
 
@@ -697,7 +697,7 @@ contract Erc721Enforcer is Test {
 
   /// @notice should fail burning non-existent #4 SMPLR NFT
   function testBurnNonExistent() public {
-    vm.expectRevert("ERC721: token does not exist");
+    vm.expectRevert(bytes(ErrorConstants.ERC721_TOKEN_NOT_EXISTS_ERROR_MSG));
     holographERC721.burn(tokenId3);
   }
 
@@ -705,7 +705,7 @@ contract Erc721Enforcer is Test {
   function testBurnNotOwned() public {
     _mint(alice, tokenId1, tokenURI1);
 
-    vm.expectRevert("ERC721: not approved sender");
+    vm.expectRevert(bytes(ErrorConstants.ERC721_NOT_APPROVED_SENDER_ERROR_MSG));
     holographERC721.burn(tokenId1);
   }
 
@@ -804,7 +804,7 @@ contract Erc721Enforcer is Test {
 
   /// @notice deployer should fail transferring ownership
   function testTransferOwnership() public {
-    vm.expectRevert("HOLOGRAPH: owner only function");
+    vm.expectRevert(bytes(ErrorConstants.ONLY_OWNER_ERROR_MSG));
     holographERC721.setOwner(alice);
   }
 
@@ -841,7 +841,7 @@ contract Erc721Enforcer is Test {
 
   /// @notice wallet1 should fail setting admin
   function testSetAdmin() public {
-    vm.expectRevert("HOLOGRAPH: admin only function");
+    vm.expectRevert(bytes(ErrorConstants.ONLY_ADMIN_ERROR_MSG));
     holographERC721.setAdmin(alice);
   }
 
