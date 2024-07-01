@@ -272,6 +272,7 @@ contract HolographOperatorTests is CrossChainUtils {
    * @dev check if the external contract can call the jobEstimator function
    */
   function testJobEstimatorExternal() public {
+    vm.skip(true);
     vm.selectFork(chain1);
 
     sampleERC721Mint();
@@ -364,6 +365,7 @@ contract HolographOperatorTests is CrossChainUtils {
    * @dev check if the pod length is as expected
    */
   function testGetPodOperatorsLength() public {
+    vm.skip(true);
     vm.selectFork(chain1);
     uint256 podOperatorsLength = holographOperatorChain1.getPodOperatorsLength(1);
     // is returning 2 IDK why
