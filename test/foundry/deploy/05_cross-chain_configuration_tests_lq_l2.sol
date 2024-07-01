@@ -140,12 +140,12 @@ contract CrossChainConfiguration is Test {
   function deployTestHToken(bool isChain1) private returns (DeploymentConfig memory, bytes32, Verification memory) {
     string memory tokenName = string.concat("Holographed TestToken chain ", ((isChain1) ? "one" : "two"));
     DeploymentConfig memory deployConfig = HelperDeploymentConfig.getDeployConfigERC20(
-      bytes32(0x000000000000000000000000000000000000486f6c6f67726170684552433230), //hToken hash
+      Constants.hTokenHash,
       (isChain1) ? Constants.getHolographIdL1() : Constants.getHolographIdL2(),
       vm.getCode("hTokenProxy.sol:hTokenProxy"),
       tokenName,
       "hTTC1",
-      bytes32(0x0000000000000000000000000000000000000000000000000000000000000000),
+      Constants.EMPTY_BYTES32,
       tokenName,
       HelperDeploymentConfig.getInitCodeHtokenETH()
     );
@@ -673,6 +673,7 @@ VALIDATE CROSS-CHAIN DATA
     HolographDropERC721V2 holographDropERC721V2Chain2 = holographDropERC721V2;
     assertEq(address(holographDropERC721V2Chain1), address(holographDropERC721V2Chain2));
   }
+
   /*
 DEPLOY CROSS-CHAIN CONTRACTS
 */
@@ -810,7 +811,7 @@ DEPLOY CROSS-CHAIN CONTRACTS
     DeploymentConfig memory deployConfig = HelperDeploymentConfig.getERC721(
       Constants.getHolographIdL1(),
       vm.getCode("SampleERC721.sol:SampleERC721"),
-      bytes32(0x0000000000000000000000000000000000000000000000000000000000000086),
+      Constants.eventConfig,
       true
     );
 
@@ -840,7 +841,7 @@ DEPLOY CROSS-CHAIN CONTRACTS
     DeploymentConfig memory deployConfig = HelperDeploymentConfig.getERC721(
       Constants.getHolographIdL2(),
       vm.getCode("SampleERC721.sol:SampleERC721"),
-      bytes32(0x0000000000000000000000000000000000000000000000000000000000000086),
+      Constants.eventConfig,
       false
     );
 
@@ -874,7 +875,7 @@ DEPLOY CROSS-CHAIN CONTRACTS
     DeploymentConfig memory deployConfig = HelperDeploymentConfig.getCxipERC721(
       Constants.getHolographIdL1(),
       vm.getCode("CxipERC721Proxy.sol:CxipERC721Proxy"),
-      bytes32(0x0000000000000000000000000000000000000000000000000000000000000086),
+      Constants.eventConfig,
       true
     );
 
@@ -904,7 +905,7 @@ DEPLOY CROSS-CHAIN CONTRACTS
     DeploymentConfig memory deployConfig = HelperDeploymentConfig.getCxipERC721(
       Constants.getHolographIdL2(),
       vm.getCode("CxipERC721Proxy.sol:CxipERC721Proxy"),
-      bytes32(0x0000000000000000000000000000000000000000000000000000000000000086),
+      Constants.eventConfig,
       false
     );
 
