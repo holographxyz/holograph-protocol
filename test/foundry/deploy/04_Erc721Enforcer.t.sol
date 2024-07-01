@@ -51,7 +51,7 @@ contract Erc721Enforcer is Test {
 
   /// @dev Initializes testing accounts.
   function _setupAccounts() private {
-    deployer = vm.addr(0xff22437ccbedfffafa93a9f1da2e8c19c1711052799acf3b58ae5bebb5c6bd7b);
+    deployer = Constants.getDeployer();
     alice = vm.addr(1);
     bob = vm.addr(2);
     charlie = vm.addr(3);
