@@ -254,9 +254,9 @@ contract HolographOperatorTests is CrossChainUtils {
 
     uint256 gasEstimation = abi.decode(data, (uint256));
     console.log("Gas Estimation: ", gasEstimation);
-
+    
     // note: gas estimation is 8937393460516696182 IDK if this is correct
-    assertTrue(gasEstimation > 0x5af3107a4000, "unexpectedly low gas estimation"); // 0.001 ETH
+    assertTrue(gasEstimation > 100000000000000, "unexpectedly low gas estimation"); // 0.001 ETH
   }
 
   function sampleERC721Mint() public {
