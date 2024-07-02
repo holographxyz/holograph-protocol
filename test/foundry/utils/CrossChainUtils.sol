@@ -417,66 +417,6 @@ contract CrossChainUtils is Test {
     return (deployConfig, hashSampleERC721);
   }
 
-  //TODO: refactoring in progress, re-engineering of tests.
-  function testSampleERC20II() public {
-    (DeploymentConfig memory erc20Config, bytes32 erc20ConfigHash) = getConfigSampleERC20II(true);
-    (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKeyDeployer, erc20ConfigHash);
-    Verification memory signature = Verification({r: r, s: s, v: v});
-    vm.selectFork(chain2);
-    address sampleErc20Address = holographRegistryChain2.getHolographedHashAddress(erc20ConfigHash);
-
-    assertEq(sampleErc20Address, address(0), "ERC20 contract not deployed on chain2");
-
-    vm.selectFork(chain1);
-    sampleErc20Address = holographRegistryChain1.getHolographedHashAddress(erc20ConfigHash);
-
-    vm.selectFork(chain2);
-    bytes memory data = abi.encode(erc20Config, signature, deployer);
-
-    address originalMessagingModule = holographOperatorChain2.getMessagingModule();
-
-    vm.prank(deployer);
-    holographOperatorChain2.setMessagingModule(Constants.getMockLZEndpoint());
-
-    bytes memory payload = getRequestPayload(Constants.getHolographFactoryProxy(), data, true);
-
-    EstimatedGas memory estimatedGas = getEstimatedGas(
-      Constants.getHolographFactoryProxy(),
-      data,
-      payload,
-      true,
-      150000
-    );
-
-    payload = estimatedGas.payload;
-
-    (bool success, ) = address(mockLZEndpointChain2).call{gas: TESTGASLIMIT}(
-      abi.encodeWithSelector(
-        mockLZEndpointChain2.crossChainMessage.selector,
-        address(holographOperatorChain2),
-        getLzMsgGas(payload),
-        payload
-      )
-    );
-
-    vm.prank(deployer);
-    holographOperatorChain2.setMessagingModule(originalMessagingModule);
-
-    vm.expectEmit(true, true, false, false);
-    emit BridgeableContractDeployed(sampleErc20Address, erc20ConfigHash);
-
-    vm.prank(operator);
-    (bool success2, ) = address(holographOperatorChain2).call{gas: estimatedGas.estimatedGas}(
-      abi.encodeWithSelector(holographOperatorChain2.executeJob.selector, payload)
-    );
-
-    assertEq(
-      sampleErc20Address,
-      holographRegistryChain2.getHolographedHashAddress(erc20ConfigHash),
-      "ERC20 contract not deployed on chain2"
-    );
-  }
-
   /**
    * @notice Helper function to deploy SampleERC721 contract on chain2
    * @dev This helper exists because the same logic will be used for other tests
