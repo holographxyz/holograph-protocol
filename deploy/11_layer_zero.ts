@@ -19,7 +19,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   const salt = hre.deploymentSalt;
 
   const currentNetworkType: NetworkType = networks[hre.networkName].type;
-  let lzEndpoint = networks[hre.networkName].lzEndpoint.toLowerCase();
+  let lzEndpoint = networks[hre.networkName].lzEndpoint?.toLowerCase();
 
   if (lzEndpoint) {
     if (currentNetworkType === NetworkType.local && lzEndpoint === zeroAddress) {
