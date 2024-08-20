@@ -4,6 +4,7 @@ pragma solidity 0.8.13;
 
 import "./abstract/Admin.sol";
 import "./abstract/Initializable.sol";
+import "./abstract/SafeERC20.sol";
 
 import "./interface/CrossChainMessageInterface.sol";
 import "./interface/HolographBridgeInterface.sol";
@@ -310,11 +311,15 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
          */
         _bondedAmounts[job.operator] -= amount;
         /**
+         * @dev Loading _utilityToken() into memory to save gas
+         */
+        HolographERC20Interface utilityToken = _utilityToken();
+        /**
          * @dev only allow HLG rewards to go to bonded operators
          *      if operator is bonded, the slashed amount is sent to current operator
          *      otherwise it's sent to HolographTreasury, can be burned or distributed from there
          */
-        _utilityToken().transfer((isBonded ? msg.sender : address(_holograph().getTreasury())), amount);
+        SafeERC20.safeTransfer(utilityToken, (isBonded ? msg.sender : address(_holograph().getTreasury())), amount);
         /**
          * @dev check if slashed operator has enough tokens bonded to stay
          */
@@ -332,7 +337,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
           uint256 leftovers = _bondedAmounts[job.operator];
           if (leftovers > 0) {
             _bondedAmounts[job.operator] = 0;
-            _utilityToken().transfer(job.operator, leftovers);
+            SafeERC20.safeTransfer(utilityToken, job.operator, leftovers);
           }
         }
       } else {
@@ -794,7 +799,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
     /**
      * @dev transfer tokens last, to prevent reentrancy attacks
      */
-    require(_utilityToken().transferFrom(msg.sender, address(this), amount), "HOLOGRAPH: token transfer failed");
+    SafeERC20.safeTransferFrom(_utilityToken(), msg.sender, address(this), amount);
   }
 
   /**
@@ -843,7 +848,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
       /**
        * @dev transfer tokens last, to prevent reentrancy attacks
        */
-      require(_utilityToken().transferFrom(msg.sender, address(this), amount), "HOLOGRAPH: token transfer failed");
+      SafeERC20.safeTransferFrom(_utilityToken(), msg.sender, address(this), amount);
     }
   }
 
@@ -886,7 +891,7 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
     /**
      * @dev transfer tokens to recipient
      */
-    require(_utilityToken().transfer(recipient, amount), "HOLOGRAPH: token transfer failed");
+    SafeERC20.safeTransfer(_utilityToken(), recipient, amount);
   }
 
   /**
