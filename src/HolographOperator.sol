@@ -216,9 +216,9 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
   function recoverJob(bytes calldata bridgeInRequestPayload) external payable onlyAdmin {
     bytes32 hash = keccak256(bridgeInRequestPayload);
     require(_failedJobsV2[hash], "HOLOGRAPH: invalid recovery job");
+    delete (_failedJobsV2[hash]);
     (bool success, ) = _bridge().call{value: msg.value}(bridgeInRequestPayload);
     require(success, "HOLOGRAPH: recovery failed");
-    delete (_failedJobsV2[hash]);
   }
 
   /**
