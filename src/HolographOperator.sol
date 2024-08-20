@@ -1006,6 +1006,11 @@ contract HolographOperator is Admin, Initializable, HolographOperatorInterface {
 
   /**
    * @notice Update the Holograph Utility Token address
+   * @dev WARNING!!!
+   *      This function should only be used in the event of a token migration which should never happen
+   *      Updating this will break all the slashing and bonding logic
+   *      To update the utility token in a safe way before calling this function,
+   *      the _bondedAmounts and _operatorPods arrays should reset to zero
    * @param utilityToken address of the Holograph Utility Token smart contract to use
    */
   function setUtilityToken(address utilityToken) external onlyAdmin {
