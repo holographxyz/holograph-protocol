@@ -15,7 +15,11 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   const deployerAddress = await deployer.signer.getAddress();
   console.log(`Deployer: ${deployerAddress}`);
 
-  if (hre.networkName === 'localhost' || hre.networkName === 'localhost2') {
+  if (
+    hre.networkName === 'localhost' ||
+    hre.networkName === 'localhost2' ||
+    process.env.FORCE_DEPLOY_GENESIS === 'true'
+  ) {
     // Choose the contract based on the network
     const contractName = ['localhost', 'localhost2'].includes(hre.networkName)
       ? 'HolographGenesisLocal'
@@ -24,8 +28,18 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     let holographGenesisContract: Contract | null = await hre.ethers.getContractOrNull(contractName);
     let holographGenesisDeployment: Deployment | null = await hre.deployments.getOrNull(contractName);
 
-    if (!holographGenesisDeployment || holographGenesisContract === null) {
-      console.log(`${contractName} contract not found or deployment record is missing, attempting to deploy...`);
+    if (
+      !holographGenesisDeployment ||
+      holographGenesisContract === null ||
+      process.env.FORCE_DEPLOY_GENESIS === 'true'
+    ) {
+      console.log(
+        `${contractName} ${
+          !holographGenesisDeployment || holographGenesisContract === null
+            ? 'contract not found'
+            : 're-deployment forced'
+        }, attempting to deploy...`
+      );
       // Deploying the contract if not found or if deployment record is missing
       const deploymentOptions = {
         from: deployerAddress,
