@@ -215,13 +215,72 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     } else {
       console.log('Reusing "CxipERC721Proxy" at:', cxipErc721Address);
     }
+
+    let holographLegacyErc721Config = await generateErc721Config(
+      network,
+      deployerAddress,
+      'HolographLegacyERC721Proxy',
+      'Holograph Legacy ERC721 Collection (' + hre.networkName + ')',
+      'HOLOGRAPH LEGACY ERC721',
+      1000,
+      ConfigureEvents([HolographERC721Event.bridgeIn, HolographERC721Event.bridgeOut, HolographERC721Event.afterBurn]),
+      generateInitCode(
+        ['bytes32', 'address', 'bytes'],
+        [
+          '0x' + web3.utils.asciiToHex('HolographLegacyERC721').substring(2).padStart(64, '0'),
+          holographRegistry.address,
+          generateInitCode(['address'], [deployerAddress]),
+        ]
+      ),
+      salt
+    );
+    let holographLegacyErc721Address = await holographRegistry.getHolographedHashAddress(
+      holographLegacyErc721Config.erc721ConfigHash
+    );
+    if (holographLegacyErc721Address === zeroAddress) {
+      console.log('need to deploy "HolographLegacyERC721Proxy" for chain:', chainId);
+      const sig = await deployer.signer.signMessage(holographLegacyErc721Config.erc721ConfigHashBytes);
+      const signature: Signature = StrictECDSA({
+        r: '0x' + sig.substring(2, 66),
+        s: '0x' + sig.substring(66, 130),
+        v: '0x' + sig.substring(130, 132),
+      } as Signature);
+      const deployTx = await holographFactory.deployHolographableContract(
+        holographLegacyErc721Config.erc721Config,
+        signature,
+        deployerAddress,
+        {
+          ...(await txParams({
+            hre,
+            from: deployerAddress,
+            to: holographFactory,
+            data: holographFactory.populateTransaction.deployHolographableContract(
+              holographLegacyErc721Config.erc721Config,
+              signature,
+              deployerAddress
+            ),
+          })),
+        }
+      );
+      const deployResult = await deployTx.wait();
+      if (deployResult.events.length < 2 || deployResult.events[1].event !== 'BridgeableContractDeployed') {
+        throw new Error('BridgeableContractDeployed event not fired');
+      }
+      holographLegacyErc721Address = deployResult.events[1].args[0];
+      console.log(
+        'Deployed "HolographLegacyERC721Proxy" at:',
+        await holographRegistry.getHolographedHashAddress(holographLegacyErc721Config.erc721ConfigHash)
+      );
+    } else {
+      console.log('Reusing "HolographLegacyERC721Proxy" at:', holographLegacyErc721Address);
+    }
   }
 
   console.log(`Exiting script: ${__filename} ✅\n`);
 };
 
 export default func;
-func.tags = ['SampleERC20', 'SampleERC721', 'CxipERC721Proxy'];
+func.tags = ['SampleERC20', 'SampleERC721', 'CxipERC721Proxy', 'HolographLegacyERC721Proxy'];
 func.dependencies = [
   'HolographGenesis',
   'DeploySources',

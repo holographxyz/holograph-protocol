@@ -1,6 +1,10 @@
 import { task } from 'hardhat/config';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
+/**
+ * This script retries a LZ payload on the destination chain.
+ * Usage: `npx hardhat RETRY_PAYLOAD`
+ */
 task('RETRY_PAYLOAD', 'A description for your task').setAction(async (taskArgs, hre: HardhatRuntimeEnvironment) => {
   let srcChainId = 43113; // the lz chain id of the origin chain
 

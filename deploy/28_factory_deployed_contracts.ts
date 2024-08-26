@@ -4,8 +4,6 @@ import path from 'path';
 import { BigNumber, Contract } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from '@holographxyz/hardhat-deploy-holographed/types';
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { Holographer, CxipERC721Proxy } from '../typechain-types';
 import { getDeployer, hreSplit, txParams } from '../scripts/utils/helpers';
 import { NetworkType, networks } from '@holographxyz/networks';
 
@@ -55,6 +53,27 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       console.log('Deployed a "CxipERC721Proxy" empty contract for block explorer verification purposes.');
     }
 
+    const holographLegacyERC721Proxy: Contract | null = await hre.ethers.getContractOrNull(
+      'HolographLegacyERC721Proxy',
+      deployerAddress
+    );
+    if (holographLegacyERC721Proxy === null) {
+      await hre.deployments.deploy('HolographLegacyERC721Proxy', {
+        ...(await txParams({
+          hre,
+          from: deployerAddress,
+          to: '0x0000000000000000000000000000000000000000',
+          gasLimit: await hre.ethers.provider.estimateGas(
+            (await hre.ethers.getContractFactory('HolographLegacyERC721Proxy')).getDeployTransaction()
+          ),
+        })),
+        args: [],
+        log: true,
+        waitConfirmations: 1,
+      } as any);
+      console.log('Deployed a "HolographLegacyERC721Proxy" empty contract for block explorer verification purposes.');
+    }
+
     const holographDropERC721Proxy: Contract | null = await hre.ethers.getContractOrNull(
       'HolographDropERC721Proxy',
       deployerAddress
@@ -74,6 +93,27 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
         waitConfirmations: 1,
       } as any);
       console.log('Deployed a "HolographDropERC721Proxy" empty contract for block explorer verification purposes.');
+    }
+
+    const countdownERC721Proxy: Contract | null = await hre.ethers.getContractOrNull(
+      'CountdownERC721Proxy',
+      deployerAddress
+    );
+    if (countdownERC721Proxy === null) {
+      await hre.deployments.deploy('CountdownERC721Proxy', {
+        ...(await txParams({
+          hre,
+          from: deployerAddress,
+          to: '0x0000000000000000000000000000000000000000',
+          gasLimit: await hre.ethers.provider.estimateGas(
+            (await hre.ethers.getContractFactory('CountdownERC721Proxy')).getDeployTransaction()
+          ),
+        })),
+        args: [],
+        log: true,
+        waitConfirmations: 1,
+      } as any);
+      console.log('Deployed a "CountdownERC721Proxy" empty contract for block explorer verification purposes.');
     }
 
     const holographUtilityToken: Contract | null = await hre.ethers.getContractOrNull(
@@ -123,6 +163,7 @@ export default func;
 func.tags = [
   'Holographer4verify',
   'CxipERC721Proxy4verify',
+  'HolographLegacyERC7214verify',
   'HolographDropERC721Proxy4verify',
   'HolographUtilityToken4verify',
   'hToken4verify',

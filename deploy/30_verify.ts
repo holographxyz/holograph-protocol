@@ -53,6 +53,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   if (currentNetworkType !== NetworkType.local) {
     let contracts: string[] = [
+      // 'HolographGenesis', // This is verified in the HolographGenesis repo
       'HolographUtilityToken',
       'hToken',
       'hTokenProxy',
@@ -65,10 +66,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       'HolographDropERC721',
       'HolographDropERC721V2',
       'HolographDropERC721Proxy',
+      'CountdownERC721',
+      'CountdownERC721Proxy',
       'HolographFactory',
       'HolographFactoryProxy',
       'HolographGeneric',
-      'HolographGenesis',
       'HolographOperator',
       'HolographOperatorProxy',
       'HolographRegistry',
@@ -79,6 +81,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       'HolographRoyalties',
       'CxipERC721',
       'CxipERC721Proxy',
+      'HolographLegacyERC721',
+      'HolographLegacyERC721Proxy',
       'Faucet',
       'LayerZeroModule',
       'LayerZeroModuleProxy',

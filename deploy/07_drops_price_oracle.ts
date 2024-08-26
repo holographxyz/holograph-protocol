@@ -1,7 +1,7 @@
 declare var global: any;
 import path from 'path';
 
-import { BigNumber, ethers } from 'ethers';
+import { BigNumber, Contract, ethers } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { DeployFunction, DeployOptions } from '@holographxyz/hardhat-deploy-holographed/types';
@@ -154,6 +154,62 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     }
   }
 
+  /* -------------------------------------------------------------------------- */
+  /*                                    Base                                    */
+  /* -------------------------------------------------------------------------- */
+
+  if (network.key === 'base' || network.key === 'baseTestnetSepolia') {
+    console.log(`Checking the quoter address on ${network.key} network`);
+
+    // Define the expected quoter address for each network
+    const expectedQuoterAddresses = {
+      base: '0x3d4e44eb1374240ce5f1b871ab261cd16335b76a',
+      baseTestnetSepolia: '0xC5290058841028F1614F3A6F0F5816cAd0df5E27',
+    };
+
+    // Get the expected quoter address based on the current network
+    const quoterAddress = expectedQuoterAddresses[network.key];
+
+    const priceOracleContractProxy = await hre.ethers.getContract('DropsPriceOracleProxy', deployerAddress);
+
+    const priceOracleContract = (await hre.ethers.getContractAt(
+      'DropsPriceOracleBaseTestnetSepolia',
+      priceOracleContractProxy.address,
+      deployerAddress
+    )) as Contract;
+
+    // Retrieve the current 'quoterV2' address and convert it to lowercase
+    const currentQuoterAddress = (await priceOracleContract.quoterV2()).toLowerCase();
+
+    // Compare the current quoter address with the expected address
+    if (currentQuoterAddress !== quoterAddress) {
+      console.log('Quoter address not set to expected address, updating...');
+
+      const setQuoterTx = await MultisigAwareTx(
+        hre,
+        'DropsPriceOracleBaseTestnetSepolia',
+        priceOracleContract,
+        await priceOracleContract.populateTransaction.setQuoter(quoterAddress, {
+          ...(await txParams({
+            hre,
+            from: deployerAddress,
+            to: priceOracleContract.address,
+            data: priceOracleContract.populateTransaction.setQuoter(quoterAddress),
+          })),
+        })
+      );
+
+      console.log('Transaction hash:', setQuoterTx.hash);
+      await setQuoterTx.wait();
+    } else {
+      console.log('Quoter address is already set correctly.');
+    }
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /*                                   Mantle                                   */
+  /* -------------------------------------------------------------------------- */
+
   if (network.key === 'mantleTestnet') {
     console.log('Checking token price ratio on mantle testnet');
     const priceOracleContract = (
@@ -180,6 +236,10 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
       console.log('price ratio is set');
     }
   }
+
+  /* -------------------------------------------------------------------------- */
+  /*                                  Localhost                                 */
+  /* -------------------------------------------------------------------------- */
 
   // We manually inject drops price oracle proxy on local deployments
   // this is to accomodate the fact that drops price oracle proxy is hardcoded in the contract

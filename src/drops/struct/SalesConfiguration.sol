@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.13;
 
-/// @notice Sales states and configuration
+/// @notice Sales states and configuration (Can be set by the owner)
 /// @dev Uses 3 storage slots
 struct SalesConfiguration {
   /// @dev Public sale price (max ether value > 1000 ether with this value)

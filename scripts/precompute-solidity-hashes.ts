@@ -106,9 +106,10 @@ const processFile = async (filePath: string): Promise<void> => {
   await fs.writeFile(filePath, content, { encoding: 'utf8' });
 };
 
-// Your main function and other logic remains unchanged
-
-// Main function to find and process files
+/**
+ * This script precomputes hashes for the smart contracts anywhere the special precompute keywords are used.
+ * Usage: `npx ts-node scripts/precompute-solidity-hashes.ts`
+ */
 const main = async () => {
   console.log('Finding .sol files...');
   const srcDir = path.join(__dirname, '../src');

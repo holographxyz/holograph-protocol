@@ -15,7 +15,6 @@ import { types, task, HardhatUserConfig } from 'hardhat/config';
 import './scripts/bridge-htokens';
 import './scripts/h-token-balance';
 import './scripts/extract-native-token';
-import '@holographxyz/hardhat-holograph-contract-builder';
 import { BigNumber, ethers } from 'ethers';
 import { Environment, getEnvironment } from '@holographxyz/environment';
 import { NetworkType, Network, Networks, networks } from '@holographxyz/networks';

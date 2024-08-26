@@ -26,6 +26,19 @@ echo "✅ Solidity hashes precomputed.\n\n"
 # ---------------------------------------------------------------------------- #
 
 # ------------------------------ Natspec smells ------------------------------ #
+# echo "👉 Checking for missing natspecs..."
+# natspecSmellsOutput=$(npx @defi-wonderland/natspec-smells 2>&1)
+
+# # Compare the trimmed output to "No issues found"
+# if [ "$natspecSmellsOutput" != "No issues found" ]; then
+#   echo "⛔️ Missing documentation or errors have been found:"
+#   echo "$natspecSmellsOutput"
+#   exit 1
+# else
+#   echo "✅ No missing natspecs detected.\n"
+# fi
+
+# ------------------------------- Gas snapshot ------------------------------- #
 ## check for env feature flag for natspec-smells. Default to true
 # if [ "$SKIP_NATSPEC_SMELLS" = "true" ]; then
 #   echo "👉 Skipping natspec-smells check..."
@@ -50,4 +63,3 @@ echo "✅ Solidity hashes precomputed.\n\n"
 # echo "👉 Checking gas snapshots..."
 # npm run snapshot:check
 # echo "✅ Gas snapshots are up to date.\n\n"
-

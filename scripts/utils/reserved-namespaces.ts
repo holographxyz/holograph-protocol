@@ -7,6 +7,9 @@ const reservedNamespaces: string[] = [
   'HolographERC721',
   'HolographDropERC721',
   'HolographDropERC721V2',
+  'CustomERC721',
+  'CountdownERC721',
+  'HolographLegacyERC721',
   'HolographDropERC1155',
   'HolographERC1155',
   'CxipERC721',
@@ -21,5 +24,7 @@ const reservedNamespaces: string[] = [
 const reservedNamespaceHashes: string[] = reservedNamespaces.map((nameSpace: string) => {
   return '0x' + web3.utils.asciiToHex(nameSpace).substring(2).padStart(64, '0');
 });
+
+console.log(reservedNamespaces[6], reservedNamespaceHashes[6]);
 
 export { reservedNamespaces, reservedNamespaceHashes };
