@@ -22,6 +22,11 @@ import { Environment, getEnvironment } from '@holographxyz/environment';
 const FIVE_MILLION_TOKENS = '5000000000000000000000000'; // 5 million tokens denominated in wei
 
 const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
+  if (process.env.HOLOGRAPH_ENVIRONMENT === 'testnet') {
+    console.log('Skipping faucet deployment on testnet');
+    return;
+  }
+
   console.log(`Starting deploy script: ${path.basename(__filename)} 👇`);
   let { hre, hre2 } = await hreSplit(hre1, global.__companionNetwork);
   const deployer = await getDeployer(hre);

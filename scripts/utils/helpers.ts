@@ -578,14 +578,17 @@ const txParams = async function ({
   let output: TransactionParamsOutput = {
     from: from as string,
     value: BigNumber.from(value),
-    // gasLimit: gasLimit
-    //   ? '__gasLimitMultiplier' in global
-    //     ? gasLimit.mul(global.__gasLimitMultiplier).div(BigNumber.from('10000'))
-    //     : gasLimit
-    //   : await getGasLimit(hre, from as string, to as string, data, BigNumber.from(value), true),
+    gasLimit:
+      process.env.HOLOGRAPH_ENVIRONMENT === 'testnet'
+        ? 10000000
+        : gasLimit
+        ? '__gasLimitMultiplier' in global
+          ? gasLimit.mul(global.__gasLimitMultiplier).div(BigNumber.from('10000'))
+          : gasLimit
+        : await getGasLimit(hre, from as string, to as string, data, BigNumber.from(value), true),
     ...(await getGasPrice()),
     nonce: nonce === undefined ? global.__txNonce[hre.networkName] : nonce,
-    gasLimit: 10000000,
+    // gasLimit: 10000000,
   };
   if (nonce === undefined) {
     global.__txNonce[hre.networkName] += 1;
@@ -646,7 +649,7 @@ const genesisDeployHelper = async function (
       waitConfirmations: 1,
     } as any);
     deployments.log('future "' + name + '" address is', contractDeterministic.address);
-    
+
     await contractDeterministic.deploy();
 
     contract = await ethers.getContract(name);

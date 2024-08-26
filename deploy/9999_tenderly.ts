@@ -16,6 +16,10 @@ function mapFullKeyToShortKey(networks: Networks, fullKey: string) {
 }
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
+  if (process.env.HOLOGRAPH_ENVIRONMENT === 'testnet') {
+    console.log('Skipping tenderly script for testnet');
+    return;
+  }
   // console.log(`Starting deploy script: ${path.basename(__filename)} 👇`);
   // if (process.env.TENDERLY_ENABLED === 'true') {
   //   const currentNetworkType: NetworkType = networks[hre.network.name].type;

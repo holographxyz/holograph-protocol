@@ -102,7 +102,8 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   // NOTICE: At the moment the HLG contract's address is reliant on the deployerAddress which prevents multiple approved deployers from deploying the same address. This is a temporary solution until the HLG contract is upgraded to allow any deployerAddress to be used.
   // NOTE: Use hardcoded version of deployerAddress from Ledger hardware only for testnet and mainnet envs
   // If environment is develop use the signers deployerAddress
-  let erc20DeployerAddress = '0xBB566182f35B9E5Ae04dB02a5450CC156d2f89c1'; // Ledger deployerAddress
+  let erc20DeployerAddress =
+    process.env.HOLOGRAPH_ENVIRONMENT === 'testnet' ? deployerAddress : '0xBB566182f35B9E5Ae04dB02a5450CC156d2f89c1'; // Ledger deployerAddress
 
   // If environment is develop or localhost use the signers deployerAddress (the hardcoded version is only for testnet and mainnet envs)
   if (environment === Environment.develop || environment === Environment.localhost) {
@@ -233,7 +234,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     );
   }
 
-  console.log('Checking HolographOperator HLG balance');
+  console.log('Checking HolographOperator HLG balance', operatorAddress, hlgTokenAddress);
   if (currentNetworkType == NetworkType.testnet || currentNetworkType == NetworkType.local) {
     if (environment !== Environment.mainnet && environment !== Environment.testnet) {
       const hlgContract = (await hre.ethers.getContract('HolographERC20', deployerAddress)).attach(hlgTokenAddress);
