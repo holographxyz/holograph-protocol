@@ -1,7 +1,7 @@
 declare var global: any;
 import fs from 'fs';
 import path from 'path';
-// import '@typechain/hardhat';
+import '@typechain/hardhat';
 import 'hardhat-gas-reporter';
 import '@holographxyz/hardhat-deploy-holographed';
 import '@nomiclabs/hardhat-waffle';
