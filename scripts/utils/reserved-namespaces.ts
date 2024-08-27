@@ -25,6 +25,4 @@ const reservedNamespaceHashes: string[] = reservedNamespaces.map((nameSpace: str
   return '0x' + web3.utils.asciiToHex(nameSpace).substring(2).padStart(64, '0');
 });
 
-console.log(reservedNamespaces[6], reservedNamespaceHashes[6]);
-
 export { reservedNamespaces, reservedNamespaceHashes };
