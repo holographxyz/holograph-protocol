@@ -1292,7 +1292,7 @@
   "storageLayout": {
     "storage": [
       {
-        "astId": 2644,
+        "astId": 2652,
         "contract": "src/HolographOperator.sol:HolographOperator",
         "label": "_blockTime",
         "offset": 0,
@@ -1300,7 +1300,7 @@
         "type": "t_uint256"
       },
       {
-        "astId": 2647,
+        "astId": 2655,
         "contract": "src/HolographOperator.sol:HolographOperator",
         "label": "_baseBondAmount",
         "offset": 0,
@@ -1308,7 +1308,7 @@
         "type": "t_uint256"
       },
       {
-        "astId": 2650,
+        "astId": 2658,
         "contract": "src/HolographOperator.sol:HolographOperator",
         "label": "_podMultiplier",
         "offset": 0,
@@ -1316,7 +1316,7 @@
         "type": "t_uint256"
       },
       {
-        "astId": 2653,
+        "astId": 2661,
         "contract": "src/HolographOperator.sol:HolographOperator",
         "label": "_operatorThreshold",
         "offset": 0,
@@ -1324,7 +1324,7 @@
         "type": "t_uint256"
       },
       {
-        "astId": 2656,
+        "astId": 2664,
         "contract": "src/HolographOperator.sol:HolographOperator",
         "label": "_operatorThresholdStep",
         "offset": 0,
@@ -1332,7 +1332,7 @@
         "type": "t_uint256"
       },
       {
-        "astId": 2659,
+        "astId": 2667,
         "contract": "src/HolographOperator.sol:HolographOperator",
         "label": "_operatorThresholdDivisor",
         "offset": 0,
@@ -1340,7 +1340,7 @@
         "type": "t_uint256"
       },
       {
-        "astId": 2662,
+        "astId": 2670,
         "contract": "src/HolographOperator.sol:HolographOperator",
         "label": "_inboundMessageCounter",
         "offset": 0,
@@ -1348,7 +1348,7 @@
         "type": "t_uint256"
       },
       {
-        "astId": 2667,
+        "astId": 2675,
         "contract": "src/HolographOperator.sol:HolographOperator",
         "label": "_deprecatedOperatorJobs",
         "offset": 0,
@@ -1356,7 +1356,7 @@
         "type": "t_mapping(t_bytes32,t_uint256)"
       },
       {
-        "astId": 2672,
+        "astId": 2680,
         "contract": "src/HolographOperator.sol:HolographOperator",
         "label": "_deprecatedFailedJobs",
         "offset": 0,
@@ -1364,7 +1364,7 @@
         "type": "t_mapping(t_bytes32,t_bool)"
       },
       {
-        "astId": 2677,
+        "astId": 2685,
         "contract": "src/HolographOperator.sol:HolographOperator",
         "label": "_operatorTempStorage",
         "offset": 0,
@@ -1372,7 +1372,7 @@
         "type": "t_mapping(t_uint256,t_address)"
       },
       {
-        "astId": 2680,
+        "astId": 2688,
         "contract": "src/HolographOperator.sol:HolographOperator",
         "label": "_operatorTempStorageCounter",
         "offset": 0,
@@ -1380,7 +1380,7 @@
         "type": "t_uint32"
       },
       {
-        "astId": 2685,
+        "astId": 2693,
         "contract": "src/HolographOperator.sol:HolographOperator",
         "label": "_operatorPods",
         "offset": 0,
@@ -1388,7 +1388,7 @@
         "type": "t_array(t_array(t_address)dyn_storage)dyn_storage"
       },
       {
-        "astId": 2690,
+        "astId": 2698,
         "contract": "src/HolographOperator.sol:HolographOperator",
         "label": "_bondedOperators",
         "offset": 0,
@@ -1396,7 +1396,7 @@
         "type": "t_mapping(t_address,t_uint256)"
       },
       {
-        "astId": 2695,
+        "astId": 2703,
         "contract": "src/HolographOperator.sol:HolographOperator",
         "label": "_operatorPodIndex",
         "offset": 0,
@@ -1404,7 +1404,7 @@
         "type": "t_mapping(t_address,t_uint256)"
       },
       {
-        "astId": 2700,
+        "astId": 2708,
         "contract": "src/HolographOperator.sol:HolographOperator",
         "label": "_bondedAmounts",
         "offset": 0,
