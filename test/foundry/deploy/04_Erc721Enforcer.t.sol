@@ -76,6 +76,12 @@ contract Erc721Enforcer is Test {
    * CHECK INTERFACES
    */
 
+  /// @notice Should support supportsInterface interface
+  function testSupportinterface() public {
+    bytes4 selector = holographERC721.supportsInterface.selector;
+    holographERC721.supportsInterface(selector);
+  }
+
   /// @notice Should support balanceOf interface
   function testBalanceOfInterface() public {
     bytes4 selector = holographERC721.balanceOf.selector;

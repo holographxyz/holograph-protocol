@@ -9,16 +9,16 @@ import {IDropsPriceOracle} from "../interface/IDropsPriceOracle.sol";
 import {IUniswapV2Pair} from "./interface/IUniswapV2Pair.sol";
 
 contract DropsPriceOracleOptimismTestnetSepolia is Admin, Initializable, IDropsPriceOracle {
-// TODO: add correct addresses for Sepolia. These might not all be available at the moment so they're hardcoded values from Goerli
-//   address constant WETH = 0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6; // 18 decimals
-//   address constant USDC = 0x8267cF9254734C6Eb452a7bb9AAF97B392258b21; // 6 decimals
-//   address constant USDT = 0x0000000000000000000000000000000000000000; // 6 decimals
+  // TODO: add correct addresses for Sepolia. These might not all be available at the moment so they're hardcoded values from Goerli
+  //   address constant WETH = 0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6; // 18 decimals
+  //   address constant USDC = 0x8267cF9254734C6Eb452a7bb9AAF97B392258b21; // 6 decimals
+  //   address constant USDT = 0x0000000000000000000000000000000000000000; // 6 decimals
 
-//   IUniswapV2Pair constant SushiV2UsdcPool = IUniswapV2Pair(0x0000000000000000000000000000000000000000);
-//   IUniswapV2Pair constant SushiV2UsdtPool = IUniswapV2Pair(0x0000000000000000000000000000000000000000);
+  //   IUniswapV2Pair constant SushiV2UsdcPool = IUniswapV2Pair(0x0000000000000000000000000000000000000000);
+  //   IUniswapV2Pair constant SushiV2UsdtPool = IUniswapV2Pair(0x0000000000000000000000000000000000000000);
 
-//   IUniswapV2Pair constant UniV2UsdcPool = IUniswapV2Pair(0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc);
-//   IUniswapV2Pair constant UniV2UsdtPool = IUniswapV2Pair(0x0000000000000000000000000000000000000000);
+  //   IUniswapV2Pair constant UniV2UsdcPool = IUniswapV2Pair(0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc);
+  //   IUniswapV2Pair constant UniV2UsdtPool = IUniswapV2Pair(0x0000000000000000000000000000000000000000);
 
   /**
    * @dev Constructor is left empty and init is used instead

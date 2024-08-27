@@ -14,3 +14,16 @@ library Utils {
     return result >> (8 * (32 - bytes(input).length));
   }
 }
+
+library RandomAddress {
+    /**
+     * @notice Generate a random address for testing purposes.
+     * @dev This function generates a random address by hashing the current block timestamp and difficulty
+     * using the keccak256 algorithm, and then converting the resulting hash to an address.
+     * @return address A randomly generated address.
+     */
+    function randomAddress() public view returns (address) {
+        uint256 randomNum = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty)));
+        return address(uint160(randomNum));
+    }
+}

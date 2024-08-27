@@ -42,6 +42,7 @@
     "anvil": ". ./.env ; anvil --accounts=11 --block-base-fee-per-gas=0 --mnemonic=\"$MNEMONIC\" --port=8545 --host=0.0.0.0 --chain-id=1338 & anvil --accounts=11 --mnemonic=\"$MNEMONIC\" --block-base-fee-per-gas=0 --port=9545 --host=0.0.0.0 --chain-id=1339",
     "test": "hardhat test",
     "tests": "hardhat test",
+    "quicktest": "forge test --no-match-test \"(Fuzz|Invariant)\"",
     "typechain": "hardhat typechain",
     "verify": "hardhat verify",
     "prepare": "husky install",
@@ -52,7 +53,10 @@
     "prettier:deployments": "hardhat deploymentsPrettier",
     "natspec": "npx natspec-smells &> natspec-smells.report.txt",
     "snapshot": "FOUNDRY_PROFILE=ci forge snapshot --no-match-test \"(FFI|Fork|Fuzz)\" --offline",
-    "snapshot:check": "FOUNDRY_PROFILE=ci forge snapshot --no-match-test \"(FFI|Fork|Fuzz)\" --check --offline"
+    "snapshot:check": "FOUNDRY_PROFILE=ci forge snapshot --no-match-test \"(FFI|Fork|Fuzz)\" --check --offline",
+    "start": "bash ./scripts/stop-protocol.sh && bash ./scripts/start-protocol.sh",
+    "stop": "bash ./scripts/stop-protocol.sh",
+    "coverage": "forge coverage --report lcov && genhtml lcov.info --ignore-errors inconsistent -o coverage/output/ && open coverage/output/index.html"
   },
   "dependencies": {
     "@ethersproject/abstract-provider": "^5.7.0",
@@ -64,7 +68,13 @@
     "@holographxyz/hardhat-deploy-holographed": "^0.0.6",
     "@holographxyz/holograph-genesis": "0.2.2",
     "@holographxyz/networks": "0.2.11",
+    "@safe-global/api-kit": "^2.3.1",
+    "@safe-global/protocol-kit": "^3.1.0",
+    "@safe-global/safe-core-sdk-types": "^4.1.0",
     "@types/yargs": "^17.0.32",
+    "csv-parse": "^5.5.5",
+    "ethers-v6": "npm:ethers@6.12.1",
+    "zod": "^3.22.4",
     "chai-ethers": "^0.0.1",
     "ganache": "^7.9.2",
     "hardhat-preprocessor": "^0.1.5",

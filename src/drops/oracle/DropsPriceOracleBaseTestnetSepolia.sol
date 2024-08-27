@@ -1,21 +1,19 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.13;
 
 import {Admin} from "../../abstract/Admin.sol";
 import {Initializable} from "../../abstract/Initializable.sol";
+import {IQuoterV2} from "../../interface/IQuoterV2.sol";
 
-import {IDropsPriceOracle} from "../interface/IDropsPriceOracle.sol";
+contract DropsPriceOracleBaseTestnetSepolia is Admin, Initializable {
+  IQuoterV2 public quoterV2; // Immutable reference to the Quoter V2 interface
 
-contract DropsPriceOracleBaseTestnetGoerli is Admin, Initializable, IDropsPriceOracle {
-  /**
-   * @dev bytes32(uint256(keccak256('eip1967.Holograph.tokenPriceRatio')) - 1)
-   */
-  bytes32 constant _tokenPriceRatioSlot = 0x562ce994878444f1ca8bcf3afcea513b950965abed659462312e8fdd38c020a1;
+  address public constant WETH9 = 0x4200000000000000000000000000000000000006; // WETH address on Base Sepolia testnet
+  address public constant USDC = 0x036CbD53842c5426634e7929541eC2318f3dCF7e; // USDC address on Base Sepolia testnet
 
-  /**
-   * @dev Constructor is left empty and init is used instead
-   */
+  // Set the pool fee to 0.05% (the lowest option)
+  uint24 public constant poolFee = 500;
+
   constructor() {}
 
   /**
@@ -26,49 +24,34 @@ contract DropsPriceOracleBaseTestnetGoerli is Admin, Initializable, IDropsPriceO
     require(!_isInitialized(), "HOLOGRAPH: already initialized");
     assembly {
       sstore(_adminSlot, origin())
-      sstore(_tokenPriceRatioSlot, 0x0000000000000000000000000000000000000000000000d8d726b7177a800000)
     }
+
     _setInitialized();
     return Initializable.init.selector;
   }
 
+  function setQuoter(address _quoterV2Address) public onlyAdmin {
+    quoterV2 = IQuoterV2(_quoterV2Address);
+  }
+
   /**
-   * @notice Convert USD value to native gas token value
-   * @param usdAmount a 6 decimal places USD amount
+   * @notice Converts USDC value to native gas token value in wei
+   * @dev It is important to note that different USD stablecoins use different decimal places.
+   * @param usdAmount in USDC (6 decimal places)
    */
-  function convertUsdToWei(uint256 usdAmount) external view returns (uint256 weiAmount) {
-    // USD is with 6 decimal places
-    // WETH  is with 18 decimal places
-    // we add decimal places for USD to match WETH  decimals
-    usdAmount = usdAmount * (10 ** (18 - 6));
-    // x is always native token / WETH
-    // we use precision of 21
-    uint256 x = 1000000000000000000 * (10 ** 21);
-    // y is always USD token / USDC
-    // load token price ratio
-    uint256 tokenPriceRatio;
-    assembly {
-      tokenPriceRatio := sload(_tokenPriceRatioSlot)
-    }
-    // in our case, we use ratio for defining USD cost of 1 WETH
-    // we use precision of 21
-    uint256 y = tokenPriceRatio * (10 ** 21);
-
-    uint256 numerator = x * usdAmount;
-    uint256 denominator = y - usdAmount;
-
-    weiAmount = (numerator / denominator) + 1;
-  }
-
-  function getTokenPriceRatio() external view returns (uint256 tokenPriceRatio) {
-    assembly {
-      tokenPriceRatio := sload(_tokenPriceRatioSlot)
-    }
-  }
-
-  function setTokenPriceRatio(uint256 tokenPriceRatio) external onlyAdmin {
-    assembly {
-      sstore(_tokenPriceRatioSlot, tokenPriceRatio)
-    }
+  function convertUsdToWei(uint256 usdAmount) external returns (uint256 weiAmount) {
+    // NOTE: The following code is commented out because the QuoterV2 contract is not properly wired up to a functional Uniswap V3 pool on the Sepolia testnet
+    // require(address(quoterV2) != address(0), "Quoter not set");
+    // IQuoterV2.QuoteExactOutputSingleParams memory params = IQuoterV2.QuoteExactOutputSingleParams({
+    //   tokenIn: WETH9, // WETH address
+    //   tokenOut: USDC, // USDC address
+    //   fee: poolFee, // Representing 0.05% pool fee
+    //   amount: usdAmount, // USDC (USDC has 6 decimals)
+    //   sqrtPriceLimitX96: 0 // No specific price limit
+    // });
+    // (uint256 amountIn, uint160 sqrtPriceX96After, uint32 initializedTicksCrossed, uint256 gasEstimate) = quoterV2
+    //   .quoteExactOutputSingle(params);
+    // return amountIn; // this is the amount in wei to convert to the USDC value
+    weiAmount = 3097578139223040;
   }
 }

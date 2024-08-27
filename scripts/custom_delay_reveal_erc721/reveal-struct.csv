@@ -1,0 +1,4 @@
+BatchId,Name,Range,PlaceholderURI Path,RevealURI Path,Key,ProvenanceHash,EncryptedURI,Should Decrypt
+1,Track 1,200,teste/metadata.json,real/metadata.json,0x1234,,,false
+2,Track 2,200,teste/metadata.json,real/metadata.json,0x1234,,,false
+3,Track 3,200,teste/metadata.json,real/metadata.json,0x1234,,,false

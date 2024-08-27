@@ -246,11 +246,7 @@ contract HolographGenesis {
    * @param approve Approval status in the message
    * @return bytes32 Ethereum signed message hash
    */
-  function getMessageHash(
-    uint256 nonce,
-    address newDeployer,
-    bool approve
-  ) public pure returns (bytes32) {
+  function getMessageHash(uint256 nonce, address newDeployer, bool approve) public pure returns (bytes32) {
     return keccak256(abi.encodePacked(nonce, newDeployer, approve));
   }
 
@@ -291,15 +287,7 @@ contract HolographGenesis {
    * @return s The s component of the signature.
    * @return v The recovery id component of the signature.
    */
-  function splitSignature(bytes memory sig)
-    internal
-    pure
-    returns (
-      bytes32 r,
-      bytes32 s,
-      uint8 v
-    )
-  {
+  function splitSignature(bytes memory sig) internal pure returns (bytes32 r, bytes32 s, uint8 v) {
     require(sig.length == 65, "Invalid signature length");
 
     assembly {

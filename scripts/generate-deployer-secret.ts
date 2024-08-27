@@ -1,6 +1,10 @@
 import { ethers } from 'ethers';
 require('dotenv').config();
 
+/**
+ * This script generates a secret hash for deployer NFTs.
+ * Usage: `npx ts-node scripts/generate-deployer-secret.ts`
+ */
 async function main() {
   const secretString = process.env.DEPLOYER_SECRET;
 

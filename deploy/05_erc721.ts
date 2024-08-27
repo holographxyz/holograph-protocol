@@ -68,6 +68,7 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     console.log('"HolographERC721" is already deployed.');
   }
 
+  // CxipERC721
   const futureCxipErc721Address = await genesisDeriveFutureAddress(
     hre,
     salt,
@@ -76,7 +77,6 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
   );
   console.log('the future "CxipERC721" address is', futureCxipErc721Address);
 
-  // CxipERC721
   let cxipErc721DeployedCode: string = await hre.provider.send('eth_getCode', [futureCxipErc721Address, 'latest']);
   if (cxipErc721DeployedCode === '0x' || cxipErc721DeployedCode === '') {
     console.log('"CxipERC721" bytecode not found, need to deploy"');
@@ -91,9 +91,35 @@ const func: DeployFunction = async function (hre1: HardhatRuntimeEnvironment) {
     console.log('"CxipERC721" is already deployed.');
   }
 
+  // HolographLegacyERC721
+  const futureHolographLegacyErc721Address = await genesisDeriveFutureAddress(
+    hre,
+    salt,
+    'HolographLegacyERC721',
+    generateInitCode(['address'], [deployerAddress])
+  );
+  console.log('the future "HolographLegacyERC721" address is', futureHolographLegacyErc721Address);
+
+  let holographLegacyErc721DeployedCode: string = await hre.provider.send('eth_getCode', [
+    futureHolographLegacyErc721Address,
+    'latest',
+  ]);
+  if (holographLegacyErc721DeployedCode === '0x' || holographLegacyErc721DeployedCode === '') {
+    console.log('"HolographLegacyERC721" bytecode not found, need to deploy"');
+    let HolographLegacyErc721 = await genesisDeployHelper(
+      hre,
+      salt,
+      'HolographLegacyERC721',
+      generateInitCode(['address'], [deployerAddress]),
+      futureHolographLegacyErc721Address
+    );
+  } else {
+    console.log('"HolographLegacyERC721" is already deployed.');
+  }
+
   console.log(`Exiting script: ${__filename} ✅\n`);
 };
 
 export default func;
-func.tags = ['HolographERC721', 'CxipERC721', 'DeployERC721'];
+func.tags = ['HolographERC721', 'CxipERC721', 'HolographLegacyERC721', 'DeployERC721'];
 func.dependencies = ['HolographGenesis', 'DeploySources'];
