@@ -580,7 +580,7 @@ const txParams = async function ({
     value: BigNumber.from(value),
     gasLimit:
       process.env.HOLOGRAPH_ENVIRONMENT === 'testnet'
-        ? 10000000
+        ? 1000000000
         : gasLimit
         ? '__gasLimitMultiplier' in global
           ? gasLimit.mul(global.__gasLimitMultiplier).div(BigNumber.from('10000'))
