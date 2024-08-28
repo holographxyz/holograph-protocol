@@ -68,6 +68,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       'HolographDropERC721Proxy',
       'CountdownERC721',
       'CountdownERC721Proxy',
+      'CustomERC721',
+      'CustomERC721Proxy',
       'HolographFactory',
       'HolographFactoryProxy',
       'HolographGeneric',
