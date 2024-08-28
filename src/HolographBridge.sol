@@ -197,8 +197,6 @@ contract HolographBridge is Admin, Initializable, HolographBridgeInterface {
     bool doNotRevert,
     bytes calldata bridgeInPayload
   ) external payable onlyOperator {
-    revert("HOLOGRAPH: BridgeInRequest is currently disabled");
-
     /**
      * @dev check that the target contract is either Holograph Factory or a deployed holographable contract
      */
@@ -251,8 +249,6 @@ contract HolographBridge is Admin, Initializable, HolographBridgeInterface {
     uint256 gasPrice,
     bytes calldata bridgeOutPayload
   ) external payable {
-    revert("HOLOGRAPH: BridgeOutRequest is currently disabled");
-
     /**
      * @dev check that the target contract is either Holograph Factory or a deployed holographable contract
      */
