@@ -4,6 +4,7 @@ pragma solidity 0.8.13;
 
 import "../abstract/Admin.sol";
 import "../abstract/Initializable.sol";
+import "../abstract/OApp.sol";
 
 import "../enum/ChainIdType.sol";
 
@@ -15,16 +16,11 @@ import "../interface/LayerZeroModuleInterface.sol";
 import "../interface/LayerZeroOverrides.sol";
 import "../interface/ILayerZeroPriceFeed.sol";
 import "../interface/IWorker.sol";
+import "../interface/ILayerZeroEndpointV2.sol";
 
 import "../struct/GasParameters.sol";
 
 import "./OVM_GasPriceOracle.sol";
-
-struct Origin {
-  uint32 srcEid;
-  bytes32 sender;
-  uint64 nonce;
-}
 
 /**
  * @title Holograph LayerZero Module
@@ -32,7 +28,7 @@ struct Origin {
  * @notice Holograph module for enabling LayerZero cross-chain messaging
  * @dev This contract abstracts all of the LayerZero specific logic into an isolated module
  */
-contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, LayerZeroModuleInterface {
+contract LayerZeroModuleV2 is OApp, Admin, Initializable, CrossChainMessageInterface, LayerZeroModuleInterface,  {
   /**
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.bridge')) - 1)
    */
@@ -62,6 +58,11 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
    */
   bytes32 constant _optimismGasPriceOracleSlot = 0x46043c284a96474ab4a54c741ea0d0fce54e98eea878b99d4b85808fa6f71a5f;
   /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.layerzero.endpoint')) - 1)
+   */
+  bytes32 constant _enpointSlot = 0xeaca2d84e379be6c2262b0d6c3185528c336571fedeb1961096c6f42216d1c00;
+
+  /**
    * @dev mapping of trusted remote chains to their respective LayerZero Endpoint addresses
    */
   mapping(uint16 => bytes) public trustedRemoteLookup;
@@ -83,20 +84,35 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
       address interfaces,
       address operator,
       address optimismGasPriceOracle,
+      address lzEndpoint,
       uint32[] memory chainIds,
-      GasParameters[] memory gasParameters
-    ) = abi.decode(initPayload, (address, address, address, address, uint32[], GasParameters[]));
+      GasParameters[] memory gasParameters,
+      EndpointPeer[] memory peers
+    ) = abi.decode(initPayload, (address, address, address, address, address, uint32[], GasParameters[], EndpointPeer[]));
+    
+    require(chainIds.length == gasParameters.length, "HOLOGRAPH: wrong array lengths");
+    require(_endpoint != address(0), "HOLOGRAPH: invalid endpoint");
+    
+    // Set the initial values for the contract
     assembly {
       sstore(_adminSlot, origin())
       sstore(_bridgeSlot, bridge)
       sstore(_interfacesSlot, interfaces)
       sstore(_operatorSlot, operator)
       sstore(_optimismGasPriceOracleSlot, optimismGasPriceOracle)
+      sstore(_enpointSlot, lzEndpoint)
     }
-    require(chainIds.length == gasParameters.length, "HOLOGRAPH: wrong array lengths");
+
+    // Set the gas parameters for the default chain and any additional chains
     for (uint256 i = 0; i < chainIds.length; i++) {
       _setGasParameters(chainIds[i], gasParameters[i]);
     }
+
+    // Set the trusted peers
+    for (uint256 i = 0; i < peers.length; i++) {
+      _setPeer(peers[i].eid, peers[i].peer);
+    }
+
     _setInitialized();
     return InitializableInterface.init.selector;
   }
@@ -166,6 +182,17 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
       lZEndpoint := sload(_lZEndpointSlot)
     }
     GasParameters memory gasParameters = _gasParameters(toChain);
+    MessagingParams memory params = MessagingParams(
+      uint32(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
+      bytes32(uint256(msgSender)),
+      crossChainPayload,
+      abi.encodePacked(
+        uint16(1),
+        uint256(gasParameters.msgBaseGas + (crossChainPayload.length * gasParameters.msgGasPerByte))
+      ),
+      false
+    );
+
     lZEndpoint.send{value: msgValue}(
       uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
       abi.encodePacked(address(this), address(this)),
@@ -558,5 +585,22 @@ contract LayerZeroModuleV2 is Admin, Initializable, CrossChainMessageInterface, 
   // Function to get trusted remote address
   function getTrustedRemote(uint16 _remoteChainId) external view returns (bytes memory) {
     return trustedRemoteLookup[_remoteChainId];
+  }
+
+  /**
+   * @notice Sets the peer address (OApp instance) for a corresponding endpoint.
+   * @param _eid The endpoint ID.
+   * @param _peer The address of the peer to be associated with the corresponding endpoint.
+   */
+  function setPeer(uint32 _eid, bytes32 _peer) external onlyAdmin {
+    _setPeer(_eid, _peer);
+  }
+
+  /**
+   * @notice Sets the delegate address for the OApp Core.
+   * @param _delegate The address of the delegate to be set.
+   */
+  function setDelegate(address _delegate) external onlyAdmin {
+    _setDelegate(_delegate);
   }
 }
