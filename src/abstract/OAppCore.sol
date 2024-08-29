@@ -141,7 +141,7 @@ abstract contract OAppCore is IOAppCore {
    * @notice Retrieves the LayerZero endpoint associated with the OApp.
    * @return iEndpoint The LayerZero endpoint as an interface.
    */
-  function endpoint() external view returns (ILayerZeroEndpointV2 iEndpoint) {
+  function endpoint() public view returns (ILayerZeroEndpointV2 iEndpoint) {
     assembly {
       iEndpoint := sload(_enpointSlot)
     }
@@ -152,7 +152,7 @@ abstract contract OAppCore is IOAppCore {
    * @param _eid The endpoint ID.
    * @return peer The peer address (OApp instance) associated with the corresponding endpoint.
    */
-  function peers(uint32 _eid) external view returns (bytes32 peer) {
+  function peers(uint32 _eid) public view returns (bytes32 peer) {
     bytes32 peerSlot = keccak256(abi.encodePacked(_peersSlot, _eid));
     assembly {
       peer := sload(peerSlot)

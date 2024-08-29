@@ -150,7 +150,7 @@ abstract contract OAppSender is OAppCore {
     bool _payInLzToken
   ) internal view virtual returns (MessagingFee memory fee) {
     return
-      endpoint.quote(
+      endpoint().quote(
         MessagingParams(_dstEid, _getPeerOrRevert(_dstEid), _message, _options, _payInLzToken),
         address(this)
       );
@@ -183,7 +183,7 @@ abstract contract OAppSender is OAppCore {
 
     return
       // solhint-disable-next-line check-send-result
-      endpoint.send{value: messageValue}(
+      endpoint().send{value: messageValue}(
         MessagingParams(_dstEid, _getPeerOrRevert(_dstEid), _message, _options, _fee.lzTokenFee > 0),
         _refundAddress
       );
@@ -214,10 +214,10 @@ abstract contract OAppSender is OAppCore {
    */
   function _payLzToken(uint256 _lzTokenFee) internal virtual {
     // @dev Cannot cache the token because it is not immutable in the endpoint.
-    address lzToken = endpoint.lzToken();
+    address lzToken = endpoint().lzToken();
     if (lzToken == address(0)) revert LzTokenUnavailable();
 
     // Pay LZ token fee by sending tokens to the endpoint.
-    IERC20(lzToken).safeTransferFrom(msg.sender, address(endpoint), _lzTokenFee);
+    IERC20(lzToken).safeTransferFrom(msg.sender, address(endpoint()), _lzTokenFee);
   }
 }
