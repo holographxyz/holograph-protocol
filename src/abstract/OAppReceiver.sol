@@ -99,7 +99,7 @@
 
 */
 
-pragma solidity ^0.8.20;
+pragma solidity 0.8.13;
 
 import { Origin } from "../interface/ILayerZeroEndpointV2.sol";
 import { OAppCore } from "./OAppCore.sol";

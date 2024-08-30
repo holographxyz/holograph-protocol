@@ -8,11 +8,9 @@ import "../abstract/OApp.sol";
 
 import "../enum/ChainIdType.sol";
 
-import "../interface/CrossChainMessageInterface.sol";
 import "../interface/HolographOperatorInterface.sol";
 import "../interface/InitializableInterface.sol";
 import "../interface/HolographInterfacesInterface.sol";
-import "../interface/LayerZeroModuleInterface.sol";
 import "../interface/LayerZeroOverrides.sol";
 import "../interface/ILayerZeroPriceFeed.sol";
 import "../interface/IWorker.sol";
@@ -28,7 +26,7 @@ import "./OVM_GasPriceOracle.sol";
  * @notice Holograph module for enabling LayerZero cross-chain messaging
  * @dev This contract abstracts all of the LayerZero specific logic into an isolated module
  */
-contract LayerZeroModuleV2 is OApp, Admin, Initializable, CrossChainMessageInterface, LayerZeroModuleInterface,  {
+contract LayerZeroModuleV2 is OApp, Admin, Initializable {
   /**
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.bridge')) - 1)
    */
@@ -57,10 +55,6 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable, CrossChainMessageInter
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.gasParameters')) - 1)
    */
   bytes32 constant _optimismGasPriceOracleSlot = 0x46043c284a96474ab4a54c741ea0d0fce54e98eea878b99d4b85808fa6f71a5f;
-  /**
-   * @dev bytes32(uint256(keccak256('eip1967.Holograph.layerzero.endpoint')) - 1)
-   */
-  bytes32 constant _enpointSlot = 0xeaca2d84e379be6c2262b0d6c3185528c336571fedeb1961096c6f42216d1c00;
 
   /**
    * @dev mapping of trusted remote chains to their respective LayerZero Endpoint addresses
@@ -70,7 +64,7 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable, CrossChainMessageInter
   /**
    * @dev Constructor is left empty and init is used instead
    */
-  constructor() {}
+  constructor() OApp(address(0), address(0)) {}
 
   /**
    * @notice Used internally to initialize the contract instead of through a constructor
@@ -88,11 +82,14 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable, CrossChainMessageInter
       uint32[] memory chainIds,
       GasParameters[] memory gasParameters,
       EndpointPeer[] memory peers
-    ) = abi.decode(initPayload, (address, address, address, address, address, uint32[], GasParameters[], EndpointPeer[]));
-    
+    ) = abi.decode(
+        initPayload,
+        (address, address, address, address, address, uint32[], GasParameters[], EndpointPeer[])
+      );
+
     require(chainIds.length == gasParameters.length, "HOLOGRAPH: wrong array lengths");
-    require(_endpoint != address(0), "HOLOGRAPH: invalid endpoint");
-    
+    require(lzEndpoint != address(0), "HOLOGRAPH: invalid endpoint");
+
     // Set the initial values for the contract
     assembly {
       sstore(_adminSlot, origin())
@@ -110,7 +107,7 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable, CrossChainMessageInter
 
     // Set the trusted peers
     for (uint256 i = 0; i < peers.length; i++) {
-      _setPeer(peers[i].eid, peers[i].peer);
+      _setPeer(peers[i].eid, bytes32(uint256(uint160(peers[i].peer))));
     }
 
     _setInitialized();
@@ -121,44 +118,7 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable, CrossChainMessageInter
    * @notice Receive cross-chain message from LayerZero
    * @dev This function only allows calls from the configured LayerZero endpoint address
    */
-  function lzReceive(
-    uint16 /* _srcChainId*/,
-    bytes calldata _srcAddress,
-    uint64 /* _nonce*/,
-    bytes calldata _payload
-  ) external payable {
-    assembly {
-      /**
-       * @dev check if msg.sender is LayerZero Endpoint
-       */
-      switch eq(sload(_lZEndpointSlot), caller())
-      case 0 {
-        /**
-         * @dev this is the assembly version of -> revert("HOLOGRAPH: LZ only endpoint");
-         */
-        mstore(0x80, 0x08c379a000000000000000000000000000000000000000000000000000000000)
-        mstore(0xa0, 0x0000002000000000000000000000000000000000000000000000000000000000)
-        mstore(0xc0, 0x0000001b484f4c4f47524150483a204c5a206f6e6c7920656e64706f696e7400)
-        mstore(0xe0, 0x0000000000000000000000000000000000000000000000000000000000000000)
-        revert(0x80, 0xc4)
-      }
-      let ptr := mload(0x40)
-      calldatacopy(add(ptr, 0x0c), _srcAddress.offset, _srcAddress.length)
-      /**
-       * @dev check if LZ from address is same as address(this)
-       */
-      switch eq(mload(ptr), address())
-      case 0 {
-        /**
-         * @dev this is the assembly version of -> revert("HOLOGRAPH: unauthorized sender");
-         */
-        mstore(0x80, 0x08c379a000000000000000000000000000000000000000000000000000000000)
-        mstore(0xa0, 0x0000002000000000000000000000000000000000000000000000000000000000)
-        mstore(0xc0, 0x0000001e484f4c4f47524150483a20756e617574686f72697a65642073656e64)
-        mstore(0xe0, 0x6572000000000000000000000000000000000000000000000000000000000000)
-        revert(0x80, 0xc4)
-      }
-    }
+  function _lzReceive(Origin calldata, bytes32, bytes calldata _payload, address, bytes calldata) internal override {
     /**
      * @dev if validation has passed, submit payload to Holograph Operator for converting into an operator job
      */
@@ -181,29 +141,29 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable, CrossChainMessageInter
     assembly {
       lZEndpoint := sload(_lZEndpointSlot)
     }
-    GasParameters memory gasParameters = _gasParameters(toChain);
-    MessagingParams memory params = MessagingParams(
-      uint32(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
-      bytes32(uint256(msgSender)),
+    // GasParameters memory gasParameters = _gasParameters(toChain);
+
+    _lzSend(
+      uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
       crossChainPayload,
-      abi.encodePacked(
-        uint16(1),
-        uint256(gasParameters.msgBaseGas + (crossChainPayload.length * gasParameters.msgGasPerByte))
-      ),
-      false
+      abi.encode(),
+      // Fee in native gas and ZRO token.
+      MessagingFee(msgValue, 0),
+      // Refund address in case of failed source message.
+      payable(msgSender)
     );
 
-    lZEndpoint.send{value: msgValue}(
-      uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
-      abi.encodePacked(address(this), address(this)),
-      crossChainPayload,
-      payable(msgSender),
-      address(this),
-      abi.encodePacked(
-        uint16(1),
-        uint256(gasParameters.msgBaseGas + (crossChainPayload.length * gasParameters.msgGasPerByte))
-      )
-    );
+    // lZEndpoint.send{value: msgValue}(
+    //   uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
+    //   abi.encodePacked(address(this), address(this)),
+    //   crossChainPayload,
+    //   payable(msgSender),
+    //   address(this),
+    //   abi.encodePacked(
+    //     uint16(1),
+    //     uint256(gasParameters.msgBaseGas + (crossChainPayload.length * gasParameters.msgGasPerByte))
+    //   )
+    // );
   }
 
   function _getPriceFeed(uint16 lzEidV1) internal view returns (ILayerZeroPriceFeed, ILayerZeroPriceFeed.Price memory) {
@@ -569,12 +529,6 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable, CrossChainMessageInter
       lzEndpoint := sload(_lZEndpointSlot)
     }
     lzEndpoint.setReceiveVersion(_version);
-  }
-
-  // @dev LayerZero Receiver library (UltraLightNode / Uln)
-  // requires this to be exposed and return true to pass message validation
-  function allowInitializePath(Origin calldata _origin) external view returns (bool) {
-    return true;
   }
 
   // Function to set trusted remote address

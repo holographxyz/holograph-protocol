@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.20;
+pragma solidity 0.8.13;
 
-import { ILayerZeroEndpointV2 } from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
+import { ILayerZeroEndpointV2 } from "./ILayerZeroEndpointV2.sol";
 
 /**
  * @title IOAppCore

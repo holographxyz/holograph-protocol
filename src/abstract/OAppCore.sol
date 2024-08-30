@@ -102,7 +102,7 @@
 import {IOAppCore} from "../interface/IOAppCore.sol";
 import {ILayerZeroEndpointV2} from "../interface/ILayerZeroEndpointV2.sol";
 
-pragma solidity ^0.8.20;
+pragma solidity 0.8.13;
 
 /**
  * @title OAppCore
@@ -127,10 +127,12 @@ abstract contract OAppCore is IOAppCore {
    * @dev The delegate typically should be set as the owner of the contract.
    */
   constructor(address _endpoint, address _delegate) {
-    endpoint = ILayerZeroEndpointV2(_endpoint);
+    assembly {
+      sstore(_enpointSlot, _endpoint)
+    }
 
     if (_delegate == address(0)) revert InvalidDelegate();
-    endpoint.setDelegate(_delegate);
+    _setDelegate(_delegate);
   }
 
   /* -------------------------------------------------------------------------- */
