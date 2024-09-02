@@ -74,16 +74,16 @@
     "@safe-global/protocol-kit": "^3.1.0",
     "@safe-global/safe-core-sdk-types": "^4.1.0",
     "@types/yargs": "^17.0.32",
+    "chai-ethers": "^0.0.1",
     "csv-parse": "^5.5.5",
     "ethers-v6": "npm:ethers@6.12.1",
-    "zod": "^3.22.4",
-    "chai-ethers": "^0.0.1",
     "ganache": "^7.9.2",
     "hardhat-preprocessor": "^0.1.5",
     "path": "^0.12.7",
     "truffle-hdwallet-provider": "^1.0.17",
     "web3": "^1.10.4",
-    "zksync-web3": "^0.14.4"
+    "zksync-web3": "^0.14.4",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@anders-t/ethers-ledger": "^1.0.4",

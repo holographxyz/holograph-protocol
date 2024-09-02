@@ -20,7 +20,7 @@ env:
   EXPERIMENTAL_DEPLOYMENT_SALT: 1000000
   TENDERLY_ENABLED: false
   DRY_RUN: false
-  MNEMONIC: "deputy annual debris outer baby prefer mammal scene insect obtain parrot length zero detail average nation address depart stem tuition fork rocket topple kidney"
+  MNEMONIC: 'deputy annual debris outer baby prefer mammal scene insect obtain parrot length zero detail average nation address depart stem tuition fork rocket topple kidney'
 
 jobs:
   run-foundry-tests:

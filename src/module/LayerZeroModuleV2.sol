@@ -64,7 +64,7 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable {
   /**
    * @dev Constructor is left empty and init is used instead
    */
-  constructor() OApp(address(0), address(0)) {}
+  constructor() OApp(address(0), address(0xdead)) {}
 
   /**
    * @notice Used internally to initialize the contract instead of through a constructor
@@ -79,12 +79,13 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable {
       address operator,
       address optimismGasPriceOracle,
       address lzEndpoint,
+      address delegate,
       uint32[] memory chainIds,
       GasParameters[] memory gasParameters,
       EndpointPeer[] memory peers
     ) = abi.decode(
         initPayload,
-        (address, address, address, address, address, uint32[], GasParameters[], EndpointPeer[])
+        (address, address, address, address, address, address, uint32[], GasParameters[], EndpointPeer[])
       );
 
     require(chainIds.length == gasParameters.length, "HOLOGRAPH: wrong array lengths");
@@ -99,6 +100,8 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable {
       sstore(_optimismGasPriceOracleSlot, optimismGasPriceOracle)
       sstore(_enpointSlot, lzEndpoint)
     }
+
+    _setDelegate(delegate);
 
     // Set the gas parameters for the default chain and any additional chains
     for (uint256 i = 0; i < chainIds.length; i++) {
@@ -127,6 +130,7 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable {
 
   /**
    * @dev Need to add an extra function to get LZ gas amount needed for their internal cross-chain message verification
+   * @dev See layer zero message execution options https://docs.layerzero.network/v2/developers/evm/oapp/overview#message-execution-options
    */
   function send(
     uint256 /* gasLimit*/,
@@ -137,16 +141,17 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable {
     bytes calldata crossChainPayload
   ) external payable {
     require(msg.sender == address(_operator()), "HOLOGRAPH: operator only call");
-    LayerZeroOverrides lZEndpoint;
-    assembly {
-      lZEndpoint := sload(_lZEndpointSlot)
-    }
+    // LayerZeroOverrides lZEndpoint;
+    // assembly {
+    //   lZEndpoint := sload(_lZEndpointSlot)
+    // }
     // GasParameters memory gasParameters = _gasParameters(toChain);
+
 
     _lzSend(
       uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
       crossChainPayload,
-      abi.encode(),
+      hex"0003010011010000000000000000000000000000ea60",
       // Fee in native gas and ZRO token.
       MessagingFee(msgValue, 0),
       // Refund address in case of failed source message.

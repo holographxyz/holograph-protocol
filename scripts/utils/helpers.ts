@@ -424,6 +424,10 @@ const genesisDeriveFutureAddress = async function (
     : 'HolographGenesis';
 
   let holographGenesis: any = await ethers.getContractOrNull(contractName);
+  console.log(holographGenesis);
+
+  throw new Error('Not implemented');
+
   if (holographGenesis == null) {
     try {
       holographGenesis = await deployments.get(contractName);
@@ -579,8 +583,8 @@ const txParams = async function ({
     from: from as string,
     value: BigNumber.from(value),
     gasLimit:
-      process.env.HOLOGRAPH_ENVIRONMENT === 'testnet'
-        ? 1000000000
+      process.env.HOLOGRAPH_ENVIRONMENT === 'experimental'
+        ? 30000000
         : gasLimit
         ? '__gasLimitMultiplier' in global
           ? gasLimit.mul(global.__gasLimitMultiplier).div(BigNumber.from('10000'))

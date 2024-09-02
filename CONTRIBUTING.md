@@ -5,6 +5,7 @@ Soon™️
 ### Configure your .env file
 
 #### Environment configuration
+
 ```bash
 HOLOGRAPH_ENVIRONMENT="testnet"
 FORCE_DEPLOY_GENESIS="true"
@@ -12,6 +13,7 @@ DEPLOYER=<your_deployer_private_key>
 ```
 
 #### RPC configuration
+
 ```bash
 ETHEREUM_TESTNET_SEPOLIA_RPC_URL=""
 POLYGON_TESTNET_RPC_URL=""
@@ -43,10 +45,13 @@ pnpm deploy --network <network>
 ```
 
 #### Available networks
+
 - Base sepolia: `baseTestnetSepolia`
 - Zora testnet: `zoraTestnetSepolia`
 - Matle testnet: `mantleTestnet`
 - Linea testnet: `lineaTestnetGoerli`
---- 
+
+---
+
 - Arbitrum sepolia: `arbitrumTestnetSepolia`
 - Optimism sepolia: `optimismTestnetSepolia`

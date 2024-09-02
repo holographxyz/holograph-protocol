@@ -6,3 +6,4 @@ erc721a-upgradeable/=erc721a-upgradeable/
 eth-gas-reporter/=node_modules/eth-gas-reporter/
 forge-std/=lib/forge-std/src/
 hardhat/=node_modules/hardhat/
+layerzero/=node_modules/@layerzerolabs/lz-evm-oapp-v2/contracts/

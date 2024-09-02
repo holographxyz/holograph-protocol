@@ -205,20 +205,16 @@ abstract contract OAppCore is IOAppCore {
    * @dev Provides the ability for a delegate to set configs, on behalf of the OApp, directly on the Endpoint contract.
    */
   function _setDelegate(address _delegate) internal virtual {
-    address endpoint;
-    assembly {
-      endpoint := sload(_enpointSlot)
-    }
-
-    ILayerZeroEndpointV2(endpoint).setDelegate(_delegate);
+    address _endpoint = address(endpoint());
+    if (_endpoint != address(0)) ILayerZeroEndpointV2(endpoint()).setDelegate(_delegate);
   }
 
   /**
    *
    */
-  function _getDelegate() internal view virtual returns (ILayerZeroEndpointV2 endpoint) {
+  function _getDelegate() internal view virtual returns (ILayerZeroEndpointV2 _endpoint) {
     assembly {
-      endpoint := sload(_enpointSlot)
+      _endpoint := sload(_enpointSlot)
     }
   }
 }

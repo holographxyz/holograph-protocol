@@ -242,6 +242,7 @@ cache
 ganache
 artifacts
 typechain-types
+deployments/experimental
 
 ## pnpm
 .pnpm-store
