@@ -79,13 +79,14 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable {
       address operator,
       address optimismGasPriceOracle,
       address lzEndpoint,
+      address lzExecutor,
       address delegate,
       uint32[] memory chainIds,
       GasParameters[] memory gasParameters,
       EndpointPeer[] memory peers
     ) = abi.decode(
         initPayload,
-        (address, address, address, address, address, address, uint32[], GasParameters[], EndpointPeer[])
+        (address, address, address, address, address, address, address, uint32[], GasParameters[], EndpointPeer[])
       );
 
     require(chainIds.length == gasParameters.length, "HOLOGRAPH: wrong array lengths");
@@ -99,6 +100,7 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable {
       sstore(_operatorSlot, operator)
       sstore(_optimismGasPriceOracleSlot, optimismGasPriceOracle)
       sstore(_enpointSlot, lzEndpoint)
+      sstore(_lzExecutorSlot, lzExecutor)
     }
 
     _setDelegate(delegate);
@@ -141,17 +143,11 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable {
     bytes calldata crossChainPayload
   ) external payable {
     require(msg.sender == address(_operator()), "HOLOGRAPH: operator only call");
-    // LayerZeroOverrides lZEndpoint;
-    // assembly {
-    //   lZEndpoint := sload(_lZEndpointSlot)
-    // }
-    // GasParameters memory gasParameters = _gasParameters(toChain);
-
 
     _lzSend(
       uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
       crossChainPayload,
-      hex"0003010011010000000000000000000000000000ea60",
+      hex"0003010011010000000000000000000000000000ea60", // TODO: msg exec options
       // Fee in native gas and ZRO token.
       MessagingFee(msgValue, 0),
       // Refund address in case of failed source message.

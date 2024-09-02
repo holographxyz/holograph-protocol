@@ -16,3 +16,6 @@ gas_reports = ['*']
 # wrap_comments = true
 # number_underscore = "thousands"
 fs_permissions = [{ access = "read", path = "./artifacts" }]
+
+[etherscan]
+opsepolia = { key = "${OPTIMISM_TESTNET_SEPOLIA_API_KEY}", chain="11155420"  }

@@ -58,7 +58,9 @@
     "snapshot:check": "FOUNDRY_PROFILE=ci forge snapshot --no-match-test \"(FFI|Fork|Fuzz)\" --check --offline",
     "start": "bash ./scripts/stop-protocol.sh && bash ./scripts/start-protocol.sh",
     "stop": "bash ./scripts/stop-protocol.sh",
-    "coverage": "forge coverage --report lcov && genhtml lcov.info --ignore-errors inconsistent -o coverage/output/ && open coverage/output/index.html"
+    "coverage": "forge coverage --report lcov && genhtml lcov.info --ignore-errors inconsistent -o coverage/output/ && open coverage/output/index.html",
+    "forge:opsepolia:updateLayerZeroModuleV2": "source .env && forge script scripts/foundry/updateLayerZeroModule.s.sol:UpdateLayerZeroModuleV2 --rpc-url $OPTIMISM_TESTNET_SEPOLIA_RPC_URL --broadcast --verify -vvvv",
+    "forge:opsepolia:bridgeOutRequest": "source .env && forge script scripts/foundry/updateLayerZeroModule.s.sol:UpdateLayerZeroModuleV2 --sig 'bridgeOutRequest()' --rpc-url $OPTIMISM_TESTNET_SEPOLIA_RPC_URL --broadcast -vvvv"
   },
   "dependencies": {
     "@ethersproject/abstract-provider": "^5.7.0",
