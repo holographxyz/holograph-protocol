@@ -19,3 +19,4 @@ fs_permissions = [{ access = "read", path = "./artifacts" }]
 
 [etherscan]
 opsepolia = { key = "${OPTIMISM_TESTNET_SEPOLIA_API_KEY}", chain="11155420"  }
+arbsepolia = { key = "${ARBITRUM_TESTNET_SEPOLIA_API_KEY}", chain="421614"  }
