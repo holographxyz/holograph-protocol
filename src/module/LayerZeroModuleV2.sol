@@ -147,7 +147,7 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable {
     _lzSend(
       uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
       crossChainPayload,
-      hex"0003010011010000000000000000000000000000ea60", // TODO: msg exec options
+      hex"000301001101000000000000000000000000005b8d80", // TODO: msg exec options
       // Fee in native gas and ZRO token.
       MessagingFee(msgValue, 0),
       // Refund address in case of failed source message.

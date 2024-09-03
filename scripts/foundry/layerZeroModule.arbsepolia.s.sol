@@ -13,13 +13,15 @@ import {GasParameters} from "src/struct/GasParameters.sol";
 import {EndpointPeer} from "src/interface/ILayerZeroEndpointV2.sol";
 import {ChainIdType} from "src/enum/ChainIdType.sol";
 
-contract UpdateLayerZeroModuleV2 is Script {
+contract LayerZeroModuleV2Script is Script {
   // Admin address
   address admin;
   // Arbitrum sepolia chain id
   uint256 opSepoliaChainId = 11155420;
   // Arbitrum sepolia endpoint id
   uint256 opSepoliaEndpointId = 40232;
+  // Arbitrum messaginf module address
+  address opSepoliaMessagingModule = address(0xa83f621b83387d09636361492EFd1AE0517F8708);
 
   // Layer zero endpoint v2
   address lzEndpoint = address(0x6EDCE65403992e310A62460808c4b910D972f10f);
@@ -82,7 +84,7 @@ contract UpdateLayerZeroModuleV2 is Script {
 
     // Peers
     EndpointPeer[] memory peers = new EndpointPeer[](1);
-    peers[0] = EndpointPeer({peer: address(holographBridge), eid: uint32(opSepoliaChainId)});
+    peers[0] = EndpointPeer({peer: address(opSepoliaMessagingModule), eid: uint32(opSepoliaEndpointId)});
 
     bytes memory initCode = abi.encode(
       address(layerZeroV2ModuleImplementation),

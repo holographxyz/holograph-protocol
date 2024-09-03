@@ -183,7 +183,7 @@ abstract contract OAppSender is OAppCore {
 
     return
       endpoint().send{value: messageValue}(
-      // solhint-disable-next-line check-send-result
+        // solhint-disable-next-line check-send-result
         MessagingParams(_dstEid, _getPeerOrRevert(_dstEid), _message, _options, _fee.lzTokenFee > 0),
         _refundAddress
       );

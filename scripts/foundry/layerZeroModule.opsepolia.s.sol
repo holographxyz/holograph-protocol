@@ -14,14 +14,18 @@ import {LayerZeroModuleV2} from "src/module/LayerZeroModuleV2.sol";
 import {GasParameters} from "src/struct/GasParameters.sol";
 import {EndpointPeer} from "src/interface/ILayerZeroEndpointV2.sol";
 import {ChainIdType} from "src/enum/ChainIdType.sol";
+import {CxipERC721} from "src/token/CxipERC721.sol";
+import {TokenUriType} from "src/enum/TokenUriType.sol";
 
-contract UpdateLayerZeroModuleV2 is Script {
+contract LayerZeroModuleV2Script is Script {
   // Admin address
   address admin;
   // Arbitrum sepolia chain id
   uint256 arbSepoliaChainId = 421614;
   // Arbitrum sepolia endpoint id
   uint256 arbSepoliaEndpointId = 40231;
+  // Arbitrum messaginf module address
+  address arbSepoliaMessagingModule = address(0x4fbB6A2674De9d54684a4c78e6a3118A31347A53);
 
   // Layer zero endpoint v2
   address lzEndpoint = address(0x6EDCE65403992e310A62460808c4b910D972f10f);
@@ -84,7 +88,7 @@ contract UpdateLayerZeroModuleV2 is Script {
 
     // Peers
     EndpointPeer[] memory peers = new EndpointPeer[](1);
-    peers[0] = EndpointPeer({peer: address(holographBridge), eid: uint32(arbSepoliaEndpointId)});
+    peers[0] = EndpointPeer({peer: arbSepoliaMessagingModule, eid: uint32(arbSepoliaEndpointId)});
 
     bytes memory initCode = abi.encode(
       address(layerZeroV2ModuleImplementation),
@@ -123,6 +127,31 @@ contract UpdateLayerZeroModuleV2 is Script {
     );
 
     vm.stopBroadcast();
+  }
+
+  function mintAndBridgeOut() public {
+    uint256 deployerPrivateKey = vm.envUint("ERC721_OWNER");
+    vm.startBroadcast(deployerPrivateKey);
+
+    uint256 nextTokenId = 8;
+    uint256 chainPrepend = uint256(0xee6b284a00000000000000000000000000000000000000000000000000000000);
+    uint256 prefixedTokenId = chainPrepend + uint256(nextTokenId);
+
+    // Mint ERC721 token
+    CxipERC721(payable(erc721)).cxipMint(
+      uint224(nextTokenId),
+      TokenUriType.HTTPS,
+      "https://www.alter-a.com/wp-content/uploads/2019/07/Test-Logo-Small-Black-transparent-1.png"
+    );
+
+    // Bridge out request
+    holographBridge.bridgeOutRequest{value: 0.002 ether}(
+      uint32(421614),
+      erc721,
+      13314000,
+      40000000001,
+      abi.encode(erc721Owner, erc721Owner, prefixedTokenId)
+    );
   }
 
   function bridgeOutRequest() public {
