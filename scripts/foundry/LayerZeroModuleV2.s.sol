@@ -161,7 +161,7 @@ contract LayerZeroModuleV2Script is Script, Colors {
     destinationChainChainId = _destinationChainId;
 
     // Broadcast transaction with deployer private key
-    uint256 deployerPrivateKey = vm.envUint("DEPLOYER");
+    uint256 deployerPrivateKey = vm.envUint("PROTOCOL_ADMIN");
     admin = vm.addr(deployerPrivateKey);
     vm.startBroadcast(deployerPrivateKey);
 
@@ -328,7 +328,7 @@ contract LayerZeroModuleV2Script is Script, Colors {
     destinationChainChainId = _destinationChainChainId;
     loadEnvWithDestinationChain(destinationChainChainId);
 
-    uint256 deployerPrivateKey = vm.envUint("DEPLOYER");
+    uint256 deployerPrivateKey = vm.envUint("PROTOCOL_ADMIN");
     vm.startBroadcast(deployerPrivateKey);
 
     holographBridge.bridgeOutRequest{value: 0.002 ether}(
@@ -348,7 +348,7 @@ contract LayerZeroModuleV2Script is Script, Colors {
    * @param peer The peer
    */
   function setPeer(uint32 eid, address peer) public {
-    uint256 deployerPrivateKey = vm.envUint("DEPLOYER");
+    uint256 deployerPrivateKey = vm.envUint("PROTOCOL_ADMIN");
     vm.startBroadcast(deployerPrivateKey);
 
     string memory currentChainPrefix = getChainEnvPrefix(block.chainid);

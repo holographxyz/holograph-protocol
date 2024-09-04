@@ -229,7 +229,5 @@ contract LayerZeroV2ModuleFixture is Test {
     string memory forkUrl = vm.envString("ARBITRUM_TESTNET_SEPOLIA_RPC_URL");
     uint256 forkId = vm.createFork(forkUrl);
     vm.selectFork(forkId);
-
-    lzEndpoint.call();
   }
 }
