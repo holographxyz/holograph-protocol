@@ -59,11 +59,7 @@
     "start": "bash ./scripts/stop-protocol.sh && bash ./scripts/start-protocol.sh",
     "stop": "bash ./scripts/stop-protocol.sh",
     "coverage": "forge coverage --report lcov && genhtml lcov.info --ignore-errors inconsistent -o coverage/output/ && open coverage/output/index.html",
-    "forge:opsepolia:layerZeroModuleV2": "source .env && forge script scripts/foundry/layerZeroModule.opsepolia.s.sol:LayerZeroModuleV2Script --rpc-url $OPTIMISM_TESTNET_SEPOLIA_RPC_URL --broadcast --verify -vvvv",
-    "forge:opsepolia:bridgeOutRequest": "source .env && forge script scripts/foundry/layerZeroModule.opsepolia.s.sol:LayerZeroModuleV2Script --sig 'bridgeOutRequest()' --rpc-url $OPTIMISM_TESTNET_SEPOLIA_RPC_URL --broadcast -vvvv",
-    "forge:opsepolia:mintAndBridgeOutRequest": "source .env && forge script scripts/foundry/layerZeroModule.opsepolia.s.sol:LayerZeroModuleV2Script --sig 'mintAndBridgeOut()' --rpc-url $OPTIMISM_TESTNET_SEPOLIA_RPC_URL --broadcast -vvvv",
-    "forge:opsepolia:setDvnConfig": "source .env && forge script scripts/foundry/layerZeroModule.opsepolia.s.sol:LayerZeroModuleV2Script --sig 'setDvnConfig()' --rpc-url $OPTIMISM_TESTNET_SEPOLIA_RPC_URL --broadcast -vvvv",
-    "forge:arbsepolia:layerZeroModuleV2": "source .env && forge script scripts/foundry/layerZeroModule.arbsepolia.s.sol:LayerZeroModuleV2Script --rpc-url $ARBITRUM_TESTNET_SEPOLIA_RPC_URL --broadcast --verify -vvvv"
+    "forge:layerZeroModuleV2": "source .env && forge script --rpc-url $RPC_URL --broadcast --verify -vvvv --via-ir scripts/foundry/LayerZeroModuleV2.s.sol:LayerZeroModuleV2Script"
   },
   "dependencies": {
     "@ethersproject/abstract-provider": "^5.7.0",
