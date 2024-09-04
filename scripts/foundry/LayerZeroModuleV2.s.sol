@@ -43,6 +43,9 @@ contract LayerZeroModuleV2Script is Script, Colors {
   HolographInterfaces holographInterfaces;
   LayerZeroModuleV2 previousLayerZeroModuleV2;
 
+  // Gas price oracle
+  address gasPriceOracle;
+
   // New layer zero module deployment
   LayerZeroModuleV2 layerZeroV2ModuleImplementation;
   LayerZeroModuleV2 layerZeroV2Module;
@@ -157,8 +160,8 @@ contract LayerZeroModuleV2Script is Script, Colors {
    * @param _destinationChainId The chain id of the destination chain
    */
   function deployLzModuleAndUpdateOperator(uint256 _destinationChainId) external {
-    loadEnvWithDestinationChain(destinationChainChainId);
     destinationChainChainId = _destinationChainId;
+    loadEnvWithDestinationChain(_destinationChainId);
 
     // Broadcast transaction with deployer private key
     uint256 deployerPrivateKey = vm.envUint("PROTOCOL_ADMIN");
@@ -171,9 +174,6 @@ contract LayerZeroModuleV2Script is Script, Colors {
 
     // Deploy layerZeroV2Module
     LayerZeroModuleProxyV2 _layerZeroV2Module = new LayerZeroModuleProxyV2();
-
-    // Get the gas price oracle
-    address optimismGasPriceOracle = previousLayerZeroModuleV2.getOptimismGasPriceOracle();
 
     // Chains ids
     uint32[] memory chainIds = new uint32[](1);
@@ -200,7 +200,7 @@ contract LayerZeroModuleV2Script is Script, Colors {
         address(holographBridge),
         address(holographInterfaces),
         address(holographOperator),
-        address(optimismGasPriceOracle),
+        address(gasPriceOracle),
         lzEndpoint,
         lzExecutor,
         admin,
@@ -372,6 +372,22 @@ contract LayerZeroModuleV2Script is Script, Colors {
     vm.stopBroadcast();
   }
 
+  /**
+   * Execute a job on the Holograph operator
+   */
+  function executeJob() public {
+    loadEnv();
+
+    uint256 deployerPrivateKey = vm.envUint("PROTOCOL_ADMIN");
+    vm.startBroadcast(deployerPrivateKey);
+
+    bytes memory jobPayload = vm.envBytes("JOB_PAYLOAD");
+
+    holographOperator.executeJob(jobPayload);
+
+    vm.stopBroadcast();
+  }
+
   /* -------------------------------------------------------------------------- */
   /*                              Private functions                             */
   /* -------------------------------------------------------------------------- */
@@ -401,7 +417,7 @@ contract LayerZeroModuleV2Script is Script, Colors {
 
     /* -------------------------- Destination chain env ------------------------- */
 
-    if (destinationChainChainId != 0) {
+    if (destinationChainId != 0) {
       string memory destinationChainPrefix = getChainEnvPrefix(destinationChainId);
       destinationChainEndpointId = vm.envUint(string(abi.encodePacked(destinationChainPrefix, "LZ_ENDPOINT_ID")));
       destinationChainMessagingModule = vm.envAddress(string(abi.encodePacked(destinationChainPrefix, "MODULE_V2")));
@@ -412,6 +428,8 @@ contract LayerZeroModuleV2Script is Script, Colors {
     string memory sourceChainPrefix = getChainEnvPrefix(block.chainid);
     lzEndpoint = vm.envAddress(string(abi.encodePacked(sourceChainPrefix, "LZ_ENDPOINT_ADDRESS")));
     lzExecutor = vm.envAddress(string(abi.encodePacked(sourceChainPrefix, "LZ_EXECUTOR_ADDRESS")));
+
+    gasPriceOracle = vm.envAddress(string(abi.encodePacked(sourceChainPrefix, "GAS_PRICE_ORACLE")));
 
     erc721 = vm.envAddress(string(abi.encodePacked(sourceChainPrefix, "ERC721_CONTRACT")));
     (, bytes memory owner) = erc721.call(abi.encodeWithSignature("owner()"));
@@ -424,7 +442,12 @@ contract LayerZeroModuleV2Script is Script, Colors {
 
     string memory promptMessage = string(
       abi.encodePacked(
-        blue("== Loaded environment ==\n"),
+        green("\n====== CURRENT CHAIN: "),
+        red(vm.toString(block.chainid)),
+        " / ",
+        yellow(sourceChainPrefix),
+        green(" ======"),
+        blue("\n\n== Loaded environment ==\n"),
         cyan("\n  Protocol addresses:"),
         string(
           abi.encodePacked("\n    ", yellow("HolographBridge"), ":", " ", green(vm.toString(address(holographBridge))))
