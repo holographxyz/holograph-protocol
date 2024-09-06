@@ -153,18 +153,6 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable {
       // Refund address in case of failed source message.
       payable(msgSender)
     );
-
-    // lZEndpoint.send{value: msgValue}(
-    //   uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
-    //   abi.encodePacked(address(this), address(this)),
-    //   crossChainPayload,
-    //   payable(msgSender),
-    //   address(this),
-    //   abi.encodePacked(
-    //     uint16(1),
-    //     uint256(gasParameters.msgBaseGas + (crossChainPayload.length * gasParameters.msgGasPerByte))
-    //   )
-    // );
   }
 
   function _getPriceFeed(uint16 lzEidV1) internal view returns (ILayerZeroPriceFeed, ILayerZeroPriceFeed.Price memory) {

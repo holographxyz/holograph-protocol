@@ -2,7 +2,10 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
+import {Vm} from "forge-std/Vm.sol";
 
+import {Holograph} from "src/Holograph.sol";
+import {HolographGenesis} from "src/HolographGenesis.sol";
 import {HolographBridge} from "src/HolographBridge.sol";
 import {HolographInterfaces} from "src/HolographInterfaces.sol";
 import {HolographFactory} from "src/HolographFactory.sol";
@@ -11,21 +14,21 @@ import {LayerZeroModuleProxyV2} from "src/module/LayerZeroModuleProxyV2.sol";
 import {LayerZeroModuleV2} from "src/module/LayerZeroModuleV2.sol";
 import {GasParameters} from "src/struct/GasParameters.sol";
 import {EndpointPeer} from "src/interface/ILayerZeroEndpointV2.sol";
+import {HolographERC721Interface} from "src/interface/HolographERC721Interface.sol";
 import {ChainIdType} from "src/enum/ChainIdType.sol";
 import {CxipERC721} from "src/token/CxipERC721.sol";
 import {TokenUriType} from "src/enum/TokenUriType.sol";
 import {DeploymentConfig} from "src/struct/DeploymentConfig.sol";
 import {Verification} from "src/struct/Verification.sol";
-import {Colors} from "./utils/Colors.sol";
 
-contract LayerZeroModuleV2Script is Script, Colors {
+import {Logger} from "./utils/Logger.sol";
+import {ChainGasParameters} from "./utils/ChainGasParameters.sol";
+import {ForkHelper} from "./utils/ForkHelper.sol";
+import {DeploymentHelper} from "./utils/DeploymentHelper.sol";
+
+contract LayerZeroModuleV2Script is Script, Logger {
   // Admin address
   address admin;
-
-  // Destination chain data
-  uint256 destinationChainChainId;
-  uint256 destinationChainEndpointId;
-  address destinationChainMessagingModule;
 
   // Layer zero endpoint v2
   address lzEndpoint;
@@ -34,17 +37,17 @@ contract LayerZeroModuleV2Script is Script, Colors {
   // Deployed Cxip ERC721
   address erc721;
   address erc721Owner;
-  uint256 erc721TokenIdToBridge;
 
   // Protocol contracts
+  Holograph holograph;
+  HolographGenesis holographGenesis;
   HolographBridge holographBridge;
   HolographFactory holographFactory;
   HolographOperator holographOperator;
   HolographInterfaces holographInterfaces;
-  LayerZeroModuleV2 previousLayerZeroModuleV2;
 
   // Gas price oracle
-  address gasPriceOracle;
+  address gasPriceOracle = address(0xbc246E7F89d3964bFC1dAd24060333AC1705b701);
 
   // New layer zero module deployment
   LayerZeroModuleV2 layerZeroV2ModuleImplementation;
@@ -60,14 +63,14 @@ contract LayerZeroModuleV2Script is Script, Colors {
       string(
         abi.encodePacked(
           "    - ",
-          yellow("deployLzModuleAndUpdateOperator"),
+          yellow("deployLzModulesAndUpdateOperatorsMultiChain"),
           "(",
-          green("uint256"),
+          green("uint256[]"),
           ")",
           magenta(" ==> "),
-          green("uint256"),
+          green("uint256[]"),
           " ",
-          cyan("destinationChainId")
+          cyan("chainIds")
         )
       )
     );
@@ -79,11 +82,17 @@ contract LayerZeroModuleV2Script is Script, Colors {
           yellow("mintAndBridgeOut"),
           "(",
           green("uint256"),
+          ",",
+          green("uint256"),
           ")",
           magenta(" ==> "),
           green("uint256"),
           " ",
-          cyan("destinationChainId")
+          cyan("fromChainId"),
+          ", ",
+          green("uint256"),
+          " ",
+          cyan("toChainId")
         )
       )
     );
@@ -94,11 +103,23 @@ contract LayerZeroModuleV2Script is Script, Colors {
           yellow("bridgeOutRequest"),
           "(",
           green("uint256"),
+          ",",
+          green("uint256"),
+          ",",
+          green("uint256"),
           ")",
           magenta(" ==> "),
           green("uint256"),
           " ",
-          cyan("destinationChainId")
+          cyan("fromChainId"),
+          ", ",
+          green("uint256"),
+          " ",
+          cyan("toChainId"),
+          ", ",
+          green("uint256"),
+          " ",
+          cyan("tokenId")
         )
       )
     );
@@ -108,11 +129,17 @@ contract LayerZeroModuleV2Script is Script, Colors {
           "    - ",
           yellow("setPeer"),
           "(",
+          green("uint256"),
+          ",",
           green("uint32"),
           ",",
           green("address"),
           ")",
           magenta(" ==> "),
+          green("uint256"),
+          " ",
+          cyan("chainId"),
+          ", ",
           green("uint32"),
           " ",
           cyan("eid"),
@@ -120,6 +147,27 @@ contract LayerZeroModuleV2Script is Script, Colors {
           green("address"),
           " ",
           cyan("peer")
+        )
+      )
+    );
+    console.log(
+      string(
+        abi.encodePacked(
+          "    - ",
+          yellow("executeJob"),
+          "(",
+          green("uint256"),
+          ",",
+          green("bytes"),
+          ")",
+          magenta(" ==> "),
+          green("uint256"),
+          " ",
+          cyan("chainId"),
+          ", ",
+          green("bytes"),
+          " ",
+          cyan("jobPayload")
         )
       )
     );
@@ -155,89 +203,143 @@ contract LayerZeroModuleV2Script is Script, Colors {
   }
 
   /**
-   * Deploy a LayerZeroModuleV2Proxy with the new LayerZeroModuleV2 implementation and update the operator's messaging module
-   * @dev You still need to set the peers after this deployment
-   * @param _destinationChainId The chain id of the destination chain
+   * Deploy LayerZeroModuleV2 on multiple chains and update operators
+   * @param chainIds The chain ids to deploy the LayerZeroModuleV2
    */
-  function deployLzModuleAndUpdateOperator(uint256 _destinationChainId) external {
-    destinationChainChainId = _destinationChainId;
-    loadEnvWithDestinationChain(_destinationChainId);
-
-    // Broadcast transaction with deployer private key
+  function deployLzModulesAndUpdateOperatorsMultiChain(uint256[] calldata chainIds) external {
     uint256 deployerPrivateKey = vm.envUint("PROTOCOL_ADMIN");
-    admin = vm.addr(deployerPrivateKey);
-    vm.startBroadcast(deployerPrivateKey);
+    address deployer = vm.addr(deployerPrivateKey);
 
+    console.log(string(abi.encodePacked("\nDeployer: ", yellow(vm.toString(deployer)))));
 
-    // Deploy layerZeroV2ModuleImplementation
-    layerZeroV2ModuleImplementation = new LayerZeroModuleV2();
+    // Loading protocol contracts from env
+    holographGenesis = HolographGenesis(payable(vm.envAddress("GENESIS_ADDRESS")));
+    holographBridge = HolographBridge(payable(vm.envAddress("BRIDGE_ADDRESS")));
+    holographFactory = HolographFactory(payable(vm.envAddress("FACTORY_ADDRESS")));
+    holographOperator = HolographOperator(payable(vm.envAddress("OPERATOR_ADDRESS")));
+    holographInterfaces = HolographInterfaces(payable(vm.envAddress("INTERFACES_ADDRESS")));
 
-    // Deploy layerZeroV2Module
-    LayerZeroModuleProxyV2 _layerZeroV2Module = new LayerZeroModuleProxyV2();
+    for (uint256 i = 0; i < chainIds.length; i++) {
+      ForkHelper.forkByChainId(chainIds[i]);
 
-    // Chains ids
-    uint32[] memory chainIds = new uint32[](1);
-    chainIds[0] = uint32(destinationChainChainId);
+      // Broadcast transaction with deployer private key
+      admin = vm.addr(deployerPrivateKey);
+      vm.startBroadcast(deployerPrivateKey);
 
-    // Gas parameters
-    GasParameters[] memory gasParameters = new GasParameters[](1);
-    gasParameters[0] = GasParameters({
-      msgBaseGas: 110000,
-      msgGasPerByte: 25,
-      jobBaseGas: 160000,
-      jobGasPerByte: 25,
-      minGasPrice: 40000000000,
-      maxGasLimit: 15000000
-    });
+      logFrame(
+        string(abi.encodePacked("Deploying LayerZeroModuleV2 on ", magenta(ForkHelper.getChainName(chainIds[i]))))
+      );
 
-    // Empty peers during deployment
-    EndpointPeer[] memory peers = new EndpointPeer[](0);
+      // Deploy layerZeroV2Module implementation contract
+      layerZeroV2ModuleImplementation = new LayerZeroModuleV2();
 
-    // Encode Layer zero module proxy init code
-    bytes memory initCode = abi.encode(
-      address(layerZeroV2ModuleImplementation),
-      abi.encode(
-        address(holographBridge),
-        address(holographInterfaces),
-        address(holographOperator),
-        address(gasPriceOracle),
-        lzEndpoint,
-        lzExecutor,
-        admin,
-        chainIds,
-        gasParameters,
-        peers
-      )
-    );
+      // Chains ids
+      uint32[] memory supportedChains = new uint32[](chainIds.length);
+      for (uint256 j = 0; j < chainIds.length; j++) supportedChains[j] = uint32(chainIds[j]);
 
-    // Init LayerZeroV2Module proxy
-    _layerZeroV2Module.init(initCode);
+      // Gas parameters
+      GasParameters[] memory gasParameters = new GasParameters[](chainIds.length);
+      for (uint256 j = 0; j < chainIds.length; j++) gasParameters[j] = ChainGasParameters.getGasParameters(chainIds[j]);
 
-    // Label the new layerZeroV2Module
-    vm.label(_layerZeroV2Module.getLayerZeroModule(), "layerZeroV2Module implementation");
+      // Whiteliste the new layerZeroV2Module for all chains
+      EndpointPeer[] memory peers = new EndpointPeer[](chainIds.length);
+      address futurLayerZeroModule = DeploymentHelper.computeGenesisDeploymentAddress(
+        vm.envBytes32("LAYER_ZERO_MODULE_V2_SALT"),
+        type(LayerZeroModuleProxyV2).creationCode
+      );
+      for (uint256 j = 0; j < chainIds.length; j++) {
+        peers[j] = EndpointPeer({peer: futurLayerZeroModule, eid: DeploymentHelper.getEndpointId(chainIds[j])});
+      }
 
-    // Cast to LayerZeroModuleV2 type
-    layerZeroV2Module = LayerZeroModuleV2(payable(address(_layerZeroV2Module)));
+      // Encode Layer zero module proxy init code
+      bytes memory initCode = abi.encode(
+        address(layerZeroV2ModuleImplementation),
+        abi.encode(
+          address(holographBridge),
+          address(holographInterfaces),
+          address(holographOperator),
+          address(gasPriceOracle),
+          DeploymentHelper.getLzEndpoint(chainIds[i]),
+          DeploymentHelper.getLzExecutor(chainIds[i]),
+          vm.envAddress("HOLOGRAPH_ADDRESS"),
+          supportedChains,
+          gasParameters,
+          peers
+        )
+      );
 
-    // Set operator's messaging module to the new LayerZeroModuleV2
-    holographOperator.setMessagingModule(address(layerZeroV2Module));
+      // Deploy layerZeroV2Module
+      bytes32 salt = vm.envBytes32("LAYER_ZERO_MODULE_V2_SALT");
 
-    // Update holographInterface chainId map
-    holographInterfaces.updateChainIdMap(
-      ChainIdType.HOLOGRAPH,
-      destinationChainChainId,
-      ChainIdType.LAYERZERO,
-      destinationChainEndpointId
-    );
+      // Divide the salt into saltHash (bytes12) and secret (bytes20)
+      bytes20 secret = bytes20(salt); // Extract the first 20 bytes
+      bytes12 saltHash = bytes12(salt << 160); // Extract the first 12 bytes
 
-    console.log(
-      string(
-        abi.encodePacked(yellow("New LayerZeroModuleV2 deployed at: "), green(vm.toString(address(layerZeroV2Module))))
-      )
-    );
+      // Start recording emitted events
+      vm.recordLogs();
 
-    // Stop broadcast
-    vm.stopBroadcast();
+      // Deploy the new layerZeroV2Module using the holographGenesis contract
+      holographGenesis.deploy(block.chainid, saltHash, secret, type(LayerZeroModuleProxyV2).creationCode, initCode);
+
+      // Retrive the deployed layerZeroV2Module address from the emitted events
+      Vm.Log[] memory entries = vm.getRecordedLogs();
+      address _layerZeroV2Module = abi.decode(entries[0].data, (address));
+      layerZeroV2Module = LayerZeroModuleV2(payable(address(_layerZeroV2Module)));
+
+      // Compare the deployed layerZeroV2Module with the expected one
+      if (_layerZeroV2Module != futurLayerZeroModule)
+        revert(
+          string(
+            abi.encodePacked(
+              "The deployed layerZeroV2Module address is different from the expected one: ",
+              vm.toString(_layerZeroV2Module),
+              " != ",
+              vm.toString(futurLayerZeroModule)
+            )
+          )
+        );
+
+      // Set operator's messaging module to the new LayerZeroModuleV2
+      holographOperator.setMessagingModule(address(layerZeroV2Module));
+
+      for (uint256 j = 0; j < chainIds.length; j++) {
+        if (chainIds[j] == block.chainid) continue;
+
+        // Update holographInterface chainId map
+        holographInterfaces.updateChainIdMap(
+          ChainIdType.HOLOGRAPH,
+          chainIds[j],
+          ChainIdType.LAYERZERO,
+          DeploymentHelper.getEndpointId(chainIds[j])
+        );
+        console.log(
+          string(
+            abi.encodePacked(
+              "Updated chainId map for (",
+              yellow(vm.toString(chainIds[j])),
+              ") => ",
+              yellow(vm.toString(DeploymentHelper.getEndpointId(chainIds[j])))
+            )
+          )
+        );
+      }
+
+      console.log(
+        string(
+          abi.encodePacked(
+            "\nNew ",
+            cyan("LayerZeroModuleV2"),
+            " deployed on ",
+            magenta(ForkHelper.getChainName(chainIds[i])),
+            " at address ",
+            yellow(vm.toString(address(layerZeroV2Module))),
+            "\n\n"
+          )
+        )
+      );
+
+      vm.stopBroadcast();
+    }
   }
 
   /**
@@ -275,18 +377,22 @@ contract LayerZeroModuleV2Script is Script, Colors {
 
   /**
    * Mint a new ERC721 token and bridge it out to the destination chain
+   * @param fromChainId The chain id of the source chain
+   * @param toChainId The chain id of the destination chain
    */
-  function mintAndBridgeOut(uint256 _destinationChainChainId) public {
-    destinationChainChainId = _destinationChainChainId;
-    loadEnvWithDestinationChain(destinationChainChainId);
-
-    uint256 deployerPrivateKey = vm.envUint("ERC721_OWNER");
-    vm.startBroadcast(deployerPrivateKey);
+  function mintAndBridgeOut(uint256 fromChainId, uint256 toChainId) public {
+    loadEnv(fromChainId);
+    ForkHelper.forkByChainId(fromChainId);
 
     // Psuedo random token id in range [0, 1_000_000)
     uint256 nextTokenId = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty))) % 1_000_000;
-    uint256 chainPrepend = uint256(0xee6b284a00000000000000000000000000000000000000000000000000000000);
+
+    uint256 chainPrepend = uint256(bytes32(abi.encodePacked(holograph.getHolographChainId(), uint224(0))));
     uint256 prefixedTokenId = chainPrepend + uint256(nextTokenId);
+
+    // Start broadcast with the deployer private key
+    uint256 deployerPrivateKey = vm.envUint("ERC721_OWNER");
+    vm.startBroadcast(deployerPrivateKey);
 
     // Mint ERC721 token
     CxipERC721(payable(erc721)).cxipMint(
@@ -297,7 +403,7 @@ contract LayerZeroModuleV2Script is Script, Colors {
 
     // Bridge out request
     holographBridge.bridgeOutRequest{value: 0.002 ether}(
-      uint32(421614),
+      uint32(toChainId),
       erc721,
       13314000,
       40000000001,
@@ -307,14 +413,11 @@ contract LayerZeroModuleV2Script is Script, Colors {
     console.log(
       string(
         abi.encodePacked(
-          yellow("Minted ERC721 token with id: "),
+          yellow("\nMinted ERC721 token with id: "),
           green(vm.toString(nextTokenId)),
           "\n",
-          yellow("prefixed id: "),
-          green(vm.toString(prefixedTokenId)),
-          "\n",
           yellow("Bridged it out to the destination chain("),
-          magenta(vm.toString(destinationChainChainId)),
+          magenta(vm.toString(toChainId)),
           yellow(")")
         )
       )
@@ -323,20 +426,23 @@ contract LayerZeroModuleV2Script is Script, Colors {
 
   /**
    * Bridge out an existing ERC721 token to the destination chain
+   * @param fromChainId The chain id of the source chain
+   * @param toChainId The chain id of the destination chain
+   * @param tokenId The token id to bridge out
    */
-  function bridgeOutRequest(uint256 _destinationChainChainId) public {
-    destinationChainChainId = _destinationChainChainId;
-    loadEnvWithDestinationChain(destinationChainChainId);
+  function bridgeOutRequest(uint256 fromChainId, uint256 toChainId, uint256 tokenId) public {
+    loadEnv(fromChainId);
+    ForkHelper.forkByChainId(toChainId);
 
     uint256 deployerPrivateKey = vm.envUint("PROTOCOL_ADMIN");
     vm.startBroadcast(deployerPrivateKey);
 
     holographBridge.bridgeOutRequest{value: 0.002 ether}(
-      uint32(421614),
+      uint32(toChainId),
       erc721,
       13314000,
       40000000001,
-      abi.encode(erc721Owner, erc721Owner, erc721TokenIdToBridge)
+      abi.encode(erc721Owner, erc721Owner, tokenId)
     );
 
     vm.stopBroadcast();
@@ -344,10 +450,11 @@ contract LayerZeroModuleV2Script is Script, Colors {
 
   /**
    * Set LayerZeroModuleV2 peers
+   * @param chainId The chain id
    * @param eid The endpoint id
    * @param peer The peer
    */
-  function setPeer(uint32 eid, address peer) public {
+  function setPeer(uint256 chainId, uint32 eid, address peer) public {
     uint256 deployerPrivateKey = vm.envUint("PROTOCOL_ADMIN");
     vm.startBroadcast(deployerPrivateKey);
 
@@ -374,14 +481,15 @@ contract LayerZeroModuleV2Script is Script, Colors {
 
   /**
    * Execute a job on the Holograph operator
+   * @param chainId The chain id
+   * @param jobPayload The job payload
    */
-  function executeJob() public {
-    loadEnv();
+  function executeJob(uint256 chainId, bytes memory jobPayload) public {
+    loadEnv(chainId);
+    ForkHelper.forkByChainId(chainId);
 
     uint256 deployerPrivateKey = vm.envUint("PROTOCOL_ADMIN");
     vm.startBroadcast(deployerPrivateKey);
-
-    bytes memory jobPayload = vm.envBytes("JOB_PAYLOAD");
 
     holographOperator.executeJob(jobPayload);
 
@@ -396,45 +504,34 @@ contract LayerZeroModuleV2Script is Script, Colors {
    * Overload loadEnv to load the environment variables for the destination chain
    */
   function loadEnv() private {
-    loadEnvWithDestinationChain(0);
+    loadEnv(0);
   }
 
   /**
    * Load the environment variables for the current chain and the destination chain
-   * @param destinationChainId The chain id of the destination chain
+   * @param sourceChainId The chain id of the source chain
    */
-  function loadEnvWithDestinationChain(uint256 destinationChainId) private {
+  function loadEnv(uint256 sourceChainId) private {
     /* -------------------------------------------------------------------------- */
     /*                         Load environment variables                         */
     /* -------------------------------------------------------------------------- */
 
+    holographGenesis = HolographGenesis(payable(vm.envAddress("GENESIS_ADDRESS")));
     holographBridge = HolographBridge(payable(vm.envAddress("BRIDGE_ADDRESS")));
     holographFactory = HolographFactory(payable(vm.envAddress("FACTORY_ADDRESS")));
     holographOperator = HolographOperator(payable(vm.envAddress("OPERATOR_ADDRESS")));
     holographInterfaces = HolographInterfaces(payable(vm.envAddress("INTERFACES_ADDRESS")));
-
-    previousLayerZeroModuleV2 = LayerZeroModuleV2(payable(holographOperator.getMessagingModule()));
-
-    /* -------------------------- Destination chain env ------------------------- */
-
-    if (destinationChainId != 0) {
-      string memory destinationChainPrefix = getChainEnvPrefix(destinationChainId);
-      destinationChainEndpointId = vm.envUint(string(abi.encodePacked(destinationChainPrefix, "LZ_ENDPOINT_ID")));
-      destinationChainMessagingModule = vm.envAddress(string(abi.encodePacked(destinationChainPrefix, "MODULE_V2")));
-    }
+    holograph = Holograph(payable(holographOperator.getHolograph()));
 
     /* ---------------------------- Source chain env ---------------------------- */
 
     string memory sourceChainPrefix = getChainEnvPrefix(block.chainid);
-    lzEndpoint = vm.envAddress(string(abi.encodePacked(sourceChainPrefix, "LZ_ENDPOINT_ADDRESS")));
-    lzExecutor = vm.envAddress(string(abi.encodePacked(sourceChainPrefix, "LZ_EXECUTOR_ADDRESS")));
-
-    gasPriceOracle = vm.envAddress(string(abi.encodePacked(sourceChainPrefix, "GAS_PRICE_ORACLE")));
+    lzEndpoint = DeploymentHelper.getLzEndpoint(sourceChainId);
+    lzExecutor = DeploymentHelper.getLzExecutor(sourceChainId);
 
     erc721 = vm.envAddress(string(abi.encodePacked(sourceChainPrefix, "ERC721_CONTRACT")));
     (, bytes memory owner) = erc721.call(abi.encodeWithSignature("owner()"));
     erc721Owner = abi.decode(owner, (address));
-    erc721TokenIdToBridge = vm.envUint(string(abi.encodePacked(sourceChainPrefix, "ERC721_TOKEN_ID")));
 
     /* -------------------------------------------------------------------------- */
     /*                         Print environment variables                        */
@@ -479,49 +576,12 @@ contract LayerZeroModuleV2Script is Script, Colors {
             green(vm.toString(address(holographInterfaces)))
           )
         ),
-        string(
-          abi.encodePacked(
-            "\n    ",
-            yellow("Previous LayerZeroModuleV2"),
-            ":",
-            " ",
-            green(vm.toString(address(previousLayerZeroModuleV2)))
-          )
-        ),
-        cyan("\n\n  Destination chain:"),
-        string(
-          abi.encodePacked(
-            "\n    ",
-            yellow("Destination chain endpoint id"),
-            ":",
-            " ",
-            green(vm.toString(destinationChainEndpointId))
-          )
-        ),
-        string(
-          abi.encodePacked(
-            "\n    ",
-            yellow("Destination chain messaging module"),
-            ":",
-            " ",
-            green(vm.toString(destinationChainMessagingModule))
-          )
-        ),
         cyan("\n\n  Layer zero addresses:"),
         string(abi.encodePacked("\n    ", yellow("LayerZeroEndpoint"), ":", " ", green(vm.toString(lzEndpoint)))),
         string(abi.encodePacked("\n    ", yellow("LayerZeroExecutor"), ":", " ", green(vm.toString(lzExecutor)))),
         cyan("\n\n  CxipERC721 contract:"),
         string(abi.encodePacked("\n    ", yellow("ERC721 contract"), ":", " ", green(vm.toString(erc721)))),
         string(abi.encodePacked("\n    ", yellow("ERC721 owner"), ":", " ", green(vm.toString(erc721Owner)))),
-        string(
-          abi.encodePacked(
-            "\n    ",
-            yellow("ERC721 token id to bridge"),
-            ":",
-            " ",
-            green(vm.toString(erc721TokenIdToBridge))
-          )
-        ),
         string(abi.encodePacked("\n\nDo you want to proceed? (", green("y"), "/", red("N"), ")"))
       )
     );
