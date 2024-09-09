@@ -8,7 +8,7 @@ src = 'src'
 libs = ['node_modules', 'lib']
 bytecode_hash = "none"
 gas_reports = ['*']
-
+ignored_warnings_from = ["scripts"]
 
 # [profile.default.fmt]
 # line_length = 120

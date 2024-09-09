@@ -106,7 +106,7 @@ contract LogModuleScript is Script, Logger {
           abi.encodePacked(
             "\n\u2022 LayerZeroModuleV2 ",
             green("deployment"),
-            ": \n    => ",
+            unicode": \n    👉 ",
             cyan(ForkHelper.getTxLink(chainId, layerZeroModuleV2DeployTx))
           )
         )
@@ -117,7 +117,7 @@ contract LogModuleScript is Script, Logger {
           abi.encodePacked(
             "\n\u2022 Genesis LayerZeroModuleV2Proxy ",
             green("deployment"),
-            ": \n    => ",
+            unicode": \n    👉 ",
             cyan(ForkHelper.getTxLink(chainId, genesisProtocolDeployTx))
           )
         )
@@ -128,7 +128,7 @@ contract LogModuleScript is Script, Logger {
           abi.encodePacked(
             "\n\u2022 Operator setMessagingModule ",
             green("call"),
-            ": \n    => ",
+            unicode": \n    👉 ",
             cyan(ForkHelper.getTxLink(chainId, setOperatorSetMessagingModuleTx))
           )
         )
@@ -139,7 +139,7 @@ contract LogModuleScript is Script, Logger {
           abi.encodePacked(
             "\n\u2022 HolographInterfaces updateChainIdMap ",
             green("call"),
-            ": \n    => ",
+            unicode": \n    👉 ",
             cyan(ForkHelper.getTxLink(chainId, setHolographInterfacesUpdateChainIdMapTx))
           )
         )
@@ -177,7 +177,11 @@ contract LogModuleScript is Script, Logger {
       lzJson = string(vm.ffi(inputs));
 
       // Decode the cross chain message status
-      crossChainMessageStatus = lzJson.readString(".data[0].status.name");
+      try vm.parseJsonString(lzJson, ".data[0].status.name") returns (string memory status) {
+        crossChainMessageStatus = status;
+      } catch {
+        crossChainMessageStatus = "";
+      }
 
       // Increment the iteration count
       maxIterations--;
@@ -205,22 +209,34 @@ contract LogModuleScript is Script, Logger {
     logFrame(string(abi.encodePacked("Cross chain message status: ", crossChainMessageStatus)));
 
     // Decode the transaction hashes
-    bytes32 sourceChainTxHash = lzJson.readBytes32(string(abi.encodePacked(".data[0].source.txHash")));
-    bytes32 destinationChainTxHash = lzJson.readBytes32(string(abi.encodePacked(".data[0].destination.txHash")));
+    bytes32 sourceChainTxHash = lzJson.readBytes32(string(abi.encodePacked(".data[0].source.tx.txHash")));
+    bytes32 destinationChainTxHash = lzJson.readBytes32(string(abi.encodePacked(".data[0].destination.tx.txHash")));
 
     // Log the transactions links
     string memory sourceChainTxLink = ForkHelper.getTxLink(fromChainId, sourceChainTxHash);
     string memory destinationChainTxLink = ForkHelper.getTxLink(toChainId, destinationChainTxHash);
 
+    // Log layer zero scan link
+    console.log(
+      string(
+        abi.encodePacked(
+          "\n", 
+          magenta("LayerZero"), 
+          unicode" scan: \n    👉 ",
+          cyan(ForkHelper.getTxLink(0, bridgeOutTxHash)),
+          "\n"
+        )
+      )
+    );
+
     // Log the source chain transaction link
     console.log(
       string(
         abi.encodePacked(
-          "\n\u2022 ", 
-          blue(ForkHelper.getChainName(fromChainId)),
-          " transaction: \n    => ",
-          cyan(sourceChainTxLink),
-          "\n\n"
+          "\n", 
+          yellow(ForkHelper.getChainName(fromChainId)),
+          unicode" transaction: \n    👉 ",
+          cyan(sourceChainTxLink)
         )
       )
     );
@@ -229,11 +245,10 @@ contract LogModuleScript is Script, Logger {
     console.log(
       string(
         abi.encodePacked(
-          "\n\u2022 ", 
-          green(ForkHelper.getChainName(toChainId)),
-          " transaction: \n    => ",
-          cyan(destinationChainTxLink),
-          "\n\n"
+          "\n", 
+          yellow(ForkHelper.getChainName(toChainId)),
+          unicode" transaction: \n    👉 ",
+          cyan(destinationChainTxLink)
         )
       )
     );

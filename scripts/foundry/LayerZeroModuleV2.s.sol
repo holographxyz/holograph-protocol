@@ -339,10 +339,6 @@ contract LayerZeroModuleV2Script is Script, Logger {
       );
 
       vm.stopBroadcast();
-
-      console.log(
-        "LOG APRES LE BROADCAST"
-      );
     }
   }
 

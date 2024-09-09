@@ -18,6 +18,5 @@ forge script --rpc-url $RPC_URL --broadcast --verify -vv --via-ir scripts/foundr
 if [ $? -eq 0 ]; then
   print_logs
 else
-  print_logs
-  echo "The forge command failed, logs will not be printed."
+  echo "\x1b[31mThe forge command failed, logs will not be printed.\x1b[0m"
 fi

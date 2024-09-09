@@ -62,6 +62,7 @@ library ForkHelper {
   function getBlockScanUrl(uint256 chainId, bytes32 txHash) internal returns (string memory) {
     Vm vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
 
+    if (chainId == 0) return "https://layerzeroscan.com/";
     if (chainId == vm.envUint("ETH_CHAIN_ID")) return "https://etherscan.io/";
     if (chainId == vm.envUint("POLYGON_CHAIN_ID")) return "https://polygonscan.com/";
     if (chainId == vm.envUint("AVALANCHE_CHAIN_ID")) return "https://snowtrace.io/";
