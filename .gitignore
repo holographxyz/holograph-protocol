@@ -241,6 +241,7 @@ dist
 cache
 ganache
 artifacts
+broadcast
 typechain-types
 deployments/experimental
 

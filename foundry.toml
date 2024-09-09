@@ -15,7 +15,7 @@ gas_reports = ['*']
 # bracket_spacing = true
 # wrap_comments = true
 # number_underscore = "thousands"
-fs_permissions = [{ access = "read", path = "./artifacts" }]
+fs_permissions = [{ access = "read", path = "./artifacts" },{ access = "read", path = "./broadcast" }]
 
 [rpc_endpoints]
 # Mainnets

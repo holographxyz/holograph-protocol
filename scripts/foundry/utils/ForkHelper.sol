@@ -58,4 +58,54 @@ library ForkHelper {
     if (chainId == vm.envUint("BASE_SEPOLIA_CHAIN_ID")) return "Base Sepolia";
     if (chainId == vm.envUint("LINEA_SEPOLIA_CHAIN_ID")) return "Linea Sepolia";
   }
+
+  function getBlockScanUrl(uint256 chainId, bytes32 txHash) internal returns (string memory) {
+    Vm vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
+
+    if (chainId == vm.envUint("ETH_CHAIN_ID")) return "https://etherscan.io/";
+    if (chainId == vm.envUint("POLYGON_CHAIN_ID")) return "https://polygonscan.com/";
+    if (chainId == vm.envUint("AVALANCHE_CHAIN_ID")) return "https://snowtrace.io/";
+    if (chainId == vm.envUint("BSC_CHAIN_ID")) return "https://bscscan.com/";
+    if (chainId == vm.envUint("OP_CHAIN_ID")) return "https://optimistic.etherscan.io/";
+    if (chainId == vm.envUint("ARBITRUM_CHAIN_ID")) return "https://arbiscan.io/";
+    if (chainId == vm.envUint("ZORA_CHAIN_ID")) return "https://zorascan.xyz/";
+    if (chainId == vm.envUint("MANTLE_CHAIN_ID")) return "https://mantlescan.xyz/";
+    if (chainId == vm.envUint("BASE_CHAIN_ID")) return "https://basescan.org/";
+    if (chainId == vm.envUint("LINEA_CHAIN_ID")) return "https://lineascan.build/";
+    if (chainId == vm.envUint("SEPOLIA_CHAIN_ID")) return "https://sepolia.etherscan.io/";
+    if (chainId == vm.envUint("MUMBAI_CHAIN_ID")) return "https://amoy.polygonscan.com/";
+    if (chainId == vm.envUint("FUJI_CHAIN_ID")) return "https://testnet.snowtrace.io/";
+    if (chainId == vm.envUint("BSC_TESTNET_CHAIN_ID")) return "https://testnet.bscscan.com/";
+    if (chainId == vm.envUint("OP_SEPOLIA_CHAIN_ID")) return "https://sepolia-optimism.etherscan.io/";
+    if (chainId == vm.envUint("ARB_SEPOLIA_CHAIN_ID")) return "https://sepolia.arbiscan.io/";
+    if (chainId == vm.envUint("ZORA_SEPOLIA_CHAIN_ID")) return "https://999999999.testnet.routescan.io/";
+    if (chainId == vm.envUint("MANTLE_SEPOLIA_CHAIN_ID")) return "https://sepolia.mantlescan.xyz/";
+    if (chainId == vm.envUint("BASE_SEPOLIA_CHAIN_ID")) return "https://sepolia.basescan.org/";
+    if (chainId == vm.envUint("LINEA_SEPOLIA_CHAIN_ID")) return "https://sepolia.lineascan.build/";
+  }
+
+  function getTxLink(uint256 chainId, bytes32 txHash) internal returns (string memory) {
+    Vm vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
+
+    string memory blockScanUrl = getBlockScanUrl(chainId, txHash);
+
+    return string(abi.encodePacked(blockScanUrl, "tx/", vm.toString(txHash)));
+  }
+
+  function isTestnet(uint256 chainId) internal returns (bool) {
+    Vm vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
+
+    return (
+      chainId == vm.envUint("SEPOLIA_CHAIN_ID") ||
+      chainId == vm.envUint("MUMBAI_CHAIN_ID") ||
+      chainId == vm.envUint("FUJI_CHAIN_ID") ||
+      chainId == vm.envUint("BSC_TESTNET_CHAIN_ID") ||
+      chainId == vm.envUint("OP_SEPOLIA_CHAIN_ID") ||
+      chainId == vm.envUint("ARB_SEPOLIA_CHAIN_ID") ||
+      chainId == vm.envUint("ZORA_SEPOLIA_CHAIN_ID") ||
+      chainId == vm.envUint("MANTLE_SEPOLIA_CHAIN_ID") ||
+      chainId == vm.envUint("BASE_SEPOLIA_CHAIN_ID") ||
+      chainId == vm.envUint("LINEA_SEPOLIA_CHAIN_ID")
+    );
+  }
 }

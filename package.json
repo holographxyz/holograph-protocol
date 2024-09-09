@@ -59,7 +59,7 @@
     "start": "bash ./scripts/stop-protocol.sh && bash ./scripts/start-protocol.sh",
     "stop": "bash ./scripts/stop-protocol.sh",
     "coverage": "forge coverage --report lcov && genhtml lcov.info --ignore-errors inconsistent -o coverage/output/ && open coverage/output/index.html",
-    "forge:layerZeroModuleV2": "source .env && forge script --rpc-url $RPC_URL --broadcast --verify -vvvv --via-ir scripts/foundry/LayerZeroModuleV2.s.sol:LayerZeroModuleV2Script"
+    "forge:layerZeroModuleV2": "bash ./scripts/lzModuleWithLogs.sh"
   },
   "dependencies": {
     "@ethersproject/abstract-provider": "^5.7.0",
