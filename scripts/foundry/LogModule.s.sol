@@ -297,9 +297,9 @@ contract LogModuleScript is Script, Logger {
 
     console.log("\n\n");
     logFrame(string(abi.encodePacked(
-      "          ",
+      "     ",
       magenta(ForkHelper.getChainName(toChainId)),
-      "Available job payload          "
+      " available job payload     "
     )));
     console.log(string(abi.encodePacked("\nJob hash: ", cyan(vm.toString(jobHash)))));
     console.log(string(abi.encodePacked("Selector: ", blue(vm.toString(selector)))));
