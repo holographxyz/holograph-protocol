@@ -7,29 +7,7 @@ library ForkHelper {
   function forkByChainId(uint256 chainId) internal {
     Vm vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
 
-    string memory rpcUrl;
-    /* -------------------------------- Mainnets -------------------------------- */
-    if (chainId == vm.envUint("ETH_CHAIN_ID")) rpcUrl = vm.rpcUrl("ethereum");
-    if (chainId == vm.envUint("POLYGON_CHAIN_ID")) rpcUrl = vm.rpcUrl("polygon");
-    if (chainId == vm.envUint("AVALANCHE_CHAIN_ID")) rpcUrl = vm.rpcUrl("avalanche");
-    if (chainId == vm.envUint("BSC_CHAIN_ID")) rpcUrl = vm.rpcUrl("bsc");
-    if (chainId == vm.envUint("OP_CHAIN_ID")) rpcUrl = vm.rpcUrl("optimism");
-    if (chainId == vm.envUint("ARBITRUM_CHAIN_ID")) rpcUrl = vm.rpcUrl("arbitrum");
-    if (chainId == vm.envUint("ZORA_CHAIN_ID")) rpcUrl = vm.rpcUrl("zora");
-    if (chainId == vm.envUint("MANTLE_CHAIN_ID")) rpcUrl = vm.rpcUrl("mantle");
-    if (chainId == vm.envUint("BASE_CHAIN_ID")) rpcUrl = vm.rpcUrl("base");
-    if (chainId == vm.envUint("LINEA_CHAIN_ID")) rpcUrl = vm.rpcUrl("linea");
-    /* -------------------------------- Testnets -------------------------------- */
-    if (chainId == vm.envUint("SEPOLIA_CHAIN_ID")) rpcUrl = vm.rpcUrl("sepolia");
-    if (chainId == vm.envUint("MUMBAI_CHAIN_ID")) rpcUrl = vm.rpcUrl("mumbai");
-    if (chainId == vm.envUint("FUJI_CHAIN_ID")) rpcUrl = vm.rpcUrl("fuji");
-    if (chainId == vm.envUint("BSC_TESTNET_CHAIN_ID")) rpcUrl = vm.rpcUrl("bscTestnet");
-    if (chainId == vm.envUint("OP_SEPOLIA_CHAIN_ID")) rpcUrl = vm.rpcUrl("opsepolia");
-    if (chainId == vm.envUint("ARB_SEPOLIA_CHAIN_ID")) rpcUrl = vm.rpcUrl("arbsepolia");
-    if (chainId == vm.envUint("ZORA_SEPOLIA_CHAIN_ID")) rpcUrl = vm.rpcUrl("zorasepolia");
-    if (chainId == vm.envUint("MANTLE_SEPOLIA_CHAIN_ID")) rpcUrl = vm.rpcUrl("mantleTestnet");
-    if (chainId == vm.envUint("BASE_SEPOLIA_CHAIN_ID")) rpcUrl = vm.rpcUrl("baseSepolia");
-    if (chainId == vm.envUint("LINEA_SEPOLIA_CHAIN_ID")) rpcUrl = vm.rpcUrl("lineaSepolia");
+    string memory rpcUrl = getRpcUrl(chainId);
 
     vm.createSelectFork(rpcUrl);
   }
@@ -83,6 +61,33 @@ library ForkHelper {
     if (chainId == vm.envUint("MANTLE_SEPOLIA_CHAIN_ID")) return "https://sepolia.mantlescan.xyz/";
     if (chainId == vm.envUint("BASE_SEPOLIA_CHAIN_ID")) return "https://sepolia.basescan.org/";
     if (chainId == vm.envUint("LINEA_SEPOLIA_CHAIN_ID")) return "https://sepolia.lineascan.build/";
+  }
+
+  function getRpcUrl(uint256 chainId) internal returns (string memory rpcUrl) {
+    Vm vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
+    
+    /* -------------------------------- Mainnets -------------------------------- */
+    if (chainId == vm.envUint("ETH_CHAIN_ID")) rpcUrl = vm.rpcUrl("ethereum");
+    if (chainId == vm.envUint("POLYGON_CHAIN_ID")) rpcUrl = vm.rpcUrl("polygon");
+    if (chainId == vm.envUint("AVALANCHE_CHAIN_ID")) rpcUrl = vm.rpcUrl("avalanche");
+    if (chainId == vm.envUint("BSC_CHAIN_ID")) rpcUrl = vm.rpcUrl("bsc");
+    if (chainId == vm.envUint("OP_CHAIN_ID")) rpcUrl = vm.rpcUrl("optimism");
+    if (chainId == vm.envUint("ARBITRUM_CHAIN_ID")) rpcUrl = vm.rpcUrl("arbitrum");
+    if (chainId == vm.envUint("ZORA_CHAIN_ID")) rpcUrl = vm.rpcUrl("zora");
+    if (chainId == vm.envUint("MANTLE_CHAIN_ID")) rpcUrl = vm.rpcUrl("mantle");
+    if (chainId == vm.envUint("BASE_CHAIN_ID")) rpcUrl = vm.rpcUrl("base");
+    if (chainId == vm.envUint("LINEA_CHAIN_ID")) rpcUrl = vm.rpcUrl("linea");
+    /* -------------------------------- Testnets -------------------------------- */
+    if (chainId == vm.envUint("SEPOLIA_CHAIN_ID")) rpcUrl = vm.rpcUrl("sepolia");
+    if (chainId == vm.envUint("MUMBAI_CHAIN_ID")) rpcUrl = vm.rpcUrl("mumbai");
+    if (chainId == vm.envUint("FUJI_CHAIN_ID")) rpcUrl = vm.rpcUrl("fuji");
+    if (chainId == vm.envUint("BSC_TESTNET_CHAIN_ID")) rpcUrl = vm.rpcUrl("bscTestnet");
+    if (chainId == vm.envUint("OP_SEPOLIA_CHAIN_ID")) rpcUrl = vm.rpcUrl("opsepolia");
+    if (chainId == vm.envUint("ARB_SEPOLIA_CHAIN_ID")) rpcUrl = vm.rpcUrl("arbsepolia");
+    if (chainId == vm.envUint("ZORA_SEPOLIA_CHAIN_ID")) rpcUrl = vm.rpcUrl("zorasepolia");
+    if (chainId == vm.envUint("MANTLE_SEPOLIA_CHAIN_ID")) rpcUrl = vm.rpcUrl("mantleTestnet");
+    if (chainId == vm.envUint("BASE_SEPOLIA_CHAIN_ID")) rpcUrl = vm.rpcUrl("baseSepolia");
+    if (chainId == vm.envUint("LINEA_SEPOLIA_CHAIN_ID")) rpcUrl = vm.rpcUrl("lineaSepolia");
   }
 
   function getTxLink(uint256 chainId, bytes32 txHash) internal returns (string memory) {

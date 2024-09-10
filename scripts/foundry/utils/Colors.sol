@@ -62,6 +62,14 @@ contract Colors {
      * @dev Returns the black color of the text
      * @param text the text to color
      */
+    function gray(string memory text) public pure returns (string memory) {
+        return string(abi.encodePacked("\x1b[90m", text, "\x1b[0m"));
+    }
+
+    /**
+     * @dev Returns the black color of the text
+     * @param text the text to color
+     */
     function black(string memory text) public pure returns (string memory) {
         return string(abi.encodePacked("\x1b[30m", text, "\x1b[0m"));
     }

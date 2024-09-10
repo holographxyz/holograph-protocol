@@ -14,10 +14,12 @@ import {HolographOperator} from "src/HolographOperator.sol";
 import {LayerZeroModuleV2} from "src/module/LayerZeroModuleV2.sol";
 
 import {Logger} from "./utils/Logger.sol";
+import {bytesSlicer, ReturnType} from "./utils/BytesSlicer.sol";
 import {ForkHelper} from "./utils/ForkHelper.sol";
 
 contract LogModuleScript is Script, Logger {
   using stdJson for string;
+  using bytesSlicer for bytes;
 
   // Admin address
   address admin;
@@ -259,5 +261,54 @@ contract LogModuleScript is Script, Logger {
         )
       )
     );
+
+    /* -------------------------------------------------------------------------- */
+    /*                        Decode available job payload                        */
+    /* -------------------------------------------------------------------------- */
+
+    // cast receipt 0xd974491ef297c66272977507091a7bb45f1994ba1f7deecedaf19b9a9829f81e --rpc-url $ARBITRUM_TESTNET_SEPOLIA_RPC_URL -j
+
+    // Fetch the destination chain transaction receipt
+    string[] memory castInputs = new string[](6);
+    castInputs[0] = "cast";
+    castInputs[1] = "receipt";
+    castInputs[2] = vm.toString(destinationChainTxHash);
+    castInputs[3] = "--rpc-url";
+    castInputs[4] = ForkHelper.getRpcUrl(toChainId);
+    castInputs[5] = "-j";
+    string memory receiptJson = string(vm.ffi(castInputs));
+
+    // Decode the available job payload
+    bytes memory logData = receiptJson.readBytes(".logs[0].data");
+
+    (bytes32 jobHash, bytes memory payload) = abi.decode(logData, (bytes32, bytes));
+
+    // Decode abi encoded and packed payload
+    (bytes32 _selector, , , ) = payload.slice(0, 4, ReturnType.BYTES32);
+    bytes4 selector = bytes4(_selector);
+    (, uint256 nonce, , ) = payload.slice(4, 36, ReturnType.UINT256);
+    (, uint256 holographChainId, , ) = payload.slice(36, 68, ReturnType.UINT256);
+    (, , address holographableContract, ) = payload.slice(80, 100, ReturnType.ADDRESS);
+    (, , address htoken, ) = payload.slice(112, 132, ReturnType.ADDRESS);
+    (, uint256 hlgFee, , ) = payload.slice(132, 164, ReturnType.UINT256);
+    (, uint256 _preventRevert, , ) = payload.slice(164, 196, ReturnType.UINT256);
+    (, , , bytes memory bridgeOutPayload) = payload.slice(196, payload.length, ReturnType.BYTES);
+    bool preventRevert = _preventRevert == 1;
+
+    console.log("\n\n");
+    logFrame(string(abi.encodePacked(
+      "          ",
+      magenta(ForkHelper.getChainName(toChainId)),
+      "Available job payload          "
+    )));
+    console.log(string(abi.encodePacked("\nJob hash: ", cyan(vm.toString(jobHash)))));
+    console.log(string(abi.encodePacked("Selector: ", blue(vm.toString(selector)))));
+    console.log(string(abi.encodePacked("Nonce: ", yellow(vm.toString(nonce)))));
+    console.log(string(abi.encodePacked("Holograph chain id: ", yellow(vm.toString(holographChainId)))));
+    console.log(string(abi.encodePacked("Holographable contract: ", green(vm.toString(holographableContract)))));
+    console.log(string(abi.encodePacked("Htoken: ", green(vm.toString(htoken)))));
+    console.log(string(abi.encodePacked("Hlg fee: ", yellow(vm.toString(hlgFee)))));
+    console.log(string(abi.encodePacked("Prevent revert: ", blue(vm.toString(_preventRevert)))));
+    console.log(string(abi.encodePacked("Bridge out payload: ", gray(vm.toString(bridgeOutPayload)))));
   }
 }
