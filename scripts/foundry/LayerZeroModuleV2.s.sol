@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
 import {Vm} from "forge-std/Vm.sol";
+import {stdJson} from "forge-std/StdJson.sol";
 
 import {Holograph} from "src/Holograph.sol";
 import {HolographGenesis} from "src/HolographGenesis.sol";
@@ -27,6 +28,8 @@ import {ForkHelper} from "./utils/ForkHelper.sol";
 import {DeploymentHelper} from "./utils/DeploymentHelper.sol";
 
 contract LayerZeroModuleV2Script is Script, Logger {
+  using stdJson for string;
+
   // Admin address
   address admin;
 
@@ -416,7 +419,9 @@ contract LayerZeroModuleV2Script is Script, Logger {
           yellow("\nMinted ERC721 token with id: "),
           green(vm.toString(nextTokenId)),
           "\n",
-          yellow("Bridged it out to the destination chain("),
+          yellow("Bridged it out to "), 
+          green(ForkHelper.getChainName(toChainId)),
+          "(",
           magenta(vm.toString(toChainId)),
           yellow(")")
         )
@@ -496,6 +501,79 @@ contract LayerZeroModuleV2Script is Script, Logger {
     vm.stopBroadcast();
   }
 
+  /**
+   * Execute a job on the Holograph operator asking the user for the jobPayload
+   * @param fromChainId The chain id of the source chain
+   * @param toChainId The chain id of the destination chain
+   */
+  function executeJobWithPrompt(uint256 fromChainId, uint256 toChainId) public {
+    // Confirm the execution of the job
+    string memory input = vm.prompt(
+      string(
+        abi.encodePacked(
+          "\n\nDo you want to execute the job on ",
+          magenta(ForkHelper.getChainName(toChainId)),
+          "? (",
+          green("y"),
+          "/",
+          red("N"),
+          ")"
+        )
+      )
+    );
+    if (
+      keccak256(abi.encodePacked(input)) != keccak256(abi.encodePacked("y")) &&
+      keccak256(abi.encodePacked(input)) != keccak256(abi.encodePacked("Y"))
+    ) {
+      revert(red("Job execution aborted"));
+    }
+
+    loadEnv(toChainId, true);
+    ForkHelper.forkByChainId(toChainId);
+
+    // Read the layer zero module v2 deployment transaction
+    string memory path = string(
+      abi.encodePacked("broadcast/LayerZeroModuleV2.s.sol/", vm.toString(fromChainId), "/mintAndBridgeOut-latest.json")
+    );
+    string memory json = vm.readFile(path);
+
+    // Decode layer zero module v2 deployment transaction
+    bytes32 bridgeOutTxHash = json.readBytes32(".transactions[1].hash");
+
+    // Execute the layer zero module v2 deployment transaction
+    string[] memory inputs = new string[](4);
+    inputs[0] = "bash";
+    inputs[1] = "scripts/layerZeroApiMessage.sh";
+    inputs[2] = vm.toString(bridgeOutTxHash);
+    inputs[3] = ForkHelper.isTestnet(fromChainId) ? "--testnet" : "";
+    string memory crossChainMessageStatus;
+    string memory lzJson = string(vm.ffi(inputs));
+
+    // Build the destination chain tx link
+    bytes32 destinationChainTxHash = lzJson.readBytes32(".data[0].destination.tx.txHash");
+    string memory destinationChainTxLink = ForkHelper.getTxLink(toChainId, destinationChainTxHash);
+
+    // Ask for the job payload
+    bytes memory jobPayload = vm.parseBytes(
+      vm.prompt(
+        string(
+          abi.encodePacked(
+            unicode"\nEnter the job payload (find it here 👉 ",
+            cyan(destinationChainTxLink),
+            "#eventlog)"
+          )
+        )
+      )
+    );
+
+    uint256 deployerPrivateKey = vm.envUint("PROTOCOL_ADMIN");
+    vm.startBroadcast(deployerPrivateKey);
+
+    holographOperator.executeJob(jobPayload);
+
+    vm.stopBroadcast();
+  }
+
   /* -------------------------------------------------------------------------- */
   /*                              Private functions                             */
   /* -------------------------------------------------------------------------- */
@@ -512,6 +590,13 @@ contract LayerZeroModuleV2Script is Script, Logger {
    * @param sourceChainId The chain id of the source chain
    */
   function loadEnv(uint256 sourceChainId) private {
+    loadEnv(sourceChainId, false);
+  }
+
+  /**
+   * Overload loadEnv to load the environment variables for the destination chain
+   */
+  function loadEnv(uint256 sourceChainId, bool skipPrompt) private {
     /* -------------------------------------------------------------------------- */
     /*                         Load environment variables                         */
     /* -------------------------------------------------------------------------- */
@@ -533,17 +618,20 @@ contract LayerZeroModuleV2Script is Script, Logger {
     (, bytes memory owner) = erc721.call(abi.encodeWithSignature("owner()"));
     erc721Owner = abi.decode(owner, (address));
 
+    // Return if the prompt is skipped
+    if (skipPrompt) return;
+
     /* -------------------------------------------------------------------------- */
     /*                         Print environment variables                        */
     /* -------------------------------------------------------------------------- */
 
     string memory promptMessage = string(
       abi.encodePacked(
-        green("\n====== CURRENT CHAIN: "),
-        red(vm.toString(block.chainid)),
-        " / ",
+        green("\n====== ENVIRONMENT LOADED FOR: "),
         yellow(sourceChainPrefix),
-        green(" ======"),
+        "(",
+        blue(vm.toString(block.chainid)),
+        green(") ======"),
         blue("\n\n== Loaded environment ==\n"),
         cyan("\n  Protocol addresses:"),
         string(

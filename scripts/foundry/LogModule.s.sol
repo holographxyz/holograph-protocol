@@ -11,21 +11,10 @@ import {HolographBridge} from "src/HolographBridge.sol";
 import {HolographInterfaces} from "src/HolographInterfaces.sol";
 import {HolographFactory} from "src/HolographFactory.sol";
 import {HolographOperator} from "src/HolographOperator.sol";
-import {LayerZeroModuleProxyV2} from "src/module/LayerZeroModuleProxyV2.sol";
 import {LayerZeroModuleV2} from "src/module/LayerZeroModuleV2.sol";
-import {GasParameters} from "src/struct/GasParameters.sol";
-import {EndpointPeer} from "src/interface/ILayerZeroEndpointV2.sol";
-import {HolographERC721Interface} from "src/interface/HolographERC721Interface.sol";
-import {ChainIdType} from "src/enum/ChainIdType.sol";
-import {CxipERC721} from "src/token/CxipERC721.sol";
-import {TokenUriType} from "src/enum/TokenUriType.sol";
-import {DeploymentConfig} from "src/struct/DeploymentConfig.sol";
-import {Verification} from "src/struct/Verification.sol";
 
 import {Logger} from "./utils/Logger.sol";
-import {ChainGasParameters} from "./utils/ChainGasParameters.sol";
 import {ForkHelper} from "./utils/ForkHelper.sol";
-import {DeploymentHelper} from "./utils/DeploymentHelper.sol";
 
 contract LogModuleScript is Script, Logger {
   using stdJson for string;
@@ -161,7 +150,7 @@ contract LogModuleScript is Script, Logger {
     string memory json = vm.readFile(path);
 
     // Decode layer zero module v2 deployment transaction
-    bytes32 bridgeOutTxHash = json.readBytes32(string(abi.encodePacked(".transactions[1].hash")));
+    bytes32 bridgeOutTxHash = json.readBytes32(".transactions[1].hash");
 
     // Execute the layer zero module v2 deployment transaction
     string[] memory inputs = new string[](4);
@@ -194,23 +183,41 @@ contract LogModuleScript is Script, Logger {
       vm.sleep(5000);
     }
 
+    string memory statusEmoji = keccak256(abi.encode(crossChainMessageStatus)) == keccak256(abi.encode("DELIVERED"))
+      ? unicode"✅"
+      : keccak256(abi.encode(crossChainMessageStatus)) == keccak256(abi.encode("INFLIGHT"))
+      ? unicode"🛫"
+      : unicode"❌";
+
     if (maxIterations == 0) {
-      console.log(red("Cross chain message is still pending... Max iterations reached"));
+      console.log(yellow("Cross chain message is still pending... Time out reached"));
+      string memory sourceChainTxLink = ForkHelper.getTxLink(fromChainId, bridgeOutTxHash);
+      console.log(
+        string(
+          abi.encodePacked(
+            "\n",
+            yellow(ForkHelper.getChainName(fromChainId)),
+            unicode" transaction: \n    👉 ",
+            cyan(sourceChainTxLink)
+          )
+        )
+      );
+
       return;
     }
 
     crossChainMessageStatus = keccak256(abi.encode(crossChainMessageStatus)) == keccak256(abi.encode("DELIVERED"))
       ? green("DELIVERED")
-      : keccak256(abi.encode(crossChainMessageStatus)) == keccak256(abi.encode("INFLIGHT")) ?
-        magenta("INFLIGHT") :
-        red("BLOCKED");
+      : keccak256(abi.encode(crossChainMessageStatus)) == keccak256(abi.encode("INFLIGHT"))
+      ? magenta("INFLIGHT")
+      : red("BLOCKED");
 
     // Log the cross chain message status
-    logFrame(string(abi.encodePacked("Cross chain message status: ", crossChainMessageStatus)));
+    logFrame(string(abi.encodePacked("Cross chain message status: ", statusEmoji, "  ", crossChainMessageStatus)));
 
     // Decode the transaction hashes
-    bytes32 sourceChainTxHash = lzJson.readBytes32(string(abi.encodePacked(".data[0].source.tx.txHash")));
-    bytes32 destinationChainTxHash = lzJson.readBytes32(string(abi.encodePacked(".data[0].destination.tx.txHash")));
+    bytes32 sourceChainTxHash = lzJson.readBytes32(".data[0].source.tx.txHash");
+    bytes32 destinationChainTxHash = lzJson.readBytes32(".data[0].destination.tx.txHash");
 
     // Log the transactions links
     string memory sourceChainTxLink = ForkHelper.getTxLink(fromChainId, sourceChainTxHash);
@@ -220,8 +227,8 @@ contract LogModuleScript is Script, Logger {
     console.log(
       string(
         abi.encodePacked(
-          "\n", 
-          magenta("LayerZero"), 
+          "\n",
+          magenta("LayerZero"),
           unicode" scan: \n    👉 ",
           cyan(ForkHelper.getTxLink(0, bridgeOutTxHash)),
           "\n"
@@ -233,7 +240,7 @@ contract LogModuleScript is Script, Logger {
     console.log(
       string(
         abi.encodePacked(
-          "\n", 
+          "\n",
           yellow(ForkHelper.getChainName(fromChainId)),
           unicode" transaction: \n    👉 ",
           cyan(sourceChainTxLink)
@@ -245,7 +252,7 @@ contract LogModuleScript is Script, Logger {
     console.log(
       string(
         abi.encodePacked(
-          "\n", 
+          "\n",
           yellow(ForkHelper.getChainName(toChainId)),
           unicode" transaction: \n    👉 ",
           cyan(destinationChainTxLink)
