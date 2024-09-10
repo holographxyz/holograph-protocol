@@ -295,6 +295,9 @@ contract LogModuleScript is Script, Logger {
     (, , , bytes memory bridgeOutPayload) = payload.slice(196, payload.length, ReturnType.BYTES);
     bool preventRevert = _preventRevert == 1;
 
+    // Holographable payload
+    (uint256 uriType, string memory tokenUri) = abi.decode(bridgeOutPayload, (uint256, string));
+
     console.log("\n\n");
     logFrame(string(abi.encodePacked(
       "     ",
@@ -310,5 +313,7 @@ contract LogModuleScript is Script, Logger {
     console.log(string(abi.encodePacked("Hlg fee: ", yellow(vm.toString(hlgFee)))));
     console.log(string(abi.encodePacked("Prevent revert: ", blue(vm.toString(_preventRevert)))));
     console.log(string(abi.encodePacked("Bridge out payload: ", gray(vm.toString(bridgeOutPayload)))));
+    console.log(string(abi.encodePacked("Uri type: ", blue(vm.toString(uriType)))));
+    console.log(string(abi.encodePacked("Token uri: ", yellow(tokenUri))));
   }
 }
