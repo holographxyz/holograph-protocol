@@ -4,7 +4,8 @@ pragma solidity 0.8.13;
 
 import "../abstract/Admin.sol";
 import "../abstract/Initializable.sol";
-import "../abstract/OApp.sol";
+import "../abstract/layerzero/OApp.sol";
+import "../abstract/layerzero/OptionsBuilder.sol";
 
 import "../enum/ChainIdType.sol";
 
@@ -27,6 +28,8 @@ import "./OVM_GasPriceOracle.sol";
  * @dev This contract abstracts all of the LayerZero specific logic into an isolated module
  */
 contract LayerZeroModuleV2 is OApp, Admin, Initializable {
+  using OptionsBuilder for bytes;
+
   /**
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.bridge')) - 1)
    */
@@ -135,7 +138,7 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable {
    * @dev See layer zero message execution options https://docs.layerzero.network/v2/developers/evm/oapp/overview#message-execution-options
    */
   function send(
-    uint256 /* gasLimit*/,
+    uint256 gasLimit,
     uint256 /* gasPrice*/,
     uint32 toChain,
     address msgSender,
@@ -144,10 +147,18 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable {
   ) external payable {
     require(msg.sender == address(_operator()), "HOLOGRAPH: operator only call");
 
+    /// @dev Build a message execution option for the LZ receive function
+    /// @dev first uint128 is the gasLimit used on the lzReceive() function in the OApp.
+    /// @dev second uint128 is the msg.value passed to the lzReceive() function in the OApp.
+    bytes memory msgExecutionOption = OptionsBuilder.newOptions().addExecutorLzReceiveOption(
+      uint128(gasLimit),
+      0
+    );
+
     _lzSend(
       uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
       crossChainPayload,
-      hex"000301001101000000000000000000000000005b8d80", // TODO: msg exec options
+      msgExecutionOption,
       // Fee in native gas and ZRO token.
       MessagingFee(msgValue, 0),
       // Refund address in case of failed source message.

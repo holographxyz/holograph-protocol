@@ -101,7 +101,7 @@
 
 pragma solidity 0.8.13;
 
-import {Origin} from "../interface/ILayerZeroEndpointV2.sol";
+import {Origin} from "../../interface/ILayerZeroEndpointV2.sol";
 import {OAppCore} from "./OAppCore.sol";
 
 /**

@@ -99,125 +99,122 @@
 
 */
 
+import {IOAppCore} from "../../interface/IOAppCore.sol";
+import {ILayerZeroEndpointV2} from "../../interface/ILayerZeroEndpointV2.sol";
+
 pragma solidity 0.8.13;
 
-import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {MessagingParams, MessagingFee, MessagingReceipt} from "../interface/ILayerZeroEndpointV2.sol";
-import {OAppCore} from "./OAppCore.sol";
-
 /**
- * @title OAppSender
- * @dev Abstract contract implementing the OAppSender functionality for sending messages to a LayerZero endpoint.
+ * @title OAppCore
+ * @dev Abstract contract implementing the IOAppCore interface with basic OApp configurations.
  */
-abstract contract OAppSender is OAppCore {
-  using SafeERC20 for IERC20;
-
-  // Custom error messages
-  error NotEnoughNative(uint256 msgValue);
-  error LzTokenUnavailable();
-
-  // @dev The version of the OAppSender implementation.
-  // @dev Version is bumped when changes are made to this contract.
-  uint64 internal constant SENDER_VERSION = 1;
+abstract contract OAppCore is IOAppCore {
+  /**
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.layerzero.endpoint')) - 1)
+   */
+  bytes32 constant _enpointSlot = 0xeaca2d84e379be6c2262b0d6c3185528c336571fedeb1961096c6f42216d1c00;
 
   /**
-   * @notice Retrieves the OApp version information.
-   * @return senderVersion The version of the OAppSender.sol contract.
-   * @return receiverVersion The version of the OAppReceiver.sol contract.
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.layerzero.peers')) - 1)
+   */
+  bytes32 constant _peersSlot = 0xc8ad0a399c48547df15e0ee3cb45c5e4b9975477e146d611eff091a394cc6ce0;
+
+  /**
+   * @dev Constructor to initialize the OAppCore with the provided endpoint and delegate.
+   * @param _endpoint The address of the LOCAL Layer Zero endpoint.
+   * @param _delegate The delegate capable of making OApp configurations inside of the endpoint.
    *
-   * @dev Providing 0 as the default for OAppReceiver version. Indicates that the OAppReceiver is not implemented.
-   * ie. this is a SEND only OApp.
-   * @dev If the OApp uses both OAppSender and OAppReceiver, then this needs to be override returning the correct versions
+   * @dev The delegate typically should be set as the owner of the contract.
    */
-  function oAppVersion() public view virtual returns (uint64 senderVersion, uint64 receiverVersion) {
-    return (SENDER_VERSION, 0);
+  constructor(address _endpoint, address _delegate) {
+    assembly {
+      sstore(_enpointSlot, _endpoint)
+    }
+
+    if (_delegate == address(0)) revert InvalidDelegate();
+    _setDelegate(_delegate);
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /*                              Public functions                              */
+  /* -------------------------------------------------------------------------- */
+
+  /**
+   * @notice Retrieves the LayerZero endpoint associated with the OApp.
+   * @return iEndpoint The LayerZero endpoint as an interface.
+   */
+  function endpoint() public view returns (ILayerZeroEndpointV2 iEndpoint) {
+    assembly {
+      iEndpoint := sload(_enpointSlot)
+    }
   }
 
   /**
-   * @dev Internal function to interact with the LayerZero EndpointV2.quote() for fee calculation.
-   * @param _dstEid The destination endpoint ID.
-   * @param _message The message payload.
-   * @param _options Additional options for the message.
-   * @param _payInLzToken Flag indicating whether to pay the fee in LZ tokens.
-   * @return fee The calculated MessagingFee for the message.
-   *      - nativeFee: The native fee for the message.
-   *      - lzTokenFee: The LZ token fee for the message.
+   * @notice Retrieves the peer (OApp) associated with a corresponding endpoint.
+   * @param _eid The endpoint ID.
+   * @return peer The peer address (OApp instance) associated with the corresponding endpoint.
    */
-  function _quote(
-    uint32 _dstEid,
-    bytes memory _message,
-    bytes memory _options,
-    bool _payInLzToken
-  ) internal view virtual returns (MessagingFee memory fee) {
-    return
-      endpoint().quote(
-        MessagingParams(_dstEid, _getPeerOrRevert(_dstEid), _message, _options, _payInLzToken),
-        address(this)
-      );
+  function peers(uint32 _eid) public view returns (bytes32 peer) {
+    bytes32 peerSlot = keccak256(abi.encodePacked(_peersSlot, _eid));
+    assembly {
+      peer := sload(peerSlot)
+    }
   }
 
-  /**
-   * @dev Internal function to interact with the LayerZero EndpointV2.send() for sending a message.
-   * @param _dstEid The destination endpoint ID.
-   * @param _message The message payload.
-   * @param _options Additional options for the message.
-   * @param _fee The calculated LayerZero fee for the message.
-   *      - nativeFee: The native fee.
-   *      - lzTokenFee: The lzToken fee.
-   * @param _refundAddress The address to receive any excess fee values sent to the endpoint.
-   * @return receipt The receipt for the sent message.
-   *      - guid: The unique identifier for the sent message.
-   *      - nonce: The nonce of the sent message.
-   *      - fee: The LayerZero fee incurred for the message.
-   */
-  function _lzSend(
-    uint32 _dstEid,
-    bytes memory _message,
-    bytes memory _options,
-    MessagingFee memory _fee,
-    address _refundAddress
-  ) internal virtual returns (MessagingReceipt memory receipt) {
-    // @dev Push corresponding fees to the endpoint, any excess is sent back to the _refundAddress from the endpoint.
-    uint256 messageValue = _payNative(_fee.nativeFee);
-    if (_fee.lzTokenFee > 0) _payLzToken(_fee.lzTokenFee);
-
-    return
-      endpoint().send{value: messageValue}(
-        // solhint-disable-next-line check-send-result
-        MessagingParams(_dstEid, _getPeerOrRevert(_dstEid), _message, _options, _fee.lzTokenFee > 0),
-        _refundAddress
-      );
-  }
+  /* -------------------------------------------------------------------------- */
+  /*                             Internal functions                             */
+  /* -------------------------------------------------------------------------- */
 
   /**
-   * @dev Internal function to pay the native fee associated with the message.
-   * @param _nativeFee The native fee to be paid.
-   * @return nativeFee The amount of native currency paid.
+   * @notice Sets the peer address (OApp instance) for a corresponding endpoint.
+   * @param _eid The endpoint ID.
+   * @param _peer The address of the peer to be associated with the corresponding endpoint.
    *
-   * @dev If the OApp needs to initiate MULTIPLE LayerZero messages in a single transaction,
-   * this will need to be overridden because msg.value would contain multiple lzFees.
-   * @dev Should be overridden in the event the LayerZero endpoint requires a different native currency.
-   * @dev Some EVMs use an ERC20 as a method for paying transactions/gasFees.
-   * @dev The endpoint is EITHER/OR, ie. it will NOT support both types of native payment at a time.
+   * @dev Only the owner/admin of the OApp can call this function.
+   * @dev Indicates that the peer is trusted to send LayerZero messages to this OApp.
+   * @dev Set this to bytes32(0) to remove the peer address.
+   * @dev Peer is a bytes32 to accommodate non-evm chains.
    */
-  function _payNative(uint256 _nativeFee) internal virtual returns (uint256 nativeFee) {
-    if (msg.value != _nativeFee) revert NotEnoughNative(msg.value);
-    return _nativeFee;
+  function _setPeer(uint32 _eid, bytes32 _peer) internal virtual {
+    bytes32 peerSlot = keccak256(abi.encodePacked(_peersSlot, _eid));
+    assembly {
+      sstore(peerSlot, _peer)
+    }
+    emit PeerSet(_eid, _peer);
   }
 
   /**
-   * @dev Internal function to pay the LZ token fee associated with the message.
-   * @param _lzTokenFee The LZ token fee to be paid.
-   *
-   * @dev If the caller is trying to pay in the specified lzToken, then the lzTokenFee is passed to the endpoint.
-   * @dev Any excess sent, is passed back to the specified _refundAddress in the _lzSend().
+   * @notice Internal function to get the peer address associated with a specific endpoint; reverts if NOT set.
+   * ie. the peer is set to bytes32(0).
+   * @param _eid The endpoint ID.
+   * @return peer The address of the peer associated with the specified endpoint.
    */
-  function _payLzToken(uint256 _lzTokenFee) internal virtual {
-    // @dev Cannot cache the token because it is not immutable in the endpoint.
-    address lzToken = endpoint().lzToken();
-    if (lzToken == address(0)) revert LzTokenUnavailable();
+  function _getPeerOrRevert(uint32 _eid) internal view virtual returns (bytes32 peer) {
+    bytes32 peerSlot = keccak256(abi.encodePacked(_peersSlot, _eid));
+    assembly {
+      peer := sload(peerSlot)
+    }
+    if (peer == bytes32(0)) revert NoPeer(_eid);
+  }
 
-    // Pay LZ token fee by sending tokens to the endpoint.
-    IERC20(lzToken).safeTransferFrom(msg.sender, address(endpoint()), _lzTokenFee);
+  /**
+   * @notice Sets the delegate address for the OApp.
+   * @param _delegate The address of the delegate to be set.
+   *
+   * @dev Only the owner/admin of the OApp can call this function.
+   * @dev Provides the ability for a delegate to set configs, on behalf of the OApp, directly on the Endpoint contract.
+   */
+  function _setDelegate(address _delegate) internal virtual {
+    address _endpoint = address(endpoint());
+    if (_endpoint != address(0)) ILayerZeroEndpointV2(endpoint()).setDelegate(_delegate);
+  }
+
+  /**
+   *
+   */
+  function _getDelegate() internal view virtual returns (ILayerZeroEndpointV2 _endpoint) {
+    assembly {
+      _endpoint := sload(_enpointSlot)
+    }
   }
 }
