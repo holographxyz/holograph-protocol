@@ -266,8 +266,6 @@ contract LogModuleScript is Script, Logger {
     /*                        Decode available job payload                        */
     /* -------------------------------------------------------------------------- */
 
-    // cast receipt 0xd974491ef297c66272977507091a7bb45f1994ba1f7deecedaf19b9a9829f81e --rpc-url $ARBITRUM_TESTNET_SEPOLIA_RPC_URL -j
-
     // Fetch the destination chain transaction receipt
     string[] memory castInputs = new string[](6);
     castInputs[0] = "cast";
@@ -295,25 +293,29 @@ contract LogModuleScript is Script, Logger {
     (, , , bytes memory bridgeOutPayload) = payload.slice(196, payload.length, ReturnType.BYTES);
     bool preventRevert = _preventRevert == 1;
 
-    // Holographable payload
-    (uint256 uriType, string memory tokenUri) = abi.decode(bridgeOutPayload, (uint256, string));
+    // Holographable CxipErc721 bridgeOut payload
+    (, , , address from, address to, uint256 tokenId, , , uint256 _uriType) = abi.decode(
+      bridgeOutPayload,
+      (uint256, uint256, uint256, address, address, uint256, uint256, uint256, uint256)
+    );
+    string memory uriType = _uriType == 0 ? "UNDEFINED" : _uriType == 1 ? "IPFS" : _uriType == 2 ? "HTTPS" : "ARWEAVE";
+    (, , , bytes memory _tokenUri) = bridgeOutPayload.slice(352, bridgeOutPayload.length - 10, ReturnType.BYTES);
+    string memory tokenUri = string(_tokenUri);
 
     console.log("\n\n");
-    logFrame(string(abi.encodePacked(
-      "     ",
-      magenta(ForkHelper.getChainName(toChainId)),
-      " available job payload     "
-    )));
-    console.log(string(abi.encodePacked("\nJob hash: ", cyan(vm.toString(jobHash)))));
+    logFrame(
+      string(abi.encodePacked("     ", magenta(ForkHelper.getChainName(toChainId)), " available job payload     "))
+    );
+    console.log(string(abi.encodePacked("\n  Job hash: ", cyan(vm.toString(jobHash)))));
     console.log(string(abi.encodePacked("Selector: ", blue(vm.toString(selector)))));
     console.log(string(abi.encodePacked("Nonce: ", yellow(vm.toString(nonce)))));
     console.log(string(abi.encodePacked("Holograph chain id: ", yellow(vm.toString(holographChainId)))));
     console.log(string(abi.encodePacked("Holographable contract: ", green(vm.toString(holographableContract)))));
-    console.log(string(abi.encodePacked("Htoken: ", green(vm.toString(htoken)))));
+    console.log(string(abi.encodePacked("hToken: ", green(vm.toString(htoken)))));
     console.log(string(abi.encodePacked("Hlg fee: ", yellow(vm.toString(hlgFee)))));
     console.log(string(abi.encodePacked("Prevent revert: ", blue(vm.toString(_preventRevert)))));
-    console.log(string(abi.encodePacked("Bridge out payload: ", gray(vm.toString(bridgeOutPayload)))));
-    console.log(string(abi.encodePacked("Uri type: ", blue(vm.toString(uriType)))));
-    console.log(string(abi.encodePacked("Token uri: ", yellow(tokenUri))));
+    console.log(cyan("\n  CxipErc721 decoded payload:"));
+    console.log(string(abi.encodePacked("  Uri type: ", blue(uriType))));
+    console.log(string(abi.encodePacked("  Token uri: ", yellow(tokenUri))));
   }
 }
