@@ -4,6 +4,8 @@ pragma solidity 0.8.13;
 import {Test, Vm, console} from "forge-std/Test.sol";
 import {console2} from "forge-std/console2.sol";
 
+import {Holograph} from "src/Holograph.sol";
+import {HolographGenesis} from "src/HolographGenesis.sol";
 import {HolographBridge} from "src/HolographBridge.sol";
 import {HolographInterfaces} from "src/HolographInterfaces.sol";
 import {HolographFactory} from "src/HolographFactory.sol";
@@ -16,15 +18,29 @@ import {GasParameters} from "src/struct/GasParameters.sol";
 import {EndpointPeer} from "src/interface/ILayerZeroEndpointV2.sol";
 import {ChainIdType} from "src/enum/ChainIdType.sol";
 
+import {ChainGasParameters} from "scripts/foundry/utils/ChainGasParameters.sol";
+import {ForkHelper} from "scripts/foundry/utils/ForkHelper.sol";
+import {DeploymentHelper} from "scripts/foundry/utils/DeploymentHelper.sol";
+
 import {Utils} from "../utils/Utils.sol";
 
 contract LayerZeroV2ModuleFixture is Test {
   // Admin address
   address admin;
+  // Approved genesis deployer
+  address approvedGenesisDeployer = address(0xfFc178694Ea206E10F2314A3a9661fdA41FE486D);
+
+  // Optimism sepolia chain id
+  uint256 opSepoliaChainId = 11155420;
   // Arbitrum sepolia chain id
   uint256 arbSepoliaChainId = 421614;
   // Arbitrum sepolia endpoint id
   uint256 arbSepoliaEndpointId = 40231;
+
+  // Default source chain
+  uint256 defaultSourceChain = opSepoliaChainId;
+  // Default destination chain
+  uint256 defaultDestinationChain = arbSepoliaChainId;
 
   // Layer zero endpoint v2
   address lzEndpoint = address(0x6EDCE65403992e310A62460808c4b910D972f10f);
@@ -38,6 +54,10 @@ contract LayerZeroV2ModuleFixture is Test {
   // A Cxip ERC721 token id owned by erc721Owner
   uint256 erc721TokenId = uint256(0xee6b284a00000000000000000000000000000000000000000000000000000001);
 
+  // Holograph proxy
+  Holograph holograph = Holograph(payable(0xE149661040a4aFc91936258c7487ACC90725Cb7B));
+  // HolographGenesis proxy
+  HolographGenesis holographGenesis = HolographGenesis(payable(0x531790b827d7CD803B32A077bEE437Ce2c094C11));
   // holographBridge proxy
   HolographBridge holographBridge = HolographBridge(payable(0xbe2B3b95927a4260CAc28Ec78a3EE33150F6eae9));
   // holographBridge proxy
@@ -52,11 +72,18 @@ contract LayerZeroV2ModuleFixture is Test {
   HolographTreasury holographTreasury = HolographTreasury(payable(0x0CFA0c4ADC6deA2e03C118C46293b62aDF0cAfD5));
   // Current layerZeroModule
   LayerZeroModuleV2 currentLayerZeroModuleV2 = LayerZeroModuleV2(payable(0x64d76c3c8c5D14080ffbDfD947b5bC08e06926e1));
+  // Optimism gas price oracle
+  address gasPriceOracle = address(0xbc246E7F89d3964bFC1dAd24060333AC1705b701);
 
   // LayerZeroV2Module
   LayerZeroModuleV2 layerZeroV2ModuleImplementation;
   // LayerZeroV2Module
   LayerZeroModuleV2 layerZeroV2Module;
+
+  // Deployment 
+  bytes32 deploymentSalt = keccak256(abi.encodePacked("Salt"));
+
+  mapping(uint256 => uint256) forks;
 
   constructor() {}
 
@@ -69,72 +96,108 @@ contract LayerZeroV2ModuleFixture is Test {
     vm.deal(admin, 10000 ether);
     vm.startPrank(admin);
 
-    // Deploy layerZeroV2ModuleImplementation
+    // Deploy layerZeroV2Module implementation contract
     layerZeroV2ModuleImplementation = new LayerZeroModuleV2();
 
-    // Deploy layerZeroV2Module
-    LayerZeroModuleProxyV2 _layerZeroV2Module = new LayerZeroModuleProxyV2();
+    uint256[] memory chainIds = new uint256[](2);
+    chainIds[0] = opSepoliaChainId;
+    chainIds[1] = arbSepoliaChainId;
 
-    // Get the gas price oracle
-    address optimismGasPriceOracle = currentLayerZeroModuleV2.getOptimismGasPriceOracle();
+    for (uint256 i = 0; i < chainIds.length; i++) {
+      forkByChainId(chainIds[i]);
 
-    // Chains ids
-    uint32[] memory chainIds = new uint32[](1);
-    chainIds[0] = 421614; // arbitrum sepolia
+      // Deploy layerZeroV2Module implementation contract
+      layerZeroV2ModuleImplementation = new LayerZeroModuleV2();
 
-    // Gas parameters
-    GasParameters[] memory gasParameters = new GasParameters[](1);
-    gasParameters[0] = GasParameters({
-      msgBaseGas: 110000,
-      msgGasPerByte: 25,
-      jobBaseGas: 160000,
-      jobGasPerByte: 25,
-      minGasPrice: 40000000000,
-      maxGasLimit: 15000000
-    });
+      // Chains ids
+      uint32[] memory supportedChains = new uint32[](chainIds.length);
+      for (uint256 j = 0; j < chainIds.length; j++) supportedChains[j] = uint32(chainIds[j]);
 
-    // Peers
-    EndpointPeer[] memory peers = new EndpointPeer[](1);
-    peers[0] = EndpointPeer({peer: address(holographBridge), eid: uint32(arbSepoliaEndpointId)});
+      // Gas parameters
+      GasParameters[] memory gasParameters = new GasParameters[](chainIds.length);
+      for (uint256 j = 0; j < chainIds.length; j++) gasParameters[j] = ChainGasParameters.getGasParameters(chainIds[j]);
 
-    bytes memory initCode = abi.encode(
-      address(layerZeroV2ModuleImplementation),
-      abi.encode(
-        address(holographBridge),
-        address(holographInterfaces),
-        address(holographOperator),
-        address(optimismGasPriceOracle),
-        lzEndpoint,
-        admin,
-        chainIds,
-        gasParameters,
-        peers
-      )
-    );
+      // Whiteliste the new layerZeroV2Module for all chains
+      EndpointPeer[] memory peers = new EndpointPeer[](chainIds.length);
+      address futurLayerZeroModule = DeploymentHelper.computeGenesisDeploymentAddress(
+        deploymentSalt,
+        type(LayerZeroModuleProxyV2).creationCode
+      );
+      for (uint256 j = 0; j < chainIds.length; j++) {
+        peers[j] = EndpointPeer({peer: futurLayerZeroModule, eid: DeploymentHelper.getEndpointId(chainIds[j])});
+      }
 
-    // Init LayerZeroV2Module proxy
-    _layerZeroV2Module.init(initCode);
-    vm.label(_layerZeroV2Module.getLayerZeroModule(), "layerZeroV2Module implementation");
+      // Encode Layer zero module proxy init code
+      bytes memory initCode = abi.encode(
+        address(layerZeroV2ModuleImplementation),
+        abi.encode(
+          address(holographBridge),
+          address(holographInterfaces),
+          address(holographOperator),
+          address(gasPriceOracle),
+          DeploymentHelper.getLzEndpoint(chainIds[i]),
+          DeploymentHelper.getLzExecutor(chainIds[i]),
+          address(holograph),
+          supportedChains,
+          gasParameters,
+          peers
+        )
+      );
 
-    // Cast to LayerZeroModuleV2 type
-    layerZeroV2Module = LayerZeroModuleV2(payable(address(_layerZeroV2Module)));
+      // Deploy layerZeroV2Module
+      bytes32 salt = deploymentSalt;
 
-    // Set lzExecutor
-    vm.stopPrank();
-    vm.prank(layerZeroV2Module.admin());
-    layerZeroV2Module.setLZExecutor(lzExecutor);
-    vm.startPrank(admin);
+      // Divide the salt into saltHash (bytes12) and secret (bytes20)
+      bytes20 secret = bytes20(salt); // Extract the first 20 bytes
+      bytes12 saltHash = bytes12(salt << 160); // Extract the first 12 bytes
 
-    // Set messaging module to the new LayerZeroModuleV2
-    holographOperator.setMessagingModule(address(layerZeroV2Module));
+      // Start recording emitted events
+      vm.recordLogs();
 
-    // Update holographInterface chainId map
-    holographInterfaces.updateChainIdMap(
-      ChainIdType.HOLOGRAPH,
-      arbSepoliaChainId,
-      ChainIdType.LAYERZERO,
-      arbSepoliaEndpointId
-    );
+      // Deploy the new layerZeroV2Module using the holographGenesis contract
+      vm.stopPrank();
+      vm.prank(approvedGenesisDeployer);
+      holographGenesis.deploy(block.chainid, saltHash, secret, type(LayerZeroModuleProxyV2).creationCode, initCode);
+      vm.startPrank(admin);
+
+      // Retrive the deployed layerZeroV2Module address from the emitted events
+      Vm.Log[] memory entries = vm.getRecordedLogs();
+      address _layerZeroV2Module = abi.decode(entries[0].data, (address));
+      layerZeroV2Module = LayerZeroModuleV2(payable(address(_layerZeroV2Module)));
+
+      // Compare the deployed layerZeroV2Module with the expected one
+      if (_layerZeroV2Module != futurLayerZeroModule)
+        revert(
+          string(
+            abi.encodePacked(
+              "The deployed layerZeroV2Module address is different from the expected one: ",
+              vm.toString(_layerZeroV2Module),
+              " != ",
+              vm.toString(futurLayerZeroModule)
+            )
+          )
+        );
+
+      // Set operator's messaging module to the new LayerZeroModuleV2
+      holographOperator.setMessagingModule(address(layerZeroV2Module));
+
+      for (uint256 j = 0; j < chainIds.length; j++) {
+        if (chainIds[j] == block.chainid) continue;
+
+        // Update holographInterface chainId map
+        holographInterfaces.updateChainIdMap(
+          ChainIdType.HOLOGRAPH,
+          chainIds[j],
+          ChainIdType.LAYERZERO,
+          DeploymentHelper.getEndpointId(chainIds[j])
+        );
+      }
+
+      vm.stopPrank();
+    }
+
+    // Fork back to OP sepolia chain as default
+    forkByChainId(opSepoliaChainId);
 
     /* -------------------------------------------------------------------------- */
     /*                               Label addresses                              */
@@ -207,27 +270,21 @@ contract LayerZeroV2ModuleFixture is Test {
 
     // Label lzEndpoint
     vm.label(lzEndpoint, string(abi.encodePacked("lzEndpoint(", vm.toString(address(lzEndpoint)), ")")));
-
-    // Label optimismGasPriceOracle
-    vm.label(
-      optimismGasPriceOracle,
-      string(abi.encodePacked("optimismGasPriceOracle(", vm.toString(address(optimismGasPriceOracle)), ")"))
-    );
   }
 
-  function test_bridgeOutRequest() public {
-    holographBridge.bridgeOutRequest{value: 0.002 ether}(
-      uint32(421614),
-      erc721,
-      13314000,
-      40000000001,
-      abi.encode(erc721Owner, erc721Owner, erc721TokenId)
-    );
-  }
+  /* -------------------------------------------------------------------------- */
+  /*                             Internal functions                             */
+  /* -------------------------------------------------------------------------- */
 
-  function test_executorLzReceive() public {
-    string memory forkUrl = vm.envString("ARBITRUM_TESTNET_SEPOLIA_RPC_URL");
-    uint256 forkId = vm.createFork(forkUrl);
+  function forkByChainId(uint256 chainId) internal {
+    uint256 forkId;
+    if (forks[chainId] != 0) {
+      forkId = forks[chainId];
+    } else {
+      string memory forkUrl = ForkHelper.getRpcUrl(chainId);
+      forkId = vm.createFork(forkUrl);
+      forks[chainId] = forkId;
+    }
     vm.selectFork(forkId);
   }
 }

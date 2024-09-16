@@ -39,10 +39,6 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable {
    */
   bytes32 constant _interfacesSlot = 0xbd3084b8c09da87ad159c247a60e209784196be2530cecbbd8f337fdd1848827;
   /**
-   * @dev bytes32(uint256(keccak256('eip1967.Holograph.lZEndpoint')) - 1)
-   */
-  bytes32 constant _lZEndpointSlot = 0x56825e447adf54cdde5f04815fcf9b1dd26ef9d5c053625147c18b7c13091686;
-  /**
    * @dev bytes32(uint256(keccak256('eip1967.Holograph.lzExecutor')) - 1)
    */
   bytes32 constant _lzExecutorSlot = 0x5418c0677489e4391269fdb0d577e7ea7ccb07075c2c66748ef879ea504777e0;
@@ -68,6 +64,12 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable {
    * @dev Constructor is left empty and init is used instead
    */
   constructor() OApp(address(0), address(0xdead)) {}
+
+  /* -------------------------------------------------------------------------- */
+  /*                             External functions                             */
+  /* -------------------------------------------------------------------------- */
+
+  /* -------------------- State changing External functions ------------------- */
 
   /**
    * @notice Used internally to initialize the contract instead of through a constructor
@@ -123,23 +125,18 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable {
   }
 
   /**
-   * @notice Receive cross-chain message from LayerZero
-   * @dev This function only allows calls from the configured LayerZero endpoint address
-   */
-  function _lzReceive(Origin calldata, bytes32, bytes calldata _payload, address, bytes calldata) internal override {
-    /**
-     * @dev if validation has passed, submit payload to Holograph Operator for converting into an operator job
-     */
-    _operator().crossChainMessage(_payload);
-  }
-
-  /**
-   * @dev Need to add an extra function to get LZ gas amount needed for their internal cross-chain message verification
-   * @dev See layer zero message execution options https://docs.layerzero.network/v2/developers/evm/oapp/overview#message-execution-options
+   * @notice Send a cross-chain message using LayerZero
+   * @dev This function is only callable by the Holograph Operator
+   * @param gasLimit the gas limit to use for the cross-chain message
+   * @param /gasPrice The gas price to use for the cross-chain message
+   * @param toChain the chain ID to send the message to
+   * @param msgSender the address of the sender of the message
+   * @param msgValue the value to send with the message
+   * @param crossChainPayload the payload to send to the destination chain
    */
   function send(
     uint256 gasLimit,
-    uint256 /* gasPrice*/,
+    uint256 /* gasPrice */,
     uint32 toChain,
     address msgSender,
     uint256 msgValue,
@@ -150,10 +147,7 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable {
     /// @dev Build a message execution option for the LZ receive function
     /// @dev first uint128 is the gasLimit used on the lzReceive() function in the OApp.
     /// @dev second uint128 is the msg.value passed to the lzReceive() function in the OApp.
-    bytes memory msgExecutionOption = OptionsBuilder.newOptions().addExecutorLzReceiveOption(
-      uint128(gasLimit),
-      0
-    );
+    bytes memory msgExecutionOption = OptionsBuilder.newOptions().addExecutorLzReceiveOption(uint128(gasLimit), 0);
 
     _lzSend(
       uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
@@ -166,15 +160,18 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable {
     );
   }
 
-  function _getPriceFeed(uint16 lzEidV1) internal view returns (ILayerZeroPriceFeed, ILayerZeroPriceFeed.Price memory) {
-    IWorker lzExecutor;
-    assembly {
-      lzExecutor := sload(_lzExecutorSlot)
-    }
-    ILayerZeroPriceFeed lzPriceFeed = ILayerZeroPriceFeed(lzExecutor.priceFeed());
-    return (lzPriceFeed, lzPriceFeed.getPrice(lzEidV1));
-  }
+  /* ------------------------- External view functions ------------------------ */
 
+  /**
+   * @notice Get the message fee for sending a cross-chain message
+   * @param toChain The destination chain ID
+   * @param gasLimit The gas limit to use for the cross-chain message
+   * @param gasPrice The gas price to use for the cross-chain message
+   * @param crossChainPayload The payload to send to the destination chain
+   * @return hlgFee The Holograph fee
+   * @return msgFee The native fee
+   * @return dstGasPrice The destination chain gas price
+   */
   function getMessageFee(
     uint32 toChain,
     uint256 gasLimit,
@@ -208,30 +205,129 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable {
     dstGasPrice = (price.gasPriceInUnit * price.priceRatio) / (10 ** 20);
   }
 
-  function _getLayerZeroOverrides() internal view returns (LayerZeroOverrides lz) {
+  /**
+   * @notice Get the default or chain-specific GasParameters
+   * @param chainId the Holograph ChainId to get gas parameters for, set to 0 for default
+   */
+  function getGasParameters(uint32 chainId) external view returns (GasParameters memory gasParameters) {
+    return _gasParameters(chainId);
+  }
+
+  /* --------------------------------- Getters -------------------------------- */
+
+  /**
+   * @notice Get the address of the Holograph Bridge module
+   * @dev Used for beaming holographable assets cross-chain
+   */
+  function getBridge() external view returns (address bridge) {
     assembly {
-      lz := sload(_lZEndpointSlot)
+      bridge := sload(_bridgeSlot)
     }
   }
 
+  /**
+   * @notice Get the address of the Holograph Interfaces module
+   * @dev Holograph uses this contract to store data that needs to be accessed by a large portion of the modules
+   */
+  function getInterfaces() external view returns (address interfaces) {
+    assembly {
+      interfaces := sload(_interfacesSlot)
+    }
+  }
+
+  /**
+   * @notice Get the address of the approved LayerZero Endpoint
+   * @dev All lzReceive function calls allow only requests from this address
+   */
+  function getLZEndpoint() external view returns (address lZEndpoint) {
+    assembly {
+      lZEndpoint := sload(_enpointSlot)
+    }
+  }
+
+  /**
+   * @notice Get the address of the approved LayerZero Executor
+   */
+  function getLZExecutor() external view returns (address lzExecutor) {
+    assembly {
+      lzExecutor := sload(_lzExecutorSlot)
+    }
+  }
+
+  /**
+   * @notice Get the address of the Holograph Operator module
+   * @dev All cross-chain Holograph Bridge beams are handled by the Holograph Operator module
+   */
+  function getOperator() external view returns (address operator) {
+    assembly {
+      operator := sload(_operatorSlot)
+    }
+  }
+
+  /**
+   * @notice Get the address of the Optimism Gas Price Oracle module
+   * @dev Allows to properly calculate the L1 security fee for Optimism bridge transactions
+   */
+  function getOptimismGasPriceOracle() external view returns (address optimismGasPriceOracle) {
+    assembly {
+      optimismGasPriceOracle := sload(_optimismGasPriceOracleSlot)
+    }
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /*                             Internal functions                             */
+  /* -------------------------------------------------------------------------- */
+
+  /* ------------------------- Internal view function ------------------------- */
+
+  /**
+   * @notice Get the price feed for a specific LayerZero endpoint
+   * @param lzEidV1 the LayerZero endpoint ID to get the price feed for
+   * @return lzPriceFeed the LayerZero Price Feed contract
+   * @return price the price feed for the specified endpoint
+   */
+  function _getPriceFeed(uint16 lzEidV1) internal view returns (ILayerZeroPriceFeed, ILayerZeroPriceFeed.Price memory) {
+    IWorker lzExecutor;
+    assembly {
+      lzExecutor := sload(_lzExecutorSlot)
+    }
+    ILayerZeroPriceFeed lzPriceFeed = ILayerZeroPriceFeed(lzExecutor.priceFeed());
+    return (lzPriceFeed, lzPriceFeed.getPrice(lzEidV1));
+  }
+
+  /**
+   * @notice Get the LayerZero overrides for the current contract
+   */
+  function _getLayerZeroOverrides() internal view returns (LayerZeroOverrides lz) {
+    assembly {
+      lz := sload(_enpointSlot)
+    }
+  }
+
+  /**
+   * @notice Get the price feed for a specific LayerZero endpoint
+   * @param lzEidV1 the LayerZero endpoint ID to get the price feed for
+   */
   function _getPrice(uint16 lzEidV1) internal view returns (ILayerZeroPriceFeed.Price memory price) {
     (, price) = _getPriceFeed(lzEidV1);
   }
 
+  /**
+   * @notice Get the gas parameters for a specific chain
+   * @param toChain the destination chain ID to get the gas parameters for
+   */
   function _getGasParameters(uint32 toChain) internal view returns (GasParameters memory gasParameters) {
     return _gasParameters(toChain);
   }
 
-  function _createOptions(
-    GasParameters memory gasParameters,
-    bytes calldata crossChainPayload
-  ) internal pure returns (bytes memory options) {
-    options = abi.encodePacked(
-      uint16(1),
-      uint256(gasParameters.msgBaseGas + (crossChainPayload.length * gasParameters.msgGasPerByte))
-    );
-  }
-
+  /**
+   * @notice Estimate the fees for sending a cross-chain message
+   * @param lzEidV2 The LayerZero endpoint ID to send the message to
+   * @param crossChainPayload The payload to send to the destination chain
+   * @param options The options to use for the cross-chain message
+   * @return nativeFee The native fee
+   * @return lzFee The LayerZero fee
+   */
   function _estimateFees(
     uint16 lzEidV2,
     bytes calldata crossChainPayload,
@@ -241,6 +337,13 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable {
     return lz.estimateFees(lzEidV2, address(this), crossChainPayload, false, options);
   }
 
+  /**
+   * @notice Get the Holograph fee for sending a cross-chain message
+   * @param toChain The destination chain ID
+   * @param gasLimit The gas limit to use for the cross-chain message
+   * @param gasPrice The gas price to use for the cross-chain message
+   * @param crossChainPayload The payload to send to the destination chain
+   */
   function getHlgFee(
     uint32 toChain,
     uint256 gasLimit,
@@ -270,124 +373,61 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable {
     }
   }
 
+  /* ------------------------- Internal pure functions ------------------------ */
+
   /**
-   * @notice Get the address of the Holograph Bridge module
-   * @dev Used for beaming holographable assets cross-chain
+   * @notice Create the options for the cross-chain message
+   * @param gasParameters the gas parameters to use for the cross-chain message
+   * @param crossChainPayload the payload to send to the destination chain
    */
-  function getBridge() external view returns (address bridge) {
+  function _createOptions(
+    GasParameters memory gasParameters,
+    bytes calldata crossChainPayload
+  ) internal pure returns (bytes memory options) {
+    options = abi.encodePacked(
+      uint16(1),
+      uint256(gasParameters.msgBaseGas + (crossChainPayload.length * gasParameters.msgGasPerByte))
+    );
+  }
+
+  /* --------------------------- Internal overrides --------------------------- */
+
+  /**
+   * @notice Receive cross-chain message from LayerZero
+   * @dev This function only allows calls from the configured LayerZero endpoint address
+   */
+  function _lzReceive(Origin calldata, bytes32, bytes calldata _payload, address, bytes calldata) internal override {
+    /**
+     * @dev if validation has passed, submit payload to Holograph Operator for converting into an operator job
+     */
+    _operator().crossChainMessage(_payload);
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /*                              Private functions                             */
+  /* -------------------------------------------------------------------------- */
+
+  /**
+   * @notice Internal function for setting the default or chain-specific GasParameters
+   * @param chainId the Holograph ChainId to set gas parameters for, set to 0 for default
+   * @param gasParameters struct of all the gas parameters to set
+   */
+  function _setGasParameters(uint32 chainId, GasParameters memory gasParameters) private {
+    bytes32 slot = chainId == 0 ? _gasParametersSlot : keccak256(abi.encode(chainId, _gasParametersSlot));
     assembly {
-      bridge := sload(_bridgeSlot)
+      let pos := gasParameters
+      for {
+        let i := 0
+      } lt(i, 6) {
+        i := add(i, 1)
+      } {
+        sstore(add(slot, i), mload(pos))
+        pos := add(pos, 32)
+      }
     }
   }
 
-  /**
-   * @notice Update the Holograph Bridge module address
-   * @param bridge address of the Holograph Bridge smart contract to use
-   */
-  function setBridge(address bridge) external onlyAdmin {
-    assembly {
-      sstore(_bridgeSlot, bridge)
-    }
-  }
-
-  /**
-   * @notice Get the address of the Holograph Interfaces module
-   * @dev Holograph uses this contract to store data that needs to be accessed by a large portion of the modules
-   */
-  function getInterfaces() external view returns (address interfaces) {
-    assembly {
-      interfaces := sload(_interfacesSlot)
-    }
-  }
-
-  /**
-   * @notice Update the Holograph Interfaces module address
-   * @param interfaces address of the Holograph Interfaces smart contract to use
-   */
-  function setInterfaces(address interfaces) external onlyAdmin {
-    assembly {
-      sstore(_interfacesSlot, interfaces)
-    }
-  }
-
-  /**
-   * @notice Get the address of the approved LayerZero Endpoint
-   * @dev All lzReceive function calls allow only requests from this address
-   */
-  function getLZEndpoint() external view returns (address lZEndpoint) {
-    assembly {
-      lZEndpoint := sload(_lZEndpointSlot)
-    }
-  }
-
-  /**
-   * @notice Update the approved LayerZero Endpoint address
-   * @param lZEndpoint address of the LayerZero Endpoint to use
-   */
-  function setLZEndpoint(address lZEndpoint) external onlyAdmin {
-    assembly {
-      sstore(_lZEndpointSlot, lZEndpoint)
-    }
-  }
-
-  /**
-   * @notice Get the address of the approved LayerZero Executor
-   */
-  function getLZExecutor() external view returns (address lzExecutor) {
-    assembly {
-      lzExecutor := sload(_lzExecutorSlot)
-    }
-  }
-
-  /**
-   * @notice Update the approved LayerZero Executor address
-   * @param lzExecutor address of the LayerZero Executor to use
-   */
-  function setLZExecutor(address lzExecutor) external onlyAdmin {
-    assembly {
-      sstore(_lzExecutorSlot, lzExecutor)
-    }
-  }
-
-  /**
-   * @notice Get the address of the Holograph Operator module
-   * @dev All cross-chain Holograph Bridge beams are handled by the Holograph Operator module
-   */
-  function getOperator() external view returns (address operator) {
-    assembly {
-      operator := sload(_operatorSlot)
-    }
-  }
-
-  /**
-   * @notice Update the Holograph Operator module address
-   * @param operator address of the Holograph Operator smart contract to use
-   */
-  function setOperator(address operator) external onlyAdmin {
-    assembly {
-      sstore(_operatorSlot, operator)
-    }
-  }
-
-  /**
-   * @notice Get the address of the Optimism Gas Price Oracle module
-   * @dev Allows to properly calculate the L1 security fee for Optimism bridge transactions
-   */
-  function getOptimismGasPriceOracle() external view returns (address optimismGasPriceOracle) {
-    assembly {
-      optimismGasPriceOracle := sload(_optimismGasPriceOracleSlot)
-    }
-  }
-
-  /**
-   * @notice Update the Optimism Gas Price Oracle module address
-   * @param optimismGasPriceOracle address of the Optimism Gas Price Oracle smart contract to use
-   */
-  function setOptimismGasPriceOracle(address optimismGasPriceOracle) external onlyAdmin {
-    assembly {
-      sstore(_optimismGasPriceOracleSlot, optimismGasPriceOracle)
-    }
-  }
+  /* ------------------------- Private view functions ------------------------- */
 
   /**
    * @dev Internal function used for getting the Holograph Bridge Interface
@@ -426,25 +466,86 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable {
   }
 
   /**
-   * @dev Purposefully reverts to prevent having any type of ether transfered into the contract
-   */
-  receive() external payable {
-    revert();
-  }
-
-  /**
-   * @dev Purposefully reverts to prevent any calls to undefined functions
-   */
-  fallback() external payable {
-    revert();
-  }
-
-  /**
-   * @notice Get the default or chain-specific GasParameters
+   * @dev Internal function used for getting the default or chain-specific GasParameters
    * @param chainId the Holograph ChainId to get gas parameters for, set to 0 for default
    */
-  function getGasParameters(uint32 chainId) external view returns (GasParameters memory gasParameters) {
-    return _gasParameters(chainId);
+  function _gasParameters(uint32 chainId) private view returns (GasParameters memory gasParameters) {
+    bytes32 slot = chainId == 0 ? _gasParametersSlot : keccak256(abi.encode(chainId, _gasParametersSlot));
+    assembly {
+      let pos := gasParameters
+      for {
+        let i := 0
+      } lt(i, 6) {
+        i := add(i, 1)
+      } {
+        mstore(pos, sload(add(slot, i)))
+        pos := add(pos, 32)
+      }
+    }
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /*                            Only admin functions                            */
+  /* -------------------------------------------------------------------------- */
+
+  /**
+   * @notice Update the Holograph Bridge module address
+   * @param bridge address of the Holograph Bridge smart contract to use
+   */
+  function setBridge(address bridge) external onlyAdmin {
+    assembly {
+      sstore(_bridgeSlot, bridge)
+    }
+  }
+
+  /**
+   * @notice Update the Holograph Interfaces module address
+   * @param interfaces address of the Holograph Interfaces smart contract to use
+   */
+  function setInterfaces(address interfaces) external onlyAdmin {
+    assembly {
+      sstore(_interfacesSlot, interfaces)
+    }
+  }
+
+  /**
+   * @notice Update the approved LayerZero Endpoint address
+   * @param lZEndpoint address of the LayerZero Endpoint to use
+   */
+  function setLZEndpoint(address lZEndpoint) external onlyAdmin {
+    assembly {
+      sstore(_enpointSlot, lZEndpoint)
+    }
+  }
+
+  /**
+   * @notice Update the approved LayerZero Executor address
+   * @param lzExecutor address of the LayerZero Executor to use
+   */
+  function setLZExecutor(address lzExecutor) external onlyAdmin {
+    assembly {
+      sstore(_lzExecutorSlot, lzExecutor)
+    }
+  }
+
+  /**
+   * @notice Update the Holograph Operator module address
+   * @param operator address of the Holograph Operator smart contract to use
+   */
+  function setOperator(address operator) external onlyAdmin {
+    assembly {
+      sstore(_operatorSlot, operator)
+    }
+  }
+
+  /**
+   * @notice Update the Optimism Gas Price Oracle module address
+   * @param optimismGasPriceOracle address of the Optimism Gas Price Oracle smart contract to use
+   */
+  function setOptimismGasPriceOracle(address optimismGasPriceOracle) external onlyAdmin {
+    assembly {
+      sstore(_optimismGasPriceOracleSlot, optimismGasPriceOracle)
+    }
   }
 
   /**
@@ -469,79 +570,6 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable {
   }
 
   /**
-   * @notice Internal function for setting the default or chain-specific GasParameters
-   * @param chainId the Holograph ChainId to set gas parameters for, set to 0 for default
-   * @param gasParameters struct of all the gas parameters to set
-   */
-  function _setGasParameters(uint32 chainId, GasParameters memory gasParameters) private {
-    bytes32 slot = chainId == 0 ? _gasParametersSlot : keccak256(abi.encode(chainId, _gasParametersSlot));
-    assembly {
-      let pos := gasParameters
-      for {
-        let i := 0
-      } lt(i, 6) {
-        i := add(i, 1)
-      } {
-        sstore(add(slot, i), mload(pos))
-        pos := add(pos, 32)
-      }
-    }
-  }
-
-  /**
-   * @dev Internal function used for getting the default or chain-specific GasParameters
-   * @param chainId the Holograph ChainId to get gas parameters for, set to 0 for default
-   */
-  function _gasParameters(uint32 chainId) private view returns (GasParameters memory gasParameters) {
-    bytes32 slot = chainId == 0 ? _gasParametersSlot : keccak256(abi.encode(chainId, _gasParametersSlot));
-    assembly {
-      let pos := gasParameters
-      for {
-        let i := 0
-      } lt(i, 6) {
-        i := add(i, 1)
-      } {
-        mstore(pos, sload(add(slot, i)))
-        pos := add(pos, 32)
-      }
-    }
-  }
-
-  /**
-   * @dev function to set the LayerZero send MessageLib
-   * @param _version the version of the messaging library
-   */
-  function setSendVersion(uint16 _version) external /* onlyOwner */ {
-    LayerZeroOverrides lzEndpoint;
-    assembly {
-      lzEndpoint := sload(_lZEndpointSlot)
-    }
-    lzEndpoint.setSendVersion(_version);
-  }
-
-  /**
-   * @dev function to set the LayerZero receive MessageLib
-   * @param _version the version of the messaging library
-   */
-  function setReceiveVersion(uint16 _version) external /* onlyOwner */ {
-    LayerZeroOverrides lzEndpoint;
-    assembly {
-      lzEndpoint := sload(_lZEndpointSlot)
-    }
-    lzEndpoint.setReceiveVersion(_version);
-  }
-
-  // Function to set trusted remote address
-  function setTrustedRemote(uint16 _remoteChainId, bytes calldata _remoteAddress) external onlyAdmin {
-    trustedRemoteLookup[_remoteChainId] = _remoteAddress;
-  }
-
-  // Function to get trusted remote address
-  function getTrustedRemote(uint16 _remoteChainId) external view returns (bytes memory) {
-    return trustedRemoteLookup[_remoteChainId];
-  }
-
-  /**
    * @notice Sets the peer address (OApp instance) for a corresponding endpoint.
    * @param _eid The endpoint ID.
    * @param _peer The address of the peer to be associated with the corresponding endpoint.
@@ -556,5 +584,23 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable {
    */
   function setDelegate(address _delegate) external onlyAdmin {
     _setDelegate(_delegate);
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /*                             Fallbacks functions                            */
+  /* -------------------------------------------------------------------------- */
+
+  /**
+   * @dev Purposefully reverts to prevent having any type of ether transfered into the contract
+   */
+  receive() external payable {
+    revert();
+  }
+
+  /**
+   * @dev Purposefully reverts to prevent any calls to undefined functions
+   */
+  fallback() external payable {
+    revert();
   }
 }

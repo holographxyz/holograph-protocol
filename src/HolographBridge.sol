@@ -264,6 +264,7 @@ contract HolographBridge is Admin, Initializable, HolographBridgeInterface {
       msg.sender,
       bridgeOutPayload
     );
+    
     /**
      * @dev ensure returned selector is bridgeOut function signature, to guarantee that the function was called and succeeded
      */

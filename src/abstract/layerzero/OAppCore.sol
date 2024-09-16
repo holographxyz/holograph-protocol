@@ -110,7 +110,7 @@ pragma solidity 0.8.13;
  */
 abstract contract OAppCore is IOAppCore {
   /**
-   * @dev bytes32(uint256(keccak256('eip1967.Holograph.layerzero.endpoint')) - 1)
+   * @dev bytes32(uint256(keccak256('eip1967.Holograph.lZEndpoint')) - 1)
    */
   bytes32 constant _enpointSlot = 0xeaca2d84e379be6c2262b0d6c3185528c336571fedeb1961096c6f42216d1c00;
 
