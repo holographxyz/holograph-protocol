@@ -26,6 +26,7 @@ import {Logger} from "./utils/Logger.sol";
 import {ChainGasParameters} from "./utils/ChainGasParameters.sol";
 import {ForkHelper} from "./utils/ForkHelper.sol";
 import {DeploymentHelper} from "./utils/DeploymentHelper.sol";
+import {SafeWallet} from "./utils/SafeWallet.sol";
 
 contract LayerZeroModuleV2Script is Script, Logger {
   using stdJson for string;
@@ -247,7 +248,7 @@ contract LayerZeroModuleV2Script is Script, Logger {
       // Whiteliste the new layerZeroV2Module for all chains
       EndpointPeer[] memory peers = new EndpointPeer[](chainIds.length);
       address futurLayerZeroModule = DeploymentHelper.computeGenesisDeploymentAddress(
-        vm.envBytes32("LAYER_ZERO_MODULE_V2_SALT"),
+        vm.envBytes32("DEPLOYMENT_SECRET"),
         type(LayerZeroModuleProxyV2).creationCode
       );
       for (uint256 j = 0; j < chainIds.length; j++) {
@@ -272,7 +273,7 @@ contract LayerZeroModuleV2Script is Script, Logger {
       );
 
       // Deploy layerZeroV2Module
-      bytes32 salt = vm.envBytes32("LAYER_ZERO_MODULE_V2_SALT");
+      bytes32 salt = vm.envBytes32("DEPLOYMENT_SECRET");
 
       // Divide the salt into saltHash (bytes12) and secret (bytes20)
       bytes20 secret = bytes20(salt); // Extract the first 20 bytes
@@ -290,7 +291,7 @@ contract LayerZeroModuleV2Script is Script, Logger {
       layerZeroV2Module = LayerZeroModuleV2(payable(address(_layerZeroV2Module)));
 
       // Compare the deployed layerZeroV2Module with the expected one
-      if (_layerZeroV2Module != futurLayerZeroModule)
+      if (_layerZeroV2Module != futurLayerZeroModule) {
         revert(
           string(
             abi.encodePacked(
@@ -301,23 +302,56 @@ contract LayerZeroModuleV2Script is Script, Logger {
             )
           )
         );
+      }
 
-      // Set operator's messaging module to the new LayerZeroModuleV2
-      holographOperator.setMessagingModule(address(layerZeroV2Module));
+      // Fetch wallet address from env
+      address safeWallet = vm.envOr("SAFE_WALLET", address(0));
+
+      // If safeWallet is set, create a transaction to set the messaging module
+      if (safeWallet != address(0)) {
+        SafeWallet.createTransaction(
+          safeWallet,
+          address(holographOperator),
+          abi.encodeWithSignature("setMessagingModule(address)", address(layerZeroV2Module))
+        );
+      } else {
+        // Set operator's messaging module to the new LayerZeroModuleV2
+        holographOperator.setMessagingModule(address(layerZeroV2Module));
+      }
 
       for (uint256 j = 0; j < chainIds.length; j++) {
         if (chainIds[j] == block.chainid) continue;
 
-        // Update holographInterface chainId map
-        holographInterfaces.updateChainIdMap(
-          ChainIdType.HOLOGRAPH,
-          chainIds[j],
-          ChainIdType.LAYERZEROV2,
-          DeploymentHelper.getEndpointId(chainIds[j])
-        );
+        if (safeWallet != address(0)) {
+          SafeWallet.createTransaction(
+            safeWallet,
+            address(holographInterfaces),
+            abi.encodeWithSignature(
+              "updateChainIdMap(uint8,uint256,uint8,uint256)",
+              ChainIdType.HOLOGRAPH,
+              chainIds[j],
+              ChainIdType.LAYERZEROV2,
+              DeploymentHelper.getEndpointId(chainIds[j])
+            )
+          );
+        } else {
+          // Update holographInterface chainId map
+          holographInterfaces.updateChainIdMap(
+            ChainIdType.HOLOGRAPH,
+            chainIds[j],
+            ChainIdType.LAYERZEROV2,
+            DeploymentHelper.getEndpointId(chainIds[j])
+          );
+        }
+
         console.log(
           string(
             abi.encodePacked(
+              (
+                safeWallet != address(0)
+                  ? red(string(abi.encodePacked("Safe wallet (", vm.toString(safeWallet), "):")))
+                  : ""
+              ),
               "Updated chainId map for (",
               yellow(vm.toString(chainIds[j])),
               ") => ",
@@ -330,6 +364,11 @@ contract LayerZeroModuleV2Script is Script, Logger {
       console.log(
         string(
           abi.encodePacked(
+            (
+              safeWallet != address(0)
+                ? red(string(abi.encodePacked("Safe wallet (", vm.toString(safeWallet), "):")))
+                : ""
+            ),
             "\nNew ",
             cyan("LayerZeroModuleV2"),
             " deployed on ",
@@ -419,7 +458,7 @@ contract LayerZeroModuleV2Script is Script, Logger {
           yellow("\nMinted ERC721 token with id: "),
           green(vm.toString(nextTokenId)),
           "\n",
-          yellow("Bridged it out to "), 
+          yellow("Bridged it out to "),
           green(ForkHelper.getChainName(toChainId)),
           "(",
           magenta(vm.toString(toChainId)),

@@ -1,0 +1,39 @@
+{
+  "name": "ts-utils-cli",
+  "version": "1.0.0",
+  "description": "",
+  "main": "cli.js",
+  "bin": "targets/cli.js",
+  "scripts": {
+    "build": "tsc && pkg . --out-path targets"
+  },
+  "pkg": {
+    "scripts": "targets/cli.js",
+    "targets": [
+      "node16-linux-x64",
+      "node16-macos-x64",
+      "node16-macos-arm64"
+    ]
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@safe-global/api-kit": "^2.4.3",
+    "@safe-global/protocol-kit": "^4.0.3",
+    "@safe-global/safe-core-sdk-types": "^5.0.3",
+    "@types/node": "^20.14.11",
+    "@types/prompts": "^2.4.9",
+    "colors": "^1.4.0",
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.5",
+    "pkg": "^5.8.1",
+    "prompts": "^2.4.2",
+    "ts-loader": "^9.5.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.3",
+    "webpack": "^5.93.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-node-externals": "^3.0.0"
+  }
+}

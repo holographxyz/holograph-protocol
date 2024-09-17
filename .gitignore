@@ -244,6 +244,7 @@ artifacts
 broadcast
 typechain-types
 deployments/experimental
+scripts/utils/safeCLI/targets
 
 ## pnpm
 .pnpm-store
