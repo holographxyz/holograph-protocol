@@ -248,7 +248,7 @@ contract LayerZeroModuleV2Script is Script, Logger {
       // Whiteliste the new layerZeroV2Module for all chains
       EndpointPeer[] memory peers = new EndpointPeer[](chainIds.length);
       address futurLayerZeroModule = DeploymentHelper.computeGenesisDeploymentAddress(
-        vm.envBytes32("DEPLOYMENT_SECRET"),
+        vm.envBytes32("DEPLOYMENT_SALT"),
         type(LayerZeroModuleProxyV2).creationCode
       );
       for (uint256 j = 0; j < chainIds.length; j++) {
@@ -273,7 +273,7 @@ contract LayerZeroModuleV2Script is Script, Logger {
       );
 
       // Deploy layerZeroV2Module
-      bytes32 salt = vm.envBytes32("DEPLOYMENT_SECRET");
+      bytes32 salt = vm.envBytes32("DEPLOYMENT_SALT");
 
       // Divide the salt into saltHash (bytes12) and secret (bytes20)
       bytes20 secret = bytes20(salt); // Extract the first 20 bytes
