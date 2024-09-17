@@ -312,7 +312,7 @@ contract LayerZeroModuleV2Script is Script, Logger {
         holographInterfaces.updateChainIdMap(
           ChainIdType.HOLOGRAPH,
           chainIds[j],
-          ChainIdType.LAYERZERO,
+          ChainIdType.LAYERZEROV2,
           DeploymentHelper.getEndpointId(chainIds[j])
         );
         console.log(
