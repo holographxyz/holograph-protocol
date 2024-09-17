@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.13;
 
 import "../abstract/Admin.sol";
@@ -150,7 +149,7 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable {
     bytes memory msgExecutionOption = OptionsBuilder.newOptions().addExecutorLzReceiveOption(uint128(gasLimit), 0);
 
     _lzSend(
-      uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO)),
+      uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZEROV2)),
       crossChainPayload,
       msgExecutionOption,
       // Fee in native gas and ZRO token.
@@ -178,7 +177,7 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable {
     uint256 gasPrice,
     bytes calldata crossChainPayload
   ) external view returns (uint256 hlgFee, uint256 msgFee, uint256 dstGasPrice) {
-    uint16 lzEidV1 = uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO));
+    uint16 lzEidV1 = uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZEROV2));
     uint16 lzEidV2 = lzEidV1 + 30000; // Convert LZ V2 eid to LZ V1 eid
     ILayerZeroPriceFeed.Price memory price = _getPrice(lzEidV1);
 
@@ -194,14 +193,14 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable {
     require(totalGas < gasParameters.maxGasLimit, "HOLOGRAPH: gas limit over max");
 
     bytes memory options = _createOptions(gasParameters, crossChainPayload);
-    (uint256 nativeFee, ) = _estimateFees(lzEidV2, crossChainPayload, options);
+    MessagingFee memory msgFees = _quote(lzEidV2, crossChainPayload, options, false);
     hlgFee = ((gasPrice * totalGas) * price.priceRatio) / (10 ** 20);
 
     if (toChain == uint32(7) || toChain == uint32(4000000074)) {
       hlgFee += (_optimismGasPriceOracle().getL1Fee(crossChainPayload) * price.priceRatio) / (10 ** 20);
     }
 
-    msgFee = nativeFee;
+    msgFee = msgFees.nativeFee;
     dstGasPrice = (price.gasPriceInUnit * price.priceRatio) / (10 ** 20);
   }
 
@@ -321,23 +320,6 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable {
   }
 
   /**
-   * @notice Estimate the fees for sending a cross-chain message
-   * @param lzEidV2 The LayerZero endpoint ID to send the message to
-   * @param crossChainPayload The payload to send to the destination chain
-   * @param options The options to use for the cross-chain message
-   * @return nativeFee The native fee
-   * @return lzFee The LayerZero fee
-   */
-  function _estimateFees(
-    uint16 lzEidV2,
-    bytes calldata crossChainPayload,
-    bytes memory options
-  ) internal view returns (uint256 nativeFee, uint256 lzFee) {
-    LayerZeroOverrides lz = _getLayerZeroOverrides();
-    return lz.estimateFees(lzEidV2, address(this), crossChainPayload, false, options);
-  }
-
-  /**
    * @notice Get the Holograph fee for sending a cross-chain message
    * @param toChain The destination chain ID
    * @param gasLimit The gas limit to use for the cross-chain message
@@ -350,7 +332,7 @@ contract LayerZeroModuleV2 is OApp, Admin, Initializable {
     uint256 gasPrice,
     bytes calldata crossChainPayload
   ) external view returns (uint256 hlgFee) {
-    uint16 lzEidV1 = uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZERO));
+    uint16 lzEidV1 = uint16(_interfaces().getChainId(ChainIdType.HOLOGRAPH, uint256(toChain), ChainIdType.LAYERZEROV2));
 
     (, ILayerZeroPriceFeed.Price memory price) = _getPriceFeed(lzEidV1); // Use the LZ V1 eid for the price feed
 
