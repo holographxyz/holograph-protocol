@@ -43,7 +43,7 @@ build_safe_wallet_cli() {
 
 # If SAFE_WALLET env variable is set, build the safe wallet CLI helper
 if [ -n "$SAFE_WALLET" ]; then
-  build_safe_wallet_cli()
+  build_safe_wallet_cli
 fi
 
 # Load environment variables from .env

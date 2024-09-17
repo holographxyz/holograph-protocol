@@ -43,5 +43,13 @@ baseSepolia = "${BASE_TESTNET_SEPOLIA_RPC_URL}"
 lineaSepolia = "${LINEA_TESTNET_SEPOLIA_RPC_URL}"
 
 [etherscan]
+sepolia = { key = "${ETHEREUM_TESTNET_API_KEY}", chain="11155111" }
+# mumbai = { key = "${POLYGON_TESTNET_API_KEY}", chain="80001" }
+# fuji = { key = "${AVALANCHE_TESTNET_API_KEY}", chain="43113" }
+# bscTestnet = { key = "${BINANCE_SMART_CHAIN_TESTNET_API_KEY}", chain="97" }
 opsepolia = { key = "${OPTIMISM_TESTNET_SEPOLIA_API_KEY}", chain="11155420"  }
 arbsepolia = { key = "${ARBITRUM_TESTNET_SEPOLIA_API_KEY}", chain="421614"  }
+# zorasepolia = { key = "${MANTLE_TESTNET_API_KEY}", chain="999999999"  }
+# mantleTestnet = { key = "${LINEA_TESTNET_SEPOLIA_API_KEY}", chain="5001"  }
+# baseSepolia = { key = "${BASE_TESTNET_SEPOLIA_API_KEY}", chain="84532"  }
+# lineaSepolia = { key = "${ZORA_TESTNET_SEPOLIA_API_KEY}", chain="59141"  }
