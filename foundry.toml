@@ -1,3 +1,7 @@
+[profile.package]
+name = "@holographxyz/holograph-protocol"
+version = "0.0.1"
+
 [profile.default]
 solc_version = '0.8.13'
 optimizer = true
@@ -15,7 +19,10 @@ ignored_warnings_from = ["scripts"]
 # bracket_spacing = true
 # wrap_comments = true
 # number_underscore = "thousands"
-fs_permissions = [{ access = "read", path = "./artifacts" },{ access = "read", path = "./broadcast" }]
+fs_permissions = [
+  { access = "read", path = "./artifacts" },
+  { access = "read", path = "./broadcast" },
+]
 
 [rpc_endpoints]
 # Mainnets
@@ -43,12 +50,12 @@ baseSepolia = "${BASE_TESTNET_SEPOLIA_RPC_URL}"
 lineaSepolia = "${LINEA_TESTNET_SEPOLIA_RPC_URL}"
 
 [etherscan]
-sepolia = { key = "${ETHEREUM_TESTNET_API_KEY}", chain="11155111" }
+sepolia = { key = "${ETHEREUM_TESTNET_API_KEY}", chain = "11155111" }
 # mumbai = { key = "${POLYGON_TESTNET_API_KEY}", chain="80001" }
 # fuji = { key = "${AVALANCHE_TESTNET_API_KEY}", chain="43113" }
 # bscTestnet = { key = "${BINANCE_SMART_CHAIN_TESTNET_API_KEY}", chain="97" }
-opsepolia = { key = "${OPTIMISM_TESTNET_SEPOLIA_API_KEY}", chain="11155420"  }
-arbsepolia = { key = "${ARBITRUM_TESTNET_SEPOLIA_API_KEY}", chain="421614"  }
+opsepolia = { key = "${OPTIMISM_TESTNET_SEPOLIA_API_KEY}", chain = "11155420" }
+arbsepolia = { key = "${ARBITRUM_TESTNET_SEPOLIA_API_KEY}", chain = "421614" }
 # zorasepolia = { key = "${MANTLE_TESTNET_API_KEY}", chain="999999999"  }
 # mantleTestnet = { key = "${LINEA_TESTNET_SEPOLIA_API_KEY}", chain="5001"  }
 # baseSepolia = { key = "${BASE_TESTNET_SEPOLIA_API_KEY}", chain="84532"  }

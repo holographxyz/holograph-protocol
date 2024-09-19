@@ -392,7 +392,7 @@ contract LayerZeroModuleV2Script is Script, Logger {
 
     uint256 erc721OwnerPrivateKey = vm.envUint("ERC721_OWNER");
     erc721Owner = vm.addr(erc721OwnerPrivateKey);
-    vm.startBroadcast(erc721Owner);
+    vm.startBroadcast(erc721OwnerPrivateKey);
 
     bytes32 contractType = 0x0000000000000000000000000000000000486f6c6f6772617068455243373231;
     uint32 chainType = 11155420;

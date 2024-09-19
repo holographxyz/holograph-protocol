@@ -60,4 +60,8 @@ contract Logger is Colors {
 
         return string(trimmedResult);
     }
+
+    function logHlgDeployerMessage(string memory message) public view {
+        console.log("[hlg-deployer-msg]: ", message);
+    }
 }

@@ -14,7 +14,7 @@ library ForkHelper {
 
   function getChainName(uint256 chainId) internal returns (string memory) {
     Vm vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
-    
+
     if (chainId == vm.envUint("ETH_CHAIN_ID")) return "Ethereum";
     if (chainId == vm.envUint("POLYGON_CHAIN_ID")) return "Polygon";
     if (chainId == vm.envUint("AVALANCHE_CHAIN_ID")) return "Avalanche";
@@ -65,7 +65,7 @@ library ForkHelper {
 
   function getRpcUrl(uint256 chainId) internal returns (string memory rpcUrl) {
     Vm vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
-    
+
     /* -------------------------------- Mainnets -------------------------------- */
     if (chainId == vm.envUint("ETH_CHAIN_ID")) rpcUrl = vm.rpcUrl("ethereum");
     if (chainId == vm.envUint("POLYGON_CHAIN_ID")) rpcUrl = vm.rpcUrl("polygon");
@@ -101,8 +101,7 @@ library ForkHelper {
   function isTestnet(uint256 chainId) internal returns (bool) {
     Vm vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
 
-    return (
-      chainId == vm.envUint("SEPOLIA_CHAIN_ID") ||
+    return (chainId == vm.envUint("SEPOLIA_CHAIN_ID") ||
       chainId == vm.envUint("MUMBAI_CHAIN_ID") ||
       chainId == vm.envUint("FUJI_CHAIN_ID") ||
       chainId == vm.envUint("BSC_TESTNET_CHAIN_ID") ||
@@ -111,7 +110,23 @@ library ForkHelper {
       chainId == vm.envUint("ZORA_SEPOLIA_CHAIN_ID") ||
       chainId == vm.envUint("MANTLE_SEPOLIA_CHAIN_ID") ||
       chainId == vm.envUint("BASE_SEPOLIA_CHAIN_ID") ||
-      chainId == vm.envUint("LINEA_SEPOLIA_CHAIN_ID")
-    );
+      chainId == vm.envUint("LINEA_SEPOLIA_CHAIN_ID"));
+  }
+
+  function revertIfNoFund(address deployer) internal {
+    Vm vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
+
+    if (address(deployer).balance < 0.005 ether) {
+      revert(
+        string(
+          abi.encodePacked(
+            "Deployer(",
+            vm.toString(deployer),
+            ") does not have enough funds on ",
+            getChainName(block.chainid)
+          )
+        )
+      );
+    }
   }
 }
