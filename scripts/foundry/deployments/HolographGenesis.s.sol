@@ -9,30 +9,25 @@ import {HolographGenesis} from "src/HolographGenesis.sol";
 
 import {Logger} from "../utils/Logger.sol";
 import {ForkHelper} from "../utils/ForkHelper.sol";
+import {EnvHelper} from "../utils/EnvHelper.sol";
 
 contract HolographGenesisDeployScript is Script, Logger {
   function deploy(bytes32 deployerPrivateKey, uint256[] calldata chainIds) public {
-    address deployer = vm.addr(uint256(deployerPrivateKey));
+    EnvHelper.checkHolographDeployerRequiredEnv();
 
-    if (deployerPrivateKey == 0x0) {
-      logHlgDeployerMessage("Need to provide deployer private key");
-    }
+    address deployer = vm.addr(uint256(deployerPrivateKey));
 
     for (uint256 i = 0; i < chainIds.length; i++) {
       ForkHelper.forkByChainId(chainIds[i]);
-      ForkHelper.revertIfNoFund(deployer);
 
       vm.startBroadcast(uint256(deployerPrivateKey));
+      uint256 gasBefore = gasleft();
       HolographGenesis hlg = new HolographGenesis();
+      uint256 gasAfter = gasleft();
       vm.stopBroadcast();
 
-      logHlgDeployerMessage(string(abi.encodePacked(
-        "new HolographGenesis(",
-        vm.toString(chainIds[i]),
-        "::",
-        vm.toString(address(hlg)),
-        ")"
-      )));
+      uint256 gasUsed = gasBefore - gasAfter;
+      ForkHelper.revertIfNotEnoughFunds(deployer, gasUsed);
     }
   }
 }

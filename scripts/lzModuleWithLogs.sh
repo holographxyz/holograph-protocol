@@ -50,7 +50,7 @@ fi
 source .env
 
 # Run the forge command with the passed arguments
-forge script --rpc-url $RPC_URL --broadcast --verify -vv --via-ir scripts/foundry/LayerZeroModuleV2.s.sol:LayerZeroModuleV2Script $ARGS
+forge script --rpc-url $RPC_URL --broadcast --verify -vvvv --via-ir scripts/foundry/LayerZeroModuleV2.s.sol:LayerZeroModuleV2Script $ARGS
 
 # If the forge command succeeded, call the log function
 if [ $? -eq 0 ]; then

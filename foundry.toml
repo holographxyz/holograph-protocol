@@ -22,6 +22,7 @@ ignored_warnings_from = ["scripts"]
 fs_permissions = [
   { access = "read", path = "./artifacts" },
   { access = "read", path = "./broadcast" },
+  { access = "read", path = "./deployments" },
 ]
 
 [rpc_endpoints]
@@ -39,7 +40,7 @@ linea = "${LINEA_RPC_URL}"
 
 # Testnets
 sepolia = "${ETHEREUM_TESTNET_SEPOLIA_RPC_URL}"
-mumbai = "${POLYGON_TESTNET_RPC_URL}"
+amoy = "${POLYGON_TESTNET_RPC_URL}"
 fuji = "${AVALANCHE_TESTNET_RPC_URL}"
 bscTestnet = "${BINANCE_SMART_CHAIN_TESTNET_RPC_URL}"
 opsepolia = "${OPTIMISM_TESTNET_SEPOLIA_RPC_URL}"
@@ -50,13 +51,25 @@ baseSepolia = "${BASE_TESTNET_SEPOLIA_RPC_URL}"
 lineaSepolia = "${LINEA_TESTNET_SEPOLIA_RPC_URL}"
 
 [etherscan]
-sepolia = { key = "${ETHEREUM_TESTNET_API_KEY}", chain = "11155111" }
-# mumbai = { key = "${POLYGON_TESTNET_API_KEY}", chain="80001" }
-# fuji = { key = "${AVALANCHE_TESTNET_API_KEY}", chain="43113" }
-# bscTestnet = { key = "${BINANCE_SMART_CHAIN_TESTNET_API_KEY}", chain="97" }
-opsepolia = { key = "${OPTIMISM_TESTNET_SEPOLIA_API_KEY}", chain = "11155420" }
-arbsepolia = { key = "${ARBITRUM_TESTNET_SEPOLIA_API_KEY}", chain = "421614" }
-# zorasepolia = { key = "${MANTLE_TESTNET_API_KEY}", chain="999999999"  }
-# mantleTestnet = { key = "${LINEA_TESTNET_SEPOLIA_API_KEY}", chain="5001"  }
-# baseSepolia = { key = "${BASE_TESTNET_SEPOLIA_API_KEY}", chain="84532"  }
-# lineaSepolia = { key = "${ZORA_TESTNET_SEPOLIA_API_KEY}", chain="59141"  }
+# Mainnets
+ethereum = { key = "${ETHEREUM_API_KEY}", chain = "1" }
+polygon = { key = "${POLYGON_API_KEY}", chain = "137" }
+avalanche = { key = "${AVALANCHE_API_KEY}", chain = "43114" }
+bsc = { key = "${BINANCE_SMART_CHAIN_API_KEY}", chain = "56" }
+optimism = { key = "${OPTIMISM_API_KEY}", chain = "10" }
+arbitrum = { key = "${ARBITRUM_API_KEY}", chain = "42161" }
+zora = { key = "${ZORA_API_KEY}", chain = "7777777" }
+mantle = { key = "${MANTLE_API_KEY}", chain = "5000" }
+base = { key = "${BASE_API_KEY}", chain = "8453" }
+linea = { key = "${LINEA_API_KEY}", chain = "59144", url = "${LINEA_RPC_URL}" }
+# Testnets
+sepolia = { key = "${ETHEREUM_API_KEY}", chain = "11155111" }
+amoy = { key = "${POLYGON_API_KEY}", chain = "80001" }
+fuji = { key = "${AVALANCHE_API_KEY}", chain = "43113" }
+bscTestnet = { key = "${BINANCE_SMART_CHAIN_API_KEY}", chain = "97" }
+opsepolia = { key = "${OPTIMISM_API_KEY}", chain = "11155420" }
+arbsepolia = { key = "${ARBITRUM_API_KEY}", chain = "421614" }
+zorasepolia = { key = "${ZORA_API_KEY}", chain = "999999999" }
+mantleTestnet = { key = "${MANTLE_API_KEY}", chain = "5001" }
+baseSepolia = { key = "${BASE_API_KEY}", chain = "84532" }
+lineaSepolia = { key = "${LINEA_API_KEY}", chain = "59141", url = "${LINEA_TESTNET_SEPOLIA_RPC_URL}" }

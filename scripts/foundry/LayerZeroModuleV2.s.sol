@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
-import {Vm} from "forge-std/Vm.sol";
+import {Vm, VmSafe} from "forge-std/Vm.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 
 import {Holograph} from "src/Holograph.sol";
@@ -31,8 +31,14 @@ import {SafeWallet} from "./utils/SafeWallet.sol";
 contract LayerZeroModuleV2Script is Script, Logger {
   using stdJson for string;
 
+  // Environment
+  string currentEnv;
+
   // Admin address
   address admin;
+
+  // Deployment salt
+  bytes32 deploymentSalt;
 
   // Layer zero endpoint v2
   address lzEndpoint;
@@ -61,6 +67,33 @@ contract LayerZeroModuleV2Script is Script, Logger {
    * @dev Print the usage of the script
    */
   function run() public {
+    bytes32 deployerPrivateKey;
+    bytes32 erc721Owner;
+    address safeWallet;
+
+    try vm.envBytes32("DEPLOYER") returns (bytes32 _deployerPrivateKey) {
+      deployerPrivateKey = _deployerPrivateKey;
+    } catch {
+      deployerPrivateKey = bytes32(0);
+    }
+
+    try vm.envAddress("SAFE_WALLET") returns (address _safeWallet) {
+      safeWallet = _safeWallet;
+    } catch {
+      safeWallet = address(0);
+    }
+
+    try vm.envBytes32("ERC721_OWNER") returns (bytes32 _erc721Owner) {
+      erc721Owner = _erc721Owner;
+    } catch {
+      erc721Owner = bytes32(0);
+    }
+
+    console.log(blue("\n== Environment variables ==\n"));
+    console.log("  - DEPLOYER %s", deployerPrivateKey == bytes32(0) ? unicode"❌" : unicode"✅");
+    console.log("  - SAFE_WALLET %s", safeWallet == address(0) ? unicode"❌" : unicode"✅");
+    console.log("  - ERC721_OWNER %s", erc721Owner == bytes32(0) ? unicode"❌" : unicode"✅");
+
     console.log(blue("\n== You need to specify a signature (--sig) to run the script you want==\n"));
     console.log("  Supported signatures:");
     console.log(
@@ -131,33 +164,6 @@ contract LayerZeroModuleV2Script is Script, Logger {
       string(
         abi.encodePacked(
           "    - ",
-          yellow("setPeer"),
-          "(",
-          green("uint256"),
-          ",",
-          green("uint32"),
-          ",",
-          green("address"),
-          ")",
-          magenta(" ==> "),
-          green("uint256"),
-          " ",
-          cyan("chainId"),
-          ", ",
-          green("uint32"),
-          " ",
-          cyan("eid"),
-          ", ",
-          green("address"),
-          " ",
-          cyan("peer")
-        )
-      )
-    );
-    console.log(
-      string(
-        abi.encodePacked(
-          "    - ",
           yellow("executeJob"),
           "(",
           green("uint256"),
@@ -172,6 +178,21 @@ contract LayerZeroModuleV2Script is Script, Logger {
           green("bytes"),
           " ",
           cyan("jobPayload")
+        )
+      )
+    );
+    console.log(
+      string(
+        abi.encodePacked(
+          "    - ",
+          yellow("setPeers"),
+          "(",
+          green("uint256"),
+          ")",
+          magenta(" ==> "),
+          green("uint256"),
+          " ",
+          cyan("chainId")
         )
       )
     );
@@ -198,9 +219,9 @@ contract LayerZeroModuleV2Script is Script, Logger {
           "pnpm ",
           green("forge:layerZeroModuleV2"),
           " ",
-          yellow("421614"),
+          yellow("[1,10,56]"),
           " --sig ",
-          magenta('"deployLzModuleAndUpdateOperator(uint256)"')
+          magenta('"deployLzModulesAndUpdateOperatorsMultiChain(uint256[])"')
         )
       )
     );
@@ -211,17 +232,13 @@ contract LayerZeroModuleV2Script is Script, Logger {
    * @param chainIds The chain ids to deploy the LayerZeroModuleV2
    */
   function deployLzModulesAndUpdateOperatorsMultiChain(uint256[] calldata chainIds) external {
-    uint256 deployerPrivateKey = vm.envUint("PROTOCOL_ADMIN");
+    uint256 deployerPrivateKey = vm.envUint("DEPLOYER");
     address deployer = vm.addr(deployerPrivateKey);
 
     console.log(string(abi.encodePacked("\nDeployer: ", yellow(vm.toString(deployer)))));
 
     // Loading protocol contracts from env
-    holographGenesis = HolographGenesis(payable(vm.envAddress("GENESIS_ADDRESS")));
-    holographBridge = HolographBridge(payable(vm.envAddress("BRIDGE_ADDRESS")));
-    holographFactory = HolographFactory(payable(vm.envAddress("FACTORY_ADDRESS")));
-    holographOperator = HolographOperator(payable(vm.envAddress("OPERATOR_ADDRESS")));
-    holographInterfaces = HolographInterfaces(payable(vm.envAddress("INTERFACES_ADDRESS")));
+    loadProtocolContracts();
 
     for (uint256 i = 0; i < chainIds.length; i++) {
       ForkHelper.forkByChainId(chainIds[i]);
@@ -248,11 +265,20 @@ contract LayerZeroModuleV2Script is Script, Logger {
       // Whiteliste the new layerZeroV2Module for all chains
       EndpointPeer[] memory peers = new EndpointPeer[](chainIds.length);
       address futurLayerZeroModule = DeploymentHelper.computeGenesisDeploymentAddress(
-        vm.envBytes32("DEPLOYMENT_SALT"),
-        type(LayerZeroModuleProxyV2).creationCode
+        deploymentSalt,
+        type(LayerZeroModuleProxyV2).creationCode,
+        address(holographGenesis)
       );
-      for (uint256 j = 0; j < chainIds.length; j++) {
-        peers[j] = EndpointPeer({peer: futurLayerZeroModule, eid: DeploymentHelper.getEndpointId(chainIds[j])});
+
+      uint256[] memory supportedChainIds = ForkHelper.isTestnet(chainIds[i])
+        ? ForkHelper.supportedTestnetIds()
+        : ForkHelper.supportedMainnetIds();
+
+      for (uint256 j = 0; j < supportedChainIds.length; j++) {
+        peers[j] = EndpointPeer({
+          peer: futurLayerZeroModule,
+          eid: DeploymentHelper.getEndpointId(supportedChainIds[j])
+        });
       }
 
       // Encode Layer zero module proxy init code
@@ -265,19 +291,16 @@ contract LayerZeroModuleV2Script is Script, Logger {
           address(gasPriceOracle),
           DeploymentHelper.getLzEndpoint(chainIds[i]),
           DeploymentHelper.getLzExecutor(chainIds[i]),
-          vm.envAddress("HOLOGRAPH_ADDRESS"),
+          address(holograph),
           supportedChains,
           gasParameters,
           peers
         )
       );
 
-      // Deploy layerZeroV2Module
-      bytes32 salt = vm.envBytes32("DEPLOYMENT_SALT");
-
       // Divide the salt into saltHash (bytes12) and secret (bytes20)
-      bytes20 secret = bytes20(salt); // Extract the first 20 bytes
-      bytes12 saltHash = bytes12(salt << 160); // Extract the first 12 bytes
+      bytes20 secret = bytes20(deploymentSalt); // Extract the first 20 bytes
+      bytes12 saltHash = bytes12(deploymentSalt << 160); // Extract the first 12 bytes
 
       // Start recording emitted events
       vm.recordLogs();
@@ -319,8 +342,8 @@ contract LayerZeroModuleV2Script is Script, Logger {
         holographOperator.setMessagingModule(address(layerZeroV2Module));
       }
 
-      for (uint256 j = 0; j < chainIds.length; j++) {
-        if (chainIds[j] == block.chainid) continue;
+      for (uint256 j = 0; j < supportedChainIds.length; j++) {
+        if (supportedChainIds[j] == block.chainid) continue;
 
         if (safeWallet != address(0)) {
           SafeWallet.createTransaction(
@@ -329,18 +352,18 @@ contract LayerZeroModuleV2Script is Script, Logger {
             abi.encodeWithSignature(
               "updateChainIdMap(uint8,uint256,uint8,uint256)",
               ChainIdType.HOLOGRAPH,
-              chainIds[j],
+              supportedChainIds[j],
               ChainIdType.LAYERZEROV2,
-              DeploymentHelper.getEndpointId(chainIds[j])
+              DeploymentHelper.getEndpointId(supportedChainIds[j])
             )
           );
         } else {
           // Update holographInterface chainId map
           holographInterfaces.updateChainIdMap(
             ChainIdType.HOLOGRAPH,
-            chainIds[j],
+            supportedChainIds[j],
             ChainIdType.LAYERZEROV2,
-            DeploymentHelper.getEndpointId(chainIds[j])
+            DeploymentHelper.getEndpointId(supportedChainIds[j])
           );
         }
 
@@ -478,7 +501,7 @@ contract LayerZeroModuleV2Script is Script, Logger {
     loadEnv(fromChainId);
     ForkHelper.forkByChainId(toChainId);
 
-    uint256 deployerPrivateKey = vm.envUint("PROTOCOL_ADMIN");
+    uint256 deployerPrivateKey = vm.envUint("DEPLOYER");
     vm.startBroadcast(deployerPrivateKey);
 
     holographBridge.bridgeOutRequest{value: 0.002 ether}(
@@ -493,37 +516,6 @@ contract LayerZeroModuleV2Script is Script, Logger {
   }
 
   /**
-   * Set LayerZeroModuleV2 peers
-   * @param chainId The chain id
-   * @param eid The endpoint id
-   * @param peer The peer
-   */
-  function setPeer(uint256 chainId, uint32 eid, address peer) public {
-    uint256 deployerPrivateKey = vm.envUint("PROTOCOL_ADMIN");
-    vm.startBroadcast(deployerPrivateKey);
-
-    string memory currentChainPrefix = getChainEnvPrefix(block.chainid);
-    layerZeroV2Module = LayerZeroModuleV2(
-      payable(vm.envAddress(string(abi.encodePacked(currentChainPrefix, "MODULE_V2"))))
-    );
-
-    layerZeroV2Module.setPeer(eid, bytes32(uint256(uint160(peer))));
-
-    console.log(
-      string(
-        abi.encodePacked(
-          yellow("Set peer for endpoint id: "),
-          green(vm.toString(eid)),
-          yellow(" to: "),
-          green(vm.toString(peer))
-        )
-      )
-    );
-
-    vm.stopBroadcast();
-  }
-
-  /**
    * Execute a job on the Holograph operator
    * @param chainId The chain id
    * @param jobPayload The job payload
@@ -532,11 +524,50 @@ contract LayerZeroModuleV2Script is Script, Logger {
     loadEnv(chainId);
     ForkHelper.forkByChainId(chainId);
 
-    uint256 deployerPrivateKey = vm.envUint("PROTOCOL_ADMIN");
+    uint256 deployerPrivateKey = vm.envUint("DEPLOYER");
     vm.startBroadcast(deployerPrivateKey);
 
     holographOperator.executeJob(jobPayload);
 
+    vm.stopBroadcast();
+  }
+
+  /**
+   * Set LayerZeroModuleV2 peers
+   * @param chainId The chain id
+   */
+  function setPeers(uint256 chainId) public {
+    ForkHelper.forkByChainId(chainId);
+    console.log(string(abi.encodePacked("Seting peers for ", yellow(ForkHelper.getChainName(chainId)))));
+
+    loadProtocolContracts();
+
+    uint256[] memory supportedChainIds = keccak256(abi.encodePacked(currentEnv)) ==
+      keccak256(abi.encodePacked("mainnet"))
+      ? ForkHelper.supportedMainnetIds()
+      : ForkHelper.supportedTestnetIds();
+
+    address messagingModule = holographOperator.getMessagingModule();
+    layerZeroV2Module = LayerZeroModuleV2(payable(messagingModule));
+
+    uint256 deployerPrivateKey = vm.envUint("DEPLOYER");
+    vm.startBroadcast(deployerPrivateKey);
+    for (uint256 i; i < supportedChainIds.length; i++) {
+      layerZeroV2Module.setPeer(
+        DeploymentHelper.getEndpointId(supportedChainIds[i]),
+        bytes32(uint256(uint160(messagingModule)))
+      );
+      console.log(
+        string(
+          abi.encodePacked(
+            "Set peer for (",
+            yellow(ForkHelper.getChainName(supportedChainIds[i])),
+            ") => ",
+            yellow(vm.toString(DeploymentHelper.getEndpointId(supportedChainIds[i])))
+          )
+        )
+      );
+    }
     vm.stopBroadcast();
   }
 
@@ -605,7 +636,7 @@ contract LayerZeroModuleV2Script is Script, Logger {
       )
     );
 
-    uint256 deployerPrivateKey = vm.envUint("PROTOCOL_ADMIN");
+    uint256 deployerPrivateKey = vm.envUint("DEPLOYER");
     vm.startBroadcast(deployerPrivateKey);
 
     holographOperator.executeJob(jobPayload);
@@ -637,15 +668,10 @@ contract LayerZeroModuleV2Script is Script, Logger {
    */
   function loadEnv(uint256 sourceChainId, bool skipPrompt) private {
     /* -------------------------------------------------------------------------- */
-    /*                         Load environment variables                         */
+    /*                      Load protocol contracts addresses                     */
     /* -------------------------------------------------------------------------- */
 
-    holographGenesis = HolographGenesis(payable(vm.envAddress("GENESIS_ADDRESS")));
-    holographBridge = HolographBridge(payable(vm.envAddress("BRIDGE_ADDRESS")));
-    holographFactory = HolographFactory(payable(vm.envAddress("FACTORY_ADDRESS")));
-    holographOperator = HolographOperator(payable(vm.envAddress("OPERATOR_ADDRESS")));
-    holographInterfaces = HolographInterfaces(payable(vm.envAddress("INTERFACES_ADDRESS")));
-    holograph = Holograph(payable(holographOperator.getHolograph()));
+    loadProtocolContracts();
 
     /* ---------------------------- Source chain env ---------------------------- */
 
@@ -724,6 +750,60 @@ contract LayerZeroModuleV2Script is Script, Logger {
     ) {
       revert(red("Script execution aborted"));
     }
+  }
+
+  /**
+   * Load the protocol contracts addresses from the environment
+   * @dev This function reads the json files from the deployments folder based on
+   *      the HOLOGRAPH_ENVIRONMENT env variable.
+   */
+  function loadProtocolContracts() private {
+    try vm.envString("HOLOGRAPH_ENVIRONMENT") returns (string memory _currentEnv) {
+      currentEnv = _currentEnv;
+    } catch {
+      revert("HOLOGRAPH_ENVIRONMENT env variable is not set");
+    }
+
+    if (
+      keccak256(abi.encodePacked(currentEnv)) != keccak256(abi.encodePacked("develop")) &&
+      keccak256(abi.encodePacked(currentEnv)) != keccak256(abi.encodePacked("testnet")) &&
+      keccak256(abi.encodePacked(currentEnv)) != keccak256(abi.encodePacked("mainnet"))
+    ) {
+      revert("Invalid HOLOGRAPH_ENVIRONMENT. Possible values are: develop, testnet, mainnet");
+    }
+
+    /* ---------------------------- Protocol contracts ---------------------------- */
+
+    // Construct the path where the protocol contracts deployments json files are stored
+    string memory deployPath = string(abi.encodePacked("deployments/", currentEnv, "/"));
+    VmSafe.DirEntry[] memory dirs = vm.readDir(deployPath);
+
+    // Read the protocol contracts deployment json files
+    string memory holographJson = vm.readFile(string(abi.encodePacked(dirs[0].path, "/Holograph.json")));
+    string memory holographBridgeJson = vm.readFile(
+      string(abi.encodePacked(dirs[0].path, "/HolographBridgeProxy.json"))
+    );
+    string memory holographFactoryJson = vm.readFile(
+      string(abi.encodePacked(dirs[0].path, "/HolographFactoryProxy.json"))
+    );
+    string memory holographOperatorJson = vm.readFile(
+      string(abi.encodePacked(dirs[0].path, "/HolographOperatorProxy.json"))
+    );
+    string memory holographInterfacesJson = vm.readFile(
+      string(abi.encodePacked(dirs[0].path, "/HolographInterfaces.json"))
+    );
+
+    holograph = Holograph(payable(holographJson.readAddress(".address")));
+    holographGenesis = HolographGenesis(payable(holographJson.readAddress(".receipt.to")));
+    holographBridge = HolographBridge(payable(holographBridgeJson.readAddress(".address")));
+    holographFactory = HolographFactory(payable(holographFactoryJson.readAddress(".address")));
+    holographOperator = HolographOperator(payable(holographOperatorJson.readAddress(".address")));
+    holographInterfaces = HolographInterfaces(payable(holographInterfacesJson.readAddress(".address")));
+
+    /* -------------------------- Load deployment salt -------------------------- */
+
+    // TODO: set it based on the HOLOGRAPH_ENVIRONMENT
+    deploymentSalt = vm.envBytes32("DEPLOYMENT_SALT");
   }
 
   /**
