@@ -7,8 +7,10 @@ pnpm forge:layerZeroModuleV2
 ```
 
 ## Use ledger to sign a script transactions
-1. To use a ledger to sign a script transaction, you need to set the `HARDWARE_WALLET` environment variable to the address of the hardware wallet you want to use. 
-2. Add `--ledger` at the end of the command to enable the ledger signing.
+Here are the steps to use a ledger to sign a script transaction:
+1. Set the `HARDWARE_WALLET` environment variable to the address of the hardware wallet you want to use. 
+2. Plug in the ledger and open the relevant app.
+3. Execute the script with an additional `--ledger` flag.
 
 ### Example
 ```bash
