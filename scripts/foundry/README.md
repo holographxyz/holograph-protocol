@@ -18,16 +18,6 @@ export HARDWARE_WALLET=0x1234567890123456789012345678901234567890
 pnpm forge:layerZeroModuleV2 421614 --sig "executeJob(uint256)" --ledger
 ```
 
-## Possible environment variables description
-
-- `DEPLOYER`: Private key of the deployer.
-- `HARDWARE_WALLET`: Override the deployer with a hardware wallet.
-- `HOLOGRAPH_ENVIRONMENT`: Deployment environment (`mainnet`, `testnet`, `develop`).
-- `DEPLOYMENT_SALT`: Unique salt for each deployment version (used in `holographGenesis.deploy`).
-- `ERC721_OWNER`: Private key of the future owner of the NFT contract.
-- `ERC721_CONTRACT`: Address of the NFT contract.
-- `JOB_PAYLOAD`: Payload of the job to execute.
-
 ## Available Commands
 
 ### `pnpm forge:layerZeroModuleV2`
@@ -48,6 +38,11 @@ This command deploys the `LayerZeroModuleV2` contract on one or multiple chains.
 > The `gasParameters` are hardcoded in the script and should be updated if necessary in `scripts/foundry/utils/ChainGasParameters.sol`.
 
 #### Usage
+**Env Variables:**
+- `HARDWARE_WALLET`: OPTIONAL - Address of the hardware wallet.
+- `DEPLOYER`: Private key of the deployer.
+- `DEPLOYMENT_SALT`: Unique salt for each deployment version (used in `holographGenesis.deploy`).
+- `HOLOGRAPH_ENVIRONMENT`: Deployment environment (`mainnet`, `testnet`, `develop`).
 
 **Script Parameters:**
 
@@ -71,6 +66,11 @@ pnpm forge:layerZeroModuleV2 [1,10,56] --sig "deployLzModulesAndUpdateOperatorsM
 This command deploys a `CxipERC721` NFT contract on a specified chain.
 
 #### Usage
+
+**Env Variables:**
+- `HARDWARE_WALLET`: OPTIONAL - Private key of the hardware wallet.
+- `ERC721_OWNER`: Private key of the future owner of the NFT contract.
+- `HOLOGRAPH_ENVIRONMENT`: Deployment environment (`mainnet`, `testnet`, `develop`).
 
 **Script Parameters:**
 
@@ -98,6 +98,13 @@ This command mints an NFT on a source chain and bridges it to a destination chai
 
 #### Usage
 
+**Env Variables:**
+- `HARDWARE_WALLET`: OPTIONAL - Private key of the hardware wallet.
+- `ERC721_OWNER`: Private key of the NFT contract owner (he will mint the token).
+- `ERC721_CONTRACT`: Address of the NFT contract.
+- `HOLOGRAPH_ENVIRONMENT`: Deployment environment (`mainnet`, `testnet`, `develop`).
+
+
 **Script Parameters:**
 
 - `fromChainId` (uint256): ID of the chain on which to mint the token.
@@ -122,6 +129,11 @@ This command executes a predefined job on a specified destination chain.
 
 #### Usage
 
+**Env Variables:**
+- `HARDWARE_WALLET`: OPTIONAL - Private key of the hardware wallet.
+- `JOB_PAYLOAD`: Payload of the job to execute. -->
+- `HOLOGRAPH_ENVIRONMENT`: Deployment environment (`mainnet`, `testnet`, `develop`).
+
 **Script Parameters:**
 
 - `chainId` (uint256): ID of the chain on which to execute the job.
@@ -143,6 +155,10 @@ pnpm forge:layerZeroModuleV2 421614 --sig "executeJob(uint256)" --ledger
 This script sets the peers for the `LayerZeroModuleV2` contract on a specific chain. Peers are authorized addresses that can send messages to the `LayerZeroModuleV2` contract across all 10 supported chains.
 
 #### Usage
+
+**Env Variables:**
+- `HARDWARE_WALLET`: OPTIONAL - Private key of the hardware wallet.
+- `HOLOGRAPH_ENVIRONMENT`: Deployment environment (`mainnet`, `testnet`, `develop`).
 
 **Script Parameters:**
 
