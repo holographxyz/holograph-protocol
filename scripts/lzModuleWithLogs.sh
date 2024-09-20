@@ -20,7 +20,7 @@ print_logs() {
   fi
 
   # Run the forge command with the passed arguments
-  forge script --rpc-url $RPC_URL -vv --via-ir --ffi scripts/foundry/LogModule.s.sol:LogModuleScript $ARGS
+  forge script -vv --via-ir --ffi scripts/foundry/LogModule.s.sol:LogModuleScript $ARGS
 
   # Run the script to execute the job on the destination chain
   if [[ $ARGS == *"mintAndBridgeOut(uint256,uint256)"* ]]; then
@@ -28,7 +28,7 @@ print_logs() {
     SOURCE_CHAIN=$(echo $ARGS | cut -d' ' -f1)
     # Get the second argument from the ARGS variable
     DESTINATION_CHAIN=$(echo $ARGS | cut -d' ' -f2)
-    forge script --rpc-url $RPC_URL -vv --via-ir --ffi scripts/foundry/LayerZeroModuleV2.s.sol:LayerZeroModuleV2Script $SOURCE_CHAIN $DESTINATION_CHAIN --sig "executeJobWithPrompt(uint256,uint256)"
+    forge script -vv --via-ir --ffi scripts/foundry/LayerZeroModuleV2.s.sol:LayerZeroModuleV2Script $SOURCE_CHAIN $DESTINATION_CHAIN --sig "executeJobWithPrompt(uint256,uint256)"
   fi
 }
 
@@ -50,7 +50,7 @@ fi
 source .env
 
 # Run the forge command with the passed arguments
-forge script --rpc-url $RPC_URL --broadcast --verify -vvvv --via-ir scripts/foundry/LayerZeroModuleV2.s.sol:LayerZeroModuleV2Script $ARGS
+forge script --broadcast --verify -vvvv --via-ir scripts/foundry/LayerZeroModuleV2.s.sol:LayerZeroModuleV2Script $ARGS
 
 # If the forge command succeeded, call the log function
 if [ $? -eq 0 ]; then

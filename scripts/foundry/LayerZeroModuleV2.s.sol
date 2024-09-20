@@ -16,6 +16,7 @@ import {LayerZeroModuleV2} from "src/module/LayerZeroModuleV2.sol";
 import {GasParameters} from "src/struct/GasParameters.sol";
 import {EndpointPeer} from "src/interface/ILayerZeroEndpointV2.sol";
 import {HolographERC721Interface} from "src/interface/HolographERC721Interface.sol";
+import {HolographERC721} from "src/enforcer/HolographERC721.sol";
 import {ChainIdType} from "src/enum/ChainIdType.sol";
 import {CxipERC721} from "src/token/CxipERC721.sol";
 import {TokenUriType} from "src/enum/TokenUriType.sol";
@@ -36,6 +37,7 @@ contract LayerZeroModuleV2Script is Script, Logger {
 
   // Admin address
   address admin;
+  address hardwareWallet;
 
   // Deployment salt
   bytes32 deploymentSalt;
@@ -111,7 +113,21 @@ contract LayerZeroModuleV2Script is Script, Logger {
         )
       )
     );
-    console.log(string(abi.encodePacked("    - ", yellow("deployHolographableCxipErc721Contract"), "()")));
+    console.log(
+      string(
+        abi.encodePacked(
+          "    - ",
+          yellow("deployHolographableCxipErc721Contract"),
+          "(",
+          green("uint256"),
+          ")",
+          magenta(" ==> "),
+          green("uint256"),
+          " ",
+          cyan("chainId")
+        )
+      )
+    );
     console.log(
       string(
         abi.encodePacked(
@@ -137,47 +153,14 @@ contract LayerZeroModuleV2Script is Script, Logger {
       string(
         abi.encodePacked(
           "    - ",
-          yellow("bridgeOutRequest"),
-          "(",
-          green("uint256"),
-          ",",
-          green("uint256"),
-          ",",
-          green("uint256"),
-          ")",
-          magenta(" ==> "),
-          green("uint256"),
-          " ",
-          cyan("fromChainId"),
-          ", ",
-          green("uint256"),
-          " ",
-          cyan("toChainId"),
-          ", ",
-          green("uint256"),
-          " ",
-          cyan("tokenId")
-        )
-      )
-    );
-    console.log(
-      string(
-        abi.encodePacked(
-          "    - ",
           yellow("executeJob"),
           "(",
           green("uint256"),
-          ",",
-          green("bytes"),
           ")",
           magenta(" ==> "),
           green("uint256"),
           " ",
-          cyan("chainId"),
-          ", ",
-          green("bytes"),
-          " ",
-          cyan("jobPayload")
+          cyan("chainId")
         )
       )
     );
@@ -245,7 +228,7 @@ contract LayerZeroModuleV2Script is Script, Logger {
 
       // Broadcast transaction with deployer private key
       admin = vm.addr(deployerPrivateKey);
-      vm.startBroadcast(deployerPrivateKey);
+      vm.startBroadcast(hardwareWallet != address(0) ? hardwareWallet : deployerPrivateKey);
 
       logFrame(
         string(abi.encodePacked("Deploying LayerZeroModuleV2 on ", magenta(ForkHelper.getChainName(chainIds[i]))))
@@ -254,25 +237,22 @@ contract LayerZeroModuleV2Script is Script, Logger {
       // Deploy layerZeroV2Module implementation contract
       layerZeroV2ModuleImplementation = new LayerZeroModuleV2();
 
-      // Chains ids
-      uint32[] memory supportedChains = new uint32[](chainIds.length);
-      for (uint256 j = 0; j < chainIds.length; j++) supportedChains[j] = uint32(chainIds[j]);
+      uint256[] memory supportedChainIds = ForkHelper.isTestnet(chainIds[i])
+        ? ForkHelper.supportedTestnetIds()
+        : ForkHelper.supportedMainnetIds();
 
       // Gas parameters
-      GasParameters[] memory gasParameters = new GasParameters[](chainIds.length);
-      for (uint256 j = 0; j < chainIds.length; j++) gasParameters[j] = ChainGasParameters.getGasParameters(chainIds[j]);
+      GasParameters[] memory gasParameters = new GasParameters[](supportedChainIds.length);
+      for (uint256 j = 0; j < supportedChainIds.length; j++)
+        gasParameters[j] = ChainGasParameters.getGasParameters(supportedChainIds[j]);
 
       // Whiteliste the new layerZeroV2Module for all chains
-      EndpointPeer[] memory peers = new EndpointPeer[](chainIds.length);
+      EndpointPeer[] memory peers = new EndpointPeer[](supportedChainIds.length);
       address futurLayerZeroModule = DeploymentHelper.computeGenesisDeploymentAddress(
         deploymentSalt,
         type(LayerZeroModuleProxyV2).creationCode,
         address(holographGenesis)
       );
-
-      uint256[] memory supportedChainIds = ForkHelper.isTestnet(chainIds[i])
-        ? ForkHelper.supportedTestnetIds()
-        : ForkHelper.supportedMainnetIds();
 
       for (uint256 j = 0; j < supportedChainIds.length; j++) {
         peers[j] = EndpointPeer({
@@ -292,7 +272,7 @@ contract LayerZeroModuleV2Script is Script, Logger {
           DeploymentHelper.getLzEndpoint(chainIds[i]),
           DeploymentHelper.getLzExecutor(chainIds[i]),
           address(holograph),
-          supportedChains,
+          supportedChainIds,
           gasParameters,
           peers
         )
@@ -305,8 +285,26 @@ contract LayerZeroModuleV2Script is Script, Logger {
       // Start recording emitted events
       vm.recordLogs();
 
+      // Fetch wallet address from env
+      address safeWallet = vm.envOr("SAFE_WALLET", address(0));
+
       // Deploy the new layerZeroV2Module using the holographGenesis contract
-      holographGenesis.deploy(block.chainid, saltHash, secret, type(LayerZeroModuleProxyV2).creationCode, initCode);
+      if (safeWallet != address(0)) {
+        SafeWallet.createTransaction(
+          safeWallet,
+          address(holographGenesis),
+          abi.encodeWithSignature(
+            "deploy(uint256,bytes12,bytes20,bytes,bytes)",
+            block.chainid,
+            saltHash,
+            secret,
+            type(LayerZeroModuleProxyV2).creationCode,
+            initCode
+          )
+        );
+      } else {
+        holographGenesis.deploy(block.chainid, saltHash, secret, type(LayerZeroModuleProxyV2).creationCode, initCode);
+      }
 
       // Retrive the deployed layerZeroV2Module address from the emitted events
       Vm.Log[] memory entries = vm.getRecordedLogs();
@@ -326,9 +324,6 @@ contract LayerZeroModuleV2Script is Script, Logger {
           )
         );
       }
-
-      // Fetch wallet address from env
-      address safeWallet = vm.envOr("SAFE_WALLET", address(0));
 
       // If safeWallet is set, create a transaction to set the messaging module
       if (safeWallet != address(0)) {
@@ -409,9 +404,11 @@ contract LayerZeroModuleV2Script is Script, Logger {
 
   /**
    * Deploy a CXIP ERC721 holographable contract as the ERC721 owner
+   * @param chainId The chain id
    */
-  function deployHolographableCxipErc721Contract() public {
+  function deployHolographableCxipErc721Contract(uint256 chainId) public {
     loadEnv();
+    ForkHelper.forkByChainId(chainId);
 
     uint256 erc721OwnerPrivateKey = vm.envUint("ERC721_OWNER");
     erc721Owner = vm.addr(erc721OwnerPrivateKey);
@@ -419,7 +416,7 @@ contract LayerZeroModuleV2Script is Script, Logger {
 
     bytes32 contractType = 0x0000000000000000000000000000000000486f6c6f6772617068455243373231;
     uint32 chainType = 11155420;
-    bytes32 salt = 0x0000000000000000000000000000000000000000000000000000019167b7184c;
+    bytes32 salt = 0x0000000000000000000000000000000000000000000000000000019167b7184d;
     bytes
       memory byteCode = hex"608060405234801561001057600080fd5b50610b32806100206000396000f3fe6080604052600436106100695760003560e01c8063704b6c0211610043578063704b6c0214610166578063bf64a82d14610186578063f851a4401461019957610070565b806342809873146100a25780634ddf47d4146100e15780636e9960c31461013257610070565b3661007057005b600061007a6101ae565b90503660008037600080366000845af43d6000803e80801561009b573d6000f35b3d6000fd5b005b3480156100ae57600080fd5b506100b76101ae565b60405173ffffffffffffffffffffffffffffffffffffffff90911681526020015b60405180910390f35b3480156100ed57600080fd5b506101016100fc366004610845565b61028d565b6040517fffffffff0000000000000000000000000000000000000000000000000000000090911681526020016100d8565b34801561013e57600080fd5b507f3f106594dc74eeef980dae234cde8324dc2497b13d27a0c59e55bd2ca10a07c9546100b7565b34801561017257600080fd5b506100a06101813660046108ea565b6105a2565b6100a061019436600461090e565b61067c565b3480156101a557600080fd5b506100b7610752565b7fce8e75d5c5227ce29a4ee170160bb296e5dea6934b80a9bd723f7ef1e7c850e7547f0b671eb65810897366dd82c4cbb7d9dff8beda8484194956e81e89b8a361d9c7546040517fcc2913f900000000000000000000000000000000000000000000000000000000815260048101829052600092919073ffffffffffffffffffffffffffffffffffffffff83169063cc2913f990602401602060405180830381865afa158015610262573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906102869190610993565b9250505090565b60006102b77f4e5f991bca30eca2d4643aaefa807e88f96a4a97398933d572a3c0d973004a015490565b15610323576040517f08c379a000000000000000000000000000000000000000000000000000000000815260206004820152601e60248201527f484f4c4f47524150483a20616c726561647920696e697469616c697a6564000060448201526064015b60405180910390fd5b60008060008480602001905181019061033c91906109e0565b925092509250827f0b671eb65810897366dd82c4cbb7d9dff8beda8484194956e81e89b8a361d9c755817fce8e75d5c5227ce29a4ee170160bb296e5dea6934b80a9bd723f7ef1e7c850e7556000806103936101ae565b73ffffffffffffffffffffffffffffffffffffffff16836040516024016103ba9190610a76565b604080517fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe08184030181529181526020820180517bffffffffffffffffffffffffffffffffffffffffffffffffffffffff167f4ddf47d4000000000000000000000000000000000000000000000000000000001790525161043b9190610ac7565b600060405180830381855af49150503d8060008114610476576040519150601f19603f3d011682016040523d82523d6000602084013e61047b565b606091505b50915091506000818060200190518101906104969190610ae3565b90508280156104e657507fffffffff0000000000000000000000000000000000000000000000000000000081167f4ddf47d400000000000000000000000000000000000000000000000000000000145b61054c576040517f08c379a000000000000000000000000000000000000000000000000000000000815260206004820152601560248201527f696e697469616c697a6174696f6e206661696c65640000000000000000000000604482015260640161031a565b61057560017f4e5f991bca30eca2d4643aaefa807e88f96a4a97398933d572a3c0d973004a0155565b507f4ddf47d400000000000000000000000000000000000000000000000000000000979650505050505050565b7f3f106594dc74eeef980dae234cde8324dc2497b13d27a0c59e55bd2ca10a07c95473ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff1614610658576040517f08c379a000000000000000000000000000000000000000000000000000000000815260206004820152601e60248201527f484f4c4f47524150483a2061646d696e206f6e6c792066756e6374696f6e0000604482015260640161031a565b7f3f106594dc74eeef980dae234cde8324dc2497b13d27a0c59e55bd2ca10a07c955565b7f3f106594dc74eeef980dae234cde8324dc2497b13d27a0c59e55bd2ca10a07c95473ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff1614610732576040517f08c379a000000000000000000000000000000000000000000000000000000000815260206004820152601e60248201527f484f4c4f47524150483a2061646d696e206f6e6c792066756e6374696f6e0000604482015260640161031a565b808260003760008082600034875af13d6000803e80801561009b573d6000f35b600061077c7f3f106594dc74eeef980dae234cde8324dc2497b13d27a0c59e55bd2ca10a07c95490565b905090565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b604051601f82017fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe016810167ffffffffffffffff811182821017156107f7576107f7610781565b604052919050565b600067ffffffffffffffff82111561081957610819610781565b50601f017fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe01660200190565b60006020828403121561085757600080fd5b813567ffffffffffffffff81111561086e57600080fd5b8201601f8101841361087f57600080fd5b803561089261088d826107ff565b6107b0565b8181528560208385010111156108a757600080fd5b81602084016020830137600091810160200191909152949350505050565b73ffffffffffffffffffffffffffffffffffffffff811681146108e757600080fd5b50565b6000602082840312156108fc57600080fd5b8135610907816108c5565b9392505050565b60008060006040848603121561092357600080fd5b833561092e816108c5565b9250602084013567ffffffffffffffff8082111561094b57600080fd5b818601915086601f83011261095f57600080fd5b81358181111561096e57600080fd5b87602082850101111561098057600080fd5b6020830194508093505050509250925092565b6000602082840312156109a557600080fd5b8151610907816108c5565b60005b838110156109cb5781810151838201526020016109b3565b838111156109da576000848401525b50505050565b6000806000606084860312156109f557600080fd5b835192506020840151610a07816108c5565b604085015190925067ffffffffffffffff811115610a2457600080fd5b8401601f81018613610a3557600080fd5b8051610a4361088d826107ff565b818152876020838501011115610a5857600080fd5b610a698260208301602086016109b0565b8093505050509250925092565b6020815260008251806020840152610a958160408501602087016109b0565b601f017fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe0169190910160400192915050565b60008251610ad98184602087016109b0565b9190910192915050565b600060208284031215610af557600080fd5b81517fffffffff000000000000000000000000000000000000000000000000000000008116811461090757600080fdfea164736f6c634300080d000a";
     bytes
@@ -457,7 +454,7 @@ contract LayerZeroModuleV2Script is Script, Logger {
 
     // Start broadcast with the deployer private key
     uint256 deployerPrivateKey = vm.envUint("ERC721_OWNER");
-    vm.startBroadcast(deployerPrivateKey);
+    vm.startBroadcast(hardwareWallet != address(0) ? hardwareWallet : deployerPrivateKey);
 
     // Mint ERC721 token
     CxipERC721(payable(erc721)).cxipMint(
@@ -492,40 +489,17 @@ contract LayerZeroModuleV2Script is Script, Logger {
   }
 
   /**
-   * Bridge out an existing ERC721 token to the destination chain
-   * @param fromChainId The chain id of the source chain
-   * @param toChainId The chain id of the destination chain
-   * @param tokenId The token id to bridge out
-   */
-  function bridgeOutRequest(uint256 fromChainId, uint256 toChainId, uint256 tokenId) public {
-    loadEnv(fromChainId);
-    ForkHelper.forkByChainId(toChainId);
-
-    uint256 deployerPrivateKey = vm.envUint("DEPLOYER");
-    vm.startBroadcast(deployerPrivateKey);
-
-    holographBridge.bridgeOutRequest{value: 0.002 ether}(
-      uint32(toChainId),
-      erc721,
-      13314000,
-      40000000001,
-      abi.encode(erc721Owner, erc721Owner, tokenId)
-    );
-
-    vm.stopBroadcast();
-  }
-
-  /**
    * Execute a job on the Holograph operator
    * @param chainId The chain id
-   * @param jobPayload The job payload
    */
-  function executeJob(uint256 chainId, bytes memory jobPayload) public {
+  function executeJob(uint256 chainId) public {
     loadEnv(chainId);
     ForkHelper.forkByChainId(chainId);
 
+    bytes memory jobPayload = vm.envBytes("JOB_PAYLOAD");
+
     uint256 deployerPrivateKey = vm.envUint("DEPLOYER");
-    vm.startBroadcast(deployerPrivateKey);
+    vm.startBroadcast(hardwareWallet != address(0) ? hardwareWallet : deployerPrivateKey);
 
     holographOperator.executeJob(jobPayload);
 
@@ -551,7 +525,7 @@ contract LayerZeroModuleV2Script is Script, Logger {
     layerZeroV2Module = LayerZeroModuleV2(payable(messagingModule));
 
     uint256 deployerPrivateKey = vm.envUint("DEPLOYER");
-    vm.startBroadcast(deployerPrivateKey);
+    vm.startBroadcast(hardwareWallet != address(0) ? hardwareWallet : deployerPrivateKey);
     for (uint256 i; i < supportedChainIds.length; i++) {
       layerZeroV2Module.setPeer(
         DeploymentHelper.getEndpointId(supportedChainIds[i]),
@@ -637,7 +611,7 @@ contract LayerZeroModuleV2Script is Script, Logger {
     );
 
     uint256 deployerPrivateKey = vm.envUint("DEPLOYER");
-    vm.startBroadcast(deployerPrivateKey);
+    vm.startBroadcast(hardwareWallet != address(0) ? hardwareWallet : deployerPrivateKey);
 
     holographOperator.executeJob(jobPayload);
 
@@ -679,9 +653,17 @@ contract LayerZeroModuleV2Script is Script, Logger {
     lzEndpoint = DeploymentHelper.getLzEndpoint(sourceChainId);
     lzExecutor = DeploymentHelper.getLzExecutor(sourceChainId);
 
-    erc721 = vm.envAddress(string(abi.encodePacked(sourceChainPrefix, "ERC721_CONTRACT")));
-    (, bytes memory owner) = erc721.call(abi.encodeWithSignature("owner()"));
-    erc721Owner = abi.decode(owner, (address));
+    erc721 = vm.envOr(string(abi.encodePacked(sourceChainPrefix, "ERC721_CONTRACT")), address(0));
+    if (erc721 == address(0)) {
+      erc721 = vm.envOr("ERC721_CONTRACT", address(0));
+    }
+
+    if (erc721 != address(0)) {
+      ForkHelper.forkByChainId(sourceChainId);
+      try HolographERC721(payable(erc721)).owner() returns (address owner) {
+        erc721Owner = owner;
+      } catch {}
+    }
 
     // Return if the prompt is skipped
     if (skipPrompt) return;
@@ -802,8 +784,10 @@ contract LayerZeroModuleV2Script is Script, Logger {
 
     /* -------------------------- Load deployment salt -------------------------- */
 
+    hardwareWallet = vm.envOr("HARDWARE_WALLET", address(0));
+
     // TODO: set it based on the HOLOGRAPH_ENVIRONMENT
-    deploymentSalt = vm.envBytes32("DEPLOYMENT_SALT");
+    deploymentSalt = vm.envOr("DEPLOYMENT_SALT", bytes32(0));
   }
 
   /**
@@ -857,5 +841,35 @@ contract LayerZeroModuleV2Script is Script, Logger {
     } else {
       return "DEFAULT_";
     }
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /*                                 Deprecated                                 */
+  /* -------------------------------------------------------------------------- */
+
+  /**
+   * Bridge out an existing ERC721 token to the destination chain
+   * @dev DEPRECATED DEPRECATED DEPRECATED DEPRECATED DEPRECATED DEPRECATED DEPRECATED
+   * @param fromChainId The chain id of the source chain
+   * @param toChainId The chain id of the destination chain
+   * @param tokenId The token id to bridge out
+   * @dev DEPRECATED DEPRECATED DEPRECATED DEPRECATED DEPRECATED DEPRECATED DEPRECATED
+   */
+  function bridgeOutRequest(uint256 fromChainId, uint256 toChainId, uint256 tokenId) public {
+    loadEnv(fromChainId);
+    ForkHelper.forkByChainId(toChainId);
+
+    uint256 deployerPrivateKey = vm.envUint("DEPLOYER");
+    vm.startBroadcast(hardwareWallet != address(0) ? hardwareWallet : deployerPrivateKey);
+
+    holographBridge.bridgeOutRequest{value: 0.002 ether}(
+      uint32(toChainId),
+      erc721,
+      13314000,
+      40000000001,
+      abi.encode(erc721Owner, erc721Owner, tokenId)
+    );
+
+    vm.stopBroadcast();
   }
 }
