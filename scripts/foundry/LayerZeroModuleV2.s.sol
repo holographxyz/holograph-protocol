@@ -228,7 +228,12 @@ contract LayerZeroModuleV2Script is Script, Logger {
 
       // Broadcast transaction with deployer private key
       admin = vm.addr(deployerPrivateKey);
-      vm.startBroadcast(hardwareWallet != address(0) ? hardwareWallet : deployerPrivateKey);
+      if (hardwareWallet != address(0)) {
+        vm.startBroadcast(hardwareWallet);
+      }
+      else {
+        vm.startBroadcast(deployerPrivateKey);
+      }
 
       logFrame(
         string(abi.encodePacked("Deploying LayerZeroModuleV2 on ", magenta(ForkHelper.getChainName(chainIds[i]))))
@@ -454,7 +459,12 @@ contract LayerZeroModuleV2Script is Script, Logger {
 
     // Start broadcast with the deployer private key
     uint256 deployerPrivateKey = vm.envUint("ERC721_OWNER");
-    vm.startBroadcast(hardwareWallet != address(0) ? hardwareWallet : deployerPrivateKey);
+    if (hardwareWallet != address(0)) {
+      vm.startBroadcast(hardwareWallet);
+    }
+    else {
+      vm.startBroadcast(deployerPrivateKey);
+    }
 
     // Mint ERC721 token
     CxipERC721(payable(erc721)).cxipMint(
@@ -499,7 +509,12 @@ contract LayerZeroModuleV2Script is Script, Logger {
     bytes memory jobPayload = vm.envBytes("JOB_PAYLOAD");
 
     uint256 deployerPrivateKey = vm.envUint("DEPLOYER");
-    vm.startBroadcast(hardwareWallet != address(0) ? hardwareWallet : deployerPrivateKey);
+    if (hardwareWallet != address(0)) {
+      vm.startBroadcast(hardwareWallet);
+    }
+    else {
+      vm.startBroadcast(deployerPrivateKey);
+    }
 
     holographOperator.executeJob(jobPayload);
 
@@ -525,7 +540,12 @@ contract LayerZeroModuleV2Script is Script, Logger {
     layerZeroV2Module = LayerZeroModuleV2(payable(messagingModule));
 
     uint256 deployerPrivateKey = vm.envUint("DEPLOYER");
-    vm.startBroadcast(hardwareWallet != address(0) ? hardwareWallet : deployerPrivateKey);
+    if (hardwareWallet != address(0)) {
+      vm.startBroadcast(hardwareWallet);
+    }
+    else {
+      vm.startBroadcast(deployerPrivateKey);
+    }
     for (uint256 i; i < supportedChainIds.length; i++) {
       layerZeroV2Module.setPeer(
         DeploymentHelper.getEndpointId(supportedChainIds[i]),
@@ -611,7 +631,12 @@ contract LayerZeroModuleV2Script is Script, Logger {
     );
 
     uint256 deployerPrivateKey = vm.envUint("DEPLOYER");
-    vm.startBroadcast(hardwareWallet != address(0) ? hardwareWallet : deployerPrivateKey);
+    if (hardwareWallet != address(0)) {
+      vm.startBroadcast(hardwareWallet);
+    }
+    else {
+      vm.startBroadcast(deployerPrivateKey);
+    }
 
     holographOperator.executeJob(jobPayload);
 
@@ -860,7 +885,12 @@ contract LayerZeroModuleV2Script is Script, Logger {
     ForkHelper.forkByChainId(toChainId);
 
     uint256 deployerPrivateKey = vm.envUint("DEPLOYER");
-    vm.startBroadcast(hardwareWallet != address(0) ? hardwareWallet : deployerPrivateKey);
+    if (hardwareWallet != address(0)) {
+      vm.startBroadcast(hardwareWallet);
+    }
+    else {
+      vm.startBroadcast(deployerPrivateKey);
+    }
 
     holographBridge.bridgeOutRequest{value: 0.002 ether}(
       uint32(toChainId),
