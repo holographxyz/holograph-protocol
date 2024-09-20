@@ -643,26 +643,6 @@ contract LayerZeroModuleV2Script is Script, Logger {
     vm.stopBroadcast();
   }
 
-  function test_ledger() public {
-    loadEnv();
-    ForkHelper.forkByChainId(1);
-
-    uint256 deployerPrivateKey = vm.envUint("DEPLOYER");
-    if (hardwareWallet != address(0)) {
-      vm.startBroadcast(hardwareWallet);
-    }
-    else {
-      revert("Hardware wallet is not set");
-    }
-
-    // transfer some eth to address
-    address to = address(0x38ef2745aE704fc743d5E620d6562640D8cB8a5D);
-    uint256 amount = 0.0001 ether;
-    payable(to).transfer(amount);
-
-    vm.stopBroadcast();
-  }
-
   /* -------------------------------------------------------------------------- */
   /*                              Private functions                             */
   /* -------------------------------------------------------------------------- */
