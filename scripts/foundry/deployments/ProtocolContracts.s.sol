@@ -23,6 +23,8 @@ contract ProtocolContractsDeployScript is Script, Logger {
 
   HolographGenesis holographGenesis;
 
+  address currentWallet;
+
   string constant HOLOGRAPH = "Holograph";
   string constant HOLOGRAPH_BRIDGE = "HolographBridge";
   string constant HOLOGRAPH_FACTORY = "HolographFactory";
@@ -40,13 +42,22 @@ contract ProtocolContractsDeployScript is Script, Logger {
     uint256[] calldata chainIds
   ) public {
     uint256 deployerPrivateKey = uint256(_deployerPrivateKey);
+    address deployer = vm.addr(deployerPrivateKey);
+
+    loadProtocolContracts();
+
+    if (safeWallet != address(0)) {
+      currentWallet = safeWallet;
+    }
+    else if (hardwareWallet != address(0)) {
+      currentWallet = hardwareWallet;
+    }
+    else {
+      currentWallet = deployer;
+    }
 
     // TODO: set it based on the HOLOGRAPH_ENVIRONMENT
     bytes32 deploymentSalt = vm.envOr("DEPLOYMENT_SALT", bytes32(0));
-
-    address deployer = vm.addr(deployerPrivateKey);
-
-    console.log(string(abi.encodePacked("\nDeployer: ", yellow(vm.toString(deployer)))));
 
     for (uint256 i = 0; i < chainIds.length; i++) {
       ForkHelper.forkByChainId(chainIds[i]);
@@ -59,7 +70,7 @@ contract ProtocolContractsDeployScript is Script, Logger {
       }
 
       logHlgDeployerMessage(
-        string(abi.encodePacked("Deploying ", contractName, " on ", magenta(ForkHelper.getChainName(chainIds[i]))))
+        string(abi.encodePacked("Simulating ", contractName, " deployment on ", magenta(ForkHelper.getChainName(chainIds[i]))))
       );
 
       // Deploy implementation contract
@@ -94,23 +105,9 @@ contract ProtocolContractsDeployScript is Script, Logger {
       Vm.Log[] memory entries = vm.getRecordedLogs();
       address _deployedContract = abi.decode(entries[0].data, (address));
 
-      console.log(
-        string(
-          abi.encodePacked(
-            (
-              safeWallet != address(0)
-                ? red(string(abi.encodePacked("Safe wallet (", vm.toString(safeWallet), "):")))
-                : ""
-            ),
-            "\nNew ",
-            cyan(contractName),
-            " deployed on ",
-            magenta(ForkHelper.getChainName(chainIds[i])),
-            " at address ",
-            yellow(vm.toString(address(_deployedContract))),
-            "\n\n"
-          )
-        )
+      
+      logHlgDeployerMessage(
+        string(abi.encodePacked(contractName, " deployment simulation succeed on ", magenta(ForkHelper.getChainName(chainIds[i]))))
       );
 
       vm.stopBroadcast();
@@ -147,7 +144,13 @@ contract ProtocolContractsDeployScript is Script, Logger {
     // Read the protocol contracts deployment json files
     string memory holographJson = vm.readFile(string(abi.encodePacked(dirs[0].path, "/Holograph.json")));
 
-    holographGenesis = HolographGenesis(payable(holographJson.readAddress(".receipt.to")));
+    address forcedHolographGenesisAddress = vm.envOr("HOLOGRAPH_GENESIS_ADDRESS", address(0));
+    if (forcedHolographGenesisAddress != address(0)) {
+      holographGenesis = HolographGenesis(payable(forcedHolographGenesisAddress));
+    }
+    else {
+      holographGenesis = HolographGenesis(payable(holographJson.readAddress(".receipt.to")));
+    }
   }
 
   function deployImplementation(string memory contractName) private returns (address) {
@@ -160,9 +163,11 @@ contract ProtocolContractsDeployScript is Script, Logger {
     } else if (keccak256(bytes(contractName)) == keccak256(bytes(HOLOGRAPH_OPERATOR))) {
       return address(new HolographOperator());
     } else if (keccak256(bytes(contractName)) == keccak256(bytes(HOLOGRAPH_INTERFACES))) {
-      return address(new HolographInterfaces());
+      // No proxy implementation for interfaces
+      return address(0);
     } else if (keccak256(bytes(contractName)) == keccak256(bytes(HOLOGRAPH_REGISTERY))) {
-      return address(new HolographRegistry());
+      // No proxy implementation for registry
+      return address(0);
     } else {
       revert(string(abi.encodePacked("Foundry unsupported contract: ", contractName)));
     }
