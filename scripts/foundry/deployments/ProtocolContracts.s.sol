@@ -42,19 +42,16 @@ contract ProtocolContractsDeployScript is Script, Logger {
     uint256[] calldata chainIds
   ) public {
     uint256 deployerPrivateKey = uint256(_deployerPrivateKey);
-    address deployer = vm.addr(deployerPrivateKey);
-
-    loadProtocolContracts();
 
     if (safeWallet != address(0)) {
       currentWallet = safeWallet;
-    }
-    else if (hardwareWallet != address(0)) {
+    } else if (hardwareWallet != address(0)) {
       currentWallet = hardwareWallet;
+    } else {
+      currentWallet = vm.addr(deployerPrivateKey);
     }
-    else {
-      currentWallet = deployer;
-    }
+
+    loadProtocolContracts();
 
     // TODO: set it based on the HOLOGRAPH_ENVIRONMENT
     bytes32 deploymentSalt = vm.envOr("DEPLOYMENT_SALT", bytes32(0));
@@ -63,15 +60,24 @@ contract ProtocolContractsDeployScript is Script, Logger {
       ForkHelper.forkByChainId(chainIds[i]);
 
       // Broadcast transaction with deployer private key
-      if (hardwareWallet != address(0)) {
+      if (safeWallet == address(0)) {
         vm.startBroadcast(hardwareWallet);
-      } else {
+      } else if (safeWallet == address(0)) {
         vm.startBroadcast(deployerPrivateKey);
       }
 
-      logHlgDeployerMessage(
-        string(abi.encodePacked("Simulating ", contractName, " deployment on ", magenta(ForkHelper.getChainName(chainIds[i]))))
-      );
+      if (safeWallet == address(0)) {
+        logHlgDeployerMessage(
+          string(
+            abi.encodePacked(
+              "Simulating ",
+              contractName,
+              " deployment on ",
+              magenta(ForkHelper.getChainName(chainIds[i]))
+            )
+          )
+        );
+      }
 
       // Deploy implementation contract
       address implem = deployImplementation(contractName);
@@ -80,12 +86,11 @@ contract ProtocolContractsDeployScript is Script, Logger {
       bytes20 secret = bytes20(deploymentSalt); // Extract the first 20 bytes
       bytes12 saltHash = bytes12(deploymentSalt << 160); // Extract the first 12 bytes
 
-      // Start recording emitted events
-      vm.recordLogs();
+      console.log("Safe Wallet: ", safeWallet);
 
       // Deploy the new layerZeroV2Module using the holographGenesis contract
       if (safeWallet != address(0)) {
-        SafeWallet.createTransaction(
+        bytes memory res = SafeWallet.createTransaction(
           safeWallet,
           address(holographGenesis),
           abi.encodeWithSignature(
@@ -97,20 +102,28 @@ contract ProtocolContractsDeployScript is Script, Logger {
             initcode
           )
         );
+
+        console.log(string(res));
       } else {
+        // Start recording emitted events
+        vm.recordLogs();
+
         holographGenesis.deploy(block.chainid, saltHash, secret, bytecode, initcode);
+
+        // Retrive the deployed contract address from the emitted events
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        address _deployedContract = abi.decode(entries[0].data, (address));
+        logHlgDeployerMessage(
+          string(
+            abi.encodePacked(
+              contractName,
+              " deployment simulation succeed on ",
+              magenta(ForkHelper.getChainName(chainIds[i]))
+            )
+          )
+        );
+        vm.stopBroadcast();
       }
-
-      // Retrive the deployed contract address from the emitted events
-      Vm.Log[] memory entries = vm.getRecordedLogs();
-      address _deployedContract = abi.decode(entries[0].data, (address));
-
-      
-      logHlgDeployerMessage(
-        string(abi.encodePacked(contractName, " deployment simulation succeed on ", magenta(ForkHelper.getChainName(chainIds[i]))))
-      );
-
-      vm.stopBroadcast();
     }
   }
 
@@ -147,8 +160,7 @@ contract ProtocolContractsDeployScript is Script, Logger {
     address forcedHolographGenesisAddress = vm.envOr("HOLOGRAPH_GENESIS_ADDRESS", address(0));
     if (forcedHolographGenesisAddress != address(0)) {
       holographGenesis = HolographGenesis(payable(forcedHolographGenesisAddress));
-    }
-    else {
+    } else {
       holographGenesis = HolographGenesis(payable(holographJson.readAddress(".receipt.to")));
     }
   }
