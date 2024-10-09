@@ -131,14 +131,6 @@ program
           );
         }
 
-        // Signez le hash de la transaction
-        const message: SafeEIP712Args = {
-          safeAddress: safeAddress,
-          safeVersion: protocolKit.getContractVersion(),
-          chainId: await protocolKit.getChainId(),
-          data: safeTransactionData.data,
-        };
-
         // Sign typed data v4 via EIP-712
         const typedData = {
           types: {

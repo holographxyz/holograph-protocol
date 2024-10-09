@@ -36,6 +36,8 @@ contract ProtocolContractsDeployScript is Script, Logger {
     bytes32 _deployerPrivateKey,
     address hardwareWallet,
     address safeWallet,
+    address ledgerSafeSigner,
+    bytes32 safeSignerPrivateKey,
     string memory contractName,
     bytes memory bytecode,
     bytes memory initcode,
@@ -50,6 +52,12 @@ contract ProtocolContractsDeployScript is Script, Logger {
     } else {
       currentWallet = vm.addr(deployerPrivateKey);
     }
+
+    if (ledgerSafeSigner == address(0) && safeSignerPrivateKey == bytes32(0)) {
+      revert("Either ledgerSafeSigner or safeSignerPrivateKey must be set");
+    }
+
+    bool isSafeSignerLedger = ledgerSafeSigner != address(0);
 
     loadProtocolContracts();
 
@@ -90,20 +98,36 @@ contract ProtocolContractsDeployScript is Script, Logger {
 
       // Deploy the new layerZeroV2Module using the holographGenesis contract
       if (safeWallet != address(0)) {
-        bytes memory res = SafeWallet.createTransaction(
-          safeWallet,
-          address(holographGenesis),
-          abi.encodeWithSignature(
-            "deploy(uint256,bytes12,bytes20,bytes,bytes)",
-            block.chainid,
-            saltHash,
-            secret,
-            bytecode,
-            initcode
-          )
-        );
-
-        console.log(string(res));
+        if (isSafeSignerLedger) {
+          bytes memory res = SafeWallet.createTransactionWithALedgerSafeSigner(
+            safeWallet,
+            ledgerSafeSigner,
+            address(holographGenesis),
+            abi.encodeWithSignature(
+              "deploy(uint256,bytes12,bytes20,bytes,bytes)",
+              block.chainid,
+              saltHash,
+              secret,
+              bytecode,
+              initcode
+            )
+          );
+          console.log(string(res));
+        } else {
+          bytes memory res = SafeWallet.createTransaction(
+            safeWallet,
+            safeSignerPrivateKey,
+            address(holographGenesis),
+            abi.encodeWithSignature(
+              "deploy(uint256,bytes12,bytes20,bytes,bytes)",
+              block.chainid,
+              saltHash,
+              secret,
+              bytecode,
+              initcode
+            )
+          );
+        }
       } else {
         // Start recording emitted events
         vm.recordLogs();
