@@ -8,6 +8,7 @@ import {ITokenFactory} from "src/interfaces/ITokenFactory.sol";
 import {IPoolInitializer} from "src/interfaces/IPoolInitializer.sol";
 import {ILiquidityMigrator} from "src/interfaces/ILiquidityMigrator.sol";
 import {IGovernanceFactory} from "src/interfaces/IGovernanceFactory.sol";
+import {TickMath} from "lib/doppler/lib/v4-core/src/libraries/TickMath.sol";
 
 import {Airlock as DopplerAirlock, CreateParams} from "lib/doppler/src/Airlock.sol";
 
@@ -21,14 +22,23 @@ library DopplerAddrBook {
         address v4Initializer;
         address migrator;
         address poolManager;
+        address dopplerDeployer;
     }
-
     function get() internal pure returns (DopplerAddrs memory) {
         return
+            // DopplerAddrs({
+            //     airlock: 0x0d2f38d807bfAd5C18e430516e10ab560D300caF,
+            //     tokenFactory: 0x4B0EC16Eb40318Ca5A4346f20F04A2285C19675B,
+            //     governanceFactory: 0x65dE470Da664A5be139A5D812bE5FDa0d76CC951,
+            //     v4Initializer: 0xA36715dA46Ddf4A769f3290f49AF58bF8132ED8E,
+            //     migrator: 0xC541FBddfEEf798E50d257495D08efe00329109A,
+            //     poolManager: 0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408
+            // });
             DopplerAddrs({
                 poolManager: 0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408,
                 airlock: 0x881c18352182E1C918DBfc54539e744Dc90274a8,
                 tokenFactory: 0xBdd732390Dbb0E8D755D1002211E967EF8b8B326,
+                dopplerDeployer: 0x3BEF7AE36503228891081e357bDB49B8F7627A4f,
                 governanceFactory: 0x61e307223Cb5444B72Ea42992Da88B895589d0F3,
                 v4Initializer: 0x20a7DB1f189B5592F756Bf41AD1E7165bD62963C,
                 migrator: 0xBD1B28D7E61733A8983d924c704B1A09d897a870
@@ -39,7 +49,6 @@ library DopplerAddrBook {
 /// @dev minimal stub for LayerZero
 contract LZEndpointStub {
     event MessageSent(uint32 dstEid, bytes payload);
-
     function send(uint32 dstEid, bytes calldata payload, bytes calldata) external payable {
         emit MessageSent(dstEid, payload);
     }
@@ -49,7 +58,6 @@ contract LZEndpointStub {
 contract FeeRouterMock {
     uint256 public total;
     event FeeReceived(uint256 amount);
-
     function routeFeeETH() external payable {
         total += msg.value;
         emit FeeReceived(msg.value);
@@ -66,7 +74,7 @@ contract OrchestratorLaunchTest is Test {
     int24 private constant DEFAULT_GAMMA = 800;
     int24 private constant DEFAULT_START_TICK = 6_000;
     int24 private constant DEFAULT_END_TICK = 60_000;
-    uint24 private constant DEFAULT_FEE = 0;
+    uint24 private constant DEFAULT_FEE = 3000;
     int24 private constant DEFAULT_TICK_SPACING = 8;
 
     DopplerAddrBook.DopplerAddrs private doppler;
@@ -100,9 +108,11 @@ contract OrchestratorLaunchTest is Test {
         // 2) governanceFactory data
         bytes memory governanceData = abi.encode("DAO", 7200, 50_400, 0);
 
-        // 3) poolInitializer data (Doppler V4Test)
+        uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(DEFAULT_START_TICK);
+
+        // full initializer data for UniswapV4Initializer (includes fee & tickSpacing)
         bytes memory poolInitializerData = abi.encode(
-            uint160(0), // sqrtPriceX96 (ignored by miner)
+            sqrtPriceX96,
             DEFAULT_MINIMUM_PROCEEDS,
             DEFAULT_MAXIMUM_PROCEEDS,
             block.timestamp,
@@ -111,8 +121,26 @@ contract OrchestratorLaunchTest is Test {
             DEFAULT_END_TICK,
             DEFAULT_EPOCH_LENGTH,
             DEFAULT_GAMMA,
-            false, // isToken0
-            8 // numPDSlugs
+            false,
+            8,
+            DEFAULT_FEE,
+            DEFAULT_TICK_SPACING
+        );
+
+        // shorter blob for AirlockMiner (drops last two fields)
+        bytes memory poolInitializerDataMiner = abi.encode(
+            DEFAULT_MINIMUM_PROCEEDS,
+            DEFAULT_MAXIMUM_PROCEEDS,
+            block.timestamp,
+            block.timestamp + 3 days,
+            DEFAULT_START_TICK,
+            DEFAULT_END_TICK,
+            DEFAULT_EPOCH_LENGTH,
+            DEFAULT_GAMMA,
+            false,
+            8,
+            DEFAULT_FEE,
+            DEFAULT_TICK_SPACING
         );
 
         uint256 initialSupply = 1e23;
@@ -127,7 +155,7 @@ contract OrchestratorLaunchTest is Test {
             tokenFactory: ITokenFactory(doppler.tokenFactory),
             tokenFactoryData: tokenFactoryData,
             poolInitializer: UniswapV4Initializer(doppler.v4Initializer),
-            poolInitializerData: poolInitializerData
+            poolInitializerData: poolInitializerDataMiner
         });
 
         (bytes32 salt, address hook, address asset) = mineV4(params);
@@ -153,10 +181,8 @@ contract OrchestratorLaunchTest is Test {
             salt: salt
         });
 
-        // Use the existing Airlock deployed on Base Sepolia
         DopplerAirlock airlock = DopplerAirlock(payable(doppler.airlock));
 
-        // Now call create on the live Airlock
         airlock.create(createParams);
 
         // // 5) low-level call to see revert reason
