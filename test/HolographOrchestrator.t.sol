@@ -22,15 +22,16 @@ library DopplerAddrBook {
         address migrator;
         address poolManager;
     }
+
     function get() internal pure returns (DopplerAddrs memory) {
         return
             DopplerAddrs({
-                airlock: 0x0d2f38d807bfAd5C18e430516e10ab560D300caF,
-                tokenFactory: 0x4B0EC16Eb40318Ca5A4346f20F04A2285C19675B,
-                governanceFactory: 0x65dE470Da664A5be139A5D812bE5FDa0d76CC951,
-                v4Initializer: 0xA36715dA46Ddf4A769f3290f49AF58bF8132ED8E,
-                migrator: 0xC541FBddfEEf798E50d257495D08efe00329109A,
-                poolManager: 0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408
+                poolManager: 0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408,
+                airlock: 0x881c18352182E1C918DBfc54539e744Dc90274a8,
+                tokenFactory: 0xBdd732390Dbb0E8D755D1002211E967EF8b8B326,
+                governanceFactory: 0x61e307223Cb5444B72Ea42992Da88B895589d0F3,
+                v4Initializer: 0x20a7DB1f189B5592F756Bf41AD1E7165bD62963C,
+                migrator: 0xBD1B28D7E61733A8983d924c704B1A09d897a870
             });
     }
 }
@@ -38,6 +39,7 @@ library DopplerAddrBook {
 /// @dev minimal stub for LayerZero
 contract LZEndpointStub {
     event MessageSent(uint32 dstEid, bytes payload);
+
     function send(uint32 dstEid, bytes calldata payload, bytes calldata) external payable {
         emit MessageSent(dstEid, payload);
     }
@@ -47,6 +49,7 @@ contract LZEndpointStub {
 contract FeeRouterMock {
     uint256 public total;
     event FeeReceived(uint256 amount);
+
     function routeFeeETH() external payable {
         total += msg.value;
         emit FeeReceived(msg.value);

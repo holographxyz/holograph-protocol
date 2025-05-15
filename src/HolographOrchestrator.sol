@@ -22,11 +22,11 @@ pragma solidity ^0.8.24;
  * ----------------------------------------------------------------------------
  */
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Pausable.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/access/Ownable.sol";
+import "@openzeppelin/utils/Pausable.sol";
+import "@openzeppelin/utils/ReentrancyGuard.sol";
+import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/token/ERC20/IERC20.sol";
 import {CreateParams} from "lib/doppler/src/Airlock.sol";
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -48,9 +48,11 @@ interface IFeeRouter {
 interface ILZEndpointV2 {
     function send(uint32 dstEid, bytes calldata msg_, bytes calldata opts) external payable;
 }
+
 interface ILZReceiverV2 {
     function lzReceive(uint32, bytes calldata, address, bytes calldata) external;
 }
+
 interface IMintableERC20 {
     function mint(address to, uint256 amount) external;
 }
@@ -152,9 +154,11 @@ contract HolographOrchestrator is Ownable, Pausable, ReentrancyGuard, ILZReceive
     function setLaunchFee(uint256 weiAmount) external onlyOwner {
         launchFeeETH = weiAmount;
     }
+
     function pause() external onlyOwner {
         _pause();
     }
+
     function unpause() external onlyOwner {
         _unpause();
     }

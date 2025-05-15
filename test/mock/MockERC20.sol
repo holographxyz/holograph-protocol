@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20} from "@openzeppelin/token/ERC20/IERC20.sol";
 
 contract MockERC20 is IERC20 {
     string public constant name = "Mock";
@@ -16,11 +16,13 @@ contract MockERC20 is IERC20 {
         _transfer(msg.sender, to, amount);
         return true;
     }
+
     function approve(address spender, uint256 amount) external override returns (bool) {
         allowance[msg.sender][spender] = amount;
         emit Approval(msg.sender, spender, amount);
         return true;
     }
+
     function transferFrom(address from, address to, uint256 amount) external override returns (bool) {
         uint256 current = allowance[from][msg.sender];
         require(current >= amount, "allowance");
@@ -28,12 +30,14 @@ contract MockERC20 is IERC20 {
         _transfer(from, to, amount);
         return true;
     }
+
     function _transfer(address from, address to, uint256 amount) internal {
         require(balanceOf[from] >= amount, "bal");
         balanceOf[from] -= amount;
         balanceOf[to] += amount;
         emit Transfer(from, to, amount);
     }
+
     function mint(address to, uint256 amount) external {
         balanceOf[to] += amount;
         totalSupply += amount;

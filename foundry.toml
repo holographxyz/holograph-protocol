@@ -16,7 +16,6 @@ cache_path = 'cache/foundry'
 libs = ["lib"]
 
 
-
 remappings = [
   # forge-std tests
   "ds-test/=lib/forge-std/lib/ds-test/",
@@ -25,19 +24,16 @@ remappings = [
   "doppler/=lib/doppler/",
 
   # OpenZeppelin Contracts v5 (standard)
-  "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
-  "@openzeppelin/token/=lib/openzeppelin-contracts/contracts/token/",
-  "@openzeppelin/utils/=lib/openzeppelin-contracts/contracts/utils/",
-  "@openzeppelin/access/=lib/openzeppelin-contracts/contracts/access/",
+  "@openzeppelin/=lib/doppler/lib/v4-core/lib/openzeppelin-contracts/contracts/",
 
   # OpenZeppelin Contracts Upgradeable
-  "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/"
+  "@openzeppelin/contracts-upgradeable/=lib/doppler/lib/v4-core/lib/openzeppelin-contracts-upgradeable/contracts/",
 ]
 
 [rpc_endpoints]
-sepolia          = "${SEPOLIA_RPC_URL}"
-unichainSepolia  = "https://unichain-sepolia.g.alchemy.com/v2/USgCyvEGfIfHHcEq0bRvG-QDnmUZQEoS"
-baseSepolia      = "https://base-sepolia.g.alchemy.com/v2/-yMhiIdfJzvNodml7B9IcI673We9SxjM"
+sepolia = "${SEPOLIA_RPC_URL}"
+unichainSepolia = "https://unichain-sepolia.g.alchemy.com/v2/USgCyvEGfIfHHcEq0bRvG-QDnmUZQEoS"
+baseSepolia = "https://base-sepolia.g.alchemy.com/v2/-yMhiIdfJzvNodml7B9IcI673We9SxjM"
 
 etherscan_api_key = "${ETHERSCAN_API_KEY}"
 
