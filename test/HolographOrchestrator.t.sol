@@ -8,11 +8,16 @@ import {ITokenFactory} from "src/interfaces/ITokenFactory.sol";
 import {IPoolInitializer} from "src/interfaces/IPoolInitializer.sol";
 import {ILiquidityMigrator} from "src/interfaces/ILiquidityMigrator.sol";
 import {IGovernanceFactory} from "src/interfaces/IGovernanceFactory.sol";
-import {TickMath} from "lib/doppler/lib/v4-core/src/libraries/TickMath.sol";
+import {Hooks} from "@v4-core/libraries/Hooks.sol";
+import {PoolManager} from "@v4-core/PoolManager.sol";
+import {ITokenFactory} from "src/interfaces/ITokenFactory.sol";
+import {UniswapV4Initializer} from "doppler/src/UniswapV4Initializer.sol";
+import {DERC20} from "doppler/src/DERC20.sol";
+import {Doppler} from "doppler/src/Doppler.sol";
+import {Airlock} from "doppler/src/Airlock.sol";
+import {UniswapV4Initializer} from "doppler/src/UniswapV4Initializer.sol";
 
 import {Airlock as DopplerAirlock, CreateParams} from "lib/doppler/src/Airlock.sol";
-
-import "doppler/test/shared/AirlockMiner.sol";
 
 library DopplerAddrBook {
     struct DopplerAddrs {
@@ -24,6 +29,7 @@ library DopplerAddrBook {
         address poolManager;
         address dopplerDeployer;
     }
+
     function get() internal pure returns (DopplerAddrs memory) {
         return
             // DopplerAddrs({
@@ -49,6 +55,7 @@ library DopplerAddrBook {
 /// @dev minimal stub for LayerZero
 contract LZEndpointStub {
     event MessageSent(uint32 dstEid, bytes payload);
+
     function send(uint32 dstEid, bytes calldata payload, bytes calldata) external payable {
         emit MessageSent(dstEid, payload);
     }
@@ -58,6 +65,7 @@ contract LZEndpointStub {
 contract FeeRouterMock {
     uint256 public total;
     event FeeReceived(uint256 amount);
+
     function routeFeeETH() external payable {
         total += msg.value;
         emit FeeReceived(msg.value);
@@ -105,6 +113,7 @@ contract OrchestratorLaunchTest is Test {
             new uint256[](0),
             "TOKEN_URI"
         );
+
         // 2) governanceFactory data
         bytes memory governanceData = abi.encode("DAO", 7200, 50_400, 0);
 
@@ -112,7 +121,6 @@ contract OrchestratorLaunchTest is Test {
 
         // full initializer data for UniswapV4Initializer (includes fee & tickSpacing)
         bytes memory poolInitializerData = abi.encode(
-            sqrtPriceX96,
             DEFAULT_MINIMUM_PROCEEDS,
             DEFAULT_MAXIMUM_PROCEEDS,
             block.timestamp,
@@ -121,26 +129,10 @@ contract OrchestratorLaunchTest is Test {
             DEFAULT_END_TICK,
             DEFAULT_EPOCH_LENGTH,
             DEFAULT_GAMMA,
-            false,
-            8,
-            DEFAULT_FEE,
-            DEFAULT_TICK_SPACING
-        );
-
-        // shorter blob for AirlockMiner (drops last two fields)
-        bytes memory poolInitializerDataMiner = abi.encode(
-            DEFAULT_MINIMUM_PROCEEDS,
-            DEFAULT_MAXIMUM_PROCEEDS,
-            block.timestamp,
-            block.timestamp + 3 days,
-            DEFAULT_START_TICK,
-            DEFAULT_END_TICK,
-            DEFAULT_EPOCH_LENGTH,
-            DEFAULT_GAMMA,
-            false,
-            8,
-            DEFAULT_FEE,
-            DEFAULT_TICK_SPACING
+            false, // isToken0
+            8, // numPDSlugs
+            3000,
+            8
         );
 
         uint256 initialSupply = 1e23;
@@ -157,7 +149,6 @@ contract OrchestratorLaunchTest is Test {
             poolInitializer: UniswapV4Initializer(doppler.v4Initializer),
             poolInitializerData: poolInitializerDataMiner
         });
-
         (bytes32 salt, address hook, address asset) = mineV4(params);
         console.log("hook: ", hook);
         console.log("asset: ", asset);
@@ -195,4 +186,127 @@ contract OrchestratorLaunchTest is Test {
 
         // assertTrue(ok, "createToken reverted; see console above for selector/data");
     }
+}
+
+// mask to slice out the bottom 14 bit of the address
+uint160 constant FLAG_MASK = 0x3FFF;
+
+// Maximum number of iterations to find a salt, avoid infinite loops
+uint256 constant MAX_LOOP = 100_000;
+
+uint160 constant flags = uint160(
+    Hooks.BEFORE_INITIALIZE_FLAG |
+        Hooks.AFTER_INITIALIZE_FLAG |
+        Hooks.BEFORE_ADD_LIQUIDITY_FLAG |
+        Hooks.BEFORE_SWAP_FLAG |
+        Hooks.AFTER_SWAP_FLAG |
+        Hooks.BEFORE_DONATE_FLAG
+);
+
+struct MineV4Params {
+    address airlock;
+    address poolManager;
+    uint256 initialSupply;
+    uint256 numTokensToSell;
+    address numeraire;
+    ITokenFactory tokenFactory;
+    bytes tokenFactoryData;
+    UniswapV4Initializer poolInitializer;
+    bytes poolInitializerData;
+}
+
+function mineV4(MineV4Params memory params) view returns (bytes32, address, address) {
+    (
+        uint256 minimumProceeds,
+        uint256 maximumProceeds,
+        uint256 startingTime,
+        uint256 endingTime,
+        int24 startingTick,
+        int24 endingTick,
+        uint256 epochLength,
+        int24 gamma,
+        bool isToken0,
+        uint256 numPDSlugs,
+        uint24 lpFee,
+        int24 tickSpacing
+    ) = abi.decode(
+            params.poolInitializerData,
+            (uint256, uint256, uint256, uint256, int24, int24, uint256, int24, bool, uint256, uint24, int24)
+        );
+
+    bytes32 dopplerInitHash = keccak256(
+        abi.encodePacked(
+            type(Doppler).creationCode,
+            abi.encode(
+                params.poolManager,
+                params.numTokensToSell,
+                minimumProceeds,
+                maximumProceeds,
+                startingTime,
+                endingTime,
+                startingTick,
+                endingTick,
+                epochLength,
+                gamma,
+                isToken0,
+                numPDSlugs,
+                params.poolInitializer,
+                lpFee
+            )
+        )
+    );
+
+    (
+        string memory name,
+        string memory symbol,
+        uint256 yearlyMintCap,
+        uint256 vestingDuration,
+        address[] memory recipients,
+        uint256[] memory amounts,
+        string memory tokenURI
+    ) = abi.decode(params.tokenFactoryData, (string, string, uint256, uint256, address[], uint256[], string));
+
+    bytes32 tokenInitHash = keccak256(
+        abi.encodePacked(
+            type(DERC20).creationCode,
+            abi.encode(
+                name,
+                symbol,
+                params.initialSupply,
+                params.airlock,
+                params.airlock,
+                yearlyMintCap,
+                vestingDuration,
+                recipients,
+                amounts,
+                tokenURI
+            )
+        )
+    );
+
+    console.log("deployer: ", address(params.poolInitializer.deployer()));
+
+    for (uint256 salt; salt < 200_000; ++salt) {
+        address hook = computeCreate2Address(
+            bytes32(salt),
+            dopplerInitHash,
+            address(params.poolInitializer.deployer())
+        );
+        address asset = computeCreate2Address(bytes32(salt), tokenInitHash, address(params.tokenFactory));
+
+        if (
+            uint160(hook) & FLAG_MASK == flags &&
+            hook.code.length == 0 &&
+            ((isToken0 && asset < params.numeraire) || (!isToken0 && asset > params.numeraire))
+        ) {
+            console.log("Found salt: %s", salt);
+            return (bytes32(salt), hook, asset);
+        }
+    }
+
+    revert("AirlockMiner: could not find salt");
+}
+
+function computeCreate2Address(bytes32 salt, bytes32 initCodeHash, address deployer) pure returns (address) {
+    return address(uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), deployer, salt, initCodeHash)))));
 }
