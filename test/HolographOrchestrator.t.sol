@@ -19,24 +19,8 @@ import {IHooks} from "lib/doppler/lib/v4-core/src/interfaces/IHooks.sol";
 // Import AirlockMiner which includes Hooks, PoolManager, DERC20, Doppler, Airlock, and UniswapV4Initializer
 import "lib/doppler/test/shared/AirlockMiner.sol";
 
-contract PoolManagerStub {
-    /*
-     * A minimal stub that accepts any call and returns without reverting.
-     * This is enough for our test because UniswapV4Initializer only needs the
-     * call to `initialize` to succeed – it ignores the return data.
-     */
-    fallback() external payable {}
-}
-
-// --- stub DopplerDeployer to bypass Hook validation ---
 contract DopplerHookStub {
     fallback() external payable {}
-}
-
-contract DopplerDeployerStub {
-    function deploy(uint256 /*numTokensToSell*/, bytes32 /*salt*/, bytes calldata /*data*/) external returns (address) {
-        return address(new DopplerHookStub());
-    }
 }
 
 library DopplerAddrBook {
@@ -52,22 +36,14 @@ library DopplerAddrBook {
 
     function get() internal pure returns (DopplerAddrs memory) {
         return
-            // DopplerAddrs({
-            //     airlock: 0x0d2f38d807bfAd5C18e430516e10ab560D300caF,
-            //     tokenFactory: 0x4B0EC16Eb40318Ca5A4346f20F04A2285C19675B,
-            //     governanceFactory: 0x65dE470Da664A5be139A5D812bE5FDa0d76CC951,
-            //     v4Initializer: 0xA36715dA46Ddf4A769f3290f49AF58bF8132ED8E,
-            //     migrator: 0xC541FBddfEEf798E50d257495D08efe00329109A,
-            //     poolManager: 0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408
-            // });
             DopplerAddrs({
                 poolManager: 0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408,
-                airlock: 0x881c18352182E1C918DBfc54539e744Dc90274a8,
-                tokenFactory: 0xBdd732390Dbb0E8D755D1002211E967EF8b8B326,
-                dopplerDeployer: 0x3BEF7AE36503228891081e357bDB49B8F7627A4f,
-                governanceFactory: 0x61e307223Cb5444B72Ea42992Da88B895589d0F3,
-                v4Initializer: 0x20a7DB1f189B5592F756Bf41AD1E7165bD62963C,
-                migrator: 0xBD1B28D7E61733A8983d924c704B1A09d897a870
+                airlock: 0x0d2f38d807bfAd5C18e430516e10ab560D300caF,
+                tokenFactory: 0x4B0EC16Eb40318Ca5A4346f20F04A2285C19675B,
+                dopplerDeployer: 0x40Bcb4dDA3BcF7dba30C5d10c31EE2791ed9ddCa,
+                governanceFactory: 0x65dE470Da664A5be139A5D812bE5FDa0d76CC951,
+                v4Initializer: 0xA36715dA46Ddf4A769f3290f49AF58bF8132ED8E,
+                migrator: 0xC541FBddfEEf798E50d257495D08efe00329109A
             });
     }
 }
@@ -142,9 +118,12 @@ contract OrchestratorLaunchTest is Test {
         orchestrator.setLaunchFee(LAUNCH_FEE);
         vm.deal(creator, 1 ether);
 
-        // patch initializer itself to stub implementation eliminating internal PoolManager logic
-        V4InitializerStub initStub = new V4InitializerStub();
-        vm.etch(doppler.v4Initializer, address(initStub).code);
+        bool useV4Stub = vm.envOr("USE_V4_STUB", true);
+        if (useV4Stub) {
+            // patch initializer itself to stub implementation eliminating internal PoolManager logic
+            V4InitializerStub initStub = new V4InitializerStub();
+            vm.etch(doppler.v4Initializer, address(initStub).code);
+        }
     }
 
     function test_tokenLaunch_endToEnd() public {
