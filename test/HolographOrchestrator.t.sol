@@ -118,7 +118,7 @@ contract OrchestratorLaunchTest is Test {
         orchestrator.setLaunchFee(LAUNCH_FEE);
         vm.deal(creator, 1 ether);
 
-        bool useV4Stub = vm.envOr("USE_V4_STUB", true);
+        bool useV4Stub = vm.envOr("USE_V4_STUB", false);
         if (useV4Stub) {
             // patch initializer itself to stub implementation eliminating internal PoolManager logic
             V4InitializerStub initStub = new V4InitializerStub();
