@@ -13,8 +13,11 @@ import {LPFeeLibrary} from "lib/doppler/lib/v4-core/src/libraries/LPFeeLibrary.s
 import {IHooks} from "lib/doppler/lib/v4-core/src/interfaces/IHooks.sol";
 
 // Import AirlockMiner which includes Hooks, PoolManager, DERC20, Doppler, Airlock, and UniswapV4Initializer
-// This also imports ITokenFactory, IPoolInitializer, IGovernanceFactory, and ILiquidityMigrator
+// This also imports ITokenFactory, but we need to import the other interfaces separately
 import "lib/doppler/test/shared/AirlockMiner.sol";
+import {IGovernanceFactory} from "lib/doppler/src/interfaces/IGovernanceFactory.sol";
+import {IPoolInitializer} from "lib/doppler/src/interfaces/IPoolInitializer.sol";
+import {ILiquidityMigrator} from "lib/doppler/src/interfaces/ILiquidityMigrator.sol";
 
 contract DopplerHookStub {
     fallback() external payable {}
@@ -176,7 +179,7 @@ contract OrchestratorLaunchTest is Test {
         console.log("salt: ");
         console.logBytes32(salt);
 
-        // 4) assemble CreateParams - use address types and let Solidity convert
+        // 4) assemble CreateParams
         CreateParams memory createParams;
         createParams.initialSupply = DEFAULT_NUM_TOKENS_TO_SELL;
         createParams.numTokensToSell = DEFAULT_NUM_TOKENS_TO_SELL;
@@ -189,15 +192,47 @@ contract OrchestratorLaunchTest is Test {
         createParams.integrator = address(0);
         createParams.salt = salt;
 
-        // Use inline assembly to directly set the interface fields
+        // Use inline assembly for the interface fields that have type conflicts
+        //
+        // WHY ASSEMBLY IS NEEDED:
+        // The CreateParams struct expects interface types imported from doppler's internal "src/interfaces/" path,
+        // but we import the same interfaces from "lib/doppler/src/interfaces/". Even though these are identical files,
+        // Solidity's type system treats them as incompatible types. Assembly bypasses this type checking by directly
+        // manipulating memory addresses.
+        //
+        // CREATEPARAMS STRUCT MEMORY LAYOUT:
+        // Each field occupies 32 bytes (0x20) in memory, regardless of actual size
+        // 0x00: initialSupply        (uint256)       ✓ Set normally
+        // 0x20: numTokensToSell      (uint256)       ✓ Set normally
+        // 0x40: numeraire            (address)       ✓ Set normally
+        // 0x60: tokenFactory         (ITokenFactory) ✓ Set normally (no conflict)
+        // 0x80: tokenFactoryData     (bytes)         ✓ Set normally
+        // 0xA0: governanceFactory    (IGovernanceFactory) ❌ TYPE CONFLICT → Use assembly
+        // 0xC0: governanceFactoryData(bytes)         ✓ Set normally
+        // 0xE0: poolInitializer      (IPoolInitializer)   ❌ TYPE CONFLICT → Use assembly
+        // 0x100: poolInitializerData (bytes)         ✓ Set normally
+        // 0x120: liquidityMigrator   (ILiquidityMigrator) ❌ TYPE CONFLICT → Use assembly
+        // 0x140: liquidityMigratorData(bytes)        ✓ Set normally
+        // 0x160: integrator          (address)       ✓ Set normally
+        // 0x180: salt                (bytes32)       ✓ Set normally
         address govFactory = doppler.governanceFactory;
         address poolInit = doppler.v4Initializer;
         address liquidityMig = doppler.migrator;
 
         assembly {
-            mstore(add(createParams, 0xa0), govFactory) // governanceFactory at offset 0xa0
-            mstore(add(createParams, 0xe0), poolInit) // poolInitializer at offset 0xe0
-            mstore(add(createParams, 0x120), liquidityMig) // liquidityMigrator at offset 0x120
+            // mstore(memoryLocation, value) stores 32 bytes at the specified memory location
+
+            // Store governanceFactory at offset 0xA0 (160 decimal)
+            // Calculation: 0xA0 = 5 fields × 32 bytes = field #6 (governanceFactory)
+            mstore(add(createParams, 0xa0), govFactory)
+
+            // Store poolInitializer at offset 0xE0 (224 decimal)
+            // Calculation: 0xE0 = 7 fields × 32 bytes = field #8 (poolInitializer)
+            mstore(add(createParams, 0xe0), poolInit)
+
+            // Store liquidityMigrator at offset 0x120 (288 decimal)
+            // Calculation: 0x120 = 9 fields × 32 bytes = field #10 (liquidityMigrator)
+            mstore(add(createParams, 0x120), liquidityMig)
         }
 
         // 5) low-level call to see revert reason
