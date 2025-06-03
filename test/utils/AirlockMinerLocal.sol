@@ -4,8 +4,8 @@ pragma solidity ^0.8.24;
 import {Test, console} from "forge-std/Test.sol";
 import {Hooks} from "lib/doppler/lib/v4-core/src/libraries/Hooks.sol";
 import {PoolManager} from "lib/doppler/lib/v4-core/src/PoolManager.sol";
-import {ITokenFactory} from "src/interfaces/ITokenFactory.sol";
-import {IPoolInitializer} from "src/interfaces/IPoolInitializer.sol";
+import {ITokenFactory} from "lib/doppler/src/interfaces/ITokenFactory.sol";
+import {IPoolInitializer} from "lib/doppler/src/interfaces/IPoolInitializer.sol";
 import {DERC20} from "lib/doppler/src/DERC20.sol";
 import {Doppler} from "lib/doppler/src/Doppler.sol";
 import {Airlock} from "lib/doppler/src/Airlock.sol";
@@ -37,7 +37,7 @@ struct MineV4Params {
     bytes poolInitializerData;
 }
 
-interface IDeployer {
+interface IInitializerWithDeployer {
     function deployer() external view returns (address);
 }
 
@@ -116,7 +116,7 @@ function mineV4Local(MineV4Params memory params) view returns (bytes32, address,
         address hook = computeCreate2Address(
             bytes32(salt),
             dopplerInitHash,
-            address(IDeployer(address(params.poolInitializer)).deployer()) // Use IDeployer to get deployer address
+            IInitializerWithDeployer(address(params.poolInitializer)).deployer() // Fixed deployer access
         );
         address asset = computeCreate2Address(bytes32(salt), tokenInitHash, address(params.tokenFactory));
 

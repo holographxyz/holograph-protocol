@@ -15,12 +15,11 @@ cache_path = 'cache/foundry'
 
 libs = ["lib"]
 
-
 remappings = [
   # forge-std tests
   "ds-test/=lib/forge-std/lib/ds-test/",
 
-  # Doppler helpers
+  # Doppler helpers - main doppler remapping
   "doppler/=lib/doppler/",
 
   # OpenZeppelin Contracts v5 (standard)
@@ -28,6 +27,14 @@ remappings = [
 
   # OpenZeppelin Contracts Upgradeable
   "@openzeppelin/contracts-upgradeable/=lib/doppler/lib/v4-core/lib/openzeppelin-contracts-upgradeable/contracts/",
+]
+
+# Specify include paths to control which directories are searched for imports
+include_paths = [
+  "src",
+  "lib/doppler/src",
+  "lib/doppler/lib/v4-core/lib/openzeppelin-contracts/contracts",
+  "lib/forge-std/src"
 ]
 
 [rpc_endpoints]

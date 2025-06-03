@@ -16,6 +16,11 @@ import {IHooks} from "lib/doppler/lib/v4-core/src/interfaces/IHooks.sol";
 // This also imports ITokenFactory, IPoolInitializer, IGovernanceFactory, and ILiquidityMigrator
 import "lib/doppler/test/shared/AirlockMiner.sol";
 
+// Import specific interfaces using the same path style as AirlockMiner to ensure compatibility
+import {IGovernanceFactory} from "doppler/src/interfaces/IGovernanceFactory.sol";
+import {IPoolInitializer} from "doppler/src/interfaces/IPoolInitializer.sol";
+import {ILiquidityMigrator} from "doppler/src/interfaces/ILiquidityMigrator.sol";
+
 contract DopplerHookStub {
     fallback() external payable {}
 }
@@ -169,36 +174,33 @@ contract OrchestratorLaunchTest is Test {
             poolInitializerData: poolInitializerData
         });
 
-        // Use the original doppler mineV4 function
-        (bytes32 salt, address hook, address asset) = mineV4(params);
+        (bytes32 salt, address hook, address asset, bytes memory minedPoolInitData) = mineV4Silent(params);
+        poolInitializerData = minedPoolInitData; // use the exact blob that matches the mined salt
         console.log("hook: ", hook);
         console.log("asset: ", asset);
         console.log("salt: ");
         console.logBytes32(salt);
 
-        // 4) assemble CreateParams - use address types and let Solidity convert
-        CreateParams memory createParams;
-        createParams.initialSupply = DEFAULT_NUM_TOKENS_TO_SELL;
-        createParams.numTokensToSell = DEFAULT_NUM_TOKENS_TO_SELL;
-        createParams.numeraire = address(0);
-        createParams.tokenFactory = ITokenFactory(doppler.tokenFactory);
-        createParams.tokenFactoryData = tokenFactoryData;
-        createParams.governanceFactoryData = governanceData;
-        createParams.poolInitializerData = poolInitializerData;
-        createParams.liquidityMigratorData = "";
-        createParams.integrator = address(0);
-        createParams.salt = salt;
+        // 4) assemble CreateParams
+        CreateParams memory createParams = CreateParams({
+            initialSupply: DEFAULT_NUM_TOKENS_TO_SELL,
+            numTokensToSell: DEFAULT_NUM_TOKENS_TO_SELL,
+            numeraire: address(0),
+            tokenFactory: ITokenFactory(doppler.tokenFactory),
+            tokenFactoryData: tokenFactoryData,
+            governanceFactory: IGovernanceFactory(doppler.governanceFactory),
+            governanceFactoryData: governanceData,
+            poolInitializer: IPoolInitializer(doppler.v4Initializer),
+            poolInitializerData: poolInitializerData,
+            liquidityMigrator: ILiquidityMigrator(doppler.migrator),
+            liquidityMigratorData: "",
+            integrator: address(0),
+            salt: salt
+        });
 
-        // Use inline assembly to directly set the interface fields
-        address govFactory = doppler.governanceFactory;
-        address poolInit = doppler.v4Initializer;
-        address liquidityMig = doppler.migrator;
+        // DopplerAirlock airlock = DopplerAirlock(payable(doppler.airlock));
 
-        assembly {
-            mstore(add(createParams, 0xa0), govFactory) // governanceFactory at offset 0xa0
-            mstore(add(createParams, 0xe0), poolInit) // poolInitializer at offset 0xe0
-            mstore(add(createParams, 0x120), liquidityMig) // liquidityMigrator at offset 0x120
-        }
+        // airlock.create(createParams);
 
         // 5) low-level call to see revert reason
         bytes memory callData = abi.encodeWithSelector(orchestrator.createToken.selector, createParams);
@@ -209,5 +211,49 @@ contract OrchestratorLaunchTest is Test {
         console.logBytes(returndata);
 
         assertTrue(ok, "createToken reverted; see console above for selector/data");
+    }
+
+    function mineV4Silent(
+        MineV4Params memory params
+    ) public view returns (bytes32 salt, address hook, address asset, bytes memory poolInitData) {
+        for (uint256 i = 0; i < 1_000_000; ++i) {
+            (salt, hook, asset) = mineV4(params);
+            if (HooksLib.isValidHookAddress(IHooks(hook), LPFeeLibrary.DYNAMIC_FEE_FLAG)) {
+                return (salt, hook, asset, params.poolInitializerData);
+            }
+            // tweak one field (startingTime) to change the init-code hash while keeping length constant
+            (
+                uint256 minP,
+                uint256 maxP,
+                uint256 startT,
+                uint256 endT,
+                int24 startTick,
+                int24 endTick,
+                uint256 epochLen,
+                int24 g,
+                bool isTok0,
+                uint256 numSlugs,
+                uint24 lpFee,
+                int24 tSpacing
+            ) = abi.decode(
+                    params.poolInitializerData,
+                    (uint256, uint256, uint256, uint256, int24, int24, uint256, int24, bool, uint256, uint24, int24)
+                );
+            params.poolInitializerData = abi.encode(
+                minP,
+                maxP,
+                startT + 1,
+                endT + 1,
+                startTick,
+                endTick,
+                epochLen,
+                g,
+                isTok0,
+                numSlugs,
+                lpFee,
+                tSpacing
+            );
+        }
+        revert("could-not-find-valid-salt");
     }
 }
