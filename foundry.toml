@@ -1,14 +1,18 @@
 [profile.default]
-auto_detect_solc = true
+solc = "0.8.26"
+auto_detect_solc = false
+bytecode_hash = "none"
+optimizer_runs = 0
+optimizer = true
+
 src = 'src'
-optimizer_runs = 44444444
 via_ir = true
 ffi = true
 fs_permissions = [{ access = "read", path = "./script" }]
 verbosity = 3
 evm_version = "cancun"
 gas_limit = "300000000"
-bytecode_hash = "none"
+
 out = 'out'
 test = 'test/'
 cache_path = 'cache/foundry'
@@ -41,6 +45,7 @@ include_paths = [
 sepolia = "${SEPOLIA_RPC_URL}"
 unichainSepolia = "https://unichain-sepolia.g.alchemy.com/v2/USgCyvEGfIfHHcEq0bRvG-QDnmUZQEoS"
 baseSepolia = "https://base-sepolia.g.alchemy.com/v2/-yMhiIdfJzvNodml7B9IcI673We9SxjM"
+base = "https://base-mainnet.g.alchemy.com/v2/_H27Z_4T3d1rrkJ2jq5uBejZkfV5PQMJ"
 
 etherscan_api_key = "${ETHERSCAN_API_KEY}"
 

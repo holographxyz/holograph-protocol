@@ -41,13 +41,13 @@ library DopplerAddrBook {
     function get() internal pure returns (DopplerAddrs memory) {
         return
             DopplerAddrs({
-                poolManager: 0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408,
-                airlock: 0x0d2f38d807bfAd5C18e430516e10ab560D300caF,
-                tokenFactory: 0x4B0EC16Eb40318Ca5A4346f20F04A2285C19675B,
-                dopplerDeployer: 0x40Bcb4dDA3BcF7dba30C5d10c31EE2791ed9ddCa,
-                governanceFactory: 0x65dE470Da664A5be139A5D812bE5FDa0d76CC951,
-                v4Initializer: 0xA36715dA46Ddf4A769f3290f49AF58bF8132ED8E,
-                migrator: 0xC541FBddfEEf798E50d257495D08efe00329109A
+                airlock: 0x660eAaEdEBc968f8f3694354FA8EC0b4c5Ba8D12,
+                tokenFactory: 0xFAafdE6a5b658684cC5eb0C5c2c755B00A246F45,
+                governanceFactory: 0xb4deE32EB70A5E55f3D2d861F49Fb3D79f7a14d9,
+                v4Initializer: 0x77EbfBAE15AD200758E9E2E61597c0B07d731254,
+                migrator: 0x5F3bA43D44375286296Cb85F1EA2EBfa25dde731,
+                poolManager: 0x498581fF718922c3f8e6A244956aF099B2652b2b,
+                dopplerDeployer: 0x5CadB034267751a364dDD4d321C99E07A307f915
             });
     }
 }
@@ -114,7 +114,11 @@ contract OrchestratorLaunchTest is Test {
 
     function setUp() public {
         doppler = DopplerAddrBook.get();
-        vm.createSelectFork(vm.rpcUrl("baseSepolia"));
+
+        // Base mainnet has chain ID 8453
+        vm.chainId(8453);
+        // Use the fork URL from the command line
+        vm.createSelectFork(vm.rpcUrl("base"));
 
         lzEndpoint = new LZEndpointStub();
         feeRouter = new FeeRouterMock();
@@ -341,7 +345,7 @@ contract OrchestratorLaunchTest is Test {
             )
         );
 
-        address dopplerDeployer = 0x40Bcb4dDA3BcF7dba30C5d10c31EE2791ed9ddCa;
+        address dopplerDeployer = 0x5CadB034267751a364dDD4d321C99E07A307f915;
 
         hook = computeCreate2Address(bytes32(fixedSalt), dopplerInitHash, dopplerDeployer);
 
@@ -402,9 +406,9 @@ contract OrchestratorLaunchTest is Test {
             );
 
         // Calculate the exact same way as mining
-        address poolManager = 0x7Da1D65F8B249183667cdE74C5CBD46dD38AA829;
+        address poolManager = 0x498581fF718922c3f8e6A244956aF099B2652b2b;
         uint256 numTokensToSell = 100000000000000000000000;
-        address poolInitializer = 0xA36715dA46Ddf4A769f3290f49AF58bF8132ED8E;
+        address poolInitializer = 0x77EbfBAE15AD200758E9E2E61597c0B07d731254;
 
         bytes32 dopplerInitHash = keccak256(
             abi.encodePacked(
@@ -428,7 +432,7 @@ contract OrchestratorLaunchTest is Test {
             )
         );
 
-        address dopplerDeployer = 0x40Bcb4dDA3BcF7dba30C5d10c31EE2791ed9ddCa;
+        address dopplerDeployer = 0x5CadB034267751a364dDD4d321C99E07A307f915;
         uint256 salt = 1;
 
         address predictedHook = computeCreate2Address(bytes32(salt), dopplerInitHash, dopplerDeployer);
@@ -481,13 +485,13 @@ contract OrchestratorLaunchTest is Test {
         uint24 lpFee = 3000;
 
         // Use the actual PoolManager address from our test environment
-        address testPoolManager = address(0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408);
+        address testPoolManager = address(0x498581fF718922c3f8e6A244956aF099B2652b2b);
 
         // MINING CALCULATION
         console.log("=== MINING PARAMETERS ===");
 
         // In mining, we use the UniswapV4Initializer as the initializer
-        address miningInitializer = address(0xA36715dA46Ddf4A769f3290f49AF58bF8132ED8E);
+        address miningInitializer = address(0x77EbfBAE15AD200758E9E2E61597c0B07d731254);
         console.log("Mining initializer: %s", miningInitializer);
 
         bytes32 miningInitHash = keccak256(
@@ -512,7 +516,7 @@ contract OrchestratorLaunchTest is Test {
             )
         );
 
-        address miningDeployer = address(0x40Bcb4dDA3BcF7dba30C5d10c31EE2791ed9ddCa);
+        address miningDeployer = address(0x5CadB034267751a364dDD4d321C99E07A307f915);
 
         // Test salt 1 which failed in the actual test
         bytes32 testSalt = bytes32(uint256(1));
