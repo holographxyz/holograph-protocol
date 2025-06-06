@@ -8,7 +8,7 @@ pragma solidity ^0.8.24;
  * @notice  Primary entry‑point contract that
  *          1. launches new tokens through Doppler Airlock on the *source* chain;
  *          2. sends cross‑chain mint/bridge messages via LayerZero V2;
- *          3. forwards protocol fees to FeeRouter (50 % Treasury / 50 % Staking);
+ *          3. forwards protocol fees to FeeRouter (50 % Treasury / 50 % Staking);
  *          4. receives LayerZero messages and finalises mints on destination.
  *
  * Key Points

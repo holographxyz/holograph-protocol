@@ -4,8 +4,8 @@ pragma solidity ^0.8.24;
 import {Test, console} from "forge-std/Test.sol";
 import {Hooks} from "lib/doppler/lib/v4-core/src/libraries/Hooks.sol";
 import {PoolManager} from "lib/doppler/lib/v4-core/src/PoolManager.sol";
-import {ITokenFactory} from "src/interfaces/ITokenFactory.sol";
-import {IPoolInitializer} from "src/interfaces/IPoolInitializer.sol";
+import {ITokenFactory} from "lib/doppler/src/interfaces/ITokenFactory.sol";
+import {IPoolInitializer} from "lib/doppler/src/interfaces/IPoolInitializer.sol";
 import {DERC20} from "lib/doppler/src/DERC20.sol";
 import {Doppler} from "lib/doppler/src/Doppler.sol";
 import {Airlock} from "lib/doppler/src/Airlock.sol";
@@ -37,7 +37,7 @@ struct MineV4Params {
     bytes poolInitializerData;
 }
 
-interface IDeployer {
+interface IInitializerWithDeployer {
     function deployer() external view returns (address);
 }
 
@@ -116,7 +116,7 @@ function mineV4Local(MineV4Params memory params) view returns (bytes32, address,
         address hook = computeCreate2Address(
             bytes32(salt),
             dopplerInitHash,
-            address(IDeployer(address(params.poolInitializer)).deployer()) // Use IDeployer to get deployer address
+            IInitializerWithDeployer(address(params.poolInitializer)).deployer() // Fixed deployer access
         );
         address asset = computeCreate2Address(bytes32(salt), tokenInitHash, address(params.tokenFactory));
 
@@ -135,4 +135,51 @@ function mineV4Local(MineV4Params memory params) view returns (bytes32, address,
 
 function computeCreate2Address(bytes32 salt, bytes32 initCodeHash, address deployer) pure returns (address) {
     return address(uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), deployer, salt, initCodeHash)))));
+}
+
+function debugHashCalculation(MineV4Params memory params) pure returns (bytes32) {
+    (
+        uint256 minimumProceeds,
+        uint256 maximumProceeds,
+        uint256 startingTime,
+        uint256 endingTime,
+        int24 startingTick,
+        int24 endingTick,
+        uint256 epochLength,
+        int24 gamma,
+        bool isToken0,
+        uint256 numPDSlugs,
+        uint24 lpFee,
+        int24 tickSpacing // This parameter exists in the data but is NOT used in Doppler constructor
+    ) = abi.decode(
+            params.poolInitializerData,
+            (uint256, uint256, uint256, uint256, int24, int24, uint256, int24, bool, uint256, uint24, int24)
+        );
+
+    // Calculate hash WITH the extra false, false parameters to match the working local version
+    bytes32 dopplerInitHash = keccak256(
+        abi.encodePacked(
+            type(Doppler).creationCode,
+            abi.encode(
+                params.poolManager,
+                params.numTokensToSell,
+                minimumProceeds,
+                maximumProceeds,
+                startingTime,
+                endingTime,
+                startingTick,
+                endingTick,
+                epochLength,
+                gamma,
+                isToken0,
+                numPDSlugs,
+                params.poolInitializer, // This will be msg.sender in DopplerDeployer
+                lpFee,
+                false, // beforeSwapReturnDelta permission (to match local version)
+                false // afterSwapReturnDelta permission (to match local version)
+            )
+        )
+    );
+
+    return dopplerInitHash;
 }
