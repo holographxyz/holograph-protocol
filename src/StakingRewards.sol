@@ -81,7 +81,7 @@ contract StakingRewards is Ownable, ReentrancyGuard, Pausable {
     //  Events
     // ──────────────────────────────────────────────────────────────────────────
     event Staked(address indexed user, uint256 amount);
-    event Withdrawn(address indexed user, uint256 amount);
+    event Unstaked(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 amount);
     event RewardAdded(uint256 amount);
     event CooldownUpdated(uint256 seconds_);
@@ -148,7 +148,7 @@ contract StakingRewards is Ownable, ReentrancyGuard, Pausable {
         totalStaked -= amount;
         balanceOf[msg.sender] = staked - amount;
         HLG.safeTransfer(msg.sender, amount);
-        emit Withdrawn(msg.sender, amount);
+        emit Unstaked(msg.sender, amount);
     }
 
     /**

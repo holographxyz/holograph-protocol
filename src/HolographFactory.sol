@@ -56,12 +56,14 @@ contract HolographFactory is Ownable, Pausable, ReentrancyGuard, ILZReceiverV2 {
 
     mapping(uint32 => uint64) public nonce; // dstEid → next outbound nonce
     uint256 public launchFeeETH = 0.005 ether;
+    uint256 public protocolFeePercentage = 150; // 1.5% in basis points (150/10000)
 
     // ──────────────────────────────────────────────────────────────────────
     //  Events
     // ──────────────────────────────────────────────────────────────────────
     event TokenLaunched(address indexed asset, bytes32 salt);
     event CrossChainMint(uint32 indexed dstEid, address token, address to, uint256 amount, uint64 nonce);
+    event ProtocolFeeUpdated(uint256 newPercentage);
 
     // ──────────────────────────────────────────────────────────────────────
     //  Constructor
@@ -83,7 +85,15 @@ contract HolographFactory is Ownable, Pausable, ReentrancyGuard, ILZReceiverV2 {
         CreateParams calldata params
     ) external payable nonReentrant whenNotPaused returns (address asset) {
         if (msg.value < launchFeeETH) revert ZeroAmount();
-        feeRouter.routeFeeETH{value: launchFeeETH}();
+
+        // Calculate protocol fee (1.5% of launch fee by default)
+        uint256 protocolFee = (launchFeeETH * protocolFeePercentage) / 10000;
+
+        // Forward only the protocol fee portion to FeeRouter
+        if (protocolFee > 0) {
+            feeRouter.routeFeeETH{value: protocolFee}();
+        }
+
         if (msg.value > launchFeeETH) payable(msg.sender).transfer(msg.value - launchFeeETH);
 
         (asset, , , , ) = dopplerAirlock.create(params);
@@ -130,6 +140,11 @@ contract HolographFactory is Ownable, Pausable, ReentrancyGuard, ILZReceiverV2 {
     // ──────────────────────────────────────────────────────────────────────
     function setLaunchFee(uint256 weiAmount) external onlyOwner {
         launchFeeETH = weiAmount;
+    }
+
+    function setProtocolFeePercentage(uint256 newPercentage) external onlyOwner {
+        protocolFeePercentage = newPercentage;
+        emit ProtocolFeeUpdated(newPercentage);
     }
 
     function pause() external onlyOwner {

@@ -23,6 +23,7 @@ pragma solidity ^0.8.24;
 
 import "@openzeppelin/access/Ownable.sol";
 import "@openzeppelin/utils/ReentrancyGuard.sol";
+import "@openzeppelin/utils/Pausable.sol";
 import "@openzeppelin/token/ERC20/IERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/ILZEndpointV2.sol";
@@ -34,7 +35,7 @@ import "./interfaces/IStakingRewards.sol";
 // ──────────────────────────────────────────────────────────────────────────
 //  Contract
 // ──────────────────────────────────────────────────────────────────────────
-contract FeeRouter is Ownable, ReentrancyGuard, ILZReceiverV2 {
+contract FeeRouter is Ownable, ReentrancyGuard, Pausable, ILZReceiverV2 {
     using SafeERC20 for IERC20;
 
     /*───────────────────────────────────────────────────────────────────────
@@ -55,6 +56,9 @@ contract FeeRouter is Ownable, ReentrancyGuard, ILZReceiverV2 {
     // Mapping of nonce per outbound EID (mirrors factory design)
     mapping(uint32 => uint64) public nonce;
 
+    // Trusted remote addresses for LayerZero security
+    mapping(uint32 => bytes32) public trustedRemotes;
+
     /*───────────────────────────────────────────────────────────────────────
         Errors
     ───────────────────────────────────────────────────────────────────────*/
@@ -62,6 +66,7 @@ contract FeeRouter is Ownable, ReentrancyGuard, ILZReceiverV2 {
     error ZeroAmount();
     error NotEndpoint();
     error OnlySelf();
+    error UntrustedRemote();
 
     /*───────────────────────────────────────────────────────────────────────
         Events
@@ -71,6 +76,7 @@ contract FeeRouter is Ownable, ReentrancyGuard, ILZReceiverV2 {
     event Swapped(uint256 ethIn, uint256 hlgOut);
     event RewardsSent(uint256 hlgAmt);
     event Burned(uint256 hlgAmt);
+    event TrustedRemoteSet(uint32 indexed eid, bytes32 remote);
 
     /*───────────────────────────────────────────────────────────────────────
         Constructor
@@ -113,12 +119,12 @@ contract FeeRouter is Ownable, ReentrancyGuard, ILZReceiverV2 {
         Fee Collection – Base chain
     ───────────────────────────────────────────────────────────────────────*/
     /** @notice Receive ETH fees from HolographFactory.  Alias for {receiveFee}. */
-    function routeFeeETH() external payable {
+    function routeFeeETH() external payable whenNotPaused {
         _receiveFee();
     }
 
     /** @notice Preferred canonical entry-point for fee deposits. */
-    function receiveFee() external payable {
+    function receiveFee() external payable whenNotPaused {
         _receiveFee();
     }
 
@@ -134,7 +140,7 @@ contract FeeRouter is Ownable, ReentrancyGuard, ILZReceiverV2 {
      * @param minGas   Minimum gas to attach for the receive on destination.
      * @param minHlg   Minimum HLG expected from the WETH→HLG swap (slippage).
      */
-    function bridge(uint256 minGas, uint256 minHlg) external nonReentrant {
+    function bridge(uint256 minGas, uint256 minHlg) external nonReentrant whenNotPaused {
         uint256 bal = address(this).balance;
         if (bal == 0) revert ZeroAmount();
 
@@ -143,8 +149,8 @@ contract FeeRouter is Ownable, ReentrancyGuard, ILZReceiverV2 {
         // encode payload carrying the minHlg slippage parameter
         bytes memory payload = abi.encode(minHlg);
 
-        // simplistic Options encoding: just pass minGas in calldata – fine for demo
-        bytes memory options = abi.encode(minGas);
+        // Proper LayerZero V2 options encoding for lzReceive gas
+        bytes memory options = _buildLzReceiveOption(minGas);
 
         lzEndpoint.send{value: bal}(remoteEid, payload, options);
 
@@ -155,12 +161,18 @@ contract FeeRouter is Ownable, ReentrancyGuard, ILZReceiverV2 {
         LayerZero Receive – executes on Ethereum
     ───────────────────────────────────────────────────────────────────────*/
     function lzReceive(
-        uint32 /*srcEid (unused)*/,
+        uint32 srcEid,
         bytes calldata payload,
-        address /*sender*/,
+        address sender,
         bytes calldata /*execParams*/
     ) external payable override {
         if (msg.sender != address(lzEndpoint)) revert NotEndpoint();
+
+        // Validate trusted remote
+        bytes32 trustedRemote = trustedRemotes[srcEid];
+        if (trustedRemote == bytes32(0) || trustedRemote != _addressToBytes32(sender)) {
+            revert UntrustedRemote();
+        }
 
         uint256 minHlg = abi.decode(payload, (uint256));
 
@@ -214,5 +226,85 @@ contract FeeRouter is Ownable, ReentrancyGuard, ILZReceiverV2 {
     ───────────────────────────────────────────────────────────────────────*/
     receive() external payable {
         // Accept ether – no action (handled on explicit calls)
+    }
+
+    /*───────────────────────────────────────────────────────────────────────
+        Admin Functions
+    ───────────────────────────────────────────────────────────────────────*/
+    /**
+     * @notice Set trusted remote address for a specific chain EID
+     * @param eid The endpoint ID of the remote chain
+     * @param remote The trusted remote address (as bytes32)
+     */
+    function setTrustedRemote(uint32 eid, bytes32 remote) external onlyOwner {
+        trustedRemotes[eid] = remote;
+        emit TrustedRemoteSet(eid, remote);
+    }
+
+    /**
+     * @notice Get trusted remote address for a specific chain EID
+     * @param eid The endpoint ID of the remote chain
+     * @return The trusted remote address (as bytes32)
+     */
+    function getTrustedRemote(uint32 eid) external view returns (bytes32) {
+        return trustedRemotes[eid];
+    }
+
+    /**
+     * @notice Check if an address is a trusted remote for a specific EID
+     * @param eid The endpoint ID of the remote chain
+     * @param remote The address to check
+     * @return True if the address is trusted for the EID
+     */
+    function isTrustedRemote(uint32 eid, address remote) external view returns (bool) {
+        return trustedRemotes[eid] == _addressToBytes32(remote);
+    }
+
+    /**
+     * @notice Pause the contract (emergency stop)
+     */
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /**
+     * @notice Unpause the contract
+     */
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
+    /**
+     * @notice Helper to convert address to bytes32 for LayerZero compatibility
+     */
+    function _addressToBytes32(address addr) internal pure returns (bytes32) {
+        return bytes32(uint256(uint160(addr)));
+    }
+
+    /**
+     * @notice Helper to convert bytes32 to address
+     */
+    function _bytes32ToAddress(bytes32 b) internal pure returns (address) {
+        return address(uint160(uint256(b)));
+    }
+
+    /**
+     * @notice Build LayerZero V2 options for lzReceive execution
+     * @param gasLimit Gas limit for lzReceive execution on destination
+     */
+    function _buildLzReceiveOption(uint256 gasLimit) internal pure returns (bytes memory) {
+        // LayerZero V2 options format: TYPE_3 + OPTION_TYPE_LZRECEIVE + gas + value
+        // TYPE_3 = 0x0003
+        // OPTION_TYPE_LZRECEIVE = 0x01
+        // gas = uint128 (16 bytes)
+        // value = uint128 (16 bytes) - set to 0 for no msg.value
+        return
+            abi.encodePacked(
+                uint16(3), // TYPE_3
+                uint8(1), // OPTION_TYPE_LZRECEIVE
+                uint8(16), // length of gas param (16 bytes for uint128)
+                uint128(gasLimit), // gas limit as uint128
+                uint128(0) // msg.value as uint128 (0 for no value)
+            );
     }
 }
