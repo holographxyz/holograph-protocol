@@ -9,7 +9,7 @@ pragma solidity ^0.8.24;
  *           deposited by the FeeRouter. Users may stake/withdraw at any
  *           time, subject to an optional cooldown period, and claim their
  *           accrued rewards. Reward distribution follows a standard
- *           reward-per-token model for O(1) gas efficiency.
+ *           reward-per-token model.
  *
  * Mechanics
  * ---------
