@@ -5,19 +5,19 @@ pragma solidity ^0.8.24;
  * ----------------------------------------------------------------------------
  * @title FeeRouter (Omnichain) – Holograph 2.0
  * ----------------------------------------------------------------------------
- * Omnichain router that
- *   • collects ETH protocol fees on Base;
- *   • bridges them to Ethereum via LayerZero V2;
- *   • wraps to WETH, swaps WETH→HLG on Uniswap V3 (0.3 % pool);
- *   • burns 50 % of acquired HLG;
- *   • forwards 50 % of HLG to the StakingRewards contract ("staking pool").
+ * Omnichain router that:
+ *   • Collects ETH protocol fees on Base
+ *   • Bridges them to Ethereum via LayerZero V2
+ *   • Wraps to WETH, swaps WETH→HLG on Uniswap V3 (0.3% pool)
+ *   • Burns 50% of acquired HLG
+ *   • Forwards 50% of HLG to the StakingRewards contract
  *
- * The contract is deployed with the **same address on all chains** using
- * deterministic deployments so that `_trustedRemote` checks can rely on
- * `msg.sender == address(this)` on the peer chain.
+ * The contract is deployed with the same address on all chains using
+ * deterministic deployments so that trusted remote checks can rely on
+ * msg.sender == address(this) on the peer chain.
  *
- * For security, only the LayerZero endpoint may call {lzReceive}.  Bridging is
- * initiated via {bridge} by an authorised keeper / governance.
+ * For security, only the LayerZero endpoint may call lzReceive. Bridging is
+ * initiated via bridge() by an authorized keeper or governance.
  * ----------------------------------------------------------------------------
  */
 
@@ -38,9 +38,9 @@ import "./interfaces/IStakingRewards.sol";
 contract FeeRouter is Ownable, ReentrancyGuard, Pausable, ILZReceiverV2 {
     using SafeERC20 for IERC20;
 
-    /*───────────────────────────────────────────────────────────────────────
-        Constants & Immutables
-    ───────────────────────────────────────────────────────────────────────*/
+    /* -------------------------------------------------------------------------- */
+    /*                            Constants & Immutables                         */
+    /* -------------------------------------------------------------------------- */
     uint24 public constant POOL_FEE = 3000; // Uniswap V3 fee tier 0.3 %
 
     ILZEndpointV2 public immutable lzEndpoint;
@@ -50,27 +50,27 @@ contract FeeRouter is Ownable, ReentrancyGuard, Pausable, ILZReceiverV2 {
     IWETH9 public immutable WETH; // canonical WETH on Ethereum
     ISwapRouter public immutable swapRouter; // Uniswap V3 router
 
-    /*───────────────────────────────────────────────────────────────────────
-        Storage
-    ───────────────────────────────────────────────────────────────────────*/
+    /* -------------------------------------------------------------------------- */
+    /*                                   Storage                                  */
+    /* -------------------------------------------------------------------------- */
     // Mapping of nonce per outbound EID (mirrors factory design)
     mapping(uint32 => uint64) public nonce;
 
     // Trusted remote addresses for LayerZero security
     mapping(uint32 => bytes32) public trustedRemotes;
 
-    /*───────────────────────────────────────────────────────────────────────
-        Errors
-    ───────────────────────────────────────────────────────────────────────*/
+    /* -------------------------------------------------------------------------- */
+    /*                                   Errors                                   */
+    /* -------------------------------------------------------------------------- */
     error ZeroAddress();
     error ZeroAmount();
     error NotEndpoint();
     error OnlySelf();
     error UntrustedRemote();
 
-    /*───────────────────────────────────────────────────────────────────────
-        Events
-    ───────────────────────────────────────────────────────────────────────*/
+    /* -------------------------------------------------------------------------- */
+    /*                                   Events                                   */
+    /* -------------------------------------------------------------------------- */
     event FeeReceived(address indexed payer, uint256 amount);
     event FeesBridged(uint256 ethAmt, uint64 nonce);
     event Swapped(uint256 ethIn, uint256 hlgOut);
@@ -78,16 +78,16 @@ contract FeeRouter is Ownable, ReentrancyGuard, Pausable, ILZReceiverV2 {
     event Burned(uint256 hlgAmt);
     event TrustedRemoteSet(uint32 indexed eid, bytes32 remote);
 
-    /*───────────────────────────────────────────────────────────────────────
-        Constructor
-    ───────────────────────────────────────────────────────────────────────*/
+    /* -------------------------------------------------------------------------- */
+    /*                                 Constructor                                */
+    /* -------------------------------------------------------------------------- */
     /**
-     * @param _endpoint      LayerZero endpoint on **this** chain.
-     * @param _remoteEid     Remote chain EID (Base ⇄ Ethereum peer).
-     * @param _stakingPool   StakingRewards contract (only meaningful on Ethereum).
-     * @param _hlg           HLG ERC-20 token address (Ethereum).
-     * @param _weth          Canonical WETH address (Ethereum).
-     * @param _swapRouter    Uniswap V3 router.
+     * @param _endpoint      LayerZero endpoint on this chain
+     * @param _remoteEid     Remote chain EID (Base ⇄ Ethereum peer)
+     * @param _stakingPool   StakingRewards contract (only meaningful on Ethereum)
+     * @param _hlg           HLG ERC-20 token address (Ethereum)
+     * @param _weth          Canonical WETH address (Ethereum)
+     * @param _swapRouter    Uniswap V3 router
      */
     constructor(
         address _endpoint,
@@ -107,18 +107,18 @@ contract FeeRouter is Ownable, ReentrancyGuard, Pausable, ILZReceiverV2 {
         swapRouter = ISwapRouter(_swapRouter); // may be 0 on Base
     }
 
-    /*───────────────────────────────────────────────────────────────────────
-        Modifiers
-    ───────────────────────────────────────────────────────────────────────*/
+    /* -------------------------------------------------------------------------- */
+    /*                                  Modifiers                                 */
+    /* -------------------------------------------------------------------------- */
     modifier onlySelf() {
         if (msg.sender != address(this)) revert OnlySelf();
         _;
     }
 
-    /*───────────────────────────────────────────────────────────────────────
-        Fee Collection – Base chain
-    ───────────────────────────────────────────────────────────────────────*/
-    /** @notice Receive ETH fees from HolographFactory.  Alias for {receiveFee}. */
+    /* -------------------------------------------------------------------------- */
+    /*                          Fee Collection – Base chain                      */
+    /* -------------------------------------------------------------------------- */
+    /** @notice Receive ETH fees from HolographFactory. Alias for receiveFee. */
     function routeFeeETH() external payable whenNotPaused {
         _receiveFee();
     }
@@ -133,12 +133,12 @@ contract FeeRouter is Ownable, ReentrancyGuard, Pausable, ILZReceiverV2 {
         emit FeeReceived(msg.sender, msg.value);
     }
 
-    /*───────────────────────────────────────────────────────────────────────
-        Bridge ETH → Ethereum (callable on Base)
-    ───────────────────────────────────────────────────────────────────────*/
+    /* -------------------------------------------------------------------------- */
+    /*                        Bridge ETH → Ethereum (callable on Base)           */
+    /* -------------------------------------------------------------------------- */
     /**
-     * @param minGas   Minimum gas to attach for the receive on destination.
-     * @param minHlg   Minimum HLG expected from the WETH→HLG swap (slippage).
+     * @param minGas   Minimum gas to attach for the receive on destination
+     * @param minHlg   Minimum HLG expected from the WETH→HLG swap (slippage protection)
      */
     function bridge(uint256 minGas, uint256 minHlg) external nonReentrant whenNotPaused {
         uint256 bal = address(this).balance;
@@ -157,9 +157,9 @@ contract FeeRouter is Ownable, ReentrancyGuard, Pausable, ILZReceiverV2 {
         emit FeesBridged(bal, n);
     }
 
-    /*───────────────────────────────────────────────────────────────────────
-        LayerZero Receive – executes on Ethereum
-    ───────────────────────────────────────────────────────────────────────*/
+    /* -------------------------------------------------------------------------- */
+    /*                      LayerZero Receive – executes on Ethereum             */
+    /* -------------------------------------------------------------------------- */
     function lzReceive(
         uint32 srcEid,
         bytes calldata payload,
@@ -181,9 +181,9 @@ contract FeeRouter is Ownable, ReentrancyGuard, Pausable, ILZReceiverV2 {
         this.swapAndDistribute(minHlg);
     }
 
-    /*───────────────────────────────────────────────────────────────────────
-        Swap & Distribute – Ethereum only
-    ───────────────────────────────────────────────────────────────────────*/
+    /* -------------------------------------------------------------------------- */
+    /*                       Swap & Distribute – Ethereum only                   */
+    /* -------------------------------------------------------------------------- */
     function swapAndDistribute(uint256 minHlg) external onlySelf nonReentrant {
         uint256 ethBal = address(this).balance;
         if (ethBal == 0) revert ZeroAmount();
@@ -221,16 +221,16 @@ contract FeeRouter is Ownable, ReentrancyGuard, Pausable, ILZReceiverV2 {
         emit RewardsSent(stakeAmt);
     }
 
-    /*───────────────────────────────────────────────────────────────────────
-        Fallback – allows contract to receive ETH (bridged + direct)
-    ───────────────────────────────────────────────────────────────────────*/
+    /* -------------------------------------------------------------------------- */
+    /*                   Fallback – allows contract to receive ETH               */
+    /* -------------------------------------------------------------------------- */
     receive() external payable {
         // Accept ether – no action (handled on explicit calls)
     }
 
-    /*───────────────────────────────────────────────────────────────────────
-        Admin Functions
-    ───────────────────────────────────────────────────────────────────────*/
+    /* -------------------------------------------------------------------------- */
+    /*                               Admin Functions                              */
+    /* -------------------------------------------------------------------------- */
     /**
      * @notice Set trusted remote address for a specific chain EID
      * @param eid The endpoint ID of the remote chain

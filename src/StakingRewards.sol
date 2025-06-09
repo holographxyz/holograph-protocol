@@ -5,28 +5,28 @@ pragma solidity ^0.8.24;
  * ----------------------------------------------------------------------------
  * @title StakingRewards – Holograph 2.0
  * ----------------------------------------------------------------------------
- * @notice   Single–token staking contract for **HLG** that distributes rewards
- *           deposited by the FeeRouter.  Users may stake / withdraw at any
+ * @notice   Single-token staking contract for HLG that distributes rewards
+ *           deposited by the FeeRouter. Users may stake/withdraw at any
  *           time, subject to an optional cooldown period, and claim their
- *           accrued rewards.  Reward distribution follows a standard
- *           *reward‑per‑token* model for O(1) gas‑efficiency.
+ *           accrued rewards. Reward distribution follows a standard
+ *           reward-per-token model for O(1) gas efficiency.
  *
  * Mechanics
  * ---------
- * • **Stake**   – User deposits HLG → increases their stake + updates rewards.
- * • **Withdraw**– User removes a portion/all of their stake; guarded by an
- *                 optional cooldown (default 7 days).
- * • **Claim**   – User collects their accumulated HLG rewards.
- * • **addRewards** – Called by FeeRouter when fresh HLG fees arrive; reward
- *                     is distributed pro-rata to all stakers instantly.
- * • **Owner**   – May pause/unpause, change cooldown length, set a new
- *                 FeeRouter, or recover non‑HLG tokens.
+ * • Stake    – User deposits HLG → increases their stake + updates rewards
+ * • Withdraw – User removes a portion/all of their stake; guarded by an
+ *              optional cooldown (default 7 days)
+ * • Claim    – User collects their accumulated HLG rewards
+ * • addRewards – Called by FeeRouter when fresh HLG fees arrive; reward
+ *                is distributed pro-rata to all stakers instantly
+ * • Owner    – May pause/unpause, change cooldown length, set a new
+ *              FeeRouter, or recover non-HLG tokens
  *
  * Safety
  * ------
- * • Custom errors used over string reverts.
- * • OpenZeppelin Ownable, Pausable, ReentrancyGuard.
- * • Funds stored are ERC‑20 only; no ETH held.
+ * • Custom errors used over string reverts
+ * • OpenZeppelin Ownable, Pausable, ReentrancyGuard
+ * • Funds stored are ERC-20 only; no ETH held
  * ----------------------------------------------------------------------------
  */
 
@@ -39,9 +39,9 @@ import "@openzeppelin/utils/Pausable.sol";
 contract StakingRewards is Ownable, ReentrancyGuard, Pausable {
     using SafeERC20 for IERC20;
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Custom Errors
-    // ──────────────────────────────────────────────────────────────────────────
+    /* -------------------------------------------------------------------------- */
+    /*                                Custom Errors                               */
+    /* -------------------------------------------------------------------------- */
     error ZeroAmount(); // parameter is zero
     error CooldownActive(uint256 remaining); // stake still cooling down
     error FeeRouterOnly(); // caller ≠ feeRouter
@@ -49,13 +49,13 @@ contract StakingRewards is Ownable, ReentrancyGuard, Pausable {
     error ExceedsBalance(); // withdraw > staked
     error RecoverHLG(); // attempted to recover the stake token
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Immutable & Storage
-    // ──────────────────────────────────────────────────────────────────────────
+    /* -------------------------------------------------------------------------- */
+    /*                             Immutable & Storage                            */
+    /* -------------------------------------------------------------------------- */
     /// @notice The HLG ERC‑20 token that users stake and that rewards are paid in.
     IERC20 public immutable HLG;
 
-    /// @notice Address of the FeeRouter that is authorised to call
+    /// @notice Address of the FeeRouter that is authorized to call
     ///         {addRewards}.
     address public feeRouter;
 
@@ -68,7 +68,7 @@ contract StakingRewards is Ownable, ReentrancyGuard, Pausable {
     /// @dev User → HLG staked balance.
     mapping(address => uint256) public balanceOf;
 
-    // ---------- reward‑per‑token accounting ----------
+    // ---------- reward-per-token accounting ----------
     uint256 public rewardPerTokenStored; // scaled by 1e18
     mapping(address => uint256) public userRewardPerTokenPaid;
     mapping(address => uint256) public rewards; // accrued, unclaimed
@@ -77,9 +77,9 @@ contract StakingRewards is Ownable, ReentrancyGuard, Pausable {
     /// @dev Timestamp of the last stake for cooldown checks.
     mapping(address => uint256) public lastStakeTimestamp;
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Events
-    // ──────────────────────────────────────────────────────────────────────────
+    /* -------------------------------------------------------------------------- */
+    /*                                   Events                                   */
+    /* -------------------------------------------------------------------------- */
     event Staked(address indexed user, uint256 amount);
     event Unstaked(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 amount);
@@ -87,13 +87,12 @@ contract StakingRewards is Ownable, ReentrancyGuard, Pausable {
     event CooldownUpdated(uint256 seconds_);
     event FeeRouterUpdated(address feeRouter);
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Constructor
-    // ──────────────────────────────────────────────────────────────────────────
+    /* -------------------------------------------------------------------------- */
+    /*                                 Constructor                                */
+    /* -------------------------------------------------------------------------- */
     /**
-     * @param _hlg        Address of the immutable HLG token.
-     * @param _feeRouter  Initial FeeRouter address authorised to call
-     *                    {addRewards}.
+     * @param _hlg        Address of the immutable HLG token
+     * @param _feeRouter  Initial FeeRouter address authorized to call addRewards
      */
     constructor(address _hlg, address _feeRouter) Ownable(msg.sender) {
         if (_hlg == address(0) || _feeRouter == address(0)) revert ZeroAddress();
@@ -102,11 +101,11 @@ contract StakingRewards is Ownable, ReentrancyGuard, Pausable {
         _pause(); // begin paused until governance enables
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Modifier – updates user reward accounting
-    // ──────────────────────────────────────────────────────────────────────────
+    /* -------------------------------------------------------------------------- */
+    /*                    Modifier – updates user reward accounting              */
+    /* -------------------------------------------------------------------------- */
     modifier updateReward(address account) {
-        // credit pending rewards before mutating balances
+        // Credit pending rewards before mutating balances
         if (account != address(0)) {
             rewards[account] += _earned(account);
             userRewardPerTokenPaid[account] = rewardPerTokenStored;
@@ -114,12 +113,12 @@ contract StakingRewards is Ownable, ReentrancyGuard, Pausable {
         _;
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  User Functions
-    // ──────────────────────────────────────────────────────────────────────────
+    /* -------------------------------------------------------------------------- */
+    /*                               User Functions                               */
+    /* -------------------------------------------------------------------------- */
     /**
-     * @notice Stake `amount` HLG.
-     * @param amount Quantity to stake.
+     * @notice Stake `amount` HLG
+     * @param amount Quantity to stake
      */
     function stake(uint256 amount) external nonReentrant whenNotPaused updateReward(msg.sender) {
         if (amount == 0) revert ZeroAmount();
@@ -131,8 +130,8 @@ contract StakingRewards is Ownable, ReentrancyGuard, Pausable {
     }
 
     /**
-     * @notice Withdraw `amount` HLG after cooldown.
-     * @param amount Quantity to withdraw.
+     * @notice Withdraw `amount` HLG after cooldown
+     * @param amount Quantity to withdraw
      */
     function withdraw(uint256 amount) public nonReentrant updateReward(msg.sender) {
         if (amount == 0) revert ZeroAmount();
@@ -152,7 +151,7 @@ contract StakingRewards is Ownable, ReentrancyGuard, Pausable {
     }
 
     /**
-     * @notice Claim any accumulated HLG rewards.
+     * @notice Claim any accumulated HLG rewards
      */
     function claim() public nonReentrant updateReward(msg.sender) {
         uint256 reward = rewards[msg.sender];
@@ -164,21 +163,20 @@ contract StakingRewards is Ownable, ReentrancyGuard, Pausable {
     }
 
     /**
-     * @notice Convenience: withdraw **all** stake and claim rewards in one tx.
+     * @notice Convenience: withdraw all stake and claim rewards in one tx
      */
     function exit() external {
         withdraw(balanceOf[msg.sender]);
         claim();
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  FeeRouter Interaction
-    // ──────────────────────────────────────────────────────────────────────────
+    /* -------------------------------------------------------------------------- */
+    /*                            FeeRouter Interaction                           */
+    /* -------------------------------------------------------------------------- */
     /**
-     * @notice Called by the FeeRouter when HLG protocol fees are sent here.
-     * @dev    Distributes the reward immediately by updating
-     *         `rewardPerTokenStored`.
-     * @param  amount Amount of HLG transferred from the FeeRouter.
+     * @notice Called by the FeeRouter when HLG protocol fees are sent here
+     * @dev    Distributes the reward immediately by updating rewardPerTokenStored
+     * @param  amount Amount of HLG transferred from the FeeRouter
      */
     function addRewards(uint256 amount) external nonReentrant updateReward(address(0)) {
         if (msg.sender != feeRouter) revert FeeRouterOnly();
@@ -191,24 +189,24 @@ contract StakingRewards is Ownable, ReentrancyGuard, Pausable {
         emit RewardAdded(amount);
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  View Helpers
-    // ──────────────────────────────────────────────────────────────────────────
-    /** @return pending HLG reward for `account` (includes stored rewards). */
+    /* -------------------------------------------------------------------------- */
+    /*                                View Helpers                                */
+    /* -------------------------------------------------------------------------- */
+    /** @return pending HLG reward for `account` (includes stored rewards) */
     function earned(address account) external view returns (uint256) {
         return _earned(account) + rewards[account];
     }
 
-    /** @dev Internal view function. */
+    /** @dev Internal view function */
     function _earned(address account) internal view returns (uint256) {
         return (balanceOf[account] * (rewardPerTokenStored - userRewardPerTokenPaid[account])) / 1e18;
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Governance / Owner Functions
-    // ──────────────────────────────────────────────────────────────────────────
+    /* -------------------------------------------------------------------------- */
+    /*                        Governance / Owner Functions                       */
+    /* -------------------------------------------------------------------------- */
     /**
-     * @notice Update the cooldown length (set to 0 to disable).
+     * @notice Update the cooldown length (set to 0 to disable)
      */
     function setCooldown(uint256 seconds_) external onlyOwner {
         cooldownPeriod = seconds_;
@@ -216,7 +214,7 @@ contract StakingRewards is Ownable, ReentrancyGuard, Pausable {
     }
 
     /**
-     * @notice Change the authorised FeeRouter.
+     * @notice Change the authorized FeeRouter
      */
     function setFeeRouter(address _router) external onlyOwner {
         if (_router == address(0)) revert ZeroAddress();
@@ -224,7 +222,7 @@ contract StakingRewards is Ownable, ReentrancyGuard, Pausable {
         emit FeeRouterUpdated(_router);
     }
 
-    /** Pause / unpause staking & withdrawing (claim still allowed). */
+    /** Pause/unpause staking & withdrawing (claim still allowed) */
     function pause() external onlyOwner {
         _pause();
     }
@@ -234,8 +232,7 @@ contract StakingRewards is Ownable, ReentrancyGuard, Pausable {
     }
 
     /**
-     * @notice Recover tokens sent here by mistake (anything except the stake
-     *         token itself).
+     * @notice Recover tokens sent here by mistake (anything except the stake token itself)
      */
     function recoverToken(address token, uint256 amount) external onlyOwner {
         if (token == address(HLG)) revert RecoverHLG();

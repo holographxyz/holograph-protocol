@@ -8,119 +8,136 @@ import {IERC20} from "@openzeppelin/token/ERC20/IERC20.sol";
 import {MockERC20} from "./mock/MockERC20.sol";
 
 contract StakingRewardsTest is Test {
+    StakingRewards public stakingRewards;
     MockERC20 public hlg;
-    StakingRewards public staking;
-    address feeRouter = vm.addr(1);
 
-    address alice = vm.addr(2);
-    address bob = vm.addr(3);
+    address public owner = address(0x1);
+    address public feeRouter = address(0x2);
+    address public user1 = address(0x3);
+    address public user2 = address(0x4);
 
+    uint256 public constant INITIAL_SUPPLY = 1000000 ether;
+    uint256 public constant STAKE_AMOUNT = 1000 ether;
+    uint256 public constant REWARD_AMOUNT = 100 ether;
+
+    /* -------------------------------------------------------------------------- */
+    /*                                   Setup                                    */
+    /* -------------------------------------------------------------------------- */
     function setUp() public {
-        hlg = new MockERC20();
-        staking = new StakingRewards(address(hlg), feeRouter);
-        staking.unpause();
+        vm.startPrank(owner);
 
-        // distribute some HLG
-        hlg.mint(alice, 1e24); // 1,000 HLG
-        hlg.mint(bob, 1e24);
+        // Deploy mock HLG token
+        hlg = new MockERC20();
+        hlg.mint(user1, INITIAL_SUPPLY);
+        hlg.mint(user2, INITIAL_SUPPLY);
+        hlg.mint(feeRouter, INITIAL_SUPPLY);
+
+        // Deploy staking contract
+        stakingRewards = new StakingRewards(address(hlg), feeRouter);
+
+        // Unpause the contract for testing
+        stakingRewards.unpause();
+
+        vm.stopPrank();
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Stake / Withdraw / Claim
-    // ──────────────────────────────────────────────────────────────────────────
+    /* -------------------------------------------------------------------------- */
+    /*                            Stake / Withdraw / Claim                        */
+    /* -------------------------------------------------------------------------- */
     function testStakeAndWithdraw() public {
         uint256 amt = 100 ether;
-        vm.startPrank(alice);
-        hlg.approve(address(staking), amt);
-        staking.stake(amt);
-        assertEq(staking.totalStaked(), amt);
-        assertEq(staking.balanceOf(alice), amt);
+        vm.startPrank(user1);
+        hlg.approve(address(stakingRewards), amt);
+        stakingRewards.stake(amt);
+        assertEq(stakingRewards.totalStaked(), amt);
+        assertEq(stakingRewards.balanceOf(user1), amt);
 
         vm.warp(block.timestamp + 7 days + 1);
-        staking.withdraw(amt);
-        assertEq(staking.totalStaked(), 0);
-        assertEq(staking.balanceOf(alice), 0);
+        stakingRewards.withdraw(amt);
+        assertEq(stakingRewards.totalStaked(), 0);
+        assertEq(stakingRewards.balanceOf(user1), 0);
         vm.stopPrank();
     }
 
     function testClaimRewards() public {
         uint256 stakeAmt = 100 ether;
-        vm.startPrank(alice);
-        hlg.approve(address(staking), stakeAmt);
-        staking.stake(stakeAmt);
+        vm.startPrank(user1);
+        hlg.approve(address(stakingRewards), stakeAmt);
+        stakingRewards.stake(stakeAmt);
         vm.stopPrank();
 
         uint256 rewardAmt = 50 ether;
         hlg.mint(feeRouter, rewardAmt);
         vm.prank(feeRouter);
-        hlg.approve(address(staking), rewardAmt);
+        hlg.approve(address(stakingRewards), rewardAmt);
         vm.prank(feeRouter);
-        staking.addRewards(rewardAmt);
+        stakingRewards.addRewards(rewardAmt);
 
-        uint256 earned = staking.earned(alice);
+        uint256 earned = stakingRewards.earned(user1);
         assertApproxEqAbs(earned, rewardAmt, 1); // allow 1-wei rounding
 
-        vm.prank(alice);
-        staking.claim();
-        assertApproxEqAbs(hlg.balanceOf(alice), 1e24 - stakeAmt + rewardAmt, 1);
-        assertEq(staking.earned(alice), 0);
+        vm.prank(user1);
+        stakingRewards.claim();
+        assertApproxEqAbs(hlg.balanceOf(user1), 1e24 - stakeAmt + rewardAmt, 1);
+        assertEq(stakingRewards.earned(user1), 0);
     }
 
     function testWithdrawBeforeCooldownReverts() public {
         uint256 amt = 10 ether;
-        vm.startPrank(alice);
-        hlg.approve(address(staking), amt);
-        staking.stake(amt);
+        vm.startPrank(user1);
+        hlg.approve(address(stakingRewards), amt);
+        stakingRewards.stake(amt);
         vm.expectRevert(abi.encodeWithSignature("CooldownActive(uint256)", 604800));
-        staking.withdraw(amt);
+        stakingRewards.withdraw(amt);
         vm.stopPrank();
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Pause / Unpause
-    // ──────────────────────────────────────────────────────────────────────────
+    /* -------------------------------------------------------------------------- */
+    /*                                Pause / Unpause                             */
+    /* -------------------------------------------------------------------------- */
     function testPause() public {
-        staking.pause();
-        vm.startPrank(alice);
-        hlg.approve(address(staking), 1 ether);
+        vm.prank(owner);
+        stakingRewards.pause();
+        vm.startPrank(user1);
+        hlg.approve(address(stakingRewards), 1 ether);
         vm.expectRevert(abi.encodeWithSignature("EnforcedPause()"));
-        staking.stake(1 ether);
+        stakingRewards.stake(1 ether);
         vm.stopPrank();
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  FeeRouter only addRewards
-    // ──────────────────────────────────────────────────────────────────────────
+    /* -------------------------------------------------------------------------- */
+    /*                            FeeRouter only addRewards                       */
+    /* -------------------------------------------------------------------------- */
     function testAddRewardsOnlyRouter() public {
         uint256 amt = 1 ether;
-        hlg.mint(alice, amt);
-        vm.prank(alice);
-        hlg.approve(address(staking), amt);
-        vm.prank(alice);
+        hlg.mint(user1, amt);
+        vm.prank(user1);
+        hlg.approve(address(stakingRewards), amt);
+        vm.prank(user1);
         vm.expectRevert(StakingRewards.FeeRouterOnly.selector);
-        staking.addRewards(amt);
+        stakingRewards.addRewards(amt);
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Fuzz
-    // ──────────────────────────────────────────────────────────────────────────
+    /* -------------------------------------------------------------------------- */
+    /*                                    Fuzz                                    */
+    /* -------------------------------------------------------------------------- */
     function testFuzz_StakeThenReward(uint128 stakeAmt, uint128 rewardAmt) public {
         stakeAmt = uint128(bound(uint256(stakeAmt), 1e18, 1e24));
         rewardAmt = uint128(bound(uint256(rewardAmt), 1e18, 1e24));
-        hlg.mint(alice, stakeAmt);
+        hlg.mint(user1, stakeAmt);
         hlg.mint(feeRouter, rewardAmt);
 
-        vm.prank(alice);
-        hlg.approve(address(staking), stakeAmt);
-        vm.prank(alice);
-        staking.stake(stakeAmt);
+        vm.prank(user1);
+        hlg.approve(address(stakingRewards), stakeAmt);
+        vm.prank(user1);
+        stakingRewards.stake(stakeAmt);
 
         vm.prank(feeRouter);
-        hlg.approve(address(staking), rewardAmt);
+        hlg.approve(address(stakingRewards), rewardAmt);
         vm.prank(feeRouter);
-        staking.addRewards(rewardAmt);
+        stakingRewards.addRewards(rewardAmt);
 
-        uint256 earned = staking.earned(alice);
+        uint256 earned = stakingRewards.earned(user1);
         assertApproxEqAbs(earned, rewardAmt, 1000000); // Allow reasonable delta for precision
     }
 }
