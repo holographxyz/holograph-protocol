@@ -25,43 +25,11 @@ import "@openzeppelin/access/Ownable.sol";
 import "@openzeppelin/utils/ReentrancyGuard.sol";
 import "@openzeppelin/token/ERC20/IERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
-
-// ──────────────────────────────────────────────────────────────────────────
-//  Minimal external interfaces
-// ──────────────────────────────────────────────────────────────────────────
-interface ILZEndpointV2 {
-    function send(uint32 dstEid, bytes calldata payload, bytes calldata options) external payable;
-}
-
-interface ILZReceiverV2 {
-    function lzReceive(uint32, bytes calldata, address, bytes calldata) external payable;
-}
-
-interface IWETH9 {
-    function deposit() external payable;
-    function withdraw(uint256) external;
-    function approve(address spender, uint256 amount) external returns (bool);
-    function balanceOf(address) external view returns (uint256);
-    function transfer(address to, uint256 amount) external returns (bool);
-}
-
-interface ISwapRouter {
-    struct ExactInputSingleParams {
-        address tokenIn;
-        address tokenOut;
-        uint24 fee;
-        address recipient;
-        uint256 amountIn;
-        uint256 amountOutMinimum;
-        uint160 sqrtPriceLimitX96;
-    }
-
-    function exactInputSingle(ExactInputSingleParams calldata params) external payable returns (uint256 amountOut);
-}
-
-interface IStakingRewards {
-    function addRewards(uint256 amount) external;
-}
+import "./interfaces/ILZEndpointV2.sol";
+import "./interfaces/ILZReceiverV2.sol";
+import "./interfaces/IWETH9.sol";
+import "./interfaces/ISwapRouter.sol";
+import "./interfaces/IStakingRewards.sol";
 
 // ──────────────────────────────────────────────────────────────────────────
 //  Contract

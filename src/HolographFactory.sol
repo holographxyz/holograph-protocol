@@ -28,34 +28,11 @@ import "@openzeppelin/utils/ReentrancyGuard.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/token/ERC20/IERC20.sol";
 import {CreateParams} from "lib/doppler/src/Airlock.sol";
-
-// ──────────────────────────────────────────────────────────────────────────
-//  Doppler structs / interfaces (trimmed to essentials)
-// ──────────────────────────────────────────────────────────────────────────
-interface IAirlock {
-    function create(
-        CreateParams calldata params
-    ) external returns (address asset, address pool, address governance, address timelock, address migrationPool);
-}
-
-// ──────────────────────────────────────────────────────────────────────────
-//  External hooks
-// ──────────────────────────────────────────────────────────────────────────
-interface IFeeRouter {
-    function routeFeeETH() external payable;
-}
-
-interface ILZEndpointV2 {
-    function send(uint32 dstEid, bytes calldata msg_, bytes calldata opts) external payable;
-}
-
-interface ILZReceiverV2 {
-    function lzReceive(uint32, bytes calldata, address, bytes calldata) external;
-}
-
-interface IMintableERC20 {
-    function mint(address to, uint256 amount) external;
-}
+import "./interfaces/IAirlock.sol";
+import "./interfaces/IFeeRouter.sol";
+import "./interfaces/ILZEndpointV2.sol";
+import "./interfaces/ILZReceiverV2.sol";
+import "./interfaces/IMintableERC20.sol";
 
 // ──────────────────────────────────────────────────────────────────────────
 //  Contract
@@ -140,7 +117,7 @@ contract HolographFactory is Ownable, Pausable, ReentrancyGuard, ILZReceiverV2 {
     // ──────────────────────────────────────────────────────────────────────
     //  LAYERZERO RECEIVE
     // ──────────────────────────────────────────────────────────────────────
-    function lzReceive(uint32, bytes calldata msg_, address, bytes calldata) external override {
+    function lzReceive(uint32, bytes calldata msg_, address, bytes calldata) external payable override {
         if (msg.sender != address(lzEndpoint)) revert NotEndpoint();
         (bytes4 sel, address token, address to, uint256 amt) = abi.decode(msg_, (bytes4, address, address, uint256));
         if (sel == bytes4(keccak256("mintERC20(address,uint256,address)"))) {
