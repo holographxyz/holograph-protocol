@@ -17,8 +17,6 @@ pragma solidity ^0.8.24;
  * • Flat ETH launch fee (configurable) processed immediately
  * • Mint payload format:
  *     bytes4(keccak256("mintERC20(address,uint256,address)")) | token | to | amt
- *
- * Style: comments + section bars follow project conventions.
  * ----------------------------------------------------------------------------
  */
 
