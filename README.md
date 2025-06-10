@@ -1,6 +1,6 @@
 # Holograph Protocol
 
-An omnichain token launchpad and fee system that collects protocol fees from token launches on Base, bridges them to Ethereum, swaps to HLG tokens, and distributes rewards to stakers while burning a portion for deflationary tokenomics.
+An omnichain token launchpad powered by Doppler that enables token creation and cross-chain bridging. Launch tokens on Base and make them available across multiple chains via LayerZero V2.
 
 ## System Architecture
 
@@ -8,26 +8,50 @@ An omnichain token launchpad and fee system that collects protocol fees from tok
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │   Base Chain    │    │   LayerZero V2   │    │  Ethereum Chain │
 │                 │    │                  │    │                 │
-│ HolographFactory│───▶│   Cross-Chain    │───▶│   FeeRouter     │
+│ HolographFactory│───▶│   Cross-Chain    │───▶│   Token Minting │
 │                 │    │   Messaging      │    │                 │
-│ • Token Launches│    │                  │    │ • ETH→WETH→HLG  │
-│ • Protocol Fees │    │                  │    │ • 50% Burn      │
-│ • Cross-Chain   │    │                  │    │ • 50% Staking   │
+│ • Token Launches│    │                  │    │ • Omnichain     │
+│ • Doppler Airlock│   │                  │    │ • Instant Mint  │
+│ • Cross-Chain   │    │                  │    │ • Same Address  │
+│                 │    │                  │    │                 │
+│   FeeRouter     │    │                  │    │   FeeRouter     │
+│ • Fee Collection│───▶│   Fee Bridging   │───▶│ • WETH→HLG Swap │
+│ • ETH Bridging  │    │                  │    │ • 50% Burn      │
+│                 │    │                  │    │ • 50% Staking   │
+│                 │    │                  │    │                 │
+│                 │    │                  │    │ StakingRewards  │
+│                 │    │                  │    │ • HLG Staking   │
+│                 │    │                  │    │ • Reward Distrib│
+│                 │    │                  │    │ • Cooldown      │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
-                                                         │
-                                                         ▼
-                                                ┌─────────────────┐
-                                                │ StakingRewards  │
-                                                │                 │
-                                                │ • HLG Staking   │
-                                                │ • Reward Dist.  │
-                                                │ • Cooldown      │
-                                                └─────────────────┘
 ```
 
 ## Overview
 
-The Holograph Protocol implements a fee management system across Base and Ethereum chains. When users launch tokens on Base, they pay a small protocol fee that gets bridged to Ethereum, swapped for HLG tokens, and distributed to stakers.
+The Holograph Protocol is an omnichain token launchpad for creating and deploying tokens across multiple blockchains. Built on Doppler Airlock technology and powered by LayerZero V2, tokens launched through Holograph are available on any supported chain with the same contract address.
+
+## Core Features
+
+### Omnichain Token Launches
+
+- Launch tokens on Base with cross-chain availability
+- Same contract address across all supported chains
+- Built on Doppler Airlock technology
+- Multi-chain tokens
+
+### Cross-Chain Bridging
+
+- LayerZero V2 integration for secure messaging
+- Direct token minting on destination chains
+- No lock/unlock mechanisms - true omnichain tokens
+- Nonce-based replay protection
+
+### Developer Integration
+
+- Simple integration with existing dApps
+- Standard ERC-20 interface on all chains
+- Testing suite included
+- Open source
 
 ## Core Contracts
 
@@ -37,73 +61,22 @@ The main entry point for token launches and cross-chain operations.
 
 - Launches new ERC-20 tokens via Doppler Airlock
 - Handles cross-chain token bridging via LayerZero V2
-- Collects 1.5% protocol fee from token launches
-- Forwards protocol fees to FeeRouter
+- Manages omnichain token deployments
+- Provides interface for multi-chain operations
 
 ```solidity
 function createToken(CreateParams calldata params) external payable returns (address asset)
 function bridgeMint(uint32 dstEid, address token, address recipient, uint256 amount, bytes calldata options) external payable
 ```
 
-### FeeRouter.sol
-
-Manages fee collection and distribution across chains.
-
-- Collects ETH protocol fees on Base
-- Bridges fees to Ethereum via LayerZero V2
-- Swaps ETH→WETH→HLG on Ethereum
-- Burns 50% of HLG, sends 50% to stakers
-
-```solidity
-function routeFeeETH() external payable
-function bridge(uint256 minGas, uint256 minHlg) external
-function swapAndDistribute(uint256 minHlg) external
-```
-
-### StakingRewards.sol
-
-HLG token staking with reward distribution.
-
-- Users stake HLG tokens to earn rewards from protocol fees
-- Uses reward-per-token accounting for gas efficiency
-- 7-day withdrawal cooldown (configurable)
-- Owner can pause/unpause and adjust parameters
-
-```solidity
-function stake(uint256 amount) external
-function withdraw(uint256 amount) external
-function claim() external
-```
-
 ## Table of Contents
 
-- [Fee Flow](#fee-flow)
 - [Token Launch & Bridging](#token-launch--bridging)
-- [Staking](#staking)
+- [Integration](#integration)
 - [Security](#security)
 - [Testing](#testing)
-- [Integration](#integration)
-
-## Fee Flow
-
-The protocol generates revenue through token launch fees and distributes it to HLG stakers.
-
-### 1. Fee Generation (Base Chain)
-
-User launches token → Pays 0.005 ETH launch fee → 1.5% protocol fee (0.000075 ETH) → FeeRouter
-
-### 2. Fee Bridging (Base → Ethereum)
-
-FeeRouter accumulates ETH → bridge() called → LayerZero V2 message → Ethereum FeeRouter
-
-### 3. Fee Processing (Ethereum Chain)
-
-ETH received → Wrap to WETH → Swap WETH→HLG (Uniswap V3) → Split 50/50
-
-### 4. Distribution (Ethereum Chain)
-
-50% HLG → Burn (transfer to address(0))
-50% HLG → StakingRewards → Distributed to stakers pro-rata
+- [Fee Structure](#fee-structure)
+- [Staking](#staking)
 
 ## Token Launch & Bridging
 
@@ -124,28 +97,33 @@ ETH received → Wrap to WETH → Swap WETH→HLG (Uniswap V3) → Split 50/50
 
 The bridging system uses a mint payload format: `mintERC20(address token, uint256 amount, address recipient)` with nonce-based replay protection per destination chain.
 
-## Staking
+## Integration
 
-### How It Works
+### For Token Launchers
 
-- Users stake HLG tokens to earn rewards from protocol fees
-- Rewards are distributed instantly when fees are processed
-- Uses reward-per-token accounting for gas efficiency
-- 18-decimal precision for fractional rewards
+```solidity
+// Launch a new omnichain token
+CreateParams memory params = CreateParams({
+    name: "My Token",
+    symbol: "MTK",
+    // ... other parameters
+});
 
-### Staking Process
+address newToken = holographFactory.createToken{value: 0.005 ether}(params);
+```
 
-1. Stake: User deposits HLG tokens
-2. Earn: Rewards accumulate automatically from protocol fees
-3. Claim: User can claim rewards at any time
-4. Withdraw: Remove staked tokens (subject to cooldown)
+### For Cross-Chain Users
 
-### Cooldown
-
-- Default 7-day cooldown period between staking and withdrawal
-- Prevents rapid stake/unstake gaming
-- Configurable by owner
-- Claiming rewards has no cooldown
+```solidity
+// Bridge tokens to another chain
+holographFactory.bridgeMint{value: bridgeFee}(
+    destinationEid,    // e.g., Ethereum EID
+    tokenAddress,      // Token to bridge
+    recipient,         // Destination recipient
+    amount,           // Amount to bridge
+    lzOptions         // LayerZero options
+);
+```
 
 ## Security
 
@@ -209,33 +187,49 @@ forge test --match-path test/integration/
 - Staking cooldown mechanics
 - LayerZero options encoding
 
-## Integration
+## Fee Structure
 
-### For Token Launchers
+The protocol collects fees from token launches and distributes them to HLG stakers.
 
-```solidity
-// Launch a new omnichain token
-CreateParams memory params = CreateParams({
-    name: "My Token",
-    symbol: "MTK",
-    // ... other parameters
-});
+### 1. Fee Generation (Base Chain)
 
-address newToken = holographFactory.createToken{value: 0.005 ether}(params);
-```
+User launches token → Pays 0.005 ETH launch fee → 1.5% protocol fee (0.000075 ETH) → FeeRouter
 
-### For Cross-Chain Users
+### 2. Fee Bridging (Base → Ethereum)
 
-```solidity
-// Bridge tokens to another chain
-holographFactory.bridgeMint{value: bridgeFee}(
-    destinationEid,    // e.g., Ethereum EID
-    tokenAddress,      // Token to bridge
-    recipient,         // Destination recipient
-    amount,           // Amount to bridge
-    lzOptions         // LayerZero options
-);
-```
+FeeRouter accumulates ETH → bridge() called → LayerZero V2 message → Ethereum FeeRouter
+
+### 3. Fee Processing (Ethereum Chain)
+
+ETH received → Wrap to WETH → Swap WETH→HLG (Uniswap V3) → Split 50/50
+
+### 4. Distribution (Ethereum Chain)
+
+50% HLG → Burn (transfer to address(0))
+50% HLG → StakingRewards → Distributed to stakers pro-rata
+
+## Staking
+
+### How It Works
+
+- Users stake HLG tokens to earn rewards from protocol fees
+- Rewards are distributed when fees are processed
+- Uses reward-per-token accounting for gas efficiency
+- 18-decimal precision for fractional rewards
+
+### Staking Process
+
+1. Stake: User deposits HLG tokens
+2. Earn: Rewards accumulate automatically from protocol fees
+3. Claim: User can claim rewards at any time
+4. Withdraw: Remove staked tokens (subject to cooldown)
+
+### Cooldown
+
+- Default 7-day cooldown period between staking and withdrawal
+- Prevents rapid stake/unstake gaming
+- Configurable by owner
+- Claiming rewards has no cooldown
 
 ### For HLG Stakers
 
@@ -268,7 +262,8 @@ uint256 totalStaked = stakingRewards.totalStaked();
 
 ### Fee Economics
 
-- Launch Fee: 0.005 ETH per token launch
+- TODO: Integrate Doppler fee mechanism
+- Launch Fee: 0.005 ETH per token launch (This is a temporary hardcoded value that will be reworked once the above is done)
 - Protocol Fee: 1.5% of launch fee (0.000075 ETH)
 - Conversion Rate: ~0.000000139 WETH per 1 HLG at time of writing
 - Distribution: 50% burn, 50% staking rewards
