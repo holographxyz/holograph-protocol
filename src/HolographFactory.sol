@@ -32,9 +32,6 @@ import "./interfaces/ILZEndpointV2.sol";
 import "./interfaces/ILZReceiverV2.sol";
 import "./interfaces/IMintableERC20.sol";
 
-// ──────────────────────────────────────────────────────────────────────────
-//  Contract
-// ──────────────────────────────────────────────────────────────────────────
 contract HolographFactory is Ownable, Pausable, ReentrancyGuard, ILZReceiverV2 {
     using SafeERC20 for IERC20;
 
@@ -53,7 +50,7 @@ contract HolographFactory is Ownable, Pausable, ReentrancyGuard, ILZReceiverV2 {
     IFeeRouter public immutable feeRouter;
 
     mapping(uint32 => uint64) public nonce; // dstEid → next outbound nonce
-    uint256 public launchFeeETH = 0.005 ether;
+    uint256 public launchFeeETH = 0.005 ether; // TODO: Integrate Doppler fee mechanism
     uint256 public protocolFeePercentage = 150; // 1.5% in basis points (150/10000)
 
     /* -------------------------------------------------------------------------- */
@@ -66,6 +63,12 @@ contract HolographFactory is Ownable, Pausable, ReentrancyGuard, ILZReceiverV2 {
     /* -------------------------------------------------------------------------- */
     /*                                 Constructor                                */
     /* -------------------------------------------------------------------------- */
+    /**
+     * @notice Constructor
+     * @param _endpoint The address of the LayerZero endpoint
+     * @param _airlock The address of the Doppler Airlock
+     * @param _feeRouter The address of the FeeRouter
+     */
     constructor(address _endpoint, address _airlock, address _feeRouter) Ownable(msg.sender) {
         if (_endpoint == address(0) || _airlock == address(0) || _feeRouter == address(0)) revert ZeroAddress();
         lzEndpoint = ILZEndpointV2(_endpoint);
@@ -78,6 +81,8 @@ contract HolographFactory is Ownable, Pausable, ReentrancyGuard, ILZReceiverV2 {
     /* -------------------------------------------------------------------------- */
     /**
      * @notice Launch a new ERC-20 via Doppler Airlock and pay flat Holograph fee
+     * @param params The CreateParams struct containing token details
+     * @return asset The address of the newly created token
      */
     function createToken(
         CreateParams calldata params
@@ -101,6 +106,13 @@ contract HolographFactory is Ownable, Pausable, ReentrancyGuard, ILZReceiverV2 {
     /* -------------------------------------------------------------------------- */
     /*                               CROSS-CHAIN SEND                             */
     /* -------------------------------------------------------------------------- */
+    /**
+     * @notice Bridge a token to another chain and mint it
+     * @param dstEid The destination chain ID
+     * @param token The token address
+     * @param recipient The recipient address
+     * @param amount The amount to mint
+     */
     function bridgeMint(
         uint32 dstEid,
         address token,
@@ -125,6 +137,13 @@ contract HolographFactory is Ownable, Pausable, ReentrancyGuard, ILZReceiverV2 {
     /* -------------------------------------------------------------------------- */
     /*                              LAYERZERO RECEIVE                             */
     /* -------------------------------------------------------------------------- */
+    /**
+     * @notice Receive a message from LayerZero and mint the token
+     * @param _srcChainId The source chain ID
+     * @param msg_ The message data
+     * @param _sender The sender address
+     * @param _zroPaymentAddress The ZRO payment address
+     */
     function lzReceive(uint32, bytes calldata msg_, address, bytes calldata) external payable override {
         if (msg.sender != address(lzEndpoint)) revert NotEndpoint();
         (bytes4 sel, address token, address to, uint256 amt) = abi.decode(msg_, (bytes4, address, address, uint256));
@@ -136,19 +155,33 @@ contract HolographFactory is Ownable, Pausable, ReentrancyGuard, ILZReceiverV2 {
     /* -------------------------------------------------------------------------- */
     /*                                    OWNER                                   */
     /* -------------------------------------------------------------------------- */
+    /**
+     * @notice Set the launch fee
+     * @param weiAmount The new launch fee in wei
+     */
     function setLaunchFee(uint256 weiAmount) external onlyOwner {
         launchFeeETH = weiAmount;
     }
 
+    /**
+     * @notice Set the protocol fee percentage
+     * @param newPercentage The new protocol fee percentage (in basis points)
+     */
     function setProtocolFeePercentage(uint256 newPercentage) external onlyOwner {
         protocolFeePercentage = newPercentage;
         emit ProtocolFeeUpdated(newPercentage);
     }
 
+    /**
+     * @notice Pause the factory
+     */
     function pause() external onlyOwner {
         _pause();
     }
 
+    /**
+     * @notice Unpause the factory
+     */
     function unpause() external onlyOwner {
         _unpause();
     }
