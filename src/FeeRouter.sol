@@ -110,6 +110,10 @@ contract FeeRouter is Ownable, ReentrancyGuard, Pausable, ILZReceiverV2 {
     /* -------------------------------------------------------------------------- */
     /*                                  Modifiers                                 */
     /* -------------------------------------------------------------------------- */
+    /**
+     * @notice Modifier to ensure the caller is the contract itself
+     * @dev This is used to prevent the contract from being called by any other address
+     */
     modifier onlySelf() {
         if (msg.sender != address(this)) revert OnlySelf();
         _;
@@ -182,8 +186,13 @@ contract FeeRouter is Ownable, ReentrancyGuard, Pausable, ILZReceiverV2 {
     }
 
     /* -------------------------------------------------------------------------- */
-    /*                       Swap & Distribute – Ethereum only                   */
+    /*                       Swap & Distribute – Ethereum only                    */
     /* -------------------------------------------------------------------------- */
+    /**
+     * @notice Swap the bridged ETH for HLG and distribute the rewards
+     * @dev This function is only callable by the contract itself
+     * @param minHlg The minimum amount of HLG to receive from the swap
+     */
     function swapAndDistribute(uint256 minHlg) external onlySelf nonReentrant {
         uint256 ethBal = address(this).balance;
         if (ethBal == 0) revert ZeroAmount();

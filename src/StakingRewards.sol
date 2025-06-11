@@ -192,12 +192,20 @@ contract StakingRewards is Ownable, ReentrancyGuard, Pausable {
     /* -------------------------------------------------------------------------- */
     /*                                View Helpers                                */
     /* -------------------------------------------------------------------------- */
-    /** @return pending HLG reward for `account` (includes stored rewards) */
+    /**
+     * @notice Calculate the pending HLG reward for a user
+     * @param account The address of the user
+     * @return The pending HLG reward for the user
+     */
     function earned(address account) external view returns (uint256) {
         return _earned(account) + rewards[account];
     }
 
-    /** @dev Internal view function */
+    /**
+     * @dev Internal view function to calculate the pending HLG reward for a user
+     * @param account The address of the user
+     * @return The pending HLG reward for the user
+     */
     function _earned(address account) internal view returns (uint256) {
         return (balanceOf[account] * (rewardPerTokenStored - userRewardPerTokenPaid[account])) / 1e18;
     }
@@ -222,11 +230,16 @@ contract StakingRewards is Ownable, ReentrancyGuard, Pausable {
         emit FeeRouterUpdated(_router);
     }
 
-    /** Pause/unpause staking & withdrawing (claim still allowed) */
+    /**
+     * @notice Pause the staking & withdrawing
+     */
     function pause() external onlyOwner {
         _pause();
     }
 
+    /**
+     * @notice Unpause the staking & withdrawing
+     */
     function unpause() external onlyOwner {
         _unpause();
     }
