@@ -66,7 +66,7 @@ The main entry point for token launches and cross-chain operations.
 
 ```solidity
 function createToken(CreateParams calldata params) external payable returns (address asset)
-function bridgeMint(uint32 dstEid, address token, address recipient, uint256 amount, bytes calldata options) external payable
+function bridgeToken(uint32 dstEid, address token, address recipient, uint256 amount, bytes calldata options) external payable
 ```
 
 ## Table of Contents
@@ -90,7 +90,7 @@ function bridgeMint(uint32 dstEid, address token, address recipient, uint256 amo
 
 ### Cross-Chain Bridging Flow
 
-1. User calls `HolographFactory.bridgeMint()` on source chain
+1. User calls `HolographFactory.bridgeToken()` on source chain
 2. LayerZero message sent to destination chain
 3. Destination Factory receives message via `lzReceive()`
 4. Tokens minted directly to recipient on destination chain
@@ -116,7 +116,7 @@ address newToken = holographFactory.createToken{value: 0.005 ether}(params);
 
 ```solidity
 // Bridge tokens to another chain
-holographFactory.bridgeMint{value: bridgeFee}(
+holographFactory.bridgeToken{value: bridgeFee}(
     destinationEid,    // e.g., Ethereum EID
     tokenAddress,      // Token to bridge
     recipient,         // Destination recipient

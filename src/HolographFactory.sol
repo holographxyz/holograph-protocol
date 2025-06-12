@@ -113,7 +113,7 @@ contract HolographFactory is Ownable, Pausable, ReentrancyGuard, ILZReceiverV2 {
      * @param recipient The recipient address
      * @param amount The amount to mint
      */
-    function bridgeMint(
+    function bridgeToken(
         uint32 dstEid,
         address token,
         address recipient,
@@ -139,10 +139,7 @@ contract HolographFactory is Ownable, Pausable, ReentrancyGuard, ILZReceiverV2 {
     /* -------------------------------------------------------------------------- */
     /**
      * @notice Receive a message from LayerZero and mint the token
-     * @param _srcChainId The source chain ID
      * @param msg_ The message data
-     * @param _sender The sender address
-     * @param _zroPaymentAddress The ZRO payment address
      */
     function lzReceive(uint32, bytes calldata msg_, address, bytes calldata) external payable override {
         if (msg.sender != address(lzEndpoint)) revert NotEndpoint();
