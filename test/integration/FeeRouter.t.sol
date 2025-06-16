@@ -51,8 +51,8 @@ contract FeeRouterTest is Test {
         lzEndpointBase = new MockLZEndpoint();
         lzEndpointEth = new MockLZEndpoint();
         weth = new MockWETH();
-        hlg = new MockERC20();
-        swapRouter = new MockSwapRouter(address(weth), address(hlg));
+        hlg = new MockERC20("Test HLG", "HLG");
+        swapRouter = new MockSwapRouter();
 
         // Deploy FeeRouter for Base (no swap functionality)
         feeRouterBase = new FeeRouter(
@@ -61,7 +61,8 @@ contract FeeRouterTest is Test {
             address(0), // no staking pool on Base
             address(0), // no HLG on Base
             address(0), // no WETH on Base
-            address(0) // no swap router on Base
+            address(0), // no swap router on Base
+            address(owner) // treasury address
         );
 
         // Deploy StakingRewards
@@ -74,7 +75,8 @@ contract FeeRouterTest is Test {
             address(stakingRewards),
             address(hlg),
             address(weth),
-            address(swapRouter)
+            address(swapRouter),
+            address(owner) // treasury address
         );
 
         // Update staking rewards to use the Ethereum fee router

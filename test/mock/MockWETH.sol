@@ -1,18 +1,37 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {MockERC20} from "./MockERC20.sol";
+import "@openzeppelin/token/ERC20/ERC20.sol";
 
-contract MockWETH is MockERC20 {
+/**
+ * @title MockWETH
+ * @notice Mock WETH contract for testing
+ */
+contract MockWETH is ERC20 {
+    event Deposit(address indexed dst, uint256 wad);
+    event Withdrawal(address indexed src, uint256 wad);
+
+    constructor() ERC20("Wrapped Ether", "WETH") {}
+
     function deposit() external payable {
-        this.mint(msg.sender, msg.value);
+        _mint(msg.sender, msg.value);
+        emit Deposit(msg.sender, msg.value);
     }
 
-    function withdraw(uint256 amount) external {
-        require(balanceOf[msg.sender] >= amount, "insufficient balance");
-        balanceOf[msg.sender] -= amount;
-        totalSupply -= amount;
-        emit Transfer(msg.sender, address(0), amount);
-        payable(msg.sender).transfer(amount);
+    function withdraw(uint256 wad) external {
+        require(balanceOf(msg.sender) >= wad, "Insufficient balance");
+        _burn(msg.sender, wad);
+        payable(msg.sender).transfer(wad);
+        emit Withdrawal(msg.sender, wad);
+    }
+
+    receive() external payable {
+        _mint(msg.sender, msg.value);
+        emit Deposit(msg.sender, msg.value);
+    }
+
+    // For testing purposes
+    function mint(address to, uint256 amount) external {
+        _mint(to, amount);
     }
 }

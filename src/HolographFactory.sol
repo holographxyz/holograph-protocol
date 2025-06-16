@@ -89,17 +89,21 @@ contract HolographFactory is Ownable, Pausable, ReentrancyGuard, ILZReceiverV2 {
     ) external payable nonReentrant whenNotPaused returns (address asset) {
         if (msg.value < launchFeeETH) revert ZeroAmount();
 
-        // Calculate protocol fee (1.5% of launch fee by default)
-        uint256 protocolFee = (launchFeeETH * protocolFeePercentage) / 10000;
-
-        // Forward only the protocol fee portion to FeeRouter
-        if (protocolFee > 0) {
-            feeRouter.routeFeeETH{value: protocolFee}();
+        // Forward full launch ETH to FeeRouter (single-slice model)
+        if (msg.value > 0) {
+            feeRouter.receiveFee{value: msg.value}();
         }
 
-        if (msg.value > launchFeeETH) payable(msg.sender).transfer(msg.value - launchFeeETH);
+        // Refund excess payment
+        if (msg.value > launchFeeETH) {
+            payable(msg.sender).transfer(msg.value - launchFeeETH);
+        }
 
-        (asset, , , , ) = dopplerAirlock.create(params);
+        // Set FeeRouter as integrator for Doppler fee collection
+        CreateParams memory modifiedParams = params;
+        modifiedParams.integrator = address(feeRouter);
+
+        (asset, , , , ) = dopplerAirlock.create(modifiedParams);
         emit TokenLaunched(asset, params.salt);
     }
 
