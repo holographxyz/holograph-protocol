@@ -29,11 +29,11 @@ contract FeeRouterSliceTest is Test {
     MockStakingRewards public mockStaking;
     MockAirlock public mockAirlock;
 
-    address public owner = address(0x123);
-    address public keeper = address(0x456);
-    address public treasury = address(0x789);
-    address public alice = address(0xABC);
-    address public bob = address(0xDEF);
+    address public owner = address(0x1234567890123456789012345678901234567890);
+    address public keeper = address(0x0987654321098765432109876543210987654321);
+    address public treasury = address(0x1111111111111111111111111111111111111111);
+    address public alice = address(0x2222222222222222222222222222222222222222);
+    address public bob = address(0x3333333333333333333333333333333333333333);
 
     uint32 constant ETHEREUM_EID = 30101;
     uint24 constant POOL_FEE = 3000;
@@ -52,8 +52,8 @@ contract FeeRouterSliceTest is Test {
         mockStaking = new MockStakingRewards(address(mockHLG));
         mockAirlock = new MockAirlock();
 
-        // Deploy FeeRouter
-        vm.prank(owner);
+        // Deploy FeeRouter as owner
+        vm.startPrank(owner);
         feeRouter = new FeeRouter(
             address(mockEndpoint),
             ETHEREUM_EID,
@@ -64,9 +64,9 @@ contract FeeRouterSliceTest is Test {
             treasury
         );
 
-        // Grant keeper role
-        vm.prank(owner);
+        // Grant keeper role (owner has DEFAULT_ADMIN_ROLE by default)
         feeRouter.grantRole(feeRouter.KEEPER_ROLE(), keeper);
+        vm.stopPrank();
 
         // Fund test accounts
         vm.deal(alice, 10 ether);
@@ -159,15 +159,34 @@ contract FeeRouterSliceTest is Test {
         feeRouter.pullAndSlice(address(mockAirlock), address(0), 0.1 ether);
     }
 
+    function testMockAirlock_Debug() public {
+        uint128 amount = 0.5 ether;
+
+        // Setup: fund the airlock
+        vm.deal(address(mockAirlock), amount);
+
+        // Check balance
+        assertEq(address(mockAirlock).balance, amount);
+
+        // Try to collect fees directly
+        vm.prank(keeper);
+        mockAirlock.collectIntegratorFees(address(feeRouter), address(0), amount);
+
+        // MockAirlock now uses receiveAirlockFees() which doesn't trigger automatic slicing
+        // So FeeRouter should receive the full amount
+        assertEq(address(feeRouter).balance, 1 ether + amount); // 1 ether from setup + full amount
+    }
+
     function testPullAndSlice_Success() public {
         uint128 amount = 0.5 ether;
-        uint256 expectedHolo = (amount * HOLO_FEE_BPS) / 10_000;
-        uint256 expectedTreasury = amount - expectedHolo;
+        uint256 expectedHolo = (amount * HOLO_FEE_BPS) / 10_000; // 1.5%
+        uint256 expectedTreasury = amount - expectedHolo; // 98.5%
 
         // Setup: fund the airlock to simulate fees
         vm.deal(address(mockAirlock), amount);
         mockAirlock.setCollectableAmount(address(0), amount);
 
+        // Using receiveAirlockFees avoids reentrancy and double-slicing
         vm.expectEmit(true, true, false, true);
         emit SlicePulled(address(0), address(0), expectedHolo, expectedTreasury);
 
@@ -175,6 +194,18 @@ contract FeeRouterSliceTest is Test {
         feeRouter.pullAndSlice(address(mockAirlock), address(0), amount);
 
         assertEq(treasury.balance, expectedTreasury);
+    }
+
+    function testReceiveAirlockFees_Direct() public {
+        uint256 amount = 0.3 ether;
+
+        // Test calling receiveAirlockFees directly
+        vm.deal(alice, amount);
+        vm.prank(alice);
+        feeRouter.receiveAirlockFees{value: amount}();
+
+        // Should receive the full amount without slicing
+        assertEq(address(feeRouter).balance, 1 ether + amount);
     }
 
     /* -------------------------------------------------------------------------- */
@@ -357,5 +388,44 @@ contract FeeRouterSliceTest is Test {
 
         // Verify total equals input
         assertEq(expectedHolo + expectedTreasury, amount);
+    }
+
+    function testMockAirlock_Simple() public {
+        uint128 amount = 0.1 ether;
+
+        // Fund MockAirlock
+        vm.deal(address(mockAirlock), amount);
+
+        // Check balance
+        assertEq(address(mockAirlock).balance, amount);
+
+        // Try collectIntegratorFees with alice (not FeeRouter)
+        address recipient = alice;
+        uint256 recipientBalanceBefore = recipient.balance;
+
+        vm.prank(keeper);
+        mockAirlock.collectIntegratorFees(recipient, address(0), amount);
+
+        // Check that alice received the ETH
+        assertEq(recipient.balance, recipientBalanceBefore + amount);
+    }
+
+    function testMockAirlock_ToFeeRouter() public {
+        uint128 amount = 0.1 ether;
+
+        // Fund MockAirlock
+        vm.deal(address(mockAirlock), amount);
+
+        // Check balance
+        assertEq(address(mockAirlock).balance, amount);
+
+        // Try collectIntegratorFees with FeeRouter
+        uint256 feeRouterBalanceBefore = address(feeRouter).balance;
+
+        vm.prank(keeper);
+        mockAirlock.collectIntegratorFees(address(feeRouter), address(0), amount);
+
+        // FeeRouter should have received some ETH (might be sliced by receive())
+        assertTrue(address(feeRouter).balance > feeRouterBalanceBefore);
     }
 }

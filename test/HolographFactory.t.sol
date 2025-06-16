@@ -87,6 +87,18 @@ contract FeeRouterMock {
         total += msg.value;
         emit FeeReceived(msg.value);
     }
+
+    // NEW: Add receiveFee() method expected by updated HolographFactory
+    function receiveFee() external payable {
+        total += msg.value;
+        emit FeeReceived(msg.value);
+    }
+
+    // Add receive() fallback to handle direct ETH transfers
+    receive() external payable {
+        total += msg.value;
+        emit FeeReceived(msg.value);
+    }
 }
 
 contract V4InitializerStub {

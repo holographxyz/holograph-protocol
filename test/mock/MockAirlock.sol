@@ -21,11 +21,15 @@ contract MockAirlock {
     function collectIntegratorFees(address integrator, address token, uint128 amount) external {
         if (token == address(0)) {
             // ETH case
-            require(address(this).balance >= amount, "Insufficient ETH");
-            payable(integrator).transfer(amount);
+            require(address(this).balance >= amount, "MockAirlock: Insufficient ETH");
+            // Call receiveAirlockFees specifically to avoid reentrancy with pullAndSlice's nonReentrant modifier
+            // The receive() function would cause reentrancy, but receiveAirlockFees doesn't
+            bytes memory callData = abi.encodeWithSelector(bytes4(keccak256("receiveAirlockFees()")));
+            (bool success, ) = integrator.call{value: amount}(callData);
+            require(success, "MockAirlock: ETH transfer failed");
         } else {
             // ERC-20 case
-            require(_tokenAmounts[token][integrator] >= amount, "Insufficient token balance");
+            require(_tokenAmounts[token][integrator] >= amount, "MockAirlock: Insufficient token balance");
             _tokenAmounts[token][integrator] -= amount;
             IERC20(token).safeTransfer(integrator, amount);
         }

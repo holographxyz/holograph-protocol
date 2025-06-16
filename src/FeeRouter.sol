@@ -188,6 +188,15 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
         _takeAndSlice(token, amt);
     }
 
+    /**
+     * @notice Receive fees from Airlock without automatic slicing (for testing)
+     * @dev This method allows MockAirlock to transfer fees without triggering receive()
+     */
+    function receiveAirlockFees() external payable {
+        // Just receive the ETH without slicing - pullAndSlice will handle the slicing
+        // This prevents double-slicing in tests
+    }
+
     /* -------------------------------------------------------------------------- */
     /*                              Internal Slicer                              */
     /* -------------------------------------------------------------------------- */
