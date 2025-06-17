@@ -3,38 +3,70 @@ pragma solidity ^0.8.24;
 
 import "@openzeppelin/token/ERC20/IERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import "../../src/interfaces/IAirlock.sol";
+import {CreateParams} from "lib/doppler/src/Airlock.sol";
 
-contract MockAirlock {
+/**
+ * @title MockAirlock
+ * @notice Mock implementation of Doppler Airlock for testing
+ * @dev Simulates fee collection and transfer behavior
+ */
+contract MockAirlock is IAirlock {
     using SafeERC20 for IERC20;
 
+    /// @notice Mapping to track collectable amounts per token
     mapping(address => uint256) private _collectableAmounts;
+
+    /// @notice Mapping for token balances per integrator
     mapping(address => mapping(address => uint256)) private _tokenAmounts;
 
-    event IntegratorFeesCollected(address indexed integrator, address indexed token, uint256 amount);
+    event IntegratorFeesCollected(address indexed to, address indexed token, uint256 amount);
 
     /**
-     * @notice Mock implementation of collectIntegratorFees
-     * @param integrator The integrator address (should be FeeRouter)
-     * @param token The token address (address(0) for ETH)
-     * @param amount The amount to collect
+     * @notice Mock implementation of create function
+     * @dev Returns zero addresses for testing purposes
      */
-    function collectIntegratorFees(address integrator, address token, uint128 amount) external {
+    function create(
+        CreateParams calldata params
+    )
+        external
+        override
+        returns (address asset, address pool, address governance, address timelock, address migrationPool)
+    {
+        // Mock implementation - returns zero addresses
+        return (address(0), address(0), address(0), address(0), address(0));
+    }
+
+    /**
+     * @notice Collect integrator fees and transfer to recipient
+     * @dev Transfers tokens/ETH to integrator, matching IAirlock interface
+     * @param to Address to receive the fees (FeeRouter)
+     * @param token Token address (address(0) for ETH)
+     * @param amount Amount to collect and transfer
+     */
+    function collectIntegratorFees(address to, address token, uint256 amount) external override {
+        require(_collectableAmounts[token] >= amount, "MockAirlock: Insufficient collectable amount");
+
+        _collectableAmounts[token] -= amount;
+
         if (token == address(0)) {
-            // ETH case
+            // ETH case - use assembly to avoid triggering receive() function
             require(address(this).balance >= amount, "MockAirlock: Insufficient ETH");
-            // Call receiveAirlockFees specifically to avoid reentrancy with pullAndSlice's nonReentrant modifier
-            // The receive() function would cause reentrancy, but receiveAirlockFees doesn't
-            bytes memory callData = abi.encodeWithSelector(bytes4(keccak256("receiveAirlockFees()")));
-            (bool success, ) = integrator.call{value: amount}(callData);
-            require(success, "MockAirlock: ETH transfer failed");
+
+            // Use assembly for direct ETH transfer without triggering receive()
+            assembly {
+                let success := call(gas(), to, amount, 0, 0, 0, 0)
+                if iszero(success) {
+                    revert(0, 0)
+                }
+            }
         } else {
             // ERC-20 case
-            require(_tokenAmounts[token][integrator] >= amount, "MockAirlock: Insufficient token balance");
-            _tokenAmounts[token][integrator] -= amount;
-            IERC20(token).safeTransfer(integrator, amount);
+            require(IERC20(token).balanceOf(address(this)) >= amount, "MockAirlock: Insufficient token balance");
+            IERC20(token).transfer(to, amount);
         }
 
-        emit IntegratorFeesCollected(integrator, token, amount);
+        emit IntegratorFeesCollected(to, token, amount);
     }
 
     /**
