@@ -260,12 +260,12 @@ contract FeeRouterTest is Test {
 
         // Try to call lzReceive from untrusted address (should fail)
         vm.expectRevert(FeeRouter.NotEndpoint.selector);
-        feeRouterBase.lzReceive(ETH_EID, abi.encode(100 ether), address(0x999), "");
+        feeRouterBase.lzReceive(ETH_EID, abi.encode(address(0), 100 ether), address(0x999), "");
 
         // Test with correct endpoint but untrusted remote (should fail)
         vm.startPrank(address(lzEndpointBase));
         vm.expectRevert(FeeRouter.UntrustedRemote.selector);
-        feeRouterBase.lzReceive(ETH_EID, abi.encode(100 ether), address(0x999), "");
+        feeRouterBase.lzReceive(99999, abi.encode(address(0), 100 ether), address(0x999), ""); // Use untrusted EID
         vm.stopPrank();
 
         // NOTE: The security validation tests above are the main focus of this test
@@ -326,9 +326,9 @@ contract FeeRouterTest is Test {
         vm.prank(owner);
         feeRouterBase.setTrustedRemote(ETH_EID, newRemote);
 
-        assertEq(feeRouterBase.getTrustedRemote(ETH_EID), newRemote);
-        assertTrue(feeRouterBase.isTrustedRemote(ETH_EID, address(0x123)));
-        assertFalse(feeRouterBase.isTrustedRemote(ETH_EID, address(feeRouterEth)));
+        assertEq(feeRouterBase.trustedRemotes(ETH_EID), newRemote);
+        assertTrue(feeRouterBase.trustedRemotes(ETH_EID) == bytes32(uint256(uint160(address(0x123)))));
+        assertFalse(feeRouterBase.trustedRemotes(ETH_EID) == bytes32(uint256(uint160(address(feeRouterEth)))));
     }
 
     function test_StakingCooldown() public {
@@ -373,7 +373,7 @@ contract FeeRouterTest is Test {
         vm.expectEmit(true, true, true, true);
         emit MockLZEndpoint.MessageSent(
             ETH_EID,
-            abi.encode(address(0), minHlgForStakers), // address(0) for ETH, then minHlg amount
+            abi.encode(address(0), protocolFeeAmount, minHlgForStakers), // token, amount, minHlg
             "" // MockLZEndpoint always emits empty options
         );
 

@@ -13,7 +13,7 @@ pragma solidity ^0.8.24;
  *   • Bridges protocol skim to Ethereum via LayerZero V2
  *   • Wraps to WETH, swaps to HLG on Uniswap V3 (0.3% pool)
  *   • Burns 50% of acquired HLG, stakes 50% to StakingRewards
- *   • Treasury is owner-configurable for governance flexibility
+ *   • Treasury is owner-configurable for admin flexibility
  *
  * Integration with Doppler:
  *   • Factory forwards full launch ETH and sets integrator = FeeRouter
@@ -43,8 +43,8 @@ import "./interfaces/IAirlock.sol";
 
 /**
  * @title FeeRouter
- * @notice Omnichain fee routing with Doppler integration
- * @dev Single-slice model: 1.5% protocol fee, 98.5% to treasury
+ * @notice Single-slice fee routing with Doppler integration
+ * @dev 1.5% protocol fee, 98.5% to treasury - all fees processed uniformly
  * @author Holograph Protocol
  */
 contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZReceiverV2 {
@@ -181,25 +181,14 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
      * @notice Receive ETH fees and process through single-slice model
      * @dev Main entry point for fee collection from HolographFactory
      * @custom:security Protected by whenNotPaused modifier
-     * @custom:gas Optimized for frequent factory usage
      */
     function receiveFee() external payable whenNotPaused {
         _takeAndSlice(address(0), msg.value);
     }
 
     /**
-     * @notice Legacy ETH fee reception (maintained for compatibility)
-     * @dev Alias for receiveFee() to support existing integrations
-     * @custom:security Protected by whenNotPaused modifier
-     */
-    function routeFeeETH() external payable whenNotPaused {
-        _takeAndSlice(address(0), msg.value);
-    }
-
-    /**
      * @notice Receive ETH directly via transfer/send
      * @dev Automatically processes ETH through slicing mechanism
-     * @custom:gas More gas-efficient than calling receiveFee() directly
      */
     receive() external payable {
         _takeAndSlice(address(0), msg.value);
@@ -209,85 +198,126 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
      * @notice Route ERC-20 token fees through the system
      * @dev Transfers tokens from sender and processes through single-slice model
      * @param token ERC-20 token contract address
-     * @param amt Amount of tokens to process
-     * @custom:security Requires prior token approval from sender
+     * @param amount Token amount to transfer and process
      * @custom:security Protected by whenNotPaused modifier
      */
-    function routeFeeToken(address token, uint256 amt) external whenNotPaused {
-        if (amt == 0) revert ZeroAmount();
+    function routeFeeToken(address token, uint256 amount) external whenNotPaused {
+        if (token == address(0)) revert ZeroAddress();
+        if (amount == 0) revert ZeroAmount();
 
-        IERC20(token).safeTransferFrom(msg.sender, address(this), amt);
-
-        // Emit TokenReceived before slicing for consistent event order
-        emit TokenReceived(msg.sender, token, amt);
-
-        _takeAndSlice(token, amt);
+        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+        emit TokenReceived(msg.sender, token, amount);
+        _takeAndSlice(token, amount);
     }
 
     /* -------------------------------------------------------------------------- */
-    /*                             Doppler Integration                            */
+    /*                           Integrator Pull (Keeper)                        */
     /* -------------------------------------------------------------------------- */
 
     /**
-     * @notice Pull accumulated fees from Doppler Airlock contracts
-     * @dev Keeper-only function for automated fee collection from integrated protocols
-     * @param airlock Airlock contract address to pull fees from
-     * @param token Token address (address(0) for ETH)
-     * @param amt Amount to pull from the Airlock
-     * @custom:security Restricted to KEEPER_ROLE only
-     * @custom:security Protected by nonReentrant modifier
-     * @custom:gas Called frequently by automation, optimized for gas efficiency
+     * @notice Collect accumulated fees from a Doppler Airlock
+     * @dev Keeper function to pull integrator fees from completed auctions
+     * @param airlock Airlock contract address
+     * @param token Token contract address
+     * @param amt Amount to collect
+     * @custom:security Restricted to KEEPER_ROLE addresses
      */
-    function pullAndSlice(address airlock, address token, uint256 amt) external onlyRole(KEEPER_ROLE) nonReentrant {
+    function collectAirlockFees(address airlock, address token, uint256 amt) external onlyRole(KEEPER_ROLE) {
+        if (airlock == address(0)) revert ZeroAddress();
+        if (amt == 0) revert ZeroAmount();
+
         IAirlock(airlock).collectIntegratorFees(address(this), token, amt);
         _takeAndSlice(token, amt);
     }
 
     /* -------------------------------------------------------------------------- */
-    /*                                Core Logic                                  */
+    /*                               Core Slicing                                 */
     /* -------------------------------------------------------------------------- */
 
     /**
-     * @notice Core fee slicing logic implementing single-slice model
-     * @dev Splits incoming value: 1.5% for protocol, 98.5% to treasury
+     * @notice Core fee processing: 1.5% protocol, 98.5% treasury
+     * @dev Processes all fee types through unified slicing mechanism
      * @param token Token address (address(0) for ETH)
-     * @param amt Total amount to slice
-     * @custom:gas Optimized arithmetic operations for frequent use
-     * @custom:security Validates non-zero amounts to prevent spam
+     * @param amount Total amount to slice
      */
-    function _takeAndSlice(address token, uint256 amt) internal {
-        if (amt == 0) revert ZeroAmount();
+    function _takeAndSlice(address token, uint256 amount) internal {
+        if (amount == 0) revert ZeroAmount();
 
-        // Cache treasury address to reduce SLOAD
-        address treasuryAddr = treasury;
+        // Calculate split: 1.5% protocol, 98.5% treasury
+        uint256 protocolFee = (amount * HOLO_FEE_BPS) / 10_000;
+        uint256 treasuryFee = amount - protocolFee;
 
-        // Use unchecked for safe arithmetic (amt * 150 / 10000 cannot overflow)
-        uint256 holo;
-        uint256 rest;
-        unchecked {
-            holo = (amt * HOLO_FEE_BPS) / 10_000;
-            rest = amt - holo;
-        }
-
-        // Send treasury portion (optimized for ETH vs token)
-        if (rest > 0) {
+        // Send treasury portion immediately
+        if (treasuryFee > 0) {
             if (token == address(0)) {
-                // Use assembly for gas-efficient ETH transfer
-                assembly {
-                    if iszero(call(gas(), treasuryAddr, rest, 0, 0, 0, 0)) {
-                        revert(0, 0)
-                    }
-                }
+                // ETH transfer
+                payable(treasury).transfer(treasuryFee);
             } else {
-                IERC20(token).safeTransfer(treasuryAddr, rest);
+                // ERC-20 transfer
+                IERC20(token).safeTransfer(treasury, treasuryFee);
             }
         }
 
-        emit SlicePulled(address(0), token, holo, rest);
+        // Handle protocol fee based on chain
+        if (protocolFee > 0) {
+            if (address(HLG) != address(0)) {
+                // Ethereum: Process locally (wrap → swap → burn/stake)
+                _processProtocolFeeLocal(token, protocolFee);
+            } else {
+                // Base: Bridge to Ethereum for processing
+                _bridgeProtocolFee(token, protocolFee);
+            }
+        }
+
+        emit SlicePulled(msg.sender, token, protocolFee, treasuryFee);
+    }
+
+    /**
+     * @notice Process protocol fee locally (Ethereum chain)
+     * @dev Wraps ETH to WETH, swaps to HLG, then burns 50% and stakes 50%
+     * @param token Token address (address(0) for ETH)
+     * @param amount Protocol fee amount to process
+     */
+    function _processProtocolFeeLocal(address token, uint256 amount) internal {
+        if (token == address(0)) {
+            // ETH → WETH → HLG → Burn/Stake
+            WETH.deposit{value: amount}();
+            uint256 hlgOut = _swapForHLG(address(WETH), amount);
+            _burnAndStake(hlgOut);
+        } else if (token == address(WETH)) {
+            // WETH → HLG → Burn/Stake
+            uint256 hlgOut = _swapForHLG(token, amount);
+            _burnAndStake(hlgOut);
+        } else {
+            // ERC-20 → WETH → HLG → Burn/Stake
+            if (_poolExists(token, address(WETH))) {
+                uint256 wethOut = _swapSingle(token, address(WETH), amount, 0);
+                uint256 hlgOut = _swapForHLG(address(WETH), wethOut);
+                _burnAndStake(hlgOut);
+            } else {
+                // No direct route: bridge to Ethereum for processing
+                _bridgeProtocolFee(token, amount);
+            }
+        }
+    }
+
+    /**
+     * @notice Accumulate protocol fee for later bridging (Base chain)
+     * @dev Protocol fees accumulate in contract balance until manually bridged by keeper
+     * @param token Token address (address(0) for ETH)
+     * @param amount Amount to accumulate
+     */
+    function _bridgeProtocolFee(address token, uint256 amount) internal {
+        // Protocol fees accumulate in the contract balance
+        // ETH stays in address(this).balance
+        // ERC-20 tokens stay in contract token balance
+        // Keeper will call bridge() or bridgeToken() to send accumulated fees
+        // No immediate action needed - fees are already in the contract
+        // This function serves as a placeholder for potential future logic
     }
 
     /* -------------------------------------------------------------------------- */
-    /*                                Bridging                                    */
+    /*                               Bridge Functions                            */
     /* -------------------------------------------------------------------------- */
 
     /**
@@ -296,24 +326,17 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
      * @param minGas Minimum gas units for lzReceive execution on destination
      * @param minHlg Minimum HLG tokens expected from swap (slippage protection)
      * @custom:security Restricted to KEEPER_ROLE only
-     * @custom:security Protected by nonReentrant modifier
-     * @custom:gas Includes dust protection via MIN_BRIDGE_VALUE
      */
     function bridge(uint256 minGas, uint256 minHlg) external onlyRole(KEEPER_ROLE) nonReentrant {
         uint256 bal = address(this).balance;
         if (bal < MIN_BRIDGE_VALUE) return;
 
-        // Cache storage variables to reduce SLOADs
-        uint32 remoteEid_ = remoteEid;
-        uint64 n;
-        unchecked {
-            n = ++nonce[remoteEid_];
-        }
-
-        bytes memory payload = abi.encode(address(0), minHlg);
+        uint64 n = ++nonce[remoteEid];
+        // Send both the ETH amount and minimum HLG expected for slippage protection
+        bytes memory payload = abi.encode(address(0), bal, minHlg);
         bytes memory options = _buildLzReceiveOption(minGas);
 
-        lzEndpoint.send{value: bal}(remoteEid_, payload, options);
+        lzEndpoint.send{value: bal}(remoteEid, payload, options);
         emit TokenBridged(address(0), bal, n);
     }
 
@@ -324,8 +347,6 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
      * @param minGas Minimum gas units for lzReceive execution on destination
      * @param minHlg Minimum HLG tokens expected from swap (slippage protection)
      * @custom:security Restricted to KEEPER_ROLE only
-     * @custom:security Protected by nonReentrant modifier
-     * @custom:gas Includes dust protection via MIN_BRIDGE_VALUE
      */
     function bridgeToken(address token, uint256 minGas, uint256 minHlg) external onlyRole(KEEPER_ROLE) nonReentrant {
         uint256 bal = IERC20(token).balanceOf(address(this));
@@ -334,17 +355,11 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
         // Single approval call instead of potential multiple
         IERC20(token).forceApprove(address(lzEndpoint), bal);
 
-        // Cache storage variables
-        uint32 remoteEid_ = remoteEid;
-        uint64 n;
-        unchecked {
-            n = ++nonce[remoteEid_];
-        }
-
+        uint64 n = ++nonce[remoteEid];
         bytes memory payload = abi.encode(token, minHlg);
         bytes memory options = _buildLzReceiveOption(minGas);
 
-        lzEndpoint.send(remoteEid_, payload, options);
+        lzEndpoint.send(remoteEid, payload, options);
         emit TokenBridged(token, bal, n);
     }
 
@@ -353,92 +368,117 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
     /* -------------------------------------------------------------------------- */
 
     /**
-     * @notice Handle incoming LayerZero messages from remote chains
-     * @dev Validates sender and processes swap/distribution on Ethereum
+     * @notice Handle incoming protocol fees from Base chain
+     * @dev Processes bridged tokens through local HLG swap and burn/stake
      * @param srcEid Source chain endpoint ID
-     * @param payload Encoded message containing token address and minimum HLG
-     * @param sender Address of the sending contract on source chain
-     * @custom:security Validates message sender against trusted remotes
-     * @custom:security Only accepts messages from LayerZero endpoint
+     * @param message Encoded token, amount, and slippage protection data
+     * @custom:security Validates trusted remote before processing
      */
-    function lzReceive(
-        uint32 srcEid,
-        bytes calldata payload,
-        address sender,
-        bytes calldata /*execParams*/
-    ) external payable override {
+    function lzReceive(uint32 srcEid, bytes calldata message, address, bytes calldata) external payable override {
         if (msg.sender != address(lzEndpoint)) revert NotEndpoint();
+        if (trustedRemotes[srcEid] == bytes32(0)) revert UntrustedRemote();
 
-        // Single SLOAD for trusted remote validation
-        bytes32 trustedRemote = trustedRemotes[srcEid];
-        if (trustedRemote == bytes32(0) || trustedRemote != _addressToBytes32(sender)) {
-            revert UntrustedRemote();
+        // Try new format first (token, amount, minHlg)
+        try this._decodeBridgeMessage(message) returns (address token, uint256 amount, uint256 minHlg) {
+            _processProtocolFeeLocalWithSlippage(token, amount, minHlg);
+        } catch {
+            // Fallback to old format (token, amount) for backward compatibility
+            (address token, uint256 amount) = abi.decode(message, (address, uint256));
+            _processProtocolFeeLocal(token, amount);
         }
-
-        (address token, uint256 minHlg) = abi.decode(payload, (address, uint256));
-        _swapAndDistribute(token, minHlg);
     }
 
     /**
-     * @notice Internal swap and distribution logic for received tokens
-     * @dev Handles ETH wrapping, token swapping, and HLG burn/stake distribution
+     * @notice Decode bridge message (external function for try/catch)
+     * @param message Encoded message data
+     * @return token Token address
+     * @return amount Token amount
+     * @return minHlg Minimum HLG expected
+     */
+    function _decodeBridgeMessage(
+        bytes calldata message
+    ) external pure returns (address token, uint256 amount, uint256 minHlg) {
+        return abi.decode(message, (address, uint256, uint256));
+    }
+
+    /**
+     * @notice Process protocol fee locally with slippage protection
      * @param token Token address (address(0) for ETH)
-     * @param minHlg Minimum HLG tokens expected from swap operations
-     * @custom:gas Optimized for Ethereum mainnet gas costs
+     * @param amount Protocol fee amount to process
+     * @param minHlg Minimum HLG tokens expected from swap
      */
-    function _swapAndDistribute(address token, uint256 minHlg) internal {
-        uint256 amtIn;
-
-        // Cache WETH address to reduce SLOAD
-        IWETH9 weth = WETH;
-
+    function _processProtocolFeeLocalWithSlippage(address token, uint256 amount, uint256 minHlg) internal {
         if (token == address(0)) {
-            amtIn = address(this).balance;
-            if (amtIn > 0) {
-                weth.deposit{value: amtIn}();
-                token = address(weth);
-            }
+            // ETH → WETH → HLG → Burn/Stake
+            WETH.deposit{value: amount}();
+            uint256 hlgOut = _swapForHLGWithSlippage(address(WETH), amount, minHlg);
+            _burnAndStake(hlgOut);
+        } else if (token == address(WETH)) {
+            // WETH → HLG → Burn/Stake
+            uint256 hlgOut = _swapForHLGWithSlippage(token, amount, minHlg);
+            _burnAndStake(hlgOut);
         } else {
-            amtIn = IERC20(token).balanceOf(address(this));
+            // ERC-20 → WETH → HLG → Burn/Stake
+            if (_poolExists(token, address(WETH))) {
+                uint256 wethOut = _swapSingle(token, address(WETH), amount, 0);
+                uint256 hlgOut = _swapForHLGWithSlippage(address(WETH), wethOut, minHlg);
+                _burnAndStake(hlgOut);
+            } else {
+                // No direct route: process without slippage protection
+                _processProtocolFeeLocal(token, amount);
+            }
+        }
+    }
+
+    /**
+     * @notice Swap tokens for HLG with slippage protection
+     * @param token Input token address
+     * @param amount Input token amount
+     * @param minHlg Minimum HLG tokens expected
+     * @return hlgOut Amount of HLG tokens received
+     */
+    function _swapForHLGWithSlippage(address token, uint256 amount, uint256 minHlg) internal returns (uint256) {
+        address hlgAddr = address(HLG);
+        if (token == hlgAddr) return amount; // Already HLG
+
+        // Try direct swap first
+        if (_poolExists(token, hlgAddr)) {
+            return _swapSingle(token, hlgAddr, amount, minHlg);
         }
 
-        if (amtIn == 0) return;
+        // Try via WETH if not direct
+        if (token != address(WETH) && _poolExists(token, address(WETH)) && _poolExists(address(WETH), hlgAddr)) {
+            bytes memory path = abi.encodePacked(token, POOL_FEE, address(WETH), POOL_FEE, hlgAddr);
+            return _swapPath(path, amount, minHlg);
+        }
 
-        uint256 hlgOut = _swapExact(token, amtIn, minHlg);
-        _burnAndStake(hlgOut);
+        revert NoRoute();
     }
 
     /* -------------------------------------------------------------------------- */
-    /*                               Swap Logic                                   */
+    /*                              Token Swapping                               */
     /* -------------------------------------------------------------------------- */
 
     /**
-     * @notice Swap tokens for HLG using optimal routing
-     * @dev Attempts direct swap first, falls back to WETH routing if needed
-     * @param tokenIn Input token address
-     * @param amtIn Amount of input tokens
-     * @param minOut Minimum HLG tokens expected (slippage protection)
-     * @return Amount of HLG tokens received
-     * @custom:gas Uses intelligent routing to minimize swap costs
+     * @notice Swap tokens for HLG via Uniswap V3
+     * @dev Handles direct WETH→HLG swaps and multi-hop routing
+     * @param token Input token address
+     * @param amount Input token amount
+     * @return hlgOut Amount of HLG tokens received
      */
-    function _swapExact(address tokenIn, uint256 amtIn, uint256 minOut) internal returns (uint256) {
-        if (amtIn == 0) return 0;
+    function _swapForHLG(address token, uint256 amount) internal returns (uint256) {
+        address hlgAddr = address(HLG);
+        if (token == hlgAddr) return amount; // Already HLG
 
-        // Cache HLG and WETH addresses to reduce SLOADs
-        IERC20 hlg = HLG;
-        if (tokenIn == address(hlg)) return amtIn;
-
-        IWETH9 weth = WETH;
-        address hlgAddr = address(hlg);
-        address wethAddr = address(weth);
-
-        if (_poolExists(tokenIn, hlgAddr)) {
-            return _swapSingle(tokenIn, hlgAddr, amtIn, minOut);
+        // Try direct swap first
+        if (_poolExists(token, hlgAddr)) {
+            return _swapSingle(token, hlgAddr, amount, 0);
         }
 
-        if (_poolExists(tokenIn, wethAddr) && _poolExists(wethAddr, hlgAddr)) {
-            bytes memory path = abi.encodePacked(tokenIn, uint24(POOL_FEE), wethAddr, uint24(POOL_FEE), hlgAddr);
-            return _swapPath(path, amtIn, minOut);
+        // Try via WETH if not direct
+        if (token != address(WETH) && _poolExists(token, address(WETH)) && _poolExists(address(WETH), hlgAddr)) {
+            bytes memory path = abi.encodePacked(token, POOL_FEE, address(WETH), POOL_FEE, hlgAddr);
+            return _swapPath(path, amount, 0);
         }
 
         revert NoRoute();
@@ -446,7 +486,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
 
     /**
      * @notice Execute single-hop swap via Uniswap V3
-     * @dev Direct token-to-token swap using specified pool fee
+     * @dev Direct token-to-token swap through single pool
      * @param tokenIn Input token address
      * @param tokenOut Output token address
      * @param amtIn Input token amount
@@ -511,7 +551,6 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
      * @notice Distribute HLG tokens: 50% burn, 50% stake
      * @dev Implements tokenomics by burning half and staking half for rewards
      * @param hlgAmt Total HLG amount to distribute
-     * @custom:gas Optimized for precise 50/50 split handling odd amounts
      */
     function _burnAndStake(uint256 hlgAmt) internal {
         if (hlgAmt == 0) return;
@@ -547,7 +586,6 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
 
     /**
      * @notice Check if Uniswap V3 pool exists for token pair
-     * @dev Uses try/catch to safely check pool existence
      * @param tokenA First token address
      * @param tokenB Second token address
      * @return exists True if pool exists with sufficient liquidity
@@ -562,7 +600,6 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
 
     /**
      * @notice Convert address to bytes32 for LayerZero compatibility
-     * @dev Required for trusted remote validation
      * @param addr Address to convert
      * @return Bytes32 representation of the address
      */
@@ -572,7 +609,6 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
 
     /**
      * @notice Build LayerZero receive options with gas limit
-     * @dev Encodes gas limit for remote execution
      * @param gasLimit Gas units to allocate for lzReceive
      * @return Encoded options for LayerZero message
      */
@@ -586,7 +622,6 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
 
     /**
      * @notice Set trusted remote address for cross-chain messaging
-     * @dev Critical security function for LayerZero message validation
      * @param eid Remote chain endpoint ID
      * @param remote Trusted contract address on remote chain (as bytes32)
      * @custom:security Only owner can modify trusted remotes
@@ -597,28 +632,9 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
     }
 
     /**
-     * @notice Get trusted remote address for a specific chain EID
-     * @param eid The endpoint ID of the remote chain
-     * @return The trusted remote address (as bytes32)
-     */
-    function getTrustedRemote(uint32 eid) external view returns (bytes32) {
-        return trustedRemotes[eid];
-    }
-
-    /**
-     * @notice Check if an address is a trusted remote for a specific chain EID
-     * @param eid The endpoint ID of the remote chain
-     * @param remote The address to check
-     * @return True if the address is trusted for the given EID
-     */
-    function isTrustedRemote(uint32 eid, address remote) external view returns (bool) {
-        return trustedRemotes[eid] == _addressToBytes32(remote);
-    }
-
-    /**
-     * @notice Update treasury address (governance function)
+     * @notice Update treasury address (admin function)
      * @param newTreasury The new treasury address
-     * @custom:security Critical governance function - validates non-zero address
+     * @custom:security Critical admin function - validates non-zero address
      */
     function setTreasury(address newTreasury) external onlyOwner {
         if (newTreasury == address(0)) revert ZeroAddress();
@@ -645,12 +661,11 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
     }
 
     /* -------------------------------------------------------------------------- */
-    /*                              Monitoring Views                             */
+    /*                                   Views                                    */
     /* -------------------------------------------------------------------------- */
 
     /**
      * @notice Get current contract balances for monitoring
-     * @dev Read-only function for dashboards and monitoring systems
      * @return ethBalance Current ETH balance
      * @return hlgBalance Current HLG token balance (Ethereum only)
      */
@@ -662,40 +677,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
     }
 
     /**
-     * @notice Get specific token balance for monitoring
-     * @param token ERC-20 token address
-     * @return balance Current token balance
-     */
-    function getTokenBalance(address token) external view returns (uint256 balance) {
-        if (token == address(0)) {
-            return address(this).balance;
-        }
-        return IERC20(token).balanceOf(address(this));
-    }
-
-    /**
-     * @notice Check if contract is ready for bridging operations
-     * @dev Useful for keeper monitoring and health checks
-     * @return canBridgeETH True if ETH balance exceeds minimum bridge value
-     * @return ethAmount Current ETH amount available for bridging
-     */
-    function getBridgeStatus() external view returns (bool canBridgeETH, uint256 ethAmount) {
-        ethAmount = address(this).balance;
-        canBridgeETH = ethAmount >= MIN_BRIDGE_VALUE;
-    }
-
-    /**
-     * @notice Get next nonce for a destination chain
-     * @param dstEid Destination chain endpoint ID
-     * @return nextNonce The next nonce that will be used for messaging
-     */
-    function getNextNonce(uint32 dstEid) external view returns (uint64 nextNonce) {
-        return nonce[dstEid] + 1;
-    }
-
-    /**
      * @notice Calculate fee split for a given amount
-     * @dev Utility function for frontend integration and testing
      * @param amount Input amount to calculate split for
      * @return protocolFee Amount that goes to protocol (1.5%)
      * @return treasuryFee Amount that goes to treasury (98.5%)

@@ -16,7 +16,7 @@ import "./interfaces/IMintableERC20.sol";
 /**
  * @title HolographFactory
  * @notice Token launch factory with Doppler integration
- * @dev Entry point for creating and bridging omnichain tokens via Doppler Airlock
+ * @dev Entry point for creating omnichain tokens via Doppler Airlock
  * @author Holograph Protocol
  */
 contract HolographFactory is Ownable, Pausable, ReentrancyGuard, ILZReceiverV2 {
@@ -44,13 +44,6 @@ contract HolographFactory is Ownable, Pausable, ReentrancyGuard, ILZReceiverV2 {
     /// @notice Nonce tracking for cross-chain message ordering
     mapping(uint32 => uint64) public nonce;
 
-    /// @notice ETH fee required for token launches
-    uint256 public launchFeeETH = 0.005 ether;
-
-    /// @notice Legacy protocol fee percentage (deprecated - kept for reference)
-    /// @dev No longer used in single-slice model, all fees routed to FeeRouter
-    uint256 public protocolFeePercentage = 150;
-
     /* -------------------------------------------------------------------------- */
     /*                                  Events                                    */
     /* -------------------------------------------------------------------------- */
@@ -59,9 +52,6 @@ contract HolographFactory is Ownable, Pausable, ReentrancyGuard, ILZReceiverV2 {
 
     /// @notice Emitted when tokens are bridged to destination chain
     event CrossChainMint(uint32 indexed dstEid, address token, address to, uint256 amount, uint64 nonce);
-
-    /// @notice Emitted when protocol fee percentage is updated
-    event ProtocolFeeUpdated(uint256 newPercentage);
 
     /* -------------------------------------------------------------------------- */
     /*                               Constructor                                  */
@@ -86,28 +76,18 @@ contract HolographFactory is Ownable, Pausable, ReentrancyGuard, ILZReceiverV2 {
     /* -------------------------------------------------------------------------- */
     /**
      * @notice Launch a new omnichain token via Doppler Airlock
-     * @dev Forwards all ETH to FeeRouter and sets FeeRouter as integrator for fee collection
+     * @dev Pure pass-through model: forwards all ETH to FeeRouter and sets FeeRouter as integrator
      * @param params Doppler CreateParams containing token configuration
      * @return asset Address of the newly created token
      * @custom:security Protected by nonReentrant and whenNotPaused modifiers
-     * @custom:gas Refunds excess ETH beyond launchFeeETH to sender
      */
     function createToken(
         CreateParams calldata params
     ) external payable nonReentrant whenNotPaused returns (address asset) {
-        if (msg.value < launchFeeETH) revert ZeroAmount();
+        // Forward all ETH to FeeRouter (pure pass-through model)
+        feeRouter.receiveFee{value: msg.value}();
 
-        // Forward all ETH to FeeRouter for single-slice processing
-        if (msg.value > 0) {
-            feeRouter.receiveFee{value: msg.value}();
-        }
-
-        // Refund excess
-        if (msg.value > launchFeeETH) {
-            payable(msg.sender).transfer(msg.value - launchFeeETH);
-        }
-
-        // Set FeeRouter as integrator for Doppler
+        // Set FeeRouter as integrator for Doppler fee collection
         CreateParams memory modifiedParams = params;
         modifiedParams.integrator = address(feeRouter);
 
@@ -127,7 +107,6 @@ contract HolographFactory is Ownable, Pausable, ReentrancyGuard, ILZReceiverV2 {
      * @param amount Amount of tokens to mint on destination
      * @param options LayerZero execution options (gas limits, etc.)
      * @custom:security Protected by nonReentrant modifier
-     * @custom:gas Caller pays for LayerZero messaging costs
      */
     function bridgeToken(
         uint32 dstEid,
@@ -158,7 +137,6 @@ contract HolographFactory is Ownable, Pausable, ReentrancyGuard, ILZReceiverV2 {
      * @dev Decodes message and mints tokens to specified recipient
      * @param msg_ Encoded message containing mint instruction and parameters
      * @custom:security Only accepts messages from LayerZero endpoint
-     * @custom:gas Execution gas provided by LayerZero message sender
      */
     function lzReceive(uint32, bytes calldata msg_, address, bytes calldata) external payable override {
         if (msg.sender != address(lzEndpoint)) revert NotEndpoint();
@@ -171,28 +149,6 @@ contract HolographFactory is Ownable, Pausable, ReentrancyGuard, ILZReceiverV2 {
     /* -------------------------------------------------------------------------- */
     /*                                  Admin                                     */
     /* -------------------------------------------------------------------------- */
-    /**
-     * @notice Update the ETH fee required for token launches
-     * @dev Governance function to adjust launch costs based on gas prices
-     * @param weiAmount New launch fee in wei
-     * @custom:security Only owner can modify launch fees
-     */
-    function setLaunchFee(uint256 weiAmount) external onlyOwner {
-        launchFeeETH = weiAmount;
-    }
-
-    /**
-     * @notice Update the protocol fee percentage (legacy function)
-     * @dev Kept for compatibility but not used in single-slice model
-     * @param newPercentage New fee percentage in basis points
-     * @custom:security Only owner can modify fee percentages
-     * @custom:deprecated This value is not used in current fee routing
-     */
-    function setProtocolFeePercentage(uint256 newPercentage) external onlyOwner {
-        protocolFeePercentage = newPercentage;
-        emit ProtocolFeeUpdated(newPercentage);
-    }
-
     /**
      * @notice Emergency pause of factory operations
      * @dev Prevents new token launches during emergencies

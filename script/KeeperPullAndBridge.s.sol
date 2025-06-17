@@ -38,7 +38,6 @@ contract KeeperPullAndBridge is Script {
      * @notice Main execution function for keeper automation
      * @dev Sequentially executes fee pulling, ETH bridging, and token bridging
      * @custom:gas Estimated gas usage: ~500K-1M depending on operations
-     * @custom:security Validates environment setup before execution
      */
     function run() external {
         _validateSetup();
@@ -61,7 +60,6 @@ contract KeeperPullAndBridge is Script {
     /**
      * @notice Pull fees from all known Airlock contracts
      * @dev Iterates through configured Airlocks and attempts fee collection
-     * @custom:gas Gas usage varies by number of Airlocks and tokens
      */
     function _pullFees() internal {
         console.log("Pulling fees from Airlock contracts...");
@@ -78,11 +76,10 @@ contract KeeperPullAndBridge is Script {
      * @notice Pull fees from a specific Airlock contract
      * @dev Attempts to pull both ETH and token fees with error handling
      * @param airlock Address of the Airlock contract to pull from
-     * @custom:gas Uses try/catch to prevent reverting on failed pulls
      */
     function _pullFromAirlock(address airlock) internal {
         // Pull ETH fees
-        try FEE_ROUTER.pullAndSlice(airlock, address(0), 0.01 ether) {
+        try FEE_ROUTER.collectAirlockFees(airlock, address(0), 0.01 ether) {
             console.log("Pulled ETH from airlock:", airlock);
         } catch {
             // Continue on failure
@@ -91,7 +88,7 @@ contract KeeperPullAndBridge is Script {
         // Pull token fees
         address[] memory tokens = _getKnownTokens();
         for (uint i = 0; i < tokens.length; i++) {
-            try FEE_ROUTER.pullAndSlice(airlock, tokens[i], _getMinAmount(tokens[i])) {
+            try FEE_ROUTER.collectAirlockFees(airlock, tokens[i], _getMinAmount(tokens[i])) {
                 console.log("Pulled token from airlock:", tokens[i]);
             } catch {
                 // Continue on failure
@@ -102,7 +99,6 @@ contract KeeperPullAndBridge is Script {
     /**
      * @notice Bridge accumulated ETH to Ethereum for HLG conversion
      * @dev Only bridges if balance exceeds minimum threshold
-     * @custom:gas Gas cost includes LayerZero messaging fees
      */
     function _bridgeETH() internal {
         uint256 balance = address(FEE_ROUTER).balance;
@@ -118,7 +114,6 @@ contract KeeperPullAndBridge is Script {
     /**
      * @notice Bridge accumulated tokens to Ethereum
      * @dev Attempts to bridge all configured token types
-     * @custom:gas Each token bridge incurs separate LayerZero costs
      */
     function _bridgeTokens() internal {
         address[] memory tokens = _getKnownTokens();
@@ -139,7 +134,6 @@ contract KeeperPullAndBridge is Script {
      * @notice Get list of known Airlock contracts for fee collection
      * @dev Update this function with actual Airlock addresses from monitoring
      * @return airlocks Array of Airlock contract addresses
-     * @custom:security Validate all addresses are legitimate Airlock contracts
      */
     function _getKnownAirlocks() internal pure returns (address[] memory) {
         address[] memory airlocks = new address[](0);
@@ -169,7 +163,6 @@ contract KeeperPullAndBridge is Script {
      * @dev Configured to avoid dust transactions and gas waste
      * @param token Token address to get minimum amount for
      * @return Minimum amount in token's native decimals
-     * @custom:gas Prevents uneconomical transactions below thresholds
      */
     function _getMinAmount(address token) internal pure returns (uint256) {
         if (token == USDC) return 100e6; // 100 USDC
@@ -181,7 +174,6 @@ contract KeeperPullAndBridge is Script {
     /**
      * @notice Validate environment setup before execution
      * @dev Ensures required addresses are configured properly
-     * @custom:security Prevents execution with placeholder addresses
      */
     function _validateSetup() internal view {
         require(address(FEE_ROUTER) != address(0), "FeeRouter address not set");
@@ -193,37 +185,9 @@ contract KeeperPullAndBridge is Script {
         }
     }
 
-    /* -------------------------------------------------------------------------- */
-    /*                                  Admin                                     */
-    /* -------------------------------------------------------------------------- */
-    /**
-     * @notice Emergency pause function for governance use
-     * @dev Immediately halts all FeeRouter operations
-     * @custom:security Should only be called in emergency situations
-     */
-    function emergencyPause() external {
-        console.log("Emergency pause activated");
-        vm.startBroadcast();
-        FEE_ROUTER.pause();
-        vm.stopBroadcast();
-    }
-
-    /**
-     * @notice Resume operations after emergency pause
-     * @dev Re-enables normal FeeRouter functionality
-     * @custom:security Requires careful consideration before unpausing
-     */
-    function unpause() external {
-        console.log("Unpausing FeeRouter");
-        vm.startBroadcast();
-        FEE_ROUTER.unpause();
-        vm.stopBroadcast();
-    }
-
     /**
      * @notice Monitor function to check FeeRouter balances
      * @dev Useful for debugging and monitoring keeper performance
-     * @custom:gas Read-only function for monitoring dashboards
      */
     function checkBalances() external view {
         console.log("=== FeeRouter Balance Check ===");
