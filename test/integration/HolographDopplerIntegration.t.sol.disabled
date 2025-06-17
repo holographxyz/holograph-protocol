@@ -66,7 +66,7 @@ contract HolographDopplerIntegrationTest is Test {
     uint32 constant BASE_EID = 30184;
     uint32 constant ETH_EID = 30101;
     uint256 constant LAUNCH_FEE = 0.005 ether;
-    uint256 constant HOLO_FEE_BPS = 150; // 1.5%
+    uint256 constant HOLOGRAPH_FEE_BPS = 150; // 1.5%
 
     /* -------------------------------------------------------------------------- */
     /*                                   Events                                   */
@@ -226,7 +226,7 @@ contract HolographDopplerIntegrationTest is Test {
 
     function _simulateTokenLaunch() internal {
         uint256 launchFee = LAUNCH_FEE;
-        uint256 expectedHolo = (launchFee * HOLO_FEE_BPS) / 10_000; // 1.5%
+        uint256 expectedHolo = (launchFee * HOLOGRAPH_FEE_BPS) / 10_000; // 1.5%
         uint256 expectedTreasury = launchFee - expectedHolo; // 98.5%
 
         CreateParams memory params = CreateParams({
@@ -271,7 +271,7 @@ contract HolographDopplerIntegrationTest is Test {
         vm.prank(keeper);
         feeRouterBase.pullAndSlice(address(airlock), address(0), uint128(airlockFees));
 
-        uint256 expectedHolo = (airlockFees * HOLO_FEE_BPS) / 10_000;
+        uint256 expectedHolo = (airlockFees * HOLOGRAPH_FEE_BPS) / 10_000;
         uint256 routerBalanceAfter = address(feeRouterBase).balance;
 
         assertEq(routerBalanceAfter - routerBalanceBefore, expectedHolo, "Additional fees should be sliced correctly");
@@ -387,7 +387,7 @@ contract HolographDopplerIntegrationTest is Test {
             totalFees += LAUNCH_FEE;
         }
 
-        uint256 expectedTotalHolo = (totalFees * HOLO_FEE_BPS) / 10_000;
+        uint256 expectedTotalHolo = (totalFees * HOLOGRAPH_FEE_BPS) / 10_000;
         uint256 expectedTotalTreasury = totalFees - expectedTotalHolo;
 
         assertEq(treasury.balance, expectedTotalTreasury, "Treasury should receive 98.5% of all fees");
@@ -408,7 +408,7 @@ contract HolographDopplerIntegrationTest is Test {
         feeRouterBase.routeFeeToken(address(token), tokenAmount);
         vm.stopPrank();
 
-        uint256 expectedHolo = (tokenAmount * HOLO_FEE_BPS) / 10_000;
+        uint256 expectedHolo = (tokenAmount * HOLOGRAPH_FEE_BPS) / 10_000;
         uint256 expectedTreasury = tokenAmount - expectedHolo;
 
         assertEq(token.balanceOf(treasury), expectedTreasury, "Treasury should receive 98.5% of tokens");

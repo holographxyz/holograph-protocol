@@ -36,8 +36,7 @@ contract KeeperPullAndBridge is Script {
     /* -------------------------------------------------------------------------- */
     /**
      * @notice Main execution function for keeper automation
-     * @dev Sequentially executes fee pulling, ETH bridging, and token bridging
-     * @custom:gas Estimated gas usage: ~500K-1M depending on operations
+     * @dev Estimated gas usage: ~500K-1M depending on operations.
      */
     function run() external {
         _validateSetup();
@@ -59,7 +58,6 @@ contract KeeperPullAndBridge is Script {
     /* -------------------------------------------------------------------------- */
     /**
      * @notice Pull fees from all known Airlock contracts
-     * @dev Iterates through configured Airlocks and attempts fee collection
      */
     function _pullFees() internal {
         console.log("Pulling fees from Airlock contracts...");
@@ -113,7 +111,6 @@ contract KeeperPullAndBridge is Script {
 
     /**
      * @notice Bridge accumulated tokens to Ethereum
-     * @dev Attempts to bridge all configured token types
      */
     function _bridgeTokens() internal {
         address[] memory tokens = _getKnownTokens();
@@ -147,7 +144,6 @@ contract KeeperPullAndBridge is Script {
 
     /**
      * @notice Get list of supported tokens for fee collection
-     * @dev Configured for Base mainnet token addresses
      * @return tokens Array of ERC-20 token addresses
      */
     function _getKnownTokens() internal pure returns (address[] memory) {
@@ -173,7 +169,6 @@ contract KeeperPullAndBridge is Script {
 
     /**
      * @notice Validate environment setup before execution
-     * @dev Ensures required addresses are configured properly
      */
     function _validateSetup() internal view {
         require(address(FEE_ROUTER) != address(0), "FeeRouter address not set");
@@ -187,7 +182,6 @@ contract KeeperPullAndBridge is Script {
 
     /**
      * @notice Monitor function to check FeeRouter balances
-     * @dev Useful for debugging and monitoring keeper performance
      */
     function checkBalances() external view {
         console.log("=== FeeRouter Balance Check ===");

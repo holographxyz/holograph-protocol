@@ -40,6 +40,7 @@ import "./interfaces/IWETH9.sol";
 import "./interfaces/ISwapRouter.sol";
 import "./interfaces/IStakingRewards.sol";
 import "./interfaces/IAirlock.sol";
+import "./interfaces/IDoppler.sol";
 
 /**
  * @title FeeRouter
@@ -57,7 +58,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
     uint24 public constant POOL_FEE = 3000;
 
     /// @notice Protocol fee in basis points (1.5%)
-    uint16 public constant HOLO_FEE_BPS = 150;
+    uint16 public constant HOLOGRAPH_FEE_BPS = 150;
 
     /// @notice Minimum value required to bridge (dust protection)
     uint64 public constant MIN_BRIDGE_VALUE = 0.01 ether;
@@ -89,30 +90,29 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
     /* -------------------------------------------------------------------------- */
     /*                                 Storage                                    */
     /* -------------------------------------------------------------------------- */
-    /// @notice Nonce tracking for LayerZero messages per destination
+    /// @notice Cross-chain message nonce tracking
     mapping(uint32 => uint64) public nonce;
 
-    /// @notice Trusted remote addresses for LayerZero security
+    /// @notice Trusted remote contracts for LayerZero messaging
     mapping(uint32 => bytes32) public trustedRemotes;
 
-    /// @notice Treasury address receiving 98.5% of all fees
+    /// @notice Treasury address for fee collection
     address public treasury;
 
-    /* -------------------------------------------------------------------------- */
-    /*                                  Errors                                    */
-    /* -------------------------------------------------------------------------- */
-    error ZeroAddress();
-    error ZeroAmount();
-    error NotEndpoint();
-    error UntrustedRemote();
-    error NoRoute();
-    error InsufficientOutput();
+    /// @notice Accumulated Doppler trading fees pending manual collection
+    mapping(address token => uint256 amount) public accumulatedTradingFees;
+
+    /// @notice Registry of active Doppler hooks for fee monitoring
+    mapping(address hook => bool isActive) public activeDopplerHooks;
+
+    /// @notice Array of active Doppler hooks for iteration
+    address[] public dopplerHooksList;
 
     /* -------------------------------------------------------------------------- */
     /*                                  Events                                    */
     /* -------------------------------------------------------------------------- */
     /// @notice Emitted when fees are processed through the slicing mechanism
-    event SlicePulled(address indexed airlock, address indexed token, uint256 holoAmt, uint256 treasuryAmt);
+    event SlicePulled(address indexed sender, address indexed token, uint256 protocolFee, uint256 treasuryFee);
 
     /// @notice Emitted when tokens are bridged to remote chain
     event TokenBridged(address indexed token, uint256 amount, uint64 nonce);
@@ -135,12 +135,43 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
     /// @notice Emitted when treasury address is updated
     event TreasuryUpdated(address indexed newTreasury);
 
+    /// @notice Emitted when Doppler trading fees are collected
+    event DopplerTradingFeesCollected(
+        address indexed hook,
+        address indexed token,
+        uint256 amount,
+        uint256 protocolFee,
+        uint256 integratorFee
+    );
+
+    /// @notice Emitted when a Doppler hook is registered
+    event DopplerHookRegistered(address indexed hook);
+
+    /// @notice Emitted when a Doppler hook is deregistered
+    event DopplerHookDeregistered(address indexed hook);
+
+    /// @notice Emitted when manual bridging is triggered
+    event ManualBridgeTriggered(address indexed admin, address indexed token, uint256 amount);
+
+    /* -------------------------------------------------------------------------- */
+    /*                                  Errors                                    */
+    /* -------------------------------------------------------------------------- */
+    error ZeroAddress();
+    error ZeroAmount();
+    error NotEndpoint();
+    error UntrustedRemote();
+    error NoRoute();
+    error InsufficientOutput();
+    error InsufficientBalance();
+    error HookNotActive();
+    error HookAlreadyActive();
+
     /* -------------------------------------------------------------------------- */
     /*                               Constructor                                  */
     /* -------------------------------------------------------------------------- */
     /**
      * @notice Initialize the FeeRouter contract
-     * @dev Sets up all immutable addresses and grants admin role to deployer
+     * @dev Sets up all immutable addresses and validates critical addresses to prevent deployment errors.
      * @param _endpoint LayerZero V2 endpoint address
      * @param _remoteEid Remote chain endpoint ID for cross-chain messaging
      * @param _stakingPool StakingRewards contract address (zero on non-Ethereum chains)
@@ -148,7 +179,6 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
      * @param _weth WETH9 contract address (zero on non-Ethereum chains)
      * @param _swapRouter Uniswap V3 SwapRouter address (zero on non-Ethereum chains)
      * @param _treasury Initial treasury address for fee collection
-     * @custom:security Validates critical addresses to prevent deployment errors
      */
     constructor(
         address _endpoint,
@@ -159,8 +189,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
         address _swapRouter,
         address _treasury
     ) Ownable(msg.sender) {
-        if (_endpoint == address(0) || _remoteEid == 0) revert ZeroAddress();
-        if (_treasury == address(0)) revert ZeroAddress();
+        if (_endpoint == address(0) || _treasury == address(0)) revert ZeroAddress();
 
         lzEndpoint = ILZEndpointV2(_endpoint);
         remoteEid = _remoteEid;
@@ -179,8 +208,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
 
     /**
      * @notice Receive ETH fees and process through single-slice model
-     * @dev Main entry point for fee collection from HolographFactory
-     * @custom:security Protected by whenNotPaused modifier
+     * @dev Main entry point for fee collection from HolographFactory.
      */
     function receiveFee() external payable whenNotPaused {
         _takeAndSlice(address(0), msg.value);
@@ -188,18 +216,24 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
 
     /**
      * @notice Receive ETH directly via transfer/send
-     * @dev Automatically processes ETH through slicing mechanism
+     * @dev Automatically processes ETH through slicing mechanism unless from registered Doppler hooks
      */
     receive() external payable {
+        // If from a registered Doppler hook, just accumulate without processing
+        if (activeDopplerHooks[msg.sender]) {
+            // ETH received from Doppler hooks is already part of accumulated trading fees
+            return;
+        }
+
+        // Otherwise process through normal slicing
         _takeAndSlice(address(0), msg.value);
     }
 
     /**
      * @notice Route ERC-20 token fees through the system
-     * @dev Transfers tokens from sender and processes through single-slice model
+     * @dev Transfers tokens from sender and processes through single-slice model.
      * @param token ERC-20 token contract address
      * @param amount Token amount to transfer and process
-     * @custom:security Protected by whenNotPaused modifier
      */
     function routeFeeToken(address token, uint256 amount) external whenNotPaused {
         if (token == address(0)) revert ZeroAddress();
@@ -216,11 +250,10 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
 
     /**
      * @notice Collect accumulated fees from a Doppler Airlock
-     * @dev Keeper function to pull integrator fees from completed auctions
+     * @dev Keeper function to pull integrator fees from completed auctions.
      * @param airlock Airlock contract address
      * @param token Token contract address
      * @param amt Amount to collect
-     * @custom:security Restricted to KEEPER_ROLE addresses
      */
     function collectAirlockFees(address airlock, address token, uint256 amt) external onlyRole(KEEPER_ROLE) {
         if (airlock == address(0)) revert ZeroAddress();
@@ -228,6 +261,213 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
 
         IAirlock(airlock).collectIntegratorFees(address(this), token, amt);
         _takeAndSlice(token, amt);
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /*                         Doppler Trading Fee Collection                    */
+    /* -------------------------------------------------------------------------- */
+
+    /**
+     * @notice Register a Doppler hook for trading fee monitoring
+     * @dev Only admin can register hooks for fee collection
+     * @param hook Address of the Doppler hook contract
+     */
+    function registerDopplerHook(address hook) external onlyOwner {
+        if (hook == address(0)) revert ZeroAddress();
+        if (activeDopplerHooks[hook]) revert HookAlreadyActive();
+
+        activeDopplerHooks[hook] = true;
+        dopplerHooksList.push(hook);
+        emit DopplerHookRegistered(hook);
+    }
+
+    /**
+     * @notice Deregister a Doppler hook from trading fee monitoring
+     * @dev Only admin can deregister hooks
+     * @param hook Address of the Doppler hook contract
+     */
+    function deregisterDopplerHook(address hook) external onlyOwner {
+        if (!activeDopplerHooks[hook]) revert HookNotActive();
+
+        activeDopplerHooks[hook] = false;
+
+        // Remove from array
+        for (uint256 i = 0; i < dopplerHooksList.length; i++) {
+            if (dopplerHooksList[i] == hook) {
+                dopplerHooksList[i] = dopplerHooksList[dopplerHooksList.length - 1];
+                dopplerHooksList.pop();
+                break;
+            }
+        }
+
+        emit DopplerHookDeregistered(hook);
+    }
+
+    /**
+     * @notice Manually collect trading fees from a specific Doppler hook during auction
+     * @dev Admin function to trigger fee collection from active auctions
+     * @param hook Address of the Doppler hook contract
+     * @param token Token address to collect fees for (address(0) for ETH)
+     */
+    function collectDopplerTradingFees(address hook, address token) external onlyOwner nonReentrant {
+        _collectDopplerTradingFeesInternal(hook, token);
+    }
+
+    /**
+     * @notice Internal function to collect trading fees from a Doppler hook
+     * @dev Used by both single and batch collection functions
+     * @param hook Address of the Doppler hook contract
+     * @param token Token address to collect fees for (address(0) for ETH)
+     */
+    function _collectDopplerTradingFeesInternal(address hook, address token) internal {
+        if (!activeDopplerHooks[hook]) revert HookNotActive();
+
+        IDoppler doppler = IDoppler(hook);
+
+        // Get accumulated fees from the Doppler hook
+        (uint256 totalFees, uint256 totalBalance) = doppler.getAccumulatedFees(token);
+
+        if (totalFees == 0) return;
+
+        // Apply Doppler's complex fee formula
+        (uint256 protocolFee, uint256 integratorFee) = _calculateDopplerFees(totalBalance, totalFees);
+
+        // Transfer integrator fees from Doppler to FeeRouter
+        if (integratorFee > 0) {
+            doppler.collectAccumulatedFees(address(this), token, integratorFee);
+
+            // Accumulate for manual processing later
+            accumulatedTradingFees[token] += integratorFee;
+        }
+
+        emit DopplerTradingFeesCollected(hook, token, totalFees, protocolFee, integratorFee);
+    }
+
+    /**
+     * @notice Batch collect trading fees from all registered Doppler hooks
+     * @dev Admin function to collect fees from all active auctions at once
+     * @param tokens Array of token addresses to collect fees for
+     */
+    function batchCollectDopplerTradingFees(address[] calldata tokens) external onlyOwner nonReentrant {
+        for (uint256 i = 0; i < dopplerHooksList.length; i++) {
+            if (activeDopplerHooks[dopplerHooksList[i]]) {
+                for (uint256 j = 0; j < tokens.length; j++) {
+                    // Call internal function to avoid access control issues
+                    _collectDopplerTradingFeesInternal(dopplerHooksList[i], tokens[j]);
+                }
+            }
+        }
+    }
+
+    /**
+     * @notice Process accumulated trading fees through fee slicing
+     * @dev Admin function to process accumulated fees when desired
+     * @param token Token address to process
+     */
+    function processAccumulatedTradingFees(address token) external onlyOwner nonReentrant {
+        uint256 amount = accumulatedTradingFees[token];
+        if (amount == 0) revert ZeroAmount();
+
+        accumulatedTradingFees[token] = 0;
+        _takeAndSlice(token, amount);
+    }
+
+    /**
+     * @notice Process all accumulated trading fees
+     * @dev Admin function to process all accumulated fees at once
+     * @param tokens Array of token addresses to process
+     */
+    function processAllAccumulatedTradingFees(address[] calldata tokens) external onlyOwner nonReentrant {
+        for (uint256 i = 0; i < tokens.length; i++) {
+            uint256 amount = accumulatedTradingFees[tokens[i]];
+            if (amount > 0) {
+                accumulatedTradingFees[tokens[i]] = 0;
+                _takeAndSlice(tokens[i], amount);
+            }
+        }
+    }
+
+    /**
+     * @notice Calculate fees using Doppler's complex formula
+     * @dev Implements the exact Doppler fee calculation from documentation
+     * @param balance Total balance including fees
+     * @param fees Trading fees amount
+     * @return protocolFee Amount going to Doppler protocol
+     * @return integratorFee Amount going to integrator (us)
+     */
+    function _calculateDopplerFees(
+        uint256 balance,
+        uint256 fees
+    ) internal pure returns (uint256 protocolFee, uint256 integratorFee) {
+        if (fees == 0) return (0, 0);
+
+        uint256 protocolLpFees = fees / 20; // 5% of trading fees
+        uint256 protocolProceedsFees = (balance - fees) / 1000; // 0.1% of proceeds
+        protocolFee = protocolLpFees > protocolProceedsFees ? protocolLpFees : protocolProceedsFees;
+        uint256 maxProtocolFees = fees / 5; // 20% cap on trading fees
+
+        if (protocolFee > maxProtocolFees) {
+            protocolFee = maxProtocolFees;
+            integratorFee = fees - maxProtocolFees;
+        } else {
+            integratorFee = fees - protocolFee;
+        }
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /*                               Manual Bridging                             */
+    /* -------------------------------------------------------------------------- */
+
+    /**
+     * @notice Manually trigger bridging of accumulated fees to Ethereum
+     * @dev Admin function for manual fee bridging when desired
+     * @param token Token address to bridge (address(0) for ETH)
+     * @param minGas Minimum gas for LayerZero execution
+     * @param minHlg Minimum HLG expected from swap (slippage protection)
+     */
+    function manualBridge(address token, uint256 minGas, uint256 minHlg) external onlyOwner nonReentrant {
+        uint256 balance;
+
+        if (token == address(0)) {
+            balance = address(this).balance;
+            if (balance < MIN_BRIDGE_VALUE) revert InsufficientBalance();
+
+            bytes memory payload = abi.encode(address(0), minHlg);
+            bytes memory options = _buildLzReceiveOption(minGas);
+            uint64 n = ++nonce[remoteEid];
+
+            lzEndpoint.send{value: balance}(remoteEid, payload, options);
+            emit TokenBridged(address(0), balance, n);
+        } else {
+            balance = IERC20(token).balanceOf(address(this));
+            if (balance < MIN_BRIDGE_VALUE) revert InsufficientBalance();
+
+            IERC20(token).approve(address(lzEndpoint), balance);
+            bytes memory payload = abi.encode(token, minHlg);
+            bytes memory options = _buildLzReceiveOption(minGas);
+            uint64 n = ++nonce[remoteEid];
+
+            lzEndpoint.send(remoteEid, payload, options);
+            emit TokenBridged(token, balance, n);
+        }
+
+        emit ManualBridgeTriggered(msg.sender, token, balance);
+    }
+
+    /**
+     * @notice Get the number of registered Doppler hooks
+     * @return count Number of active Doppler hooks
+     */
+    function getDopplerHooksCount() external view returns (uint256) {
+        return dopplerHooksList.length;
+    }
+
+    /**
+     * @notice Get all registered Doppler hooks
+     * @return hooks Array of active Doppler hook addresses
+     */
+    function getAllDopplerHooks() external view returns (address[] memory) {
+        return dopplerHooksList;
     }
 
     /* -------------------------------------------------------------------------- */
@@ -244,7 +484,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
         if (amount == 0) revert ZeroAmount();
 
         // Calculate split: 1.5% protocol, 98.5% treasury
-        uint256 protocolFee = (amount * HOLO_FEE_BPS) / 10_000;
+        uint256 protocolFee = (amount * HOLOGRAPH_FEE_BPS) / 10_000;
         uint256 treasuryFee = amount - protocolFee;
 
         // Send treasury portion immediately
@@ -322,10 +562,9 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
 
     /**
      * @notice Bridge accumulated ETH to remote chain for HLG conversion
-     * @dev Protected by dust threshold to prevent uneconomical transactions
+     * @dev Protected by dust threshold to prevent uneconomical transactions.
      * @param minGas Minimum gas units for lzReceive execution on destination
      * @param minHlg Minimum HLG tokens expected from swap (slippage protection)
-     * @custom:security Restricted to KEEPER_ROLE only
      */
     function bridge(uint256 minGas, uint256 minHlg) external onlyRole(KEEPER_ROLE) nonReentrant {
         uint256 bal = address(this).balance;
@@ -342,11 +581,10 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
 
     /**
      * @notice Bridge accumulated ERC-20 tokens to remote chain
-     * @dev Handles token approval and LayerZero messaging for cross-chain transfer
+     * @dev Handles token approval and LayerZero messaging for cross-chain transfer.
      * @param token ERC-20 token contract address to bridge
      * @param minGas Minimum gas units for lzReceive execution on destination
      * @param minHlg Minimum HLG tokens expected from swap (slippage protection)
-     * @custom:security Restricted to KEEPER_ROLE only
      */
     function bridgeToken(address token, uint256 minGas, uint256 minHlg) external onlyRole(KEEPER_ROLE) nonReentrant {
         uint256 bal = IERC20(token).balanceOf(address(this));
@@ -369,10 +607,9 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
 
     /**
      * @notice Handle incoming protocol fees from Base chain
-     * @dev Processes bridged tokens through local HLG swap and burn/stake
+     * @dev Processes bridged tokens through local HLG swap and burn/stake.
      * @param srcEid Source chain endpoint ID
      * @param message Encoded token, amount, and slippage protection data
-     * @custom:security Validates trusted remote before processing
      */
     function lzReceive(uint32 srcEid, bytes calldata message, address, bytes calldata) external payable override {
         if (msg.sender != address(lzEndpoint)) revert NotEndpoint();
@@ -624,7 +861,6 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
      * @notice Set trusted remote address for cross-chain messaging
      * @param eid Remote chain endpoint ID
      * @param remote Trusted contract address on remote chain (as bytes32)
-     * @custom:security Only owner can modify trusted remotes
      */
     function setTrustedRemote(uint32 eid, bytes32 remote) external onlyOwner {
         trustedRemotes[eid] = remote;
@@ -633,8 +869,8 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
 
     /**
      * @notice Update treasury address (admin function)
+     * @dev Validates non-zero address
      * @param newTreasury The new treasury address
-     * @custom:security Critical admin function - validates non-zero address
      */
     function setTreasury(address newTreasury) external onlyOwner {
         if (newTreasury == address(0)) revert ZeroAddress();
@@ -644,8 +880,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
 
     /**
      * @notice Pause the contract
-     * @dev Emergency circuit breaker to halt operations
-     * @custom:security Only owner can pause contract operations
+     * @dev Emergency circuit breaker to halt operations.
      */
     function pause() external onlyOwner {
         _pause();
@@ -653,8 +888,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
 
     /**
      * @notice Unpause the contract
-     * @dev Resume normal operations after emergency pause
-     * @custom:security Only owner can unpause contract operations
+     * @dev Resume normal operations after emergency pause.
      */
     function unpause() external onlyOwner {
         _unpause();
@@ -683,7 +917,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
      * @return treasuryFee Amount that goes to treasury (98.5%)
      */
     function calculateFeeSplit(uint256 amount) external pure returns (uint256 protocolFee, uint256 treasuryFee) {
-        protocolFee = (amount * HOLO_FEE_BPS) / 10_000;
+        protocolFee = (amount * HOLOGRAPH_FEE_BPS) / 10_000;
         treasuryFee = amount - protocolFee;
     }
 }

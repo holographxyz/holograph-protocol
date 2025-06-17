@@ -37,7 +37,7 @@ contract FeeRouterSliceTest is Test {
 
     uint32 constant ETHEREUM_EID = 30101;
     uint24 constant POOL_FEE = 3000;
-    uint16 constant HOLO_FEE_BPS = 150; // 1.5%
+    uint16 constant HOLOGRAPH_FEE_BPS = 150; // 1.5%
 
     event SlicePulled(address indexed airlock, address indexed token, uint256 holoAmt, uint256 treasuryAmt);
     event TokenReceived(address indexed sender, address indexed token, uint256 amount);
@@ -92,7 +92,7 @@ contract FeeRouterSliceTest is Test {
 
     function testReceiveFee_SlicesCorrectly() public {
         uint256 amount = 1 ether;
-        uint256 expectedHolo = (amount * HOLO_FEE_BPS) / 10_000; // 1.5%
+        uint256 expectedHolo = (amount * HOLOGRAPH_FEE_BPS) / 10_000; // 1.5%
         uint256 expectedTreasury = amount - expectedHolo; // 98.5%
 
         uint256 treasuryBalanceBefore = treasury.balance;
@@ -119,7 +119,7 @@ contract FeeRouterSliceTest is Test {
 
     function testReceiveFee_DirectTransfer() public {
         uint256 amount = 0.5 ether;
-        uint256 expectedHolo = (amount * HOLO_FEE_BPS) / 10_000;
+        uint256 expectedHolo = (amount * HOLOGRAPH_FEE_BPS) / 10_000;
         uint256 expectedTreasury = amount - expectedHolo;
 
         vm.expectEmit(true, true, false, true);
@@ -137,7 +137,7 @@ contract FeeRouterSliceTest is Test {
     function testRouteFeeToken_ERC20Slicing() public {
         MockERC20 token = new MockERC20("Test Token", "TEST");
         uint256 amount = 1000e18;
-        uint256 expectedHolo = (amount * HOLO_FEE_BPS) / 10_000;
+        uint256 expectedHolo = (amount * HOLOGRAPH_FEE_BPS) / 10_000;
         uint256 expectedTreasury = amount - expectedHolo;
 
         // Setup: give Alice tokens and approve FeeRouter
@@ -204,7 +204,7 @@ contract FeeRouterSliceTest is Test {
         // 4. collectAirlockFees then calls _takeAndSlice(address(0), 0.5 ether) -> second SlicePulled event
         // Both calls use the same amount (0.5 ether), so both events will be identical
 
-        uint256 holoAmt = (amount * HOLO_FEE_BPS) / 10_000; // 1.5% = 0.0075 ether
+        uint256 holoAmt = (amount * HOLOGRAPH_FEE_BPS) / 10_000; // 1.5% = 0.0075 ether
         uint256 treasuryAmt = amount - holoAmt; // 98.5% = 0.4925 ether
 
         // Expect the SlicePulled event from collectAirlockFees (the second one)
@@ -377,7 +377,7 @@ contract FeeRouterSliceTest is Test {
 
     function testSlicing_LargeAmounts() public {
         uint256 amount = 100 ether;
-        uint256 expectedHolo = (amount * HOLO_FEE_BPS) / 10_000; // 1.5 ether
+        uint256 expectedHolo = (amount * HOLOGRAPH_FEE_BPS) / 10_000; // 1.5 ether
         uint256 expectedTreasury = amount - expectedHolo; // 98.5 ether
 
         vm.deal(alice, amount);
@@ -399,7 +399,7 @@ contract FeeRouterSliceTest is Test {
         feeRouter.receiveFee{value: amount2}();
 
         uint256 totalAmount = amount1 + amount2;
-        uint256 expectedTotalHolo = (totalAmount * HOLO_FEE_BPS) / 10_000;
+        uint256 expectedTotalHolo = (totalAmount * HOLOGRAPH_FEE_BPS) / 10_000;
         uint256 expectedTotalTreasury = totalAmount - expectedTotalHolo;
 
         assertEq(treasury.balance, expectedTotalTreasury);
@@ -414,7 +414,7 @@ contract FeeRouterSliceTest is Test {
         vm.assume(amount > 0 && amount <= 1000 ether);
         vm.deal(alice, amount);
 
-        uint256 expectedHolo = (amount * HOLO_FEE_BPS) / 10_000;
+        uint256 expectedHolo = (amount * HOLOGRAPH_FEE_BPS) / 10_000;
         uint256 expectedTreasury = amount - expectedHolo;
 
         vm.prank(alice);
