@@ -178,23 +178,6 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
     /* -------------------------------------------------------------------------- */
 
     /**
-     * @notice Receive ETH fees and process through single-slice model
-     * @dev Main entry point for fee collection from HolographFactory
-     * @custom:security Protected by whenNotPaused modifier
-     */
-    function receiveFee() external payable whenNotPaused {
-        _takeAndSlice(address(0), msg.value);
-    }
-
-    /**
-     * @notice Receive ETH directly via transfer/send
-     * @dev Automatically processes ETH through slicing mechanism
-     */
-    receive() external payable {
-        _takeAndSlice(address(0), msg.value);
-    }
-
-    /**
      * @notice Route ERC-20 token fees through the system
      * @dev Transfers tokens from sender and processes through single-slice model
      * @param token ERC-20 token contract address
@@ -227,7 +210,13 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
         if (amt == 0) revert ZeroAmount();
 
         IAirlock(airlock).collectIntegratorFees(address(this), token, amt);
-        _takeAndSlice(token, amt);
+
+        // For ERC-20 tokens, we need to process them since receive() only handles ETH
+        if (token != address(0)) {
+            _takeAndSlice(token, amt);
+        }
+        // For ETH (token == address(0)), the receive() function will automatically
+        // call _takeAndSlice() when the ETH is transferred from the airlock
     }
 
     /* -------------------------------------------------------------------------- */
@@ -263,10 +252,10 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
             if (address(HLG) != address(0)) {
                 // Ethereum: Process locally (wrap → swap → burn/stake)
                 _processProtocolFeeLocal(token, protocolFee);
-            } else {
-                // Base: Bridge to Ethereum for processing
-                _bridgeProtocolFee(token, protocolFee);
             }
+            // On non-Ethereum chains (e.g., Base) the protocol fees simply
+            // remain in the contract balance. A keeper will later call the
+            // public bridge functions to move those funds.
         }
 
         emit SlicePulled(msg.sender, token, protocolFee, treasuryFee);
@@ -295,25 +284,10 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
                 uint256 hlgOut = _swapForHLG(address(WETH), wethOut);
                 _burnAndStake(hlgOut);
             } else {
-                // No direct route: bridge to Ethereum for processing
-                _bridgeProtocolFee(token, amount);
+                // No direct route; let the balance accumulate to be bridged
+                // later by a keeper via the public bridge/bridgeToken methods.
             }
         }
-    }
-
-    /**
-     * @notice Accumulate protocol fee for later bridging (Base chain)
-     * @dev Protocol fees accumulate in contract balance until manually bridged by keeper
-     * @param token Token address (address(0) for ETH)
-     * @param amount Amount to accumulate
-     */
-    function _bridgeProtocolFee(address token, uint256 amount) internal {
-        // Protocol fees accumulate in the contract balance
-        // ETH stays in address(this).balance
-        // ERC-20 tokens stay in contract token balance
-        // Keeper will call bridge() or bridgeToken() to send accumulated fees
-        // No immediate action needed - fees are already in the contract
-        // This function serves as a placeholder for potential future logic
     }
 
     /* -------------------------------------------------------------------------- */
@@ -424,8 +398,8 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
                 uint256 hlgOut = _swapForHLGWithSlippage(address(WETH), wethOut, minHlg);
                 _burnAndStake(hlgOut);
             } else {
-                // No direct route: process without slippage protection
-                _processProtocolFeeLocal(token, amount);
+                // No direct route; let the balance accumulate to be bridged
+                // later by a keeper via the public bridge/bridgeToken methods.
             }
         }
     }
@@ -685,5 +659,30 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
     function calculateFeeSplit(uint256 amount) external pure returns (uint256 protocolFee, uint256 treasuryFee) {
         protocolFee = (amount * HOLO_FEE_BPS) / 10_000;
         treasuryFee = amount - protocolFee;
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /*                                ETH Receipt                                 */
+    /* -------------------------------------------------------------------------- */
+
+    /**
+     * @notice Receive ETH fees and process through single-slice model
+     * @dev Main entry point for fee collection from HolographFactory
+     * @custom:security Protected by whenNotPaused modifier
+     */
+    function receiveFee() external payable whenNotPaused {
+        if (msg.value == 0) revert ZeroAmount();
+        _takeAndSlice(address(0), msg.value);
+    }
+
+    /**
+     * @notice Accept ETH transfers and process through fee slicing
+     * @dev Automatically processes received ETH through the single-slice model
+     */
+    receive() external payable {
+        if (msg.value > 0) {
+            _takeAndSlice(address(0), msg.value);
+        }
+        // No pause modifier to allow emergency fee processing
     }
 }

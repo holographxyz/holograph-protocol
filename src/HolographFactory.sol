@@ -76,18 +76,13 @@ contract HolographFactory is Ownable, Pausable, ReentrancyGuard, ILZReceiverV2 {
     /* -------------------------------------------------------------------------- */
     /**
      * @notice Launch a new omnichain token via Doppler Airlock
-     * @dev Pure pass-through model: forwards all ETH to FeeRouter and sets FeeRouter as integrator
+     * @dev Aligns with Doppler's free token creation model - no launch fees required
      * @param params Doppler CreateParams containing token configuration
      * @return asset Address of the newly created token
      * @custom:security Protected by nonReentrant and whenNotPaused modifiers
      */
-    function createToken(
-        CreateParams calldata params
-    ) external payable nonReentrant whenNotPaused returns (address asset) {
-        // Forward all ETH to FeeRouter (pure pass-through model)
-        feeRouter.receiveFee{value: msg.value}();
-
-        // Set FeeRouter as integrator for Doppler fee collection
+    function createToken(CreateParams calldata params) external nonReentrant whenNotPaused returns (address asset) {
+        // Set FeeRouter as integrator for Doppler trading fee collection
         CreateParams memory modifiedParams = params;
         modifiedParams.integrator = address(feeRouter);
 

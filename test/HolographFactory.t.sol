@@ -307,11 +307,10 @@ contract HolographFactoryTest is Test {
             mstore(add(createParams, 0x120), liquidityMig)
         }
 
-        // 5) Execute the token creation with test fee amount
-        uint256 testFeeAmount = 0.01 ether;
+        // 5) Execute the token creation - no fee required as per Doppler's free token creation model
         bytes memory callData = abi.encodeWithSelector(factory.createToken.selector, createParams);
         vm.prank(creator);
-        (bool ok, bytes memory returndata) = address(factory).call{value: testFeeAmount}(callData);
+        (bool ok, bytes memory returndata) = address(factory).call(callData);
 
         console.log("createToken success? ", ok);
         if (!ok) {
