@@ -36,8 +36,7 @@ contract KeeperPullAndBridge is Script {
     /* -------------------------------------------------------------------------- */
     /**
      * @notice Main execution function for keeper automation
-     * @dev Sequentially executes fee pulling, ETH bridging, and token bridging
-     * @custom:gas Estimated gas usage: ~500K-1M depending on operations
+     * @dev Sequentially executes fee pulling, ETH bridging, and token bridging (≈500k–1M gas depending on workload)
      */
     function run() external {
         _validateSetup();

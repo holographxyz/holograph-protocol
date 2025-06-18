@@ -50,16 +50,11 @@ contract MockAirlock is IAirlock {
         _collectableAmounts[token] -= amount;
 
         if (token == address(0)) {
-            // ETH case - use assembly to avoid triggering receive() function
+            // ETH case - call FeeRouter.receiveFee{value:amount}()
             require(address(this).balance >= amount, "MockAirlock: Insufficient ETH");
 
-            // Use assembly for direct ETH transfer without triggering receive()
-            assembly {
-                let success := call(gas(), to, amount, 0, 0, 0, 0)
-                if iszero(success) {
-                    revert(0, 0)
-                }
-            }
+            (bool ok, ) = to.call{value: amount}(abi.encodeWithSignature("receiveFee()"));
+            require(ok, "MockAirlock: ETH transfer failed");
         } else {
             // ERC-20 case
             require(IERC20(token).balanceOf(address(this)) >= amount, "MockAirlock: Insufficient token balance");

@@ -58,11 +58,10 @@ contract HolographFactory is Ownable, Pausable, ReentrancyGuard, ILZReceiverV2 {
     /* -------------------------------------------------------------------------- */
     /**
      * @notice Initialize the HolographFactory with required contract addresses
-     * @dev Validates all addresses to prevent deployment with zero addresses
+     * @dev Validates all provided addresses to ensure the factory is deployed with valid dependencies
      * @param _endpoint LayerZero V2 endpoint for cross-chain messaging
      * @param _airlock Doppler Airlock contract for token creation
      * @param _feeRouter FeeRouter contract for fee processing and distribution
-     * @custom:security All addresses must be non-zero for proper functionality
      */
     constructor(address _endpoint, address _airlock, address _feeRouter) Ownable(msg.sender) {
         if (_endpoint == address(0) || _airlock == address(0) || _feeRouter == address(0)) revert ZeroAddress();
@@ -76,10 +75,9 @@ contract HolographFactory is Ownable, Pausable, ReentrancyGuard, ILZReceiverV2 {
     /* -------------------------------------------------------------------------- */
     /**
      * @notice Launch a new omnichain token via Doppler Airlock
-     * @dev Aligns with Doppler's free token creation model - no launch fees required
+     * @dev Aligns with Doppler's free token creation model – no launch fees required; guarded by nonReentrant and whenNotPaused modifiers
      * @param params Doppler CreateParams containing token configuration
      * @return asset Address of the newly created token
-     * @custom:security Protected by nonReentrant and whenNotPaused modifiers
      */
     function createToken(CreateParams calldata params) external nonReentrant whenNotPaused returns (address asset) {
         // Set FeeRouter as integrator for Doppler trading fee collection
@@ -95,13 +93,12 @@ contract HolographFactory is Ownable, Pausable, ReentrancyGuard, ILZReceiverV2 {
     /* -------------------------------------------------------------------------- */
     /**
      * @notice Bridge tokens to destination chain and mint to recipient
-     * @dev Sends LayerZero message with mint instruction to destination factory
+     * @dev Sends LayerZero message with mint instruction to destination factory; nonReentrant to block re-entrancy attacks
      * @param dstEid Destination chain endpoint ID
      * @param token Token contract address to mint on destination
      * @param recipient Address to receive minted tokens on destination
      * @param amount Amount of tokens to mint on destination
      * @param options LayerZero execution options (gas limits, etc.)
-     * @custom:security Protected by nonReentrant modifier
      */
     function bridgeToken(
         uint32 dstEid,
@@ -129,9 +126,8 @@ contract HolographFactory is Ownable, Pausable, ReentrancyGuard, ILZReceiverV2 {
     /* -------------------------------------------------------------------------- */
     /**
      * @notice Handle incoming LayerZero messages for token minting
-     * @dev Decodes message and mints tokens to specified recipient
+     * @dev Decodes message and mints tokens to specified recipient; rejects calls from any address other than the configured LayerZero endpoint
      * @param msg_ Encoded message containing mint instruction and parameters
-     * @custom:security Only accepts messages from LayerZero endpoint
      */
     function lzReceive(uint32, bytes calldata msg_, address, bytes calldata) external payable override {
         if (msg.sender != address(lzEndpoint)) revert NotEndpoint();
@@ -145,18 +141,14 @@ contract HolographFactory is Ownable, Pausable, ReentrancyGuard, ILZReceiverV2 {
     /*                                  Admin                                     */
     /* -------------------------------------------------------------------------- */
     /**
-     * @notice Emergency pause of factory operations
-     * @dev Prevents new token launches during emergencies
-     * @custom:security Only owner can pause factory operations
+     * @notice Emergency circuit breaker to halt token launches and bridging; only callable by owner
      */
     function pause() external onlyOwner {
         _pause();
     }
 
     /**
-     * @notice Resume factory operations after emergency pause
-     * @dev Re-enables token launches and bridging
-     * @custom:security Only owner can unpause factory operations
+     * @notice Resumes normal operations after emergency pause; only callable by owner
      */
     function unpause() external onlyOwner {
         _unpause();

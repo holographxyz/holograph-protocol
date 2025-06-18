@@ -144,8 +144,7 @@ contract FeeRouterTest is Test {
 
         // User pays protocol fee in ETH on Base network (using receive function)
         vm.prank(user);
-        (bool success,) = address(feeRouterBase).call{value: TEST_FEE_AMOUNT_ETH}("");
-        require(success, "ETH transfer failed");
+        feeRouterBase.receiveFee{value: TEST_FEE_AMOUNT_ETH}();
 
         // Verify ETH fee was sliced correctly (single-slice model)
         // FeeRouter keeps 1.5% for protocol, 98.5% goes to treasury
@@ -227,8 +226,7 @@ contract FeeRouterTest is Test {
 
         // User pays 0.01 ETH protocol fee on Base
         vm.prank(user);
-        (bool success,) = address(feeRouterBase).call{value: TEST_FEE_AMOUNT_ETH}("");
-        require(success, "ETH transfer failed");
+        feeRouterBase.receiveFee{value: TEST_FEE_AMOUNT_ETH}();
 
         // Bridge ETH to Ethereum and swap to HLG
         // Only protocol fee portion (1.5%) gets bridged: 0.00015 ETH → ~1079 HLG → ~539.5 HLG to stakers
@@ -244,8 +242,7 @@ contract FeeRouterTest is Test {
 
         // Another user pays the same 0.01 ETH protocol fee
         vm.prank(user);
-        (bool success2,) = address(feeRouterBase).call{value: TEST_FEE_AMOUNT_ETH}("");
-        require(success2, "ETH transfer failed");
+        feeRouterBase.receiveFee{value: TEST_FEE_AMOUNT_ETH}();
 
         // Bridge and swap again (same amounts)
         vm.prank(owner);
@@ -299,8 +296,7 @@ contract FeeRouterTest is Test {
         feeRouterBase.unpause();
 
         // Should work again - accept 1 ETH fee
-        (bool success3,) = address(feeRouterBase).call{value: 1 ether}("");
-        require(success3, "ETH transfer failed");
+        feeRouterBase.receiveFee{value: 1 ether}();
     }
 
     function test_SlippageProtection() public {
@@ -308,8 +304,7 @@ contract FeeRouterTest is Test {
 
         // Set up ETH fee to bridge
         vm.prank(user);
-        (bool success,) = address(feeRouterBase).call{value: TEST_FEE_AMOUNT_ETH}("");
-        require(success, "ETH transfer failed");
+        feeRouterBase.receiveFee{value: TEST_FEE_AMOUNT_ETH}();
 
         // Try to bridge with unrealistic minHlg expectation
         // Expecting 15,000,000 HLG per ETH instead of realistic 7,194,245 HLG per ETH
@@ -367,8 +362,7 @@ contract FeeRouterTest is Test {
 
         // Set up ETH fee for bridging
         vm.prank(user);
-        (bool success,) = address(feeRouterBase).call{value: TEST_FEE_AMOUNT_ETH}("");
-        require(success, "ETH transfer failed");
+        feeRouterBase.receiveFee{value: TEST_FEE_AMOUNT_ETH}();
 
         uint256 minGas = 200000;
         // Calculate minimum HLG from protocol fee: 0.00015 ETH * 7,194,245 HLG/ETH / 2 = ~539.5 HLG
@@ -407,8 +401,7 @@ contract FeeRouterTest is Test {
 
         // Send ETH fees and bridge to Ethereum
         vm.prank(user);
-        (bool success,) = address(feeRouterBase).call{value: TEST_FEE_AMOUNT_ETH}("");
-        require(success, "ETH transfer failed");
+        feeRouterBase.receiveFee{value: TEST_FEE_AMOUNT_ETH}();
 
         // Calculate expected HLG amounts (only protocol fee portion gets swapped)
         // Protocol fee: 0.00015 ETH → ~1079 HLG total → ~539.5 HLG to stakers

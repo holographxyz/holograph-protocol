@@ -117,9 +117,6 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
     /// @notice Emitted when tokens are bridged to remote chain
     event TokenBridged(address indexed token, uint256 amount, uint64 nonce);
 
-    /// @notice Emitted when tokens are received via routeFeeToken
-    event TokenReceived(address indexed sender, address indexed token, uint256 amount);
-
     /// @notice Emitted when tokens are swapped for HLG
     event Swapped(uint256 ethIn, uint256 hlgOut);
 
@@ -140,7 +137,8 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
     /* -------------------------------------------------------------------------- */
     /**
      * @notice Initialize the FeeRouter contract
-     * @dev Sets up all immutable addresses and grants admin role to deployer
+     * @dev Sets up all immutable addresses, grants admin role to deployer, and
+     *      validates critical addresses to prevent deployment errors
      * @param _endpoint LayerZero V2 endpoint address
      * @param _remoteEid Remote chain endpoint ID for cross-chain messaging
      * @param _stakingPool StakingRewards contract address (zero on non-Ethereum chains)
@@ -148,7 +146,6 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
      * @param _weth WETH9 contract address (zero on non-Ethereum chains)
      * @param _swapRouter Uniswap V3 SwapRouter address (zero on non-Ethereum chains)
      * @param _treasury Initial treasury address for fee collection
-     * @custom:security Validates critical addresses to prevent deployment errors
      */
     constructor(
         address _endpoint,
@@ -174,49 +171,40 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
     }
 
     /* -------------------------------------------------------------------------- */
-    /*                                Fee Intake                                  */
-    /* -------------------------------------------------------------------------- */
-
-    /**
-     * @notice Route ERC-20 token fees through the system
-     * @dev Transfers tokens from sender and processes through single-slice model
-     * @param token ERC-20 token contract address
-     * @param amount Token amount to transfer and process
-     * @custom:security Protected by whenNotPaused modifier
-     */
-    function routeFeeToken(address token, uint256 amount) external whenNotPaused {
-        if (token == address(0)) revert ZeroAddress();
-        if (amount == 0) revert ZeroAmount();
-
-        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
-        emit TokenReceived(msg.sender, token, amount);
-        _takeAndSlice(token, amount);
-    }
-
-    /* -------------------------------------------------------------------------- */
     /*                           Integrator Pull (Keeper)                        */
     /* -------------------------------------------------------------------------- */
 
     /**
      * @notice Collect accumulated fees from a Doppler Airlock
-     * @dev Keeper function to pull integrator fees from completed auctions
+     * @dev Keeper-only function that pulls integrator fees from completed auctions
      * @param airlock Airlock contract address
      * @param token Token contract address
      * @param amt Amount to collect
-     * @custom:security Restricted to KEEPER_ROLE addresses
      */
-    function collectAirlockFees(address airlock, address token, uint256 amt) external onlyRole(KEEPER_ROLE) {
+    function collectAirlockFees(
+        address airlock,
+        address token,
+        uint256 amt
+    ) external onlyRole(KEEPER_ROLE) nonReentrant {
         if (airlock == address(0)) revert ZeroAddress();
         if (amt == 0) revert ZeroAmount();
 
+        uint256 balanceBefore;
+        if (token == address(0)) {
+            balanceBefore = address(this).balance;
+        } else {
+            balanceBefore = IERC20(token).balanceOf(address(this));
+        }
+
         IAirlock(airlock).collectIntegratorFees(address(this), token, amt);
 
-        // For ERC-20 tokens, we need to process them since receive() only handles ETH
         if (token != address(0)) {
-            _takeAndSlice(token, amt);
+            uint256 balanceAfter = IERC20(token).balanceOf(address(this));
+            uint256 received = balanceAfter - balanceBefore;
+            if (received > 0) {
+                _takeAndSlice(token, received);
+            }
         }
-        // For ETH (token == address(0)), the receive() function will automatically
-        // call _takeAndSlice() when the ETH is transferred from the airlock
     }
 
     /* -------------------------------------------------------------------------- */
@@ -296,10 +284,9 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
 
     /**
      * @notice Bridge accumulated ETH to remote chain for HLG conversion
-     * @dev Protected by dust threshold to prevent uneconomical transactions
+     * @dev Keeper-only; enforces dust threshold to avoid uneconomical transactions
      * @param minGas Minimum gas units for lzReceive execution on destination
      * @param minHlg Minimum HLG tokens expected from swap (slippage protection)
-     * @custom:security Restricted to KEEPER_ROLE only
      */
     function bridge(uint256 minGas, uint256 minHlg) external onlyRole(KEEPER_ROLE) nonReentrant {
         uint256 bal = address(this).balance;
@@ -316,11 +303,10 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
 
     /**
      * @notice Bridge accumulated ERC-20 tokens to remote chain
-     * @dev Handles token approval and LayerZero messaging for cross-chain transfer
+     * @dev Keeper-only; handles token approval and LayerZero messaging for cross-chain transfer
      * @param token ERC-20 token contract address to bridge
      * @param minGas Minimum gas units for lzReceive execution on destination
      * @param minHlg Minimum HLG tokens expected from swap (slippage protection)
-     * @custom:security Restricted to KEEPER_ROLE only
      */
     function bridgeToken(address token, uint256 minGas, uint256 minHlg) external onlyRole(KEEPER_ROLE) nonReentrant {
         uint256 bal = IERC20(token).balanceOf(address(this));
@@ -343,10 +329,9 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
 
     /**
      * @notice Handle incoming protocol fees from Base chain
-     * @dev Processes bridged tokens through local HLG swap and burn/stake
+     * @dev Processes bridged tokens through local HLG swap/burn/stake and verifies the caller is a trusted remote
      * @param srcEid Source chain endpoint ID
      * @param message Encoded token, amount, and slippage protection data
-     * @custom:security Validates trusted remote before processing
      */
     function lzReceive(uint32 srcEid, bytes calldata message, address, bytes calldata) external payable override {
         if (msg.sender != address(lzEndpoint)) revert NotEndpoint();
@@ -598,7 +583,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
      * @notice Set trusted remote address for cross-chain messaging
      * @param eid Remote chain endpoint ID
      * @param remote Trusted contract address on remote chain (as bytes32)
-     * @custom:security Only owner can modify trusted remotes
+     * @dev Only callable by the contract owner
      */
     function setTrustedRemote(uint32 eid, bytes32 remote) external onlyOwner {
         trustedRemotes[eid] = remote;
@@ -608,7 +593,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
     /**
      * @notice Update treasury address (admin function)
      * @param newTreasury The new treasury address
-     * @custom:security Critical admin function - validates non-zero address
+     * @dev Validates non-zero address; only callable by owner
      */
     function setTreasury(address newTreasury) external onlyOwner {
         if (newTreasury == address(0)) revert ZeroAddress();
@@ -618,8 +603,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
 
     /**
      * @notice Pause the contract
-     * @dev Emergency circuit breaker to halt operations
-     * @custom:security Only owner can pause contract operations
+     * @dev Emergency circuit breaker to halt operations; only callable by owner
      */
     function pause() external onlyOwner {
         _pause();
@@ -627,8 +611,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
 
     /**
      * @notice Unpause the contract
-     * @dev Resume normal operations after emergency pause
-     * @custom:security Only owner can unpause contract operations
+     * @dev Resume normal operations after emergency pause; only callable by owner
      */
     function unpause() external onlyOwner {
         _unpause();
@@ -667,22 +650,15 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
 
     /**
      * @notice Receive ETH fees and process through single-slice model
-     * @dev Main entry point for fee collection from HolographFactory
-     * @custom:security Protected by whenNotPaused modifier
+     * @dev Main entry point for fee collection from HolographFactory; reverts while contract is paused
      */
     function receiveFee() external payable whenNotPaused {
         if (msg.value == 0) revert ZeroAmount();
         _takeAndSlice(address(0), msg.value);
     }
 
-    /**
-     * @notice Accept ETH transfers and process through fee slicing
-     * @dev Automatically processes received ETH through the single-slice model
-     */
+    /// @dev Reject direct ETH transfers – use receiveFee()
     receive() external payable {
-        if (msg.value > 0) {
-            _takeAndSlice(address(0), msg.value);
-        }
-        // No pause modifier to allow emergency fee processing
+        revert("Use receiveFee()");
     }
 }

@@ -34,13 +34,6 @@ interface IFeeRouter {
     function receiveFee() external payable;
 
     /**
-     * @notice Route ERC-20 token fees through the system
-     * @param token ERC-20 token contract address
-     * @param amt Amount of tokens to process
-     */
-    function routeFeeToken(address token, uint256 amt) external;
-
-    /**
      * @notice Pull accumulated fees from Doppler Airlock contracts
      * @param airlock Airlock contract address to pull fees from
      * @param token Token address (address(0) for ETH)
