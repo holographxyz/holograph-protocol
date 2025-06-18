@@ -2,7 +2,7 @@
 
 > **Audience:** DevOps / Treasury / Protocol Ops teams who operate the Holograph deployment on Base (fee origin) and Ethereum (fee destination).
 >
-> **Last updated:** 2025-06-18
+> **Last updated:** 2025-06-18 (rev.1 – refactor alignment)
 
 ---
 
@@ -21,7 +21,7 @@
 
 - **Operations critical path:**
   - Migration events (`Airlock.Migrate`) create _collectable_ integrator balances.
-  - A **keeper bot** (or manual operator) must periodically call `FeeRouter.collectAirlockFees()` then optionally `bridge()` / `bridgeToken()` once balances exceed thresholds.
+  - A **keeper bot** (or manual operator) must periodically call `FeeRouter.collectAirlockFees()` then optionally `bridge()` / `bridgeERC20()` once balances exceed thresholds.
 
 ---
 
@@ -40,7 +40,7 @@
 └──────────────────────────────┘               │ keeper pull
                                                ▼
 ┌──────────────────────────────┐ 1.5 %  ┌─────────────────────┐   98.5 %
-│  FeeRouter._takeAndSlice()   │───────▶│   Protocol bucket   │──────────▶ Treasury
+│  FeeRouter._splitFee()       │───────▶│   Protocol bucket   │──────────▶ Treasury
 └──────────────────────────────┘        └─────────────────────┘               │
                                            │ keeper bridge                    │
                                            ▼                                  ▼
@@ -54,20 +54,20 @@
 | **1. Accrual**             | Every swap during an active auction    | Fee deltas recorded in `Doppler.state.feesAccrued` (no transfer yet)                                                                                                                                                                                                                                             |
 | **2. Migration**           | Once sale ends or proceeds cap reached | `Airlock.migrate()` empties liquidity, calls `_handleFees()` twice (token0 & token1). Calculation:<br>`protocolLp = fees / 20` (5 %)<br>`protocolProceeds = (balance-fees) / 1000` (0.1 % proceeds)<br>`protocolFees = max(protocolLp, protocolProceeds)` capped at `fees/5` (20 %). Remaining = integratorFees. |
 | **3. Integrator balance**  | Instant                                | `getIntegratorFees[feeRouter][token] += integratorFees`. Still held _inside Airlock_.                                                                                                                                                                                                                            |
-| **4. Collection**          | Keeper / admin                         | `FeeRouter.collectAirlockFees(airlock, token, amt)` pulls funds to FeeRouter and immediately calls `_takeAndSlice()`.                                                                                                                                                                                            |
+| **4. Collection**          | Keeper / admin                         | `FeeRouter.collectAirlockFees(airlock, token, amt)` pulls funds to FeeRouter and immediately calls `_splitFee()`.                                                                                                                                                                                                |
 | **5. Slice**               | same tx                                | `HOLO_FEE_BPS = 150` → 1.5 % protocol bucket, 98.5 % treasury forwarded.                                                                                                                                                                                                                                         |
-| **6. Bridge & Conversion** | Keeper / admin                         | Periodically `bridge()` (native) or `bridgeToken()` (ERC-20). LayerZero sends payload to Ethereum FeeRouter that swaps to HLG then `burn+stake`.                                                                                                                                                                 |
+| **6. Bridge & Conversion** | Keeper / admin                         | Periodically `bridge()` (native) or `bridgeERC20()` (ERC-20). LayerZero sends payload to Ethereum FeeRouter that swaps to HLG then `burn+stake`.                                                                                                                                                                 |
 
 ---
 
 ## 2. Contract & Role Map
 
-| Contract           | Chain                | Purpose                                                                               | Key Functions                                         |
-| ------------------ | -------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| `HolographFactory` | Base (and other L2s) | Token launchpad; writes `integrator = FeeRouter` into `CreateParams`.                 | `createToken()`                                       |
-| `Doppler`          | Base                 | Uniswap V4 hook implementing the Dutch auction.                                       | swaps, `state.feesAccrued`                            |
-| `Airlock`          | Base                 | Migration orchestrator + fee splitter.                                                | `_handleFees()`, `collectIntegratorFees()`            |
-| `FeeRouter`        | Base & ETH           | Central fee handler, splitter, bridging, swap-to-HLG. Requires `KEEPER_ROLE` for ops. | `collectAirlockFees()`, `_takeAndSlice()`, `bridge()` |
+| Contract           | Chain                | Purpose                                                                               | Key Functions                                                      |
+| ------------------ | -------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `HolographFactory` | Base (and other L2s) | Token launchpad; writes `integrator = FeeRouter` into `CreateParams`.                 | `createToken()`                                                    |
+| `Doppler`          | Base                 | Uniswap V4 hook implementing the Dutch auction.                                       | swaps, `state.feesAccrued`                                         |
+| `Airlock`          | Base                 | Migration orchestrator + fee splitter.                                                | `_handleFees()`, `collectIntegratorFees()`                         |
+| `FeeRouter`        | Base & ETH           | Central fee handler, splitter, bridging, swap-to-HLG. Requires `KEEPER_ROLE` for ops. | `collectAirlockFees()`, `_splitFee()`, `bridge()`, `bridgeERC20()` |
 
 **Roles**
 
@@ -90,7 +90,7 @@ cast send $FEEROUTER "grantRole(bytes32,address)" $(cast keccak "KEEPER_ROLE") $
 | ------------------------------------ | ----------------------------------------------------------- | -------------------------------------------- |
 | **Pull fees** (`collectAirlockFees`) | **Hourly** cron OR event-driven on `Airlock.Migrate`        | Limits idle capital, minimises gas overhead. |
 | **Bridge native** (`bridge`)         | When FeeRouter ETH ≥ `MIN_BRIDGE_VALUE` (0.01 ETH) OR daily | ETH is cheapest to bridge; frequent is fine. |
-| **Bridge tokens** (`bridgeToken`)    | When balance ≥ $500 USD equiv OR every 6-12 h               | Avoids high LZ fees for low amounts.         |
+| **Bridge tokens** (`bridgeERC20`)    | When balance ≥ $500 USD equiv OR every 6-12 h               | Avoids high LZ fees for low amounts.         |
 | **Burn / stake confirmation**        | Weekly                                                      | Ensure LZ messages delivered & processed.    |
 
 > **Note:** `script/KeeperPullAndBridge.s.sol` already implements balance-aware bridging logic—adjust thresholds to fit production economics.
@@ -113,6 +113,9 @@ cast send $FEEROUTER "collectAirlockFees(address,address,uint256)" \
 
 # Bridge accumulated ETH
 cast send $FEEROUTER "bridge(uint256,uint256)" 250000 0 --private-key $KEEPER_PK --rpc-url $BASE_RPC
+
+# Bridge accumulated USDC (example)
+cast send $FEEROUTER "bridgeERC20(address,uint256,uint256)" $USDC 250000 0 --private-key $KEEPER_PK --rpc-url $BASE_RPC
 ```
 
 ---

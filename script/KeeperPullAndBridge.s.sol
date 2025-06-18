@@ -118,7 +118,7 @@ contract KeeperPullAndBridge is Script {
         address[] memory tokens = _getKnownTokens();
 
         for (uint i = 0; i < tokens.length; i++) {
-            try FEE_ROUTER.bridgeToken(tokens[i], 200_000, 0) {
+            try FEE_ROUTER.bridgeERC20(tokens[i], 200_000, 0) {
                 console.log("Bridged token:", tokens[i]);
             } catch {
                 // Continue on failure

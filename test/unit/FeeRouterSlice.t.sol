@@ -226,15 +226,15 @@ contract FeeRouterSliceTest is Test {
         assertEq(mockEndpoint.lastValue(), amount);
     }
 
-    function testBridgeToken_OnlyKeeper() public {
+    function testBridgeERC20_OnlyKeeper() public {
         MockERC20 token = new MockERC20("Test", "TEST");
 
         vm.expectRevert();
         vm.prank(alice);
-        feeRouter.bridgeToken(address(token), 200_000, 0);
+        feeRouter.bridgeERC20(address(token), 200_000, 0);
     }
 
-    function testBridgeToken_Success() public {
+    function testBridgeERC20_Success() public {
         // Setup: create mock ERC20 and fund FeeRouter
         MockERC20 token = new MockERC20("TestToken", "TEST");
         uint256 amount = 100 * 10 ** 18; // 100 tokens
@@ -247,7 +247,7 @@ contract FeeRouterSliceTest is Test {
 
         // Should bridge successfully
         vm.prank(keeper);
-        feeRouter.bridgeToken(address(token), 200_000, 0);
+        feeRouter.bridgeERC20(address(token), 200_000, 0);
 
         // Verify token balance is transferred (mocked behavior)
         // In real scenario, tokens would be sent via LayerZero

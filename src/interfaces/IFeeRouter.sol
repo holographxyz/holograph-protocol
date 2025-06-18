@@ -54,7 +54,7 @@ interface IFeeRouter {
      * @param minGas Minimum gas units for lzReceive execution on destination
      * @param minHlg Minimum HLG tokens expected from swap (slippage protection)
      */
-    function bridgeToken(address token, uint256 minGas, uint256 minHlg) external;
+    function bridgeERC20(address token, uint256 minGas, uint256 minHlg) external;
 
     function setTrustedRemote(uint32 eid, bytes32 remote) external;
     function setTreasury(address newTreasury) external;

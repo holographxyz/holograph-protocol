@@ -40,6 +40,7 @@ import "./interfaces/IWETH9.sol";
 import "./interfaces/ISwapRouter.sol";
 import "./interfaces/IStakingRewards.sol";
 import "./interfaces/IAirlock.sol";
+import "./interfaces/IUniswapV3Factory.sol";
 
 /**
  * @title FeeRouter
@@ -85,6 +86,9 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
 
     /// @notice Uniswap V3 swap router for token exchanges
     ISwapRouter public immutable swapRouter;
+
+    /// @notice Cached Uniswap V3 factory (saves a call per pool probe)
+    IUniswapV3Factory private immutable _factory;
 
     /* -------------------------------------------------------------------------- */
     /*                                 Storage                                    */
@@ -164,7 +168,14 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
         stakingPool = IStakingRewards(_stakingPool);
         HLG = IERC20(_hlg);
         WETH = IWETH9(_weth);
+
+        // Cache swap router and factory only if provided (Ethereum deployments)
         swapRouter = ISwapRouter(_swapRouter);
+        if (_swapRouter != address(0)) {
+            _factory = swapRouter.factory();
+        } else {
+            _factory = IUniswapV3Factory(address(0));
+        }
         treasury = _treasury;
 
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -202,7 +213,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
             uint256 balanceAfter = IERC20(token).balanceOf(address(this));
             uint256 received = balanceAfter - balanceBefore;
             if (received > 0) {
-                _takeAndSlice(token, received);
+                _splitFee(token, received);
             }
         }
     }
@@ -212,70 +223,68 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
     /* -------------------------------------------------------------------------- */
 
     /**
-     * @notice Core fee processing: 1.5% protocol, 98.5% treasury
-     * @dev Processes all fee types through unified slicing mechanism
+     * @notice New unified fee splitter (1.5% protocol / 98.5% treasury)
      * @param token Token address (address(0) for ETH)
-     * @param amount Total amount to slice
+     * @param amount Total amount to split
      */
-    function _takeAndSlice(address token, uint256 amount) internal {
+    function _splitFee(address token, uint256 amount) internal {
         if (amount == 0) revert ZeroAmount();
 
-        // Calculate split: 1.5% protocol, 98.5% treasury
         uint256 protocolFee = (amount * HOLO_FEE_BPS) / 10_000;
         uint256 treasuryFee = amount - protocolFee;
 
-        // Send treasury portion immediately
+        // Forward treasury share immediately
         if (treasuryFee > 0) {
             if (token == address(0)) {
-                // ETH transfer
                 payable(treasury).transfer(treasuryFee);
             } else {
-                // ERC-20 transfer
                 IERC20(token).safeTransfer(treasury, treasuryFee);
             }
         }
 
-        // Handle protocol fee based on chain
-        if (protocolFee > 0) {
-            if (address(HLG) != address(0)) {
-                // Ethereum: Process locally (wrap → swap → burn/stake)
-                _processProtocolFeeLocal(token, protocolFee);
-            }
-            // On non-Ethereum chains (e.g., Base) the protocol fees simply
-            // remain in the contract balance. A keeper will later call the
-            // public bridge functions to move those funds.
+        // Convert protocol share to HLG on Ethereum – accumulate on other chains
+        if (protocolFee > 0 && address(HLG) != address(0)) {
+            _convertToHLG(token, protocolFee, 0);
         }
 
         emit SlicePulled(msg.sender, token, protocolFee, treasuryFee);
     }
 
+    // Legacy shim to keep the ABI unchanged for internal callers (will be removed later)
+    function _takeAndSlice(address token, uint256 amount) internal {
+        _splitFee(token, amount);
+    }
+
     /**
-     * @notice Process protocol fee locally (Ethereum chain)
-     * @dev Wraps ETH to WETH, swaps to HLG, then burns 50% and stakes 50%
-     * @param token Token address (address(0) for ETH)
-     * @param amount Protocol fee amount to process
+     * @notice Convert arbitrary token/ETH into HLG and distribute (burn + stake)
+     * @param token  Input token (address(0) for native ETH)
+     * @param amount Amount of the input token
+     * @param minOut Minimum HLG expected from final swap (0 to ignore)
      */
-    function _processProtocolFeeLocal(address token, uint256 amount) internal {
-        if (token == address(0)) {
-            // ETH → WETH → HLG → Burn/Stake
-            WETH.deposit{value: amount}();
-            uint256 hlgOut = _swapForHLG(address(WETH), amount);
-            _burnAndStake(hlgOut);
-        } else if (token == address(WETH)) {
-            // WETH → HLG → Burn/Stake
-            uint256 hlgOut = _swapForHLG(token, amount);
-            _burnAndStake(hlgOut);
-        } else {
-            // ERC-20 → WETH → HLG → Burn/Stake
-            if (_poolExists(token, address(WETH))) {
-                uint256 wethOut = _swapSingle(token, address(WETH), amount, 0);
-                uint256 hlgOut = _swapForHLG(address(WETH), wethOut);
-                _burnAndStake(hlgOut);
-            } else {
-                // No direct route; let the balance accumulate to be bridged
-                // later by a keeper via the public bridge/bridgeToken methods.
-            }
+    function _convertToHLG(address token, uint256 amount, uint256 minOut) internal {
+        if (token == address(HLG)) {
+            _distribute(amount);
+            return;
         }
+
+        // Step (a): wrap native ETH → WETH
+        if (token == address(0)) {
+            WETH.deposit{value: amount}();
+            token = address(WETH);
+        }
+
+        // Step (b): swap non-WETH tokens into WETH if a pool exists, otherwise give up
+        if (token != address(WETH)) {
+            if (!_poolExists(token, address(WETH))) return; // accumulate to be bridged later
+            amount = _swapSingle(token, address(WETH), amount, 0);
+            token = address(WETH);
+        }
+
+        // Step (c): WETH → HLG (must have a pool or revert)
+        if (!_poolExists(address(WETH), address(HLG))) revert NoRoute();
+        amount = _swapSingle(address(WETH), address(HLG), amount, minOut);
+
+        _distribute(amount);
     }
 
     /* -------------------------------------------------------------------------- */
@@ -308,7 +317,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
      * @param minGas Minimum gas units for lzReceive execution on destination
      * @param minHlg Minimum HLG tokens expected from swap (slippage protection)
      */
-    function bridgeToken(address token, uint256 minGas, uint256 minHlg) external onlyRole(KEEPER_ROLE) nonReentrant {
+    function bridgeERC20(address token, uint256 minGas, uint256 minHlg) external onlyRole(KEEPER_ROLE) nonReentrant {
         uint256 bal = IERC20(token).balanceOf(address(this));
         if (bal < MIN_BRIDGE_VALUE) return;
 
@@ -316,7 +325,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
         IERC20(token).forceApprove(address(lzEndpoint), bal);
 
         uint64 n = ++nonce[remoteEid];
-        bytes memory payload = abi.encode(token, minHlg);
+        bytes memory payload = abi.encode(token, bal, minHlg);
         bytes memory options = _buildLzReceiveOption(minGas);
 
         lzEndpoint.send(remoteEid, payload, options);
@@ -334,84 +343,23 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
      * @param message Encoded token, amount, and slippage protection data
      */
     function lzReceive(uint32 srcEid, bytes calldata message, address, bytes calldata) external payable override {
+        _enforceEndpointAndRemote(srcEid);
+
+        if (message.length == 96) {
+            // (token, amount, minOut)
+            (address token, uint256 amount, uint256 minHlg) = abi.decode(message, (address, uint256, uint256));
+            _convertToHLG(token, amount, minHlg);
+        } else {
+            // Legacy 2-word payload: treat second word as amount, ignore slippage
+            (address token, uint256 amount) = abi.decode(message, (address, uint256));
+            _convertToHLG(token, amount, 0);
+        }
+    }
+
+    /// @notice Shared checks for LayerZero sender & trusted remote
+    function _enforceEndpointAndRemote(uint32 srcEid) internal view {
         if (msg.sender != address(lzEndpoint)) revert NotEndpoint();
         if (trustedRemotes[srcEid] == bytes32(0)) revert UntrustedRemote();
-
-        // Try new format first (token, amount, minHlg)
-        try this._decodeBridgeMessage(message) returns (address token, uint256 amount, uint256 minHlg) {
-            _processProtocolFeeLocalWithSlippage(token, amount, minHlg);
-        } catch {
-            // Fallback to old format (token, amount) for backward compatibility
-            (address token, uint256 amount) = abi.decode(message, (address, uint256));
-            _processProtocolFeeLocal(token, amount);
-        }
-    }
-
-    /**
-     * @notice Decode bridge message (external function for try/catch)
-     * @param message Encoded message data
-     * @return token Token address
-     * @return amount Token amount
-     * @return minHlg Minimum HLG expected
-     */
-    function _decodeBridgeMessage(
-        bytes calldata message
-    ) external pure returns (address token, uint256 amount, uint256 minHlg) {
-        return abi.decode(message, (address, uint256, uint256));
-    }
-
-    /**
-     * @notice Process protocol fee locally with slippage protection
-     * @param token Token address (address(0) for ETH)
-     * @param amount Protocol fee amount to process
-     * @param minHlg Minimum HLG tokens expected from swap
-     */
-    function _processProtocolFeeLocalWithSlippage(address token, uint256 amount, uint256 minHlg) internal {
-        if (token == address(0)) {
-            // ETH → WETH → HLG → Burn/Stake
-            WETH.deposit{value: amount}();
-            uint256 hlgOut = _swapForHLGWithSlippage(address(WETH), amount, minHlg);
-            _burnAndStake(hlgOut);
-        } else if (token == address(WETH)) {
-            // WETH → HLG → Burn/Stake
-            uint256 hlgOut = _swapForHLGWithSlippage(token, amount, minHlg);
-            _burnAndStake(hlgOut);
-        } else {
-            // ERC-20 → WETH → HLG → Burn/Stake
-            if (_poolExists(token, address(WETH))) {
-                uint256 wethOut = _swapSingle(token, address(WETH), amount, 0);
-                uint256 hlgOut = _swapForHLGWithSlippage(address(WETH), wethOut, minHlg);
-                _burnAndStake(hlgOut);
-            } else {
-                // No direct route; let the balance accumulate to be bridged
-                // later by a keeper via the public bridge/bridgeToken methods.
-            }
-        }
-    }
-
-    /**
-     * @notice Swap tokens for HLG with slippage protection
-     * @param token Input token address
-     * @param amount Input token amount
-     * @param minHlg Minimum HLG tokens expected
-     * @return hlgOut Amount of HLG tokens received
-     */
-    function _swapForHLGWithSlippage(address token, uint256 amount, uint256 minHlg) internal returns (uint256) {
-        address hlgAddr = address(HLG);
-        if (token == hlgAddr) return amount; // Already HLG
-
-        // Try direct swap first
-        if (_poolExists(token, hlgAddr)) {
-            return _swapSingle(token, hlgAddr, amount, minHlg);
-        }
-
-        // Try via WETH if not direct
-        if (token != address(WETH) && _poolExists(token, address(WETH)) && _poolExists(address(WETH), hlgAddr)) {
-            bytes memory path = abi.encodePacked(token, POOL_FEE, address(WETH), POOL_FEE, hlgAddr);
-            return _swapPath(path, amount, minHlg);
-        }
-
-        revert NoRoute();
     }
 
     /* -------------------------------------------------------------------------- */
@@ -511,7 +459,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
      * @dev Implements tokenomics by burning half and staking half for rewards
      * @param hlgAmt Total HLG amount to distribute
      */
-    function _burnAndStake(uint256 hlgAmt) internal {
+    function _distribute(uint256 hlgAmt) internal {
         if (hlgAmt == 0) return;
 
         // Cache HLG and staking pool to reduce SLOADs
@@ -550,11 +498,8 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
      * @return exists True if pool exists with sufficient liquidity
      */
     function _poolExists(address tokenA, address tokenB) internal view returns (bool) {
-        try swapRouter.factory().getPool(tokenA, tokenB, POOL_FEE) returns (address pool) {
-            return pool != address(0);
-        } catch {
-            return false;
-        }
+        if (address(_factory) == address(0)) return false;
+        return _factory.getPool(tokenA, tokenB, POOL_FEE) != address(0);
     }
 
     /**
@@ -654,7 +599,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
      */
     function receiveFee() external payable whenNotPaused {
         if (msg.value == 0) revert ZeroAmount();
-        _takeAndSlice(address(0), msg.value);
+        _splitFee(address(0), msg.value);
     }
 
     /// @dev Reject direct ETH transfers – use receiveFee()
