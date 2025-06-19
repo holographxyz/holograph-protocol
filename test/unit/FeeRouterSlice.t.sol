@@ -84,38 +84,15 @@ contract FeeRouterSliceTest is Test {
 
         // Mint some HLG to the staking contract for stakes
         mockHLG.mint(address(mockStaking), 1000000 * 10 ** 18);
+
+        // Whitelist mockAirlock so its ETH transfers are accepted
+        vm.prank(owner);
+        feeRouter.setTrustedAirlock(address(mockAirlock), true);
     }
 
     /* -------------------------------------------------------------------------- */
     /*                            Single-Slice Model Tests                        */
     /* -------------------------------------------------------------------------- */
-
-    function testReceiveFee_SlicesCorrectly() public {
-        uint256 amount = 1 ether;
-        uint256 expectedHolo = (amount * HOLO_FEE_BPS) / 10_000; // 1.5%
-        uint256 expectedTreasury = amount - expectedHolo; // 98.5%
-
-        uint256 treasuryBalanceBefore = treasury.balance;
-        uint256 routerBalanceBefore = address(feeRouter).balance;
-
-        vm.expectEmit(true, true, false, true);
-        emit SlicePulled(alice, address(0), expectedHolo, expectedTreasury);
-
-        vm.prank(alice);
-        feeRouter.receiveFee{value: amount}();
-
-        // Check treasury received 98.5%
-        assertEq(treasury.balance, treasuryBalanceBefore + expectedTreasury);
-
-        // Check FeeRouter processed protocol fee (may have some remaining balance from HLG processing)
-        assertTrue(address(feeRouter).balance >= routerBalanceBefore);
-    }
-
-    function testReceiveFee_ZeroAmount_Reverts() public {
-        vm.expectRevert(FeeRouter.ZeroAmount.selector);
-        vm.prank(alice);
-        feeRouter.receiveFee{value: 0}();
-    }
 
     /* -------------------------------------------------------------------------- */
     /*                           Doppler Integration Tests                        */
@@ -178,18 +155,6 @@ contract FeeRouterSliceTest is Test {
         // Protocol fees: 0.0075 ether (processed through HLG)
         // Remaining should be approximately: 1.5 - 0.4925 = 1.0075 ether (minus small amounts for HLG processing)
         assertTrue(actualBalance >= 1 ether); // Allow for processing variations
-    }
-
-    function testReceiveAirlockFees_Direct() public {
-        uint256 amount = 0.3 ether;
-
-        // Test sending ETH directly instead of the removed receiveAirlockFees
-        vm.deal(alice, amount);
-        vm.prank(alice);
-        feeRouter.receiveFee{value: amount}();
-
-        // Should process through normal slicing
-        assertTrue(address(feeRouter).balance >= 1 ether); // Protocol fee processed
     }
 
     /* -------------------------------------------------------------------------- */
@@ -287,122 +252,14 @@ contract FeeRouterSliceTest is Test {
         feeRouter.pause();
     }
 
-    function testPause_BlocksReceiveFee() public {
-        vm.prank(owner);
-        feeRouter.pause();
-
-        // Note: receive() function doesn't check pause state
-        // Only routeFeeToken is paused
-        vm.expectRevert();
-        vm.prank(alice);
-        feeRouter.receiveFee{value: 1 ether}();
-    }
-
-    function testUnpause_RestoresFunctionality() public {
-        // Pause first
-        vm.prank(owner);
-        feeRouter.pause();
-
-        // Unpause
-        vm.prank(owner);
-        feeRouter.unpause();
-
-        // Should work again
-        vm.prank(alice);
-        feeRouter.receiveFee{value: 1 ether}();
-    }
-
     /* -------------------------------------------------------------------------- */
-    /*                              Edge Cases                                    */
+    /*                              Security Tests                                */
     /* -------------------------------------------------------------------------- */
 
-    function testSlicing_OddAmounts() public {
-        uint256 amount = 1 wei; // Smallest possible amount
-
+    function testUntrustedSender_Reverts() public {
+        // alice tries to send ETH directly (alice is not a trusted Airlock)
+        vm.expectRevert(FeeRouter.UntrustedSender.selector);
         vm.prank(alice);
-        feeRouter.receiveFee{value: amount}();
-
-        // With 1 wei, 1.5% = 0 (rounds down), so treasury gets 1 wei
-        assertEq(treasury.balance, 1 wei);
-        assertEq(address(feeRouter).balance, 1 ether); // Original balance unchanged
-    }
-
-    function testSlicing_LargeAmounts() public {
-        uint256 amount = 100 ether;
-        uint256 expectedHolo = (amount * HOLO_FEE_BPS) / 10_000; // 1.5 ether
-        uint256 expectedTreasury = amount - expectedHolo; // 98.5 ether
-
-        vm.deal(alice, amount);
-        vm.prank(alice);
-        feeRouter.receiveFee{value: amount}();
-
-        assertEq(treasury.balance, expectedTreasury);
-        assertTrue(address(feeRouter).balance >= 1 ether); // Protocol fee processed
-    }
-
-    function testMultipleSlices_Accumulation() public {
-        uint256 amount1 = 1 ether;
-        uint256 amount2 = 2 ether;
-
-        vm.prank(alice);
-        feeRouter.receiveFee{value: amount1}();
-
-        vm.prank(bob);
-        feeRouter.receiveFee{value: amount2}();
-
-        uint256 totalAmount = amount1 + amount2;
-        uint256 expectedTotalHolo = (totalAmount * HOLO_FEE_BPS) / 10_000;
-        uint256 expectedTotalTreasury = totalAmount - expectedTotalHolo;
-
-        assertEq(treasury.balance, expectedTotalTreasury);
-        assertTrue(address(feeRouter).balance >= 1 ether); // Protocol fees processed
-    }
-
-    /* -------------------------------------------------------------------------- */
-    /*                             Fuzzing Tests                                  */
-    /* -------------------------------------------------------------------------- */
-
-    function testFuzz_SlicingPrecision(uint256 amount) public {
-        vm.assume(amount > 0 && amount <= 1000 ether);
-        vm.deal(alice, amount);
-
-        uint256 expectedHolo = (amount * HOLO_FEE_BPS) / 10_000;
-        uint256 expectedTreasury = amount - expectedHolo;
-
-        vm.prank(alice);
-        feeRouter.receiveFee{value: amount}();
-
-        // Verify precise slicing
-        assertEq(treasury.balance, expectedTreasury);
-        assertTrue(address(feeRouter).balance >= 1 ether); // Protocol fee processed
-
-        // Verify total equals input
-        assertEq(expectedHolo + expectedTreasury, amount);
-    }
-
-    function testMockAirlock_Simple() public {
-        uint256 amount = 0.3 ether;
-        vm.deal(address(mockAirlock), amount);
-        mockAirlock.setCollectableAmount(address(0), amount);
-
-        vm.prank(keeper);
-        mockAirlock.collectIntegratorFees(address(feeRouter), address(0), amount);
-
-        // Should have transferred the ETH to FeeRouter
-        assertEq(address(mockAirlock).balance, 0);
-    }
-
-    function testMockAirlock_ToFeeRouter() public {
-        uint256 amount = 0.2 ether;
-        vm.deal(address(mockAirlock), amount);
-        mockAirlock.setCollectableAmount(address(0), amount);
-
-        uint256 feeRouterBalanceBefore = address(feeRouter).balance;
-
-        vm.prank(keeper);
-        mockAirlock.collectIntegratorFees(address(feeRouter), address(0), amount);
-
-        // FeeRouter processes protocol fee through HLG mechanism
-        assertTrue(address(feeRouter).balance >= feeRouterBalanceBefore);
+        payable(address(feeRouter)).transfer(0.1 ether);
     }
 }

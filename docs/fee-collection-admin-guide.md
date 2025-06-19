@@ -62,12 +62,12 @@
 
 ## 2. Contract & Role Map
 
-| Contract           | Chain                | Purpose                                                                               | Key Functions                                                      |
-| ------------------ | -------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `HolographFactory` | Base (and other L2s) | Token launchpad; writes `integrator = FeeRouter` into `CreateParams`.                 | `createToken()`                                                    |
-| `Doppler`          | Base                 | Uniswap V4 hook implementing the Dutch auction.                                       | swaps, `state.feesAccrued`                                         |
-| `Airlock`          | Base                 | Migration orchestrator + fee splitter.                                                | `_handleFees()`, `collectIntegratorFees()`                         |
-| `FeeRouter`        | Base & ETH           | Central fee handler, splitter, bridging, swap-to-HLG. Requires `KEEPER_ROLE` for ops. | `collectAirlockFees()`, `_splitFee()`, `bridge()`, `bridgeERC20()` |
+| Contract           | Chain                | Purpose                                                                            | Key Functions                                                                             |
+| ------------------ | -------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `HolographFactory` | Base (and other L2s) | Token launchpad; writes `integrator = FeeRouter` into `CreateParams`.              | `createToken()`                                                                           |
+| `Doppler`          | Base                 | Uniswap V4 hook implementing the Dutch auction.                                    | swaps, `state.feesAccrued`                                                                |
+| `Airlock`          | Base                 | Migration orchestrator + fee splitter.                                             | `_handleFees()`, `collectIntegratorFees()`                                                |
+| `FeeRouter`        | Base & ETH           | Central fee handler with trusted Airlock security. Requires `KEEPER_ROLE` for ops. | `collectAirlockFees()`, `_splitFee()`, `bridge()`, `bridgeERC20()`, `setTrustedAirlock()` |
 
 **Roles**
 
@@ -78,6 +78,18 @@ Grant a new keeper:
 
 ```bash
 cast send $FEEROUTER "grantRole(bytes32,address)" $(cast keccak "KEEPER_ROLE") $KEEPER --private-key $OWNER_PK --rpc-url $BASE_RPC
+```
+
+**Security: Trusted Airlock Management**
+
+FeeRouter implements a trusted Airlock whitelist for security:
+
+```bash
+# Whitelist a new Airlock contract
+cast send $FEEROUTER "setTrustedAirlock(address,bool)" $AIRLOCK_ADDRESS true --private-key $OWNER_PK --rpc-url $BASE_RPC
+
+# Remove Airlock from trusted list
+cast send $FEEROUTER "setTrustedAirlock(address,bool)" $AIRLOCK_ADDRESS false --private-key $OWNER_PK --rpc-url $BASE_RPC
 ```
 
 ---
@@ -142,6 +154,7 @@ Set up dashboards (Dune, etc.) for critical onchain events:
 | Symptom                                                | Likely Cause                                  | Fix                                                               |
 | ------------------------------------------------------ | --------------------------------------------- | ----------------------------------------------------------------- |
 | `AccessControl: account … missing role`                | Keeper address not granted                    | Owner grants `KEEPER_ROLE`.                                       |
+| `UntrustedSender()` revert on ETH transfer             | Airlock not whitelisted                       | Owner calls `setTrustedAirlock(airlock, true)`.                   |
 | `underflow/overflow` revert on `collectIntegratorFees` | Requested amount > available                  | Query `getIntegratorFees` first; pull exact or lower amt.         |
 | Bridge tx stuck in LZ                                  | Wrong `remoteEid` or `trustedRemotes` not set | Owner sets `trustedRemotes` on both chains.                       |
 | Insufficient HLG output on swap                        | Pool liquidity thin                           | Increase `minHlg` arg in bridge payload or bridge larger batches. |

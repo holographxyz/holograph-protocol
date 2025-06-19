@@ -11,6 +11,7 @@ import {MockHLG} from "../mock/MockHLG.sol";
 import {MockLZEndpoint} from "../mock/MockLZEndpoint.sol";
 import {MockWETH} from "../mock/MockWETH.sol";
 import {MockSwapRouter, ISwapRouter} from "../mock/MockSwapRouter.sol";
+import {MockAirlock} from "../mock/MockAirlock.sol";
 
 contract FeeRouterTest is Test {
     // Contracts
@@ -24,6 +25,7 @@ contract FeeRouterTest is Test {
     MockWETH public weth;
     MockHLG public hlg;
     MockSwapRouter public swapRouter;
+    MockAirlock public airlock;
 
     // Test accounts
     address public user = vm.addr(1);
@@ -54,6 +56,7 @@ contract FeeRouterTest is Test {
         weth = new MockWETH();
         hlg = new MockHLG();
         swapRouter = new MockSwapRouter();
+        airlock = new MockAirlock();
 
         // Configure MockSwapRouter with correct exchange rate and output token
         swapRouter.setExchangeRate(WETH_TO_HLG_RATE * 1e18); // Convert to per-wei rate
@@ -96,6 +99,9 @@ contract FeeRouterTest is Test {
         feeRouterBase.setTrustedRemote(ETH_EID, bytes32(uint256(uint160(address(feeRouterEth)))));
         feeRouterEth.setTrustedRemote(BASE_EID, bytes32(uint256(uint160(address(feeRouterBase)))));
 
+        // Whitelist airlock for ETH transfers
+        feeRouterBase.setTrustedAirlock(address(airlock), true);
+
         // Configure mock endpoints for cross-chain simulation
         lzEndpointBase.setCrossChainTarget(address(feeRouterEth));
         lzEndpointEth.setCrossChainTarget(address(feeRouterBase));
@@ -115,6 +121,17 @@ contract FeeRouterTest is Test {
 
         // Fund MockSwapRouter with enough HLG for swaps (large amount for testing)
         hlg.mint(address(swapRouter), 10_000_000 ether); // 10M HLG tokens
+    }
+
+    /// @notice Helper function to simulate fee collection through Airlock
+    function _simulateFeeCollection(uint256 amount) internal {
+        // Fund the airlock with ETH
+        vm.deal(address(airlock), amount);
+        airlock.setCollectableAmount(address(0), amount);
+
+        // Keeper collects fees from airlock
+        vm.prank(owner);
+        feeRouterBase.collectAirlockFees(address(airlock), address(0), amount);
     }
 
     function test_EndToEndFeeFlow() public {
@@ -142,17 +159,14 @@ contract FeeRouterTest is Test {
 
         // Step 1: Fee collection on Base (ETH amounts)
 
-        // User pays protocol fee in ETH on Base network (using receive function)
-        vm.prank(user);
-        feeRouterBase.receiveFee{value: TEST_FEE_AMOUNT_ETH}();
+        // User pays protocol fee in ETH on Base network (using Airlock simulation)
+        _simulateFeeCollection(TEST_FEE_AMOUNT_ETH);
 
         // Verify ETH fee was sliced correctly (single-slice model)
         // FeeRouter keeps 1.5% for protocol, 98.5% goes to treasury
         uint256 expectedProtocolFee = (TEST_FEE_AMOUNT_ETH * 150) / 10_000; // 1.5%
-        uint256 expectedTreasuryFee = TEST_FEE_AMOUNT_ETH - expectedProtocolFee; // 98.5%
 
         assertEq(address(feeRouterBase).balance, expectedProtocolFee);
-        // Note: owner gets treasury fees sent to them (they started with 0)
 
         // Step 2: Bridge ETH fees from Base to Ethereum
 
@@ -225,8 +239,7 @@ contract FeeRouterTest is Test {
         // First fee cycle
 
         // User pays 0.01 ETH protocol fee on Base
-        vm.prank(user);
-        feeRouterBase.receiveFee{value: TEST_FEE_AMOUNT_ETH}();
+        _simulateFeeCollection(TEST_FEE_AMOUNT_ETH);
 
         // Bridge ETH to Ethereum and swap to HLG
         // Only protocol fee portion (1.5%) gets bridged: 0.00015 ETH → ~1079 HLG → ~539.5 HLG to stakers
@@ -241,8 +254,7 @@ contract FeeRouterTest is Test {
         // Second fee cycle
 
         // Another user pays the same 0.01 ETH protocol fee
-        vm.prank(user);
-        feeRouterBase.receiveFee{value: TEST_FEE_AMOUNT_ETH}();
+        _simulateFeeCollection(TEST_FEE_AMOUNT_ETH);
 
         // Bridge and swap again (same amounts)
         vm.prank(owner);
@@ -296,15 +308,14 @@ contract FeeRouterTest is Test {
         feeRouterBase.unpause();
 
         // Should work again - accept 1 ETH fee
-        feeRouterBase.receiveFee{value: 1 ether}();
+        _simulateFeeCollection(1 ether);
     }
 
     function test_SlippageProtection() public {
         // Test slippage protection during swaps
 
         // Set up ETH fee to bridge
-        vm.prank(user);
-        feeRouterBase.receiveFee{value: TEST_FEE_AMOUNT_ETH}();
+        _simulateFeeCollection(TEST_FEE_AMOUNT_ETH);
 
         // Try to bridge with unrealistic minHlg expectation
         // Expecting 15,000,000 HLG per ETH instead of realistic 7,194,245 HLG per ETH
@@ -361,8 +372,7 @@ contract FeeRouterTest is Test {
         // Test LayerZero V2 message encoding
 
         // Set up ETH fee for bridging
-        vm.prank(user);
-        feeRouterBase.receiveFee{value: TEST_FEE_AMOUNT_ETH}();
+        _simulateFeeCollection(TEST_FEE_AMOUNT_ETH);
 
         uint256 minGas = 200000;
         // Calculate minimum HLG from protocol fee: 0.00015 ETH * 7,194,245 HLG/ETH / 2 = ~539.5 HLG
@@ -400,8 +410,7 @@ contract FeeRouterTest is Test {
         vm.stopPrank();
 
         // Send ETH fees and bridge to Ethereum
-        vm.prank(user);
-        feeRouterBase.receiveFee{value: TEST_FEE_AMOUNT_ETH}();
+        _simulateFeeCollection(TEST_FEE_AMOUNT_ETH);
 
         // Calculate expected HLG amounts (only protocol fee portion gets swapped)
         // Protocol fee: 0.00015 ETH → ~1079 HLG total → ~539.5 HLG to stakers

@@ -53,7 +53,8 @@ contract MockAirlock is IAirlock {
             // ETH case - call FeeRouter.receiveFee{value:amount}()
             require(address(this).balance >= amount, "MockAirlock: Insufficient ETH");
 
-            (bool ok, ) = to.call{value: amount}(abi.encodeWithSignature("receiveFee()"));
+            // Direct transfer; FeeRouter has a receive() fallback that accepts ETH
+            (bool ok, ) = to.call{value: amount}("");
             require(ok, "MockAirlock: ETH transfer failed");
         } else {
             // ERC-20 case

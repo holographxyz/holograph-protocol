@@ -102,6 +102,9 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
     /// @notice Treasury address receiving 98.5% of all fees
     address public treasury;
 
+    /// @notice Trusted Airlock addresses allowed to push ETH
+    mapping(address => bool) public trustedAirlocks;
+
     /* -------------------------------------------------------------------------- */
     /*                                  Errors                                    */
     /* -------------------------------------------------------------------------- */
@@ -111,6 +114,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
     error UntrustedRemote();
     error NoRoute();
     error InsufficientOutput();
+    error UntrustedSender();
 
     /* -------------------------------------------------------------------------- */
     /*                                  Events                                    */
@@ -135,6 +139,9 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
 
     /// @notice Emitted when treasury address is updated
     event TreasuryUpdated(address indexed newTreasury);
+
+    /// @notice Emitted when an Airlock is added or removed from trusted list
+    event TrustedAirlockSet(address indexed airlock, bool trusted);
 
     /* -------------------------------------------------------------------------- */
     /*                               Constructor                                  */
@@ -209,12 +216,20 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
 
         IAirlock(airlock).collectIntegratorFees(address(this), token, amt);
 
-        if (token != address(0)) {
-            uint256 balanceAfter = IERC20(token).balanceOf(address(this));
-            uint256 received = balanceAfter - balanceBefore;
-            if (received > 0) {
-                _splitFee(token, received);
-            }
+        // Process both ETH and ERC20 tokens through _splitFee
+        uint256 balanceAfter;
+        uint256 received;
+
+        if (token == address(0)) {
+            balanceAfter = address(this).balance;
+            received = balanceAfter - balanceBefore;
+        } else {
+            balanceAfter = IERC20(token).balanceOf(address(this));
+            received = balanceAfter - balanceBefore;
+        }
+
+        if (received > 0) {
+            _splitFee(token, received);
         }
     }
 
@@ -248,11 +263,6 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
         }
 
         emit SlicePulled(msg.sender, token, protocolFee, treasuryFee);
-    }
-
-    // Legacy shim to keep the ABI unchanged for internal callers (will be removed later)
-    function _takeAndSlice(address token, uint256 amount) internal {
-        _splitFee(token, amount);
     }
 
     /**
@@ -562,6 +572,17 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
         _unpause();
     }
 
+    /**
+     * @notice Whitelist or remove a Doppler Airlock that is allowed to push ETH
+     * @param airlock Airlock contract address
+     * @param trusted Boolean indicating whether the Airlock is trusted
+     */
+    function setTrustedAirlock(address airlock, bool trusted) external onlyOwner {
+        if (airlock == address(0)) revert ZeroAddress();
+        trustedAirlocks[airlock] = trusted;
+        emit TrustedAirlockSet(airlock, trusted);
+    }
+
     /* -------------------------------------------------------------------------- */
     /*                                   Views                                    */
     /* -------------------------------------------------------------------------- */
@@ -590,20 +611,12 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
     }
 
     /* -------------------------------------------------------------------------- */
-    /*                                ETH Receipt                                 */
+    /*                               ETH Receive                                 */
     /* -------------------------------------------------------------------------- */
 
-    /**
-     * @notice Receive ETH fees and process through single-slice model
-     * @dev Main entry point for fee collection from HolographFactory; reverts while contract is paused
-     */
-    function receiveFee() external payable whenNotPaused {
-        if (msg.value == 0) revert ZeroAmount();
-        _splitFee(address(0), msg.value);
-    }
-
-    /// @dev Reject direct ETH transfers – use receiveFee()
+    /// @notice Accept ETH only from trusted Airlock contracts
     receive() external payable {
-        revert("Use receiveFee()");
+        // Only trusted Airlocks can send ETH (msg.data is always empty for receive())
+        if (!trustedAirlocks[msg.sender]) revert UntrustedSender();
     }
 }

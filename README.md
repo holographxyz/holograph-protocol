@@ -103,18 +103,15 @@ Upgraded omnichain fee router with Doppler integration and single-slice processi
 - **Treasury routing**: Configurable treasury address for governance flexibility
 
 ```solidity
-// Core fee intake (single-slice model)
-function receiveFee() external payable
-function routeFeeToken(address token, uint256 amt) external
-
-// Doppler integrator pull (keeper-only)
-function pullAndSlice(address airlock, address token, uint128 amt) external
+// Keeper-only fee collection from Doppler Airlock
+function collectAirlockFees(address airlock, address token, uint256 amt) external
 
 // Cross-chain bridging (keeper-only)
 function bridge(uint256 minGas, uint256 minHlg) external
 function bridgeToken(address token, uint256 minGas, uint256 minHlg) external
 
 // Admin functions
+function setTrustedAirlock(address airlock, bool trusted) external
 function setTreasury(address newTreasury) external
 ```
 
@@ -158,12 +155,10 @@ The new single-slice fee model provides consistent processing for all fee types 
 
 ### 1. Single-Slice Processing
 
-**All fees processed through `FeeRouter._takeAndSlice()`:**
+**All fees processed through `FeeRouter._splitFee()`:**
 
-- Launch ETH from HolographFactory
-- Doppler Airlock fee pulls (keeper-driven)
-- Manual ERC-20 token routes
-- Direct ETH transfers
+- Launch ETH from HolographFactory (via single-slice processing)
+- Doppler Airlock fee pulls (keeper-driven via `collectAirlockFees`)
 
 **Consistent 1.5% / 98.5% split:**
 
@@ -173,20 +168,23 @@ The new single-slice fee model provides consistent processing for all fee types 
 ### 2. Fee Collection Sources
 
 ```solidity
-// Launch fees (automatic)
+// Launch fees (automatic via HolographFactory)
 factory.createToken{value: 0.005 ether}(params);
 
 // Airlock fees (keeper-driven)
-feeRouter.pullAndSlice(airlockAddress, tokenAddress, amount);
-
-// Manual routes (integrations)
-feeRouter.routeFeeToken(tokenAddress, amount);
-
-// Direct transfers
-address(feeRouter).call{value: amount}("");
+feeRouter.collectAirlockFees(airlockAddress, tokenAddress, amount);
 ```
 
-### 3. Cross-Chain Distribution (Base → Ethereum)
+### 3. Trusted Airlock Security Model
+
+FeeRouter implements a security-hardened ETH acceptance model:
+
+- **Trusted Airlock Whitelist**: Only pre-approved Airlock contracts can send ETH
+- **Owner Management**: `setTrustedAirlock(address, bool)` for admin control
+- **Unauthorized Rejection**: Direct ETH transfers from untrusted sources revert with `UntrustedSender()`
+- **Keeper Protection**: Fee collection only through controlled `collectAirlockFees()` entry point
+
+### 4. Cross-Chain Distribution (Base → Ethereum)
 
 ```
 Base Chain:
@@ -199,7 +197,7 @@ Ethereum Chain:
   lzReceive() → Wrap ETH → Swap to HLG → 50% Burn | 50% Stake
 ```
 
-### 4. Token Economics
+### 5. Token Economics
 
 - **HLG Acquisition**: WETH → HLG via Uniswap V3 (0.3% fee tier)
 - **Burn Mechanism**: 50% transferred to `address(0)`
@@ -285,21 +283,13 @@ holographFactory.bridgeToken{value: bridgeFee}(
 
 ### For Protocol Integrators
 
-```solidity
-// Route ERC-20 fees through single-slice model
-IERC20(token).approve(address(feeRouter), amount);
-feeRouter.routeFeeToken(token, amount);
-
-// Check fee distribution
-uint256 treasuryPortion = (amount * 9850) / 10000; // 98.5%
-uint256 protocolPortion = amount - treasuryPortion; // 1.5%
-```
+Note: Direct fee routing is not supported. All fees must go through HolographFactory token launches, which automatically route to FeeRouter for processing.
 
 ### For Keeper Operators
 
 ```solidity
 // Pull fees from Doppler Airlock
-feeRouter.pullAndSlice(airlockAddress, tokenAddress, amount);
+feeRouter.collectAirlockFees(airlockAddress, tokenAddress, amount);
 
 // Bridge accumulated ETH
 feeRouter.bridge(200_000, minHlgOut);
@@ -327,6 +317,8 @@ feeRouter.bridgeToken(tokenAddress, 200_000, minHlgOut);
 ### Economic Security
 
 - **Single-slice consistency**: All fees processed through one secure path
+- **Trusted Airlock Model**: Only whitelisted Airlock contracts can send ETH
+- **Unauthorized Transfer Protection**: Direct ETH transfers from untrusted sources revert
 - **Slippage Protection**: Minimum HLG output requirements for swaps
 - **Dust Protection**: Prevents failed micro-transactions
 - **Pause Functionality**: Emergency stop for all major functions

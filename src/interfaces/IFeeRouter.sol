@@ -15,6 +15,7 @@ interface IFeeRouter {
     event TokenBridged(address indexed token, uint256 amount, uint64 nonce);
     event TrustedRemoteSet(uint32 indexed eid, bytes32 remote);
     event TreasuryUpdated(address indexed newTreasury);
+    event TrustedAirlockSet(address indexed airlock, bool trusted);
 
     /* -------------------------------------------------------------------------- */
     /*                                  Errors                                    */
@@ -23,16 +24,11 @@ interface IFeeRouter {
     error UntrustedRemote();
     error ZeroAddress();
     error ZeroAmount();
+    error UntrustedSender();
 
     /* -------------------------------------------------------------------------- */
     /*                               Functions                                    */
     /* -------------------------------------------------------------------------- */
-    /**
-     * @notice Receive ETH fees and process through single-slice model
-     * @dev Main entry point for fee collection from HolographFactory
-     */
-    function receiveFee() external payable;
-
     /**
      * @notice Pull accumulated fees from Doppler Airlock contracts
      * @param airlock Airlock contract address to pull fees from
@@ -62,4 +58,5 @@ interface IFeeRouter {
     function unpause() external;
     function getBalances() external view returns (uint256 ethBalance, uint256 hlgBalance);
     function calculateFeeSplit(uint256 amount) external pure returns (uint256 protocolFee, uint256 treasuryFee);
+    function setTrustedAirlock(address airlock, bool trusted) external;
 }

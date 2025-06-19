@@ -88,7 +88,6 @@ contract FeeRouterMock {
         emit FeeReceived(msg.value);
     }
 
-    // NEW: Add receiveFee() method expected by updated HolographFactory
     function receiveFee() external payable {
         total += msg.value;
         emit FeeReceived(msg.value);
