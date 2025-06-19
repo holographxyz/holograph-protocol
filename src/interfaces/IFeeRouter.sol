@@ -59,4 +59,11 @@ interface IFeeRouter {
     function getBalances() external view returns (uint256 ethBalance, uint256 hlgBalance);
     function calculateFeeSplit(uint256 amount) external pure returns (uint256 protocolFee, uint256 treasuryFee);
     function setTrustedAirlock(address airlock, bool trusted) external;
+
+    /**
+     * @notice Check if an Airlock is whitelisted for ETH transfers
+     * @param airlock Airlock contract address to check
+     * @return Whether the Airlock is trusted
+     */
+    function trustedAirlocks(address airlock) external view returns (bool);
 }

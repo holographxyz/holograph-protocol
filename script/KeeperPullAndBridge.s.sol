@@ -9,6 +9,14 @@ import "../src/interfaces/IAirlock.sol";
  * @title KeeperPullAndBridge
  * @notice Automation script for fee collection and bridging operations
  * @dev Production-ready keeper bot for automated fee processing across chains
+ *
+ * Usage:
+ *   1. Deploy: Update FEE_ROUTER address and known Airlock addresses
+ *   2. Setup: Run setupTrustedAirlocks() once to whitelist Airlocks
+ *   3. Monitor: Use checkBalances() to verify configuration
+ *   4. Automate: Run run() periodically for fee collection and bridging
+ *   5. Emergency: Use emergencyPause() to halt operations if needed
+ *
  * @author Holograph Protocol
  */
 contract KeeperPullAndBridge is Script {
@@ -50,6 +58,47 @@ contract KeeperPullAndBridge is Script {
         _bridgeTokens();
 
         console.log("Keeper run completed");
+        vm.stopBroadcast();
+    }
+
+    /**
+     * @notice Setup function for initial deployment - whitelist trusted Airlocks
+     * @dev Owner-only function to configure trusted Airlock contracts
+     */
+    function setupTrustedAirlocks() external {
+        vm.startBroadcast();
+
+        console.log("Setting up trusted Airlocks...");
+
+        address[] memory airlocks = _getKnownAirlocks();
+        for (uint i = 0; i < airlocks.length; i++) {
+            if (airlocks[i] != address(0)) {
+                try FEE_ROUTER.setTrustedAirlock(airlocks[i], true) {
+                    console.log("Whitelisted Airlock:", airlocks[i]);
+                } catch {
+                    console.log("Failed to whitelist Airlock:", airlocks[i]);
+                }
+            }
+        }
+
+        console.log("Trusted Airlock setup completed");
+        vm.stopBroadcast();
+    }
+
+    /**
+     * @notice Emergency function to pause FeeRouter operations
+     * @dev Owner-only emergency control
+     */
+    function emergencyPause() external {
+        vm.startBroadcast();
+        console.log("EMERGENCY: Pausing FeeRouter operations");
+
+        try FEE_ROUTER.pause() {
+            console.log("FeeRouter successfully paused");
+        } catch {
+            console.log("Failed to pause FeeRouter - check permissions");
+        }
+
         vm.stopBroadcast();
     }
 
@@ -172,26 +221,53 @@ contract KeeperPullAndBridge is Script {
 
     /**
      * @notice Validate environment setup before execution
-     * @dev Ensures required addresses are configured properly
+     * @dev Ensures required addresses are configured properly and Airlocks are whitelisted
      */
     function _validateSetup() internal view {
         require(address(FEE_ROUTER) != address(0), "FeeRouter address not set");
-        // TODO: Add additional validation for Airlock addresses when configured
 
         // Check if we're using placeholder address (should be updated for production)
         if (address(FEE_ROUTER) == 0x742D35cC6634C0532925a3b8D4014dd1C4D9dC07) {
             console.log("WARNING: Using placeholder FeeRouter address");
         }
+
+        // Validate that known Airlocks are whitelisted
+        address[] memory airlocks = _getKnownAirlocks();
+        for (uint i = 0; i < airlocks.length; i++) {
+            if (airlocks[i] != address(0)) {
+                if (!FEE_ROUTER.trustedAirlocks(airlocks[i])) {
+                    console.log("WARNING: Airlock not whitelisted:", airlocks[i]);
+                    console.log("Run setupTrustedAirlocks() first");
+                }
+            }
+        }
     }
 
     /**
-     * @notice Monitor function to check FeeRouter balances
+     * @notice Monitor function to check FeeRouter balances and trusted Airlocks
      * @dev Useful for debugging and monitoring keeper performance
      */
     function checkBalances() external view {
-        console.log("=== FeeRouter Balance Check ===");
+        console.log("=== FeeRouter Status Check ===");
+        console.log("FeeRouter Address:", address(FEE_ROUTER));
         console.log("ETH Balance:", address(FEE_ROUTER).balance);
-        console.log("Address:", address(FEE_ROUTER));
-        // TODO: Add ERC-20 balance checks for monitoring
+
+        // Check trusted Airlock status
+        address[] memory airlocks = _getKnownAirlocks();
+        console.log("=== Trusted Airlock Status ===");
+        for (uint i = 0; i < airlocks.length; i++) {
+            if (airlocks[i] != address(0)) {
+                bool trusted = FEE_ROUTER.trustedAirlocks(airlocks[i]);
+                console.log("Airlock:", airlocks[i], "Trusted:", trusted);
+            }
+        }
+
+        // Check ERC-20 balances
+        console.log("=== Token Balances ===");
+        address[] memory tokens = _getKnownTokens();
+        for (uint i = 0; i < tokens.length; i++) {
+            // Note: Would need to add IERC20 interface calls for actual balance checks
+            console.log("Token:", tokens[i]);
+        }
     }
 }
