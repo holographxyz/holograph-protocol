@@ -7,4 +7,6 @@ interface IAirlock {
     function create(
         CreateParams calldata params
     ) external returns (address asset, address pool, address governance, address timelock, address migrationPool);
+
+    function collectIntegratorFees(address to, address token, uint256 amount) external;
 }

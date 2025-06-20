@@ -1,54 +1,91 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {MockWETH} from "./MockWETH.sol";
-import {MockERC20} from "./MockERC20.sol";
+import "@openzeppelin/token/ERC20/IERC20.sol";
+import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import "../../src/interfaces/ISwapRouter.sol";
+import "../../src/interfaces/IUniswapV3Factory.sol";
 
-// Import the interface for type safety
-interface ISwapRouter {
-    struct ExactInputSingleParams {
-        address tokenIn;
-        address tokenOut;
-        uint24 fee;
-        address recipient;
-        uint256 amountIn;
-        uint256 amountOutMinimum;
-        uint160 sqrtPriceLimitX96;
+/**
+ * @title MockSwapRouter
+ * @notice Mock Uniswap V3 SwapRouter for testing
+ */
+contract MockSwapRouter is ISwapRouter {
+    using SafeERC20 for IERC20;
+
+    address private _outputToken;
+    uint256 private _exchangeRate = 1000; // 1 ETH = 1000 tokens
+
+    MockFactory public immutable mockFactory;
+
+    constructor() {
+        mockFactory = new MockFactory();
     }
 
-    function exactInputSingle(ExactInputSingleParams calldata params) external payable returns (uint256 amountOut);
-}
+    function setOutputToken(address token) external {
+        _outputToken = token;
+    }
 
-contract MockSwapRouter {
-    MockWETH public immutable WETH;
-    MockERC20 public immutable HLG;
-
-    // Realistic exchange rate: 0.000000139 WETH = 1 HLG
-    // Therefore: 1 WETH = 7,194,245 HLG (1 / 0.000000139 ≈ 7,194,244.6)
-    uint256 public constant EXCHANGE_RATE = 7194245;
-
-    constructor(address _weth, address _hlg) {
-        WETH = MockWETH(_weth);
-        HLG = MockERC20(_hlg);
+    function setExchangeRate(uint256 rate) external {
+        _exchangeRate = rate;
     }
 
     function exactInputSingle(
-        ISwapRouter.ExactInputSingleParams calldata params
-    ) external payable returns (uint256 amountOut) {
-        require(params.tokenIn == address(WETH), "Only WETH input supported");
-        require(params.tokenOut == address(HLG), "Only HLG output supported");
+        ExactInputSingleParams calldata params
+    ) external payable override returns (uint256 amountOut) {
+        // Transfer input token from caller
+        IERC20(params.tokenIn).safeTransferFrom(msg.sender, address(this), params.amountIn);
 
-        // Transfer WETH from sender
-        WETH.transferFrom(msg.sender, address(this), params.amountIn);
+        // Calculate output amount based on exchange rate
+        amountOut = (params.amountIn * _exchangeRate) / 1e18;
 
-        // Calculate HLG output using realistic rate: 1 WETH = 7,194,245 HLG
-        // This reflects the real-world rate of 0.000000139 WETH per 1 HLG
-        amountOut = params.amountIn * EXCHANGE_RATE;
-        require(amountOut >= params.amountOutMinimum, "Insufficient output");
+        // Ensure minimum output
+        require(amountOut >= params.amountOutMinimum, "Insufficient output amount");
 
-        // Mint HLG to recipient
-        HLG.mint(params.recipient, amountOut);
+        // Transfer output token to recipient
+        IERC20(params.tokenOut).safeTransfer(params.recipient, amountOut);
 
         return amountOut;
+    }
+
+    function exactInput(ExactInputParams calldata params) external payable override returns (uint256 amountOut) {
+        // For simplicity, assume first token in path is input and last is output
+        address tokenIn = _extractTokenFromPath(params.path, 0);
+        address tokenOut = _outputToken;
+
+        // Transfer input token from caller
+        IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), params.amountIn);
+
+        // Calculate output amount based on exchange rate
+        amountOut = (params.amountIn * _exchangeRate) / 1e18;
+
+        // Ensure minimum output
+        require(amountOut >= params.amountOutMinimum, "Insufficient output amount");
+
+        // Transfer output token to recipient
+        IERC20(tokenOut).safeTransfer(params.recipient, amountOut);
+
+        return amountOut;
+    }
+
+    function factory() external view override returns (IUniswapV3Factory) {
+        return IUniswapV3Factory(address(mockFactory));
+    }
+
+    function _extractTokenFromPath(bytes memory path, uint256 position) internal pure returns (address token) {
+        assembly {
+            token := div(mload(add(add(path, 0x20), mul(position, 0x20))), 0x1000000000000000000000000)
+        }
+    }
+}
+
+/**
+ * @title MockFactory
+ * @notice Mock Uniswap V3 Factory for testing
+ */
+contract MockFactory is IUniswapV3Factory {
+    function getPool(address tokenA, address tokenB, uint24 fee) external pure override returns (address pool) {
+        // Return a non-zero address to indicate pool exists for any pair
+        return address(0x1234567890123456789012345678901234567890);
     }
 }

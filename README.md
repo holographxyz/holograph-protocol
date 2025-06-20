@@ -1,286 +1,327 @@
-# Holograph Protocol
+# Holograph Protocol v2
 
-An omnichain token launchpad powered by Doppler that enables token creation and cross-chain bridging. Launch tokens on Base and make them available across multiple chains via LayerZero V2.
-
-## System Architecture
-
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Base Chain    │    │   LayerZero V2   │    │  Ethereum Chain │
-│                 │    │                  │    │                 │
-│ HolographFactory│───▶│   Cross-Chain    │───▶│   Token Minting │
-│                 │    │   Messaging      │    │                 │
-│ • Token Launches│    │                  │    │ • Omnichain     │
-│ • Doppler Airlock│   │                  │    │ • Instant Mint  │
-│ • Cross-Chain   │    │                  │    │ • Same Address  │
-│                 │    │                  │    │                 │
-│   FeeRouter     │    │                  │    │   FeeRouter     │
-│ • Fee Collection│───▶│   Fee Bridging   │───▶│ • WETH→HLG Swap │
-│ • ETH Bridging  │    │                  │    │ • 50% Burn      │
-│                 │    │                  │    │ • 50% Staking   │
-│                 │    │                  │    │                 │
-│                 │    │                  │    │ StakingRewards  │
-│                 │    │                  │    │ • HLG Staking   │
-│                 │    │                  │    │ • Reward Distrib│
-│                 │    │                  │    │ • Cooldown      │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-```
+A protocol for deploying omnichain tokens with deterministic addresses across multiple blockchains. Built on Doppler Airlock technology and LayerZero V2 for secure cross-chain messaging.
 
 ## Overview
 
-The Holograph Protocol is an omnichain token launchpad for creating and deploying tokens across multiple blockchains. Built on Doppler Airlock technology and powered by LayerZero V2, tokens launched through Holograph are available on any supported chain with the same contract address.
+Holograph Protocol enables the creation of ERC-20 tokens that exist natively across multiple chains with identical contract addresses. Rather than traditional bridge mechanisms, tokens are minted directly on destination chains through LayerZero V2 messaging.
 
-## Core Features
+### Key Features
 
-### Omnichain Token Launches
+- **Deterministic Addresses**: Same contract address across all supported chains
+- **Direct Minting**: No lock/unlock bridge mechanisms required
+- **Doppler Integration**: Built on Doppler Airlock for token launches
+- **Fee Automation**: Automated fee collection and cross-chain distribution
+- **LayerZero V2**: Secure cross-chain messaging infrastructure
 
-- Launch tokens on Base with cross-chain availability
-- Same contract address across all supported chains
-- Built on Doppler Airlock technology
-- Multi-chain tokens
+### Architecture
 
-### Cross-Chain Bridging
-
-- LayerZero V2 integration for secure messaging
-- Direct token minting on destination chains
-- No lock/unlock mechanisms - true omnichain tokens
-- Nonce-based replay protection
-
-### Developer Integration
-
-- Simple integration with existing dApps
-- Standard ERC-20 interface on all chains
-- Testing suite included
-- Open source
+```
+Base Chain                   LayerZero V2              Ethereum Chain
+┌─────────────────┐         ┌─────────────┐          ┌─────────────────┐
+│ HolographFactory│────────▶│   Message   │─────────▶│   Token Mint    │
+│                 │         │   Passing   │          │                 │
+│ FeeRouter       │────────▶│             │─────────▶│ Fee Processing  │
+│                 │         │             │          │                 │
+│ Doppler Airlock │         │             │          │ StakingRewards  │
+└─────────────────┘         └─────────────┘          └─────────────────┘
+```
 
 ## Core Contracts
 
-### HolographFactory.sol
+### HolographFactory
 
-The main entry point for token launches and cross-chain operations.
-
-- Launches new ERC-20 tokens via Doppler Airlock
-- Handles cross-chain token bridging via LayerZero V2
-- Manages omnichain token deployments
-- Provides interface for multi-chain operations
+Entry point for token launches and cross-chain operations.
 
 ```solidity
-function createToken(CreateParams calldata params) external payable returns (address asset)
-function bridgeToken(uint32 dstEid, address token, address recipient, uint256 amount, bytes calldata options) external payable
+function createToken(CreateParams calldata params) external payable returns (address asset);
+function bridgeToken(uint32 dstEid, address token, address recipient, uint256 amount, bytes calldata options) external payable;
 ```
 
-## Table of Contents
+### FeeRouter
 
-- [Token Launch & Bridging](#token-launch--bridging)
-- [Integration](#integration)
-- [Security](#security)
-- [Testing](#testing)
-- [Fee Structure](#fee-structure)
-- [Staking](#staking)
+Handles fee collection from Doppler Airlock contracts and cross-chain fee distribution.
 
-## Token Launch & Bridging
+```solidity
+function collectAirlockFees(address airlock, address token, uint256 amt) external; // KEEPER_ROLE
+function bridge(uint256 minGas, uint256 minHlg) external; // KEEPER_ROLE
+function setTrustedAirlock(address airlock, bool trusted) external; // Owner only
+```
 
-### Token Launch Flow
+### StakingRewards
 
-1. User calls `HolographFactory.createToken()` with launch fee
-2. Protocol fee calculated (1.5% of launch fee = 0.000075 ETH)
-3. Fee forwarded to FeeRouter on Base
-4. Token deployed via Doppler Airlock
-5. Token available for cross-chain bridging
+Single-token HLG staking with reward distribution, cooldown periods, and emergency controls.
 
-### Cross-Chain Bridging Flow
+```solidity
+function stake(uint256 amount) external; // Stake HLG tokens
+function withdraw(uint256 amount) external; // Withdraw after cooldown (default 7 days)
+function claim() external; // Claim accumulated rewards
+function addRewards(uint256 amount) external; // FeeRouter only
+```
 
-1. User calls `HolographFactory.bridgeToken()` on source chain
-2. LayerZero message sent to destination chain
-3. Destination Factory receives message via `lzReceive()`
-4. Tokens minted directly to recipient on destination chain
+## Token Launch Process
 
-The bridging system uses a mint payload format: `mintERC20(address token, uint256 amount, address recipient)` with nonce-based replay protection per destination chain.
+1. Call `HolographFactory.createToken()` with token parameters - **no launch fees required**
+2. Factory automatically sets FeeRouter as integrator for Doppler trading fee collection
+3. Token deployed through Doppler Airlock with deterministic CREATE2 address
+4. Identical contract address immediately available for cross-chain bridging
+
+## Fee Model
+
+- **Source**: Trading fees from Doppler auctions (collected by Airlock contracts)
+- **Protocol Split**: 1.5% of collected fees (HOLO_FEE_BPS = 150)
+- **Treasury Split**: 98.5% of collected fees forwarded to treasury address
+- **HLG Distribution**: Protocol fees bridged to Ethereum, swapped WETH→HLG, 50% burned / 50% staked
+- **Security**: Trusted Airlock whitelist prevents unauthorized ETH transfers to FeeRouter
 
 ## Integration
 
-### For Token Launchers
+### Token Launch
 
 ```solidity
-// Launch a new omnichain token
 CreateParams memory params = CreateParams({
-    name: "My Token",
+    name: "MyToken",
     symbol: "MTK",
-    // ... other parameters
+    decimals: 18,
+    initialSupply: 1000000e18,
+    salt: bytes32(uint256(1)),
+    integrator: address(0), // Auto-set to FeeRouter
+    royaltyFeePercentage: 500,
+    royaltyRecipient: msg.sender
 });
 
-address newToken = holographFactory.createToken{value: 0.005 ether}(params);
+// Free token launch - no ETH required
+address token = holographFactory.createToken(params);
 ```
 
-### For Cross-Chain Users
+### Cross-Chain Bridging
 
 ```solidity
-// Bridge tokens to another chain
 holographFactory.bridgeToken{value: bridgeFee}(
-    destinationEid,    // e.g., Ethereum EID
-    tokenAddress,      // Token to bridge
-    recipient,         // Destination recipient
-    amount,           // Amount to bridge
-    lzOptions         // LayerZero options
+    destinationEid,
+    tokenAddress,
+    recipient,
+    amount,
+    lzOptions
 );
+```
+
+### Keeper Operations
+
+```solidity
+// Collect fees from Doppler Airlock
+feeRouter.collectAirlockFees(airlockAddress, tokenAddress, amount);
+
+// Bridge accumulated fees
+feeRouter.bridge(minGas, minHlgOut);
 ```
 
 ## Security
 
 ### Access Control
 
-- Owner-only functions: Pause/unpause, fee adjustments, trusted remotes
-- FeeRouter-only: Only FeeRouter can add rewards to staking
-- LayerZero-only: Only LZ endpoint can call `lzReceive()`
+- **Owner**: Contract administration, trusted remote management, treasury updates
+- **KEEPER_ROLE**: Automated fee collection (`collectAirlockFees`) and cross-chain bridging
+- **FeeRouter Authorization**: Only designated FeeRouter can add rewards to StakingRewards
 
 ### Cross-Chain Security
 
-- Trusted Remotes: Whitelist of authorized cross-chain senders
-- Endpoint Validation: Messages must come from LayerZero endpoint
-- Replay Protection: Nonce-based system prevents double-spending
+- **Trusted Remotes**: Per-endpoint whitelist of authorized cross-chain message senders
+- **Endpoint Validation**: LayerZero V2 endpoint verification for all cross-chain messages
+- **Trusted Airlocks**: Whitelist preventing unauthorized ETH transfers to FeeRouter
+- **Replay Protection**: Nonce-based system preventing message replay attacks
 
 ### Economic Security
 
-- Slippage Protection: Minimum HLG output requirements for swaps
-- Pause Functionality: Emergency stop for all major functions
-- Cooldown Period: Prevents rapid staking manipulation
-
-### Error Handling
-
-- Custom Errors: Gas-efficient error reporting
-- Input Validation: Zero address and zero amount checks
-- Reentrancy Guards: Protection against reentrancy attacks
+- **Dust Protection**: MIN_BRIDGE_VALUE (0.01 ETH) prevents uneconomical bridging
+- **Slippage Protection**: Configurable minimum HLG output for swaps
+- **Cooldown Period**: 7-day default withdrawal cooldown prevents staking manipulation
+- **Emergency Controls**: Owner can pause all major contract functions
 
 ## Testing
-
-### Test Coverage
-
-- Unit tests for individual contract functionality
-- Integration tests for end-to-end fee flow simulation
-- Fuzz tests with random inputs
-- Mock contracts for isolated testing
-
-### Running Tests
 
 ```bash
 # Run all tests
 forge test
 
-# Run specific test suite
-forge test --match-contract FeeRouterTest
+# Unit tests
+forge test --match-path test/unit/
 
-# Run with verbose output
-forge test -vv
-
-# Run integration tests
+# Integration tests
 forge test --match-path test/integration/
+
+# Gas reports
+forge test --gas-report
 ```
 
-### Test Scenarios
+## Environment Setup
 
-- End-to-end fee flow (Base → Ethereum)
-- Multiple fee cycles and reward accumulation
-- Reward distribution mathematics
-- Cross-chain security validation
-- Pause/unpause functionality
-- Slippage protection
-- Staking cooldown mechanics
-- LayerZero options encoding
+Set up the following environment variables for deployment and operations:
 
-## Fee Structure
+```bash
+# Network RPCs
+export BASE_RPC="https://mainnet.base.org"
+export ETH_RPC="https://eth-mainnet.alchemyapi.io/v2/YOUR_KEY"
 
-The protocol collects fees from token launches and distributes them to HLG stakers.
+# Private Keys
+export DEPLOYER_PK="0x..."      # Contract deployment
+export OWNER_PK="0x..."         # Contract administration
+export KEEPER_PK="0x..."        # Automation operations
 
-### 1. Fee Generation (Base Chain)
+# LayerZero Endpoint IDs
+export BASE_EID=30184           # Base mainnet
+export ETH_EID=30101            # Ethereum mainnet
 
-User launches token → Pays 0.005 ETH launch fee → 1.5% protocol fee (0.000075 ETH) → FeeRouter
+# Contract Addresses (update after deployment)
+export DOPPLER_AIRLOCK="0x..."
+export LZ_ENDPOINT="0x..."      # LayerZero V2 endpoint
+export TREASURY="0x..."         # Treasury multisig
+export HLG="0x..."              # HLG token address
+export WETH="0x..."             # WETH address
+export SWAP_ROUTER="0x..."      # Uniswap V3 SwapRouter
+export STAKING_REWARDS="0x..."  # StakingRewards contract
 
-### 2. Fee Bridging (Base → Ethereum)
-
-FeeRouter accumulates ETH → bridge() called → LayerZero V2 message → Ethereum FeeRouter
-
-### 3. Fee Processing (Ethereum Chain)
-
-ETH received → Wrap to WETH → Swap WETH→HLG (Uniswap V3) → Split 50/50
-
-### 4. Distribution (Ethereum Chain)
-
-50% HLG → Burn (transfer to address(0))
-50% HLG → StakingRewards → Distributed to stakers pro-rata
-
-## Staking
-
-### How It Works
-
-- Users stake HLG tokens to earn rewards from protocol fees
-- Rewards are distributed when fees are processed
-- Uses reward-per-token accounting for gas efficiency
-- 18-decimal precision for fractional rewards
-
-### Staking Process
-
-1. Stake: User deposits HLG tokens
-2. Earn: Rewards accumulate automatically from protocol fees
-3. Claim: User can claim rewards at any time
-4. Withdraw: Remove staked tokens (subject to cooldown)
-
-### Cooldown
-
-- Default 7-day cooldown period between staking and withdrawal
-- Prevents rapid stake/unstake gaming
-- Configurable by owner
-- Claiming rewards has no cooldown
-
-### For HLG Stakers
-
-```solidity
-// Stake HLG tokens
-hlgToken.approve(address(stakingRewards), stakeAmount);
-stakingRewards.stake(stakeAmount);
-
-// Claim rewards
-stakingRewards.claim();
-
-// Withdraw after cooldown
-stakingRewards.withdraw(withdrawAmount);
+# Addresses (set after deployment)
+export FEE_ROUTER="0x..."
+export HOLOGRAPH_FACTORY="0x..."
+export KEEPER_ADDRESS="0x..."
 ```
 
-### For Protocol Integration
+## Deployment
 
-```solidity
-// Check earned rewards
-uint256 pendingRewards = stakingRewards.earned(userAddress);
+### Base Chain
 
-// Check staking balance
-uint256 stakedBalance = stakingRewards.balanceOf(userAddress);
+```bash
+# Deploy FeeRouter
+forge create src/FeeRouter.sol:FeeRouter \
+  --constructor-args $LZ_ENDPOINT $ETH_EID 0 0 0 0 $TREASURY \
+  --rpc-url $BASE_RPC --private-key $DEPLOYER_PK
 
-// Check total staked
-uint256 totalStaked = stakingRewards.totalStaked();
+# Deploy HolographFactory
+forge create src/HolographFactory.sol:HolographFactory \
+  --constructor-args $LZ_ENDPOINT $DOPPLER_AIRLOCK $FEE_ROUTER \
+  --rpc-url $BASE_RPC --private-key $DEPLOYER_PK
 ```
 
-## Key Metrics
+### Ethereum Chain
 
-### Fee Economics
+```bash
+# Deploy FeeRouter
+forge create src/FeeRouter.sol:FeeRouter \
+  --constructor-args $LZ_ENDPOINT $BASE_EID $STAKING_REWARDS $HLG $WETH $SWAP_ROUTER $TREASURY \
+  --rpc-url $ETH_RPC --private-key $DEPLOYER_PK
 
-- TODO: Integrate Doppler fee mechanism
-- Launch Fee: 0.005 ETH per token launch (This is a temporary hardcoded value that will be reworked once the above is done)
-- Protocol Fee: 1.5% of launch fee (0.000075 ETH)
-- Conversion Rate: ~0.000000139 WETH per 1 HLG at time of writing
-- Distribution: 50% burn, 50% staking rewards
+# Deploy StakingRewards
+forge create src/StakingRewards.sol:StakingRewards \
+  --constructor-args $HLG $FEE_ROUTER \
+  --rpc-url $ETH_RPC --private-key $DEPLOYER_PK
+```
 
-### Performance
+## Operations
 
-- Cross-Chain: ~2-5 minute LayerZero delivery
-- Slippage: Configurable minimum output protection
-- Cooldown: 7-day default withdrawal period
+### Initial Setup
+
+After deployment, configure the system using the keeper script:
+
+```bash
+# 1. Update script/KeeperPullAndBridge.s.sol with actual addresses
+# 2. Whitelist Airlock contracts (Owner only)
+forge script script/KeeperPullAndBridge.s.sol \
+  --sig "setupTrustedAirlocks()" \
+  --rpc-url $BASE_RPC --broadcast --private-key $OWNER_PK
+
+# 3. Grant keeper role to automation address
+cast send $FEE_ROUTER "grantRole(bytes32,address)" \
+  $(cast keccak "KEEPER_ROLE") $KEEPER_ADDRESS \
+  --rpc-url $BASE_RPC --private-key $OWNER_PK
+
+# 4. Configure LayerZero trusted remotes
+cast send $FEE_ROUTER "setTrustedRemote(uint32,bytes32)" \
+  $ETH_EID $(cast address-to-bytes32 $ETH_FEE_ROUTER) \
+  --rpc-url $BASE_RPC --private-key $OWNER_PK
+
+cast send $FEE_ROUTER "setTrustedRemote(uint32,bytes32)" \
+  $BASE_EID $(cast address-to-bytes32 $BASE_FEE_ROUTER) \
+  --rpc-url $ETH_RPC --private-key $OWNER_PK
+```
+
+### Keeper Automation
+
+```bash
+# Monitor system status
+forge script script/KeeperPullAndBridge.s.sol \
+  --sig "checkBalances()" --rpc-url $BASE_RPC
+
+# Run fee collection and bridging (automated/cron)
+forge script script/KeeperPullAndBridge.s.sol \
+  --rpc-url $BASE_RPC --broadcast --private-key $KEEPER_PK
+
+# Set up automated execution (example cron)
+echo "*/10 * * * * cd /path/to/holograph && forge script script/KeeperPullAndBridge.s.sol --rpc-url \$BASE_RPC --broadcast --private-key \$KEEPER_PK" | crontab -
+```
+
+### Emergency Controls
+
+```bash
+# Pause operations (Owner only)
+forge script script/KeeperPullAndBridge.s.sol \
+  --sig "emergencyPause()" \
+  --rpc-url $BASE_RPC --broadcast --private-key $OWNER_PK
+
+# Unpause operations (Owner only)
+cast send $FEE_ROUTER "unpause()" \
+  --rpc-url $BASE_RPC --private-key $OWNER_PK
+
+# Update treasury address (Owner only)
+cast send $FEE_ROUTER "setTreasury(address)" $NEW_TREASURY \
+  --rpc-url $BASE_RPC --private-key $OWNER_PK
+```
 
 ## Dependencies
 
-- LayerZero V2: Cross-chain messaging protocol
-- Uniswap V3: DEX for WETH→HLG swaps (0.3% fee tier)
-- OpenZeppelin: Security and utility contracts
-- Doppler Airlock: Token launch mechanism
+- **LayerZero V2**: Cross-chain messaging protocol
+- **Doppler Airlock**: Token launch mechanism
+- **OpenZeppelin**: Access control and security utilities
+- **Uniswap V3**: WETH/HLG swapping on Ethereum
+
+## Quick Reference
+
+### Common Tasks
+
+```bash
+# Check system status
+forge script script/KeeperPullAndBridge.s.sol --sig "checkBalances()" --rpc-url $BASE_RPC
+
+# Manual fee collection
+forge script script/KeeperPullAndBridge.s.sol --rpc-url $BASE_RPC --broadcast --private-key $KEEPER_PK
+
+# Emergency pause
+forge script script/KeeperPullAndBridge.s.sol --sig "emergencyPause()" --rpc-url $BASE_RPC --broadcast --private-key $OWNER_PK
+
+# Check FeeRouter ETH balance
+cast balance $FEE_ROUTER --rpc-url $BASE_RPC
+
+# Check if Airlock is whitelisted
+cast call $FEE_ROUTER "trustedAirlocks(address)" $AIRLOCK_ADDRESS --rpc-url $BASE_RPC
+
+# Grant keeper role
+cast send $FEE_ROUTER "grantRole(bytes32,address)" $(cast keccak "KEEPER_ROLE") $KEEPER_ADDRESS --rpc-url $BASE_RPC --private-key $OWNER_PK
+```
+
+### Monitoring
+
+- **FeeRouter Balance**: Should accumulate fees between keeper runs
+- **Trusted Airlocks**: Must be whitelisted before fee collection
+- **LayerZero Messages**: Monitor cross-chain message delivery
+- **HLG Distribution**: Verify burn/stake operations on Ethereum
+
+### Troubleshooting
+
+- **"UntrustedSender" Error**: Airlock not whitelisted - run `setupTrustedAirlocks()`
+- **"AccessControl" Error**: Address missing KEEPER_ROLE or owner permissions
+- **Bridge Failures**: Check LayerZero trusted remotes configuration
+- **Low HLG Output**: Adjust slippage protection or check Uniswap liquidity
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+MIT

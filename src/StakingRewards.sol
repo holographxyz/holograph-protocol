@@ -98,7 +98,7 @@ contract StakingRewards is Ownable, ReentrancyGuard, Pausable {
         if (_hlg == address(0) || _feeRouter == address(0)) revert ZeroAddress();
         HLG = IERC20(_hlg);
         feeRouter = _feeRouter;
-        _pause(); // begin paused until governance enables
+        _pause(); // begin paused until admin enables
     }
 
     /* -------------------------------------------------------------------------- */
@@ -211,7 +211,7 @@ contract StakingRewards is Ownable, ReentrancyGuard, Pausable {
     }
 
     /* -------------------------------------------------------------------------- */
-    /*                        Governance / Owner Functions                       */
+    /*                              Admin Functions                              */
     /* -------------------------------------------------------------------------- */
     /**
      * @notice Update the cooldown length (set to 0 to disable)

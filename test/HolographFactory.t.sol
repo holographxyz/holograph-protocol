@@ -87,6 +87,17 @@ contract FeeRouterMock {
         total += msg.value;
         emit FeeReceived(msg.value);
     }
+
+    function receiveFee() external payable {
+        total += msg.value;
+        emit FeeReceived(msg.value);
+    }
+
+    // Add receive() fallback to handle direct ETH transfers
+    receive() external payable {
+        total += msg.value;
+        emit FeeReceived(msg.value);
+    }
 }
 
 contract V4InitializerStub {
@@ -114,7 +125,6 @@ contract V4InitializerStub {
 
 contract HolographFactoryTest is Test {
     // ── constants ─────────────────────────────────────────────────────────
-    uint256 private constant LAUNCH_FEE = 0.1 ether;
     uint256 private constant DEFAULT_NUM_TOKENS_TO_SELL = 100_000e18;
     uint256 private constant DEFAULT_MINIMUM_PROCEEDS = 100e18;
     uint256 private constant DEFAULT_MAXIMUM_PROCEEDS = 10_000e18;
@@ -156,7 +166,6 @@ contract HolographFactoryTest is Test {
         lzEndpoint = new LZEndpointStub();
         feeRouter = new FeeRouterMock();
         factory = new HolographFactory(address(lzEndpoint), doppler.airlock, address(feeRouter));
-        factory.setLaunchFee(LAUNCH_FEE);
         vm.deal(creator, 1 ether);
 
         bool useV4Stub = vm.envOr("USE_V4_STUB", false);
@@ -297,10 +306,10 @@ contract HolographFactoryTest is Test {
             mstore(add(createParams, 0x120), liquidityMig)
         }
 
-        // 5) Execute the token creation
+        // 5) Execute the token creation - no fee required as per Doppler's free token creation model
         bytes memory callData = abi.encodeWithSelector(factory.createToken.selector, createParams);
         vm.prank(creator);
-        (bool ok, bytes memory returndata) = address(factory).call{value: LAUNCH_FEE}(callData);
+        (bool ok, bytes memory returndata) = address(factory).call(callData);
 
         console.log("createToken success? ", ok);
         if (!ok) {

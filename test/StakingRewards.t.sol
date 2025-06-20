@@ -27,7 +27,7 @@ contract StakingRewardsTest is Test {
         vm.startPrank(owner);
 
         // Deploy mock HLG token
-        hlg = new MockERC20();
+        hlg = new MockERC20("Test HLG", "HLG");
         hlg.mint(user1, INITIAL_SUPPLY);
         hlg.mint(user2, INITIAL_SUPPLY);
         hlg.mint(feeRouter, INITIAL_SUPPLY);
