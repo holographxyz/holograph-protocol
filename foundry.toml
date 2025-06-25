@@ -8,7 +8,10 @@ optimizer = true
 src = 'src'
 via_ir = true
 ffi = true
-fs_permissions = [{ access = "read", path = "./script" }]
+fs_permissions = [
+  { access = "read", path = "./script" },
+  { access = "write", path = "./deployments" }
+]
 verbosity = 3
 evm_version = "cancun"
 gas_limit = "300000000"
