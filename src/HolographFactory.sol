@@ -12,6 +12,11 @@ import "./interfaces/IFeeRouter.sol";
 import "./interfaces/ILZEndpointV2.sol";
 import "./interfaces/ILZReceiverV2.sol";
 import "./interfaces/IMintableERC20.sol";
+import "./interfaces/ITokenFactory.sol"; // verification only
+import "./interfaces/IGovernanceFactory.sol"; // verification only
+import "./interfaces/IPoolInitializer.sol"; // verification only
+import "./interfaces/ILiquidityMigrator.sol"; // verification only
+import "./DERC20.sol"; // verification only
 
 /**
  * @title HolographFactory

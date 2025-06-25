@@ -66,15 +66,17 @@ test: build
 ## deploy-base: Deploy FeeRouter + Factory on Base.
 deploy-base:
 	@if [ -z "$(BASE_RPC_URL)" ]; then echo "$(RED)BASE_RPC_URL not set$(NC)"; exit 1; fi
+	@if [ -z "$(BASESCAN_API_KEY)" ]; then echo "$(RED)BASESCAN_API_KEY not set$(NC)"; exit 1; fi
 	$(call print-step,Deploying to Base…)
-	forge script script/DeployBase.s.sol --rpc-url $(BASE_RPC_URL) $(FORGE_FLAGS)
+	forge script script/DeployBase.s.sol --rpc-url $(BASE_RPC_URL) $(FORGE_FLAGS) --verify --etherscan-api-key $(BASESCAN_API_KEY)
 	$(call print-success,Base deploy)
 
 ## deploy-eth: Deploy StakingRewards + FeeRouter on Ethereum.
 deploy-eth:
 	@if [ -z "$(ETHEREUM_RPC_URL)" ]; then echo "$(RED)ETHEREUM_RPC_URL not set$(NC)"; exit 1; fi
+	@if [ -z "$(ETHERSCAN_API_KEY)" ]; then echo "$(RED)ETHERSCAN_API_KEY not set$(NC)"; exit 1; fi
 	$(call print-step,Deploying to Ethereum…)
-	forge script script/DeployEthereum.s.sol --rpc-url $(ETHEREUM_RPC_URL) $(FORGE_FLAGS)
+	forge script script/DeployEthereum.s.sol --rpc-url $(ETHEREUM_RPC_URL) $(FORGE_FLAGS) --verify --etherscan-api-key $(ETHERSCAN_API_KEY)
 	$(call print-success,Ethereum deploy)
 
 ## configure-base: Run Configure.s.sol against Base.
