@@ -1,0 +1,57 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+evm_version = "cancun"
+via_ir = true
+solc = '0.8.26'
+fs_permissions = [
+  { access = "read", path = "./lib" },
+  { access = "read", path = "./script" },
+  { access = "write", path = "./deployments" },
+]
+optimizer_runs = 0
+bytecode_hash = "none"
+optimizer = true
+gas_limit = "8000000000"
+
+[fuzz]
+max_test_rejects = 10000000
+runs = 32
+depth = 512
+
+[fmt]
+bracket_spacing = true
+int_types = 'long'
+line_length = 120
+multiline_func_header = 'params_first'
+number_underscore = 'thousands'
+quote_style = 'double'
+tab_width = 4
+wrap_comments = false
+
+[invariant]
+show_metrics = true
+fail_on_revert = true
+
+[etherscan]
+base = { key = "${BASESCAN_API_KEY}" }
+
+[rpc_endpoints]
+mainnet = "${MAINNET_RPC_URL}"
+unichain = "${UNICHAIN_MAINNET_RPC_UR}"
+base = "${BASE_MAINNET_RPC_UR}"
+ink = "${INK_MAINNET_RPC_UR}"
+unichain_sepolia = "${UNICHAIN_SEPOLIA_RPC_UR}"
+base_sepolia = "${BASE_SEPOLIA_RPC_UR}"
+ink_sepolia = "${INK_SEPOLIA_RPC_UR}"
+world_sepolia = "${WORLD_SEPOLIA_RPC_UR}"
+arbitrum_sepolia = "${ARBITRUM_SEPOLIA_RPC_UR}"
+
+[profile.deep]
+
+[profile.deep.invariant]
+show_metrics = true
+fail_on_revert = true
+runs = 2048
+depth = 512

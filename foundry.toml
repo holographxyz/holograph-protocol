@@ -26,21 +26,13 @@ remappings = [
   # forge-std tests
   "ds-test/=lib/forge-std/lib/ds-test/",
 
-  # Doppler helpers - main doppler remapping
-  "doppler/=lib/doppler/",
-
-  # OpenZeppelin Contracts v5 (standard)
-  "@openzeppelin/=lib/doppler/lib/v4-core/lib/openzeppelin-contracts/contracts/",
-
-  # OpenZeppelin Contracts Upgradeable
-  "@openzeppelin/contracts-upgradeable/=lib/doppler/lib/v4-core/lib/openzeppelin-contracts-upgradeable/contracts/",
+  # OpenZeppelin Contracts v5 (standard) - use direct lib instead of Doppler's copy
+  "@openzeppelin/=lib/openzeppelin-contracts/contracts/",
 ]
 
 # Specify include paths to control which directories are searched for imports
 include_paths = [
   "src",
-  "lib/doppler/src",
-  "lib/doppler/lib/v4-core/lib/openzeppelin-contracts/contracts",
   "lib/forge-std/src"
 ]
 

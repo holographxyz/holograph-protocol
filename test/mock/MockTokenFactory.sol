@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import "../../lib/doppler/src/interfaces/ITokenFactory.sol";
+import "../../src/interfaces/ITokenFactory.sol";
 import "./MockERC20.sol";
 
 contract MockTokenFactory is ITokenFactory {

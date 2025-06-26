@@ -4,7 +4,6 @@ pragma solidity ^0.8.24;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import {HolographFactory, CreateParams} from "src/HolographFactory.sol";
-import {CreateParams} from "lib/doppler/src/Airlock.sol";
 
 // Import additional v4-core dependencies not included in AirlockMiner.sol
 import {TickMath} from "lib/doppler/lib/v4-core/src/libraries/TickMath.sol";

@@ -41,11 +41,6 @@ import "./interfaces/ISwapRouter.sol";
 import "./interfaces/IStakingRewards.sol";
 import "./interfaces/IAirlock.sol";
 import "./interfaces/IUniswapV3Factory.sol";
-import "./interfaces/ITokenFactory.sol"; // Included solely for Etherscan verification dependency resolution
-import "./interfaces/IGovernanceFactory.sol"; // verification only
-import "./interfaces/IPoolInitializer.sol"; // verification only
-import "./interfaces/ILiquidityMigrator.sol"; // verification only
-import "./DERC20.sol"; // verification only
 
 /**
  * @title FeeRouter

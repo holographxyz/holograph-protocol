@@ -1,0 +1,84 @@
+name: test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types:
+      - opened
+      - synchronize
+
+env:
+  FOUNDRY_PROFILE: ci
+  MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
+  UNICHAIN_SEPOLIA_RPC_URL: ${{ secrets.UNICHAIN_SEPOLIA_RPC_URL }}
+  UNICHAIN_MAINNET_RPC_URL: ${{ secrets.UNICHAIN_MAINNET_RPC_URL }}
+
+jobs:
+  check:
+    strategy:
+      fail-fast: true
+
+    name: Foundry project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Run Forge build
+        run: |
+          forge --version
+          forge build --sizes
+        id: build
+
+      - name: Run Forge tests isToken0 (true) fee (0) protocolFee (0)
+        run: |
+          export IS_TOKEN_0=TRUE
+          forge test -vvv --via-ir
+        id: test0
+
+      - name: Run forge tests isToken0 (true) fee (30) protocolFee (0)
+        run: |
+          export IS_TOKEN_0=TRUE
+          export FEE=30
+          forge test -vvv --via-ir
+        id: test1
+
+      - name: Run forge tests isToken0 (true) fee (30) protocolFee (50)
+        run: |
+          export IS_TOKEN_0=TRUE
+          export FEE=30
+          export PROTOCOL_FEE=50
+          forge test -vvv --via-ir
+        id: test2
+
+      - name: Run forge tests with usingEth (true)
+        run: |
+          export USING_ETH=TRUE
+          export FEE=0
+          export PROTOCOL_FEE=0
+          forge test -vvv --via-ir
+        id: test3
+
+      - name: Run forge tests with usingEth (true) fee (30) protocolFee (0)
+        run: |
+          export USING_ETH=TRUE
+          export FEE=30
+          export PROTOCOL_FEE=0
+          forge test -vvv --via-ir
+        id: test4
+
+      - name: Run forge tests with usingEth (true) fee (30) protocolFee (50)
+        run: |
+          export USING_ETH=TRUE
+          export FEE=30
+          export PROTOCOL_FEE=50
+          forge test -vvv --via-ir
+        id: test5
