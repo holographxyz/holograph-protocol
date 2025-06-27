@@ -30,7 +30,7 @@ print-step    = @echo "$(YELLOW)$1$(NC)"
 # ---------------------------------------------------------------------------- #
 #                                   Targets                                   #
 # ---------------------------------------------------------------------------- #
-.PHONY: all help fmt build clean test deploy-base deploy-eth configure-base configure-eth keeper
+.PHONY: all help fmt build clean test deploy-base deploy-eth configure-base configure-eth keeper abi
 
 ## all: Build and test (default target)
 all: build test
@@ -98,4 +98,10 @@ keeper:
 	@if [ -z "$(BASE_RPC_URL)" ]; then echo "$(RED)BASE_RPC_URL not set$(NC)"; exit 1; fi
 	$(call print-step,Running keeper…)
 	forge script script/KeeperPullAndBridge.s.sol --rpc-url $(BASE_RPC_URL) $(FORGE_FLAGS)
-	$(call print-success,Keeper run) 
+	$(call print-success,Keeper run)
+
+## abi: Generate ABI JSON files from build artifacts.
+abi: build
+	$(call print-step,Generating ABIs…)
+	bash script/generate_abis.sh
+	$(call print-success,ABI generation) 

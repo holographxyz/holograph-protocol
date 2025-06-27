@@ -1,0 +1,131 @@
+[
+  {
+    "type": "function",
+    "name": "collectIntegratorFees",
+    "inputs": [
+      {
+        "name": "to",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "create",
+    "inputs": [
+      {
+        "name": "params",
+        "type": "tuple",
+        "internalType": "struct CreateParams",
+        "components": [
+          {
+            "name": "initialSupply",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "numTokensToSell",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "numeraire",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "tokenFactory",
+            "type": "address",
+            "internalType": "contract ITokenFactory"
+          },
+          {
+            "name": "tokenFactoryData",
+            "type": "bytes",
+            "internalType": "bytes"
+          },
+          {
+            "name": "governanceFactory",
+            "type": "address",
+            "internalType": "contract IGovernanceFactory"
+          },
+          {
+            "name": "governanceFactoryData",
+            "type": "bytes",
+            "internalType": "bytes"
+          },
+          {
+            "name": "poolInitializer",
+            "type": "address",
+            "internalType": "contract IPoolInitializer"
+          },
+          {
+            "name": "poolInitializerData",
+            "type": "bytes",
+            "internalType": "bytes"
+          },
+          {
+            "name": "liquidityMigrator",
+            "type": "address",
+            "internalType": "contract ILiquidityMigrator"
+          },
+          {
+            "name": "liquidityMigratorData",
+            "type": "bytes",
+            "internalType": "bytes"
+          },
+          {
+            "name": "integrator",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "salt",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          }
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "asset",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "pool",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "governance",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "timelock",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "migrationPool",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  }
+]
