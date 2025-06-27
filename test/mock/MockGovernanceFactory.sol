@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import "../../lib/doppler/src/interfaces/IGovernanceFactory.sol";
+import "../../src/interfaces/IGovernanceFactory.sol";
 
 contract MockGovernanceFactory is IGovernanceFactory {
     function create(address asset, bytes calldata data) external returns (address governance, address timelock) {

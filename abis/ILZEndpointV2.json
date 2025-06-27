@@ -1,0 +1,25 @@
+[
+  {
+    "type": "function",
+    "name": "send",
+    "inputs": [
+      {
+        "name": "dstEid",
+        "type": "uint32",
+        "internalType": "uint32"
+      },
+      {
+        "name": "payload",
+        "type": "bytes",
+        "internalType": "bytes"
+      },
+      {
+        "name": "options",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
+  }
+]

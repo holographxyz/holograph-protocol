@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import "../../lib/doppler/src/interfaces/ILiquidityMigrator.sol";
+import "../../src/interfaces/ILiquidityMigrator.sol";
 
 contract MockLiquidityMigrator is ILiquidityMigrator {
     function initialize(

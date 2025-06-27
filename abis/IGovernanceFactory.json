@@ -1,0 +1,31 @@
+[
+  {
+    "type": "function",
+    "name": "create",
+    "inputs": [
+      {
+        "name": "asset",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "governanceData",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "governance",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "timelockController",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  }
+]
