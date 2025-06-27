@@ -5,6 +5,8 @@ bytecode_hash = "none"
 optimizer_runs = 0
 optimizer = true
 
+sparse_mode = true
+
 src = 'src'
 via_ir = true
 ffi = true
@@ -26,14 +28,29 @@ remappings = [
   # forge-std tests
   "ds-test/=lib/forge-std/lib/ds-test/",
 
-  # OpenZeppelin Contracts v5 (standard) - use direct lib instead of Doppler's copy
-  "@openzeppelin/=lib/openzeppelin-contracts/contracts/",
+  # OpenZeppelin Contracts – canonical mapping now points to the nested v4-core copy
+  "@openzeppelin/=lib/doppler/lib/v4-core/lib/openzeppelin-contracts/contracts/",
+  "openzeppelin-contracts/=lib/doppler/lib/v4-core/lib/openzeppelin-contracts/contracts/",
+  # Point any other nested copies back to the same implementation to avoid duplicates
+  "lib/doppler/lib/v4-periphery/lib/permit2/lib/openzeppelin-contracts/contracts/=lib/doppler/lib/v4-core/lib/openzeppelin-contracts/contracts/",
+  "lib/doppler/lib/v4-periphery/lib/v4-core/lib/openzeppelin-contracts/contracts/=lib/doppler/lib/v4-core/lib/openzeppelin-contracts/contracts/",
+  "lib/doppler/lib/universal-router/lib/openzeppelin-contracts/contracts/=lib/doppler/lib/v4-core/lib/openzeppelin-contracts/contracts/",
+  # Redirect paths without /contracts as well
+  "lib/doppler/lib/v4-core/lib/openzeppelin-contracts/=lib/doppler/lib/v4-core/lib/openzeppelin-contracts/",
+  "lib/doppler/lib/v4-periphery/lib/permit2/lib/openzeppelin-contracts/=lib/doppler/lib/v4-core/lib/openzeppelin-contracts/",
+  "lib/doppler/lib/v4-periphery/lib/v4-core/lib/openzeppelin-contracts/=lib/doppler/lib/v4-core/lib/openzeppelin-contracts/",
+  "lib/doppler/lib/universal-router/lib/openzeppelin-contracts/=lib/doppler/lib/v4-core/lib/openzeppelin-contracts/",
 ]
 
 # Specify include paths to control which directories are searched for imports
 include_paths = [
   "src",
   "lib/forge-std/src"
+]
+
+ignored_paths = [
+  # Ignore the top-level OZ copy to ensure only one version is compiled
+  "lib/openzeppelin-contracts"
 ]
 
 [rpc_endpoints]
