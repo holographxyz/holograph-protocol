@@ -9,6 +9,7 @@ import {
   encodeAbiParameters,
   parseAbiParameters,
   decodeAbiParameters,
+  encodeFunctionData,
   Address,
   Hash,
   keccak256,
@@ -293,17 +294,19 @@ async function createToken() {
     0n,
   ]);
 
-  // Use block timestamp like the Forge test does
+  // Set auction start time to be safely in the future to avoid InvalidStartTime()
   const latestBlock = await publicClient.getBlock();
-  const now = Number(latestBlock.timestamp);
-  const auctionEnd = now + config.auctionDurationDays * 24 * 60 * 60;
+  const blockTime = Number(latestBlock.timestamp);
+  const auctionStart = blockTime + 300; // Start 5 minutes in the future
+  const auctionEnd = auctionStart + config.auctionDurationDays * 24 * 60 * 60;
 
   console.log("Auction timing:", {
-    blockTimestamp: now,
+    blockTimestamp: blockTime,
     currentTime: Math.floor(Date.now() / 1000),
-    auctionStart: now,
+    auctionStart: auctionStart,
     auctionEnd: auctionEnd,
     duration: config.auctionDurationDays + " days",
+    bufferSeconds: 300,
   });
 
   const poolInitializerData = encodeAbiParameters(
@@ -313,7 +316,7 @@ async function createToken() {
     [
       config.minProceeds,
       config.maxProceeds,
-      BigInt(now),
+      BigInt(auctionStart),
       BigInt(auctionEnd),
       6000, // startTick (int24)
       60000, // endTick (int24)
@@ -354,6 +357,84 @@ async function createToken() {
   };
 
   try {
+    // Step 1: Simulate the contract call to catch revert reasons
+    console.log("🔍 DEBUGGING: Simulating contract call to catch revert reasons...");
+    try {
+      const simulationResult = await publicClient.simulateContract({
+        address: HOLOGRAPH_FACTORY,
+        abi: HOLOGRAPH_FACTORY_ABI,
+        functionName: "createToken",
+        args: [createParams],
+        account: account.address,
+      });
+      console.log("✅ Simulation successful, predicted result:", simulationResult.result);
+    } catch (simulationError: any) {
+      console.log("❌ SIMULATION FAILED - This reveals the revert reason:");
+      console.log("Error name:", simulationError.name);
+      console.log("Error message:", simulationError.message);
+      console.log("Error shortMessage:", simulationError.shortMessage);
+
+      if (simulationError.cause) {
+        console.log("Error cause:", simulationError.cause);
+      }
+
+      if (simulationError.data) {
+        console.log("Raw error data:", simulationError.data);
+        const errorSignature = simulationError.data.slice(0, 10);
+        console.log("Error signature:", errorSignature);
+
+        // Common Holograph/Doppler error signatures
+        const knownErrors = {
+          "0xe65af6a0": "WrongModuleState(address)",
+          "0x08c379a0": "Error(string)", // Standard revert reason
+          "0x4e487b71": "Panic(uint256)", // Panic errors
+          "0x875bfcd5": "HOLOGRAPH: module not found",
+          "0x47da3b73": "HOLOGRAPH: operator not found",
+          "0x8a4c79d2": "Airlock: wrong module state",
+        };
+
+        if (knownErrors[errorSignature as keyof typeof knownErrors]) {
+          console.log("Known error type:", knownErrors[errorSignature as keyof typeof knownErrors]);
+        }
+      }
+
+      // Show detailed error information
+      console.log("Full simulation error object:", JSON.stringify(simulationError, null, 2));
+
+      // This will help us understand the exact revert reason before proceeding
+      throw new Error(`🚨 CONTRACT SIMULATION FAILED: ${simulationError.shortMessage || simulationError.message}`);
+    }
+
+    // Step 2: Debug parameter validation
+    console.log("📋 DEBUGGING: Validating transaction parameters:");
+    console.log("- Contract:", HOLOGRAPH_FACTORY);
+    console.log("- Account:", account.address);
+    console.log("- Salt:", createParams.salt);
+    console.log("- TokenFactory:", createParams.tokenFactory);
+    console.log("- GovernanceFactory:", createParams.governanceFactory);
+    console.log("- PoolInitializer:", createParams.poolInitializer);
+    console.log("- LiquidityMigrator:", createParams.liquidityMigrator);
+    console.log("- Integrator:", createParams.integrator);
+    console.log("- InitialSupply:", createParams.initialSupply.toString());
+    console.log("- NumTokensToSell:", createParams.numTokensToSell.toString());
+    console.log("- Numeraire:", createParams.numeraire);
+
+    // Step 3: Verify contract states
+    console.log("🔍 DEBUGGING: Checking contract states...");
+    try {
+      // Check if contracts exist
+      const factoryCode = await publicClient.getBytecode({ address: HOLOGRAPH_FACTORY });
+      const airlockCode = await publicClient.getBytecode({ address: DOPPLER_ADDRESSES.airlock as Address });
+      const tokenFactoryCode = await publicClient.getBytecode({ address: DOPPLER_ADDRESSES.tokenFactory as Address });
+
+      console.log("Contract bytecode lengths:");
+      console.log("- HolographFactory:", factoryCode?.length || 0);
+      console.log("- Doppler Airlock:", airlockCode?.length || 0);
+      console.log("- Token Factory:", tokenFactoryCode?.length || 0);
+    } catch (codeError) {
+      console.log("Could not check contract bytecode:", codeError);
+    }
+
     console.log("Estimating gas...");
     const gasEstimate = await publicClient.estimateContractGas({
       address: HOLOGRAPH_FACTORY,
@@ -363,13 +444,42 @@ async function createToken() {
       account: account.address,
     });
 
-    console.log("Submitting transaction...");
+    console.log("📊 Gas estimated:", gasEstimate.toString());
+
+    // Step 4: Advanced debugging - check simulation vs execution timing
+    console.log("🔍 DEBUGGING: Checking execution context differences...");
+    const preExecutionBlock = await publicClient.getBlock();
+    console.log("Pre-execution block:", {
+      number: preExecutionBlock.number,
+      timestamp: preExecutionBlock.timestamp,
+      hash: preExecutionBlock.hash,
+    });
+
+    // Try static call with exact current block
+    try {
+      const staticCallResult = await publicClient.call({
+        to: HOLOGRAPH_FACTORY,
+        data: encodeFunctionData({
+          abi: HOLOGRAPH_FACTORY_ABI,
+          functionName: "createToken",
+          args: [createParams],
+        }),
+        account: account.address,
+        blockNumber: preExecutionBlock.number,
+      });
+      console.log("✅ Static call at current block succeeded:", staticCallResult);
+    } catch (staticError: any) {
+      console.log("❌ Static call failed:", staticError.message);
+      console.log("This suggests the issue happens at execution time!");
+    }
+
+    console.log("Submitting transaction with extra gas buffer...");
     const hash = await walletClient.writeContract({
       address: HOLOGRAPH_FACTORY,
       abi: HOLOGRAPH_FACTORY_ABI,
       functionName: "createToken",
       args: [createParams],
-      gas: (gasEstimate * 120n) / 100n,
+      gas: gasEstimate * 2n, // Double the gas to rule out gas issues
     });
 
     console.log("Transaction hash:", hash);
@@ -383,6 +493,58 @@ async function createToken() {
       gasUsed: receipt.gasUsed.toString(),
       logs: receipt.logs.length,
     });
+
+    // Step 5: Debug why it reverted - check if computed addresses already exist
+    if (receipt.status === "reverted") {
+      console.log("🔍 DEBUGGING: Checking if computed addresses already exist...");
+
+      // Get the mined addresses for debugging
+      const saltUsed = createParams.salt;
+      console.log("Salt used:", saltUsed);
+
+      // Get the mined hook and token addresses
+      const tokenFactoryData = createParams.tokenFactoryData;
+      const poolInitializerData = createParams.poolInitializerData;
+
+      try {
+        // Simulate again at the actual transaction block to see the difference
+        const actualBlock = await publicClient.getBlock({ blockNumber: receipt.blockNumber });
+        console.log("Actual transaction block:", {
+          number: actualBlock.number,
+          timestamp: actualBlock.timestamp,
+          hash: actualBlock.hash,
+        });
+
+        // Try simulation at the actual block
+        try {
+          const simulationAtTxBlock = await publicClient.simulateContract({
+            address: HOLOGRAPH_FACTORY,
+            abi: HOLOGRAPH_FACTORY_ABI,
+            functionName: "createToken",
+            args: [createParams],
+            account: account.address,
+            blockNumber: receipt.blockNumber,
+          });
+          console.log("✅ Simulation at tx block succeeded:", simulationAtTxBlock.result);
+        } catch (txBlockError: any) {
+          console.log("❌ Simulation at tx block failed:", txBlockError.shortMessage);
+          console.log("This confirms the state changed between simulation and execution!");
+
+          if (txBlockError.data) {
+            const errorSignature = txBlockError.data.slice(0, 10);
+            console.log("Error signature at tx block:", errorSignature);
+
+            // Check for common deployment conflicts
+            if (errorSignature === "0xe65af6a0") {
+              console.log("🚨 LIKELY CAUSE: Another transaction used the same salt!");
+              console.log("The computed hook/token addresses already exist.");
+            }
+          }
+        }
+      } catch (debugError) {
+        console.log("Debug error:", debugError);
+      }
+    }
 
     if (receipt.status === "success") {
       console.log("✅ TOKEN CREATION SUCCESSFUL!");
