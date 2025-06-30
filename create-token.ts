@@ -1,3 +1,22 @@
+/**
+ * Holograph Token Creation Script with Automated Contract Verification
+ *
+ * Environment Variables Required:
+ * - PRIVATE_KEY: Private key for the account creating tokens
+ * - BASESCAN_API_KEY: API key for contract verification on Base Sepolia
+ *   Get one at: https://basescan.org/apis
+ *
+ * Optional Environment Variables:
+ * - ETHERSCAN_API_KEY: Alternative to BASESCAN_API_KEY
+ * - BASE_SEPOLIA_RPC_URL: Custom RPC endpoint (uses public by default)
+ *
+ * Features:
+ * ✅ Mines valid salt for Doppler deployment
+ * ✅ Creates tokens through HolographFactory
+ * ✅ Automatically verifies deployed DERC20 contracts
+ * ✅ Provides Basescan links for easy access
+ */
+
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -16,10 +35,12 @@ import {
   concat,
   pad,
   toHex,
+  decodeEventLog,
 } from "viem";
 import { baseSepolia } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import { readFileSync } from "fs";
+import { spawn } from "child_process";
 
 // Contract addresses - Base Sepolia testnet
 const HOLOGRAPH_FACTORY = "0x5290Bee84DC83AC667cF9573eC1edC6FE38eFe50" as const;
@@ -63,6 +84,14 @@ const HOLOGRAPH_FACTORY_ABI = [
     outputs: [{ name: "asset", type: "address" }],
     stateMutability: "nonpayable",
   },
+  {
+    type: "event",
+    name: "TokenLaunched",
+    inputs: [
+      { name: "asset", type: "address", indexed: true },
+      { name: "salt", type: "bytes32", indexed: false },
+    ],
+  },
 ] as const;
 
 // Hook flags - exact values from AirlockMiner.sol
@@ -86,6 +115,190 @@ const REQUIRED_FLAGS =
 
 // Flag mask to check bottom 14 bits - from AirlockMiner.sol
 const FLAG_MASK = 0x3fffn;
+
+/**
+ * Execute shell command and return promise
+ */
+function execCommand(command: string, args: string[], options: any = {}): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const process = spawn(command, args, {
+      stdio: ["pipe", "pipe", "pipe"],
+      ...options,
+    });
+
+    let stdout = "";
+    let stderr = "";
+
+    process.stdout?.on("data", (data) => {
+      stdout += data.toString();
+    });
+
+    process.stderr?.on("data", (data) => {
+      stderr += data.toString();
+    });
+
+    process.on("close", (code) => {
+      if (code === 0) {
+        resolve(stdout);
+      } else {
+        reject(new Error(`Command failed with code ${code}\nstdout: ${stdout}\nstderr: ${stderr}`));
+      }
+    });
+  });
+}
+
+/**
+ * Verify contract using forge verify-contract
+ */
+async function verifyContract(
+  contractAddress: string,
+  contractPath: string,
+  constructorArgs: string,
+  chainId: number,
+  apiKey: string,
+): Promise<void> {
+  console.log(`🔍 Verifying contract at ${contractAddress}...`);
+  console.log(`📋 Constructor args: ${constructorArgs}`);
+
+  try {
+    const args = [
+      "verify-contract",
+      "--chain-id",
+      chainId.toString(),
+      "--constructor-args",
+      constructorArgs,
+      "--etherscan-api-key",
+      apiKey,
+      contractAddress,
+      contractPath,
+    ];
+
+    console.log("🚀 Running forge verify-contract command...");
+    console.log(`forge ${args.join(" ")}`);
+
+    const result = await execCommand("forge", args, {
+      cwd: process.cwd(),
+    });
+
+    console.log("✅ Contract verification successful!");
+    console.log(result);
+  } catch (error: any) {
+    console.error("❌ Contract verification failed:");
+    console.error(error.message);
+
+    // Check if already verified
+    if (error.message.includes("already verified") || error.message.includes("Contract source code already verified")) {
+      console.log("ℹ️  Contract was already verified.");
+      return;
+    }
+
+    throw error;
+  }
+}
+
+/**
+ * Extract token address from TokenLaunched event logs
+ */
+function extractTokenAddress(logs: any[]): string | null {
+  for (const log of logs) {
+    try {
+      if (log.address.toLowerCase() === HOLOGRAPH_FACTORY.toLowerCase()) {
+        const decoded = decodeEventLog({
+          abi: HOLOGRAPH_FACTORY_ABI,
+          data: log.data,
+          topics: log.topics,
+        });
+
+        if (decoded.eventName === "TokenLaunched") {
+          return decoded.args.asset as string;
+        }
+      }
+    } catch (error) {
+      // Skip logs that don't match our ABI
+      continue;
+    }
+  }
+  return null;
+}
+
+/**
+ * Verify the DERC20 token contract with proper constructor arguments
+ */
+async function verifyTokenContract(tokenAddress: string, createParams: any, config: any): Promise<void> {
+  console.log("🔍 Preparing DERC20 contract verification...");
+
+  try {
+    // Check if BASESCAN_API_KEY is available
+    const apiKey = process.env.BASESCAN_API_KEY || process.env.ETHERSCAN_API_KEY;
+    if (!apiKey) {
+      console.log("⚠️  BASESCAN_API_KEY or ETHERSCAN_API_KEY not found in environment variables");
+      console.log("💡 Add BASESCAN_API_KEY to your .env file to enable contract verification");
+      return;
+    }
+
+    // Decode the tokenFactoryData to get the constructor arguments
+    const [name, symbol, yearlyMintCap, vestingDuration, recipients, amounts, tokenURI] = decodeAbiParameters(
+      parseAbiParameters("string, string, uint256, uint256, address[], uint256[], string"),
+      createParams.tokenFactoryData,
+    );
+
+    // Construct the exact constructor arguments that were used to deploy DERC20
+    // DERC20 constructor signature:
+    // constructor(name_, symbol_, initialSupply, recipient, owner_, yearlyMintRate_, vestingDuration_, recipients_, amounts_, tokenURI_)
+    const constructorArgs = encodeAbiParameters(
+      parseAbiParameters("string, string, uint256, address, address, uint256, uint256, address[], uint256[], string"),
+      [
+        name, // name_
+        symbol, // symbol_
+        createParams.initialSupply, // initialSupply
+        DOPPLER_ADDRESSES.airlock as Address, // recipient (airlock)
+        DOPPLER_ADDRESSES.airlock as Address, // owner_ (airlock)
+        yearlyMintCap, // yearlyMintRate_
+        vestingDuration, // vestingDuration_
+        recipients, // recipients_
+        amounts, // amounts_
+        tokenURI, // tokenURI_
+      ],
+    );
+
+    console.log("📋 DERC20 Constructor Arguments:");
+    console.log(`  - name: ${name}`);
+    console.log(`  - symbol: ${symbol}`);
+    console.log(`  - initialSupply: ${createParams.initialSupply.toString()}`);
+    console.log(`  - recipient: ${DOPPLER_ADDRESSES.airlock}`);
+    console.log(`  - owner: ${DOPPLER_ADDRESSES.airlock}`);
+    console.log(`  - yearlyMintCap: ${yearlyMintCap.toString()}`);
+    console.log(`  - vestingDuration: ${vestingDuration.toString()}`);
+    console.log(`  - recipients: [${recipients.join(", ")}]`);
+    console.log(`  - amounts: [${amounts.join(", ")}]`);
+    console.log(`  - tokenURI: ${tokenURI}`);
+
+    // Verify the DERC20 contract
+    await verifyContract(
+      tokenAddress,
+      "lib/doppler/src/DERC20.sol:DERC20",
+      constructorArgs,
+      84532, // Base Sepolia chain ID
+      apiKey,
+    );
+
+    console.log("🎉 Token contract verification completed!");
+    console.log(`🔗 View verified contract: https://sepolia.basescan.org/address/${tokenAddress}#code`);
+    console.log("");
+    console.log("🎊 DEPLOYMENT SUMMARY:");
+    console.log(`📍 Token Address: ${tokenAddress}`);
+    console.log(`📛 Token Name: ${name}`);
+    console.log(`🏷️  Token Symbol: ${symbol}`);
+    console.log(`💰 Initial Supply: ${createParams.initialSupply.toString()}`);
+    console.log(`✅ Contract Status: Verified on Basescan`);
+    console.log(`🌐 Explorer: https://sepolia.basescan.org/address/${tokenAddress}`);
+    console.log(`📄 Contract Code: https://sepolia.basescan.org/address/${tokenAddress}#code`);
+  } catch (error: any) {
+    console.error("❌ Token contract verification failed:");
+    console.error(error.message);
+    console.log("💡 You can manually verify the contract later using the displayed constructor arguments");
+  }
+}
 
 /**
  * Compute CREATE2 address - exact implementation from AirlockMiner.sol
@@ -551,6 +764,19 @@ async function createToken() {
       console.log("🎉 Transaction confirmed on block:", receipt.blockNumber);
       console.log("💰 Gas used:", receipt.gasUsed.toString());
       console.log("📝 Events emitted:", receipt.logs.length);
+
+      // Extract token address from TokenLaunched event logs
+      const tokenAddress = extractTokenAddress(receipt.logs);
+      if (tokenAddress) {
+        console.log("🎉 Token address:", tokenAddress);
+        console.log("🔗 Basescan:", `https://sepolia.basescan.org/address/${tokenAddress}`);
+
+        // Verify the DERC20 token contract
+        await verifyTokenContract(tokenAddress, createParams, config);
+      } else {
+        console.log("⚠️  Could not extract token address from transaction logs");
+      }
+
       return hash;
     } else {
       console.log("❌ Transaction reverted on chain");
