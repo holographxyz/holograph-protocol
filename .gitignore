@@ -84,6 +84,7 @@ wallet.json
 
 # foundry test compilation files
 out
+cache/
 
 # pnpm
 pnpm-error.log
