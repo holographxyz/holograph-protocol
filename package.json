@@ -1,0 +1,51 @@
+{
+  "name": "holograph-token-creator",
+  "version": "1.0.0",
+  "description": "TypeScript utility for deploying ERC20 tokens via Holograph protocol",
+  "main": "dist/create-token.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch create-token.ts",
+    "start": "node dist/create-token.js",
+    "create-token": "tsx create-token.ts",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint *.ts",
+    "lint:fix": "eslint *.ts --fix",
+    "format": "prettier --write *.ts *.json *.md",
+    "format:check": "prettier --check *.ts *.json *.md",
+    "clean": "rm -rf dist",
+    "prebuild": "npm run clean",
+    "prestart": "npm run build"
+  },
+  "dependencies": {
+    "viem": "^2.8.18",
+    "dotenv": "^17.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.5",
+    "tsx": "^4.7.1",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "holograph",
+    "doppler",
+    "token",
+    "erc20",
+    "base",
+    "uniswap",
+    "defi"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/holograph/token-creator.git"
+  },
+  "license": "MIT"
+}

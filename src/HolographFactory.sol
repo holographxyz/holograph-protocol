@@ -6,7 +6,7 @@ import "@openzeppelin/utils/Pausable.sol";
 import "@openzeppelin/utils/ReentrancyGuard.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/token/ERC20/IERC20.sol";
-import {CreateParams} from "lib/doppler/src/Airlock.sol";
+import {CreateParams} from "./interfaces/DopplerStructs.sol";
 import "./interfaces/IAirlock.sol";
 import "./interfaces/IFeeRouter.sol";
 import "./interfaces/ILZEndpointV2.sol";

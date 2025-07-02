@@ -1,0 +1,30 @@
+[
+  {
+    "type": "function",
+    "name": "lzReceive",
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint32",
+        "internalType": "uint32"
+      },
+      {
+        "name": "",
+        "type": "bytes",
+        "internalType": "bytes"
+      },
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
+  }
+]

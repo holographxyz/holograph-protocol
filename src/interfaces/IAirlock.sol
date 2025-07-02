@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {CreateParams} from "lib/doppler/src/Airlock.sol";
+import {CreateParams} from "./DopplerStructs.sol";
 
 interface IAirlock {
     function create(

@@ -27,6 +27,125 @@ Base Chain                   LayerZero V2              Ethereum Chain
 └─────────────────┘         └─────────────┘          └─────────────────┘
 ```
 
+## Development & Deployment
+
+### Quick Start with Makefile
+
+The project includes a streamlined Makefile for common development tasks. All deployment operations default to **dry-run mode** for safety - no real transactions are sent unless explicitly enabled.
+
+#### Basic Commands
+
+```bash
+# Development
+make build          # Compile all contracts
+make test           # Run the full test suite
+make fmt            # Format Solidity code
+make clean          # Clean build artifacts
+
+# View all available commands
+make help
+```
+
+#### Deployment Commands
+
+**Dry-run mode (default - safe for testing):**
+
+```bash
+make deploy-base    # Simulate Base deployment
+make deploy-eth     # Simulate Ethereum deployment
+make configure-base # Simulate Base configuration
+make configure-eth  # Simulate Ethereum configuration
+make keeper         # Simulate keeper operations
+```
+
+**Live deployment mode:**
+
+```bash
+# Set environment variables
+export BROADCAST=true
+export DEPLOYER_PK=0x...  # For deploy-base and deploy-eth
+export OWNER_PK=0x...     # For configure-base and configure-eth
+export KEEPER_PK=0x...    # For keeper operations
+
+# Required RPC URLs
+export BASE_RPC_URL=https://mainnet.base.org
+export ETHEREUM_RPC_URL=https://eth-mainnet.alchemyapi.io/v2/YOUR_KEY
+
+# Required API keys for verification
+export BASESCAN_API_KEY=your_basescan_key
+export ETHERSCAN_API_KEY=your_etherscan_key
+
+# Now run actual deployments
+make deploy-base    # Deploy to Base mainnet
+make deploy-eth     # Deploy to Ethereum mainnet
+```
+
+#### Environment Variables
+
+| Variable            | Required For           | Description                                 |
+| ------------------- | ---------------------- | ------------------------------------------- |
+| `BROADCAST`         | Live deployments       | Set to `true` to send real transactions     |
+| `DEPLOYER_PK`       | `deploy-*` commands    | Private key for contract deployment         |
+| `OWNER_PK`          | `configure-*` commands | Private key for contract administration     |
+| `KEEPER_PK`         | `keeper` command       | Private key for automated operations        |
+| `BASE_RPC_URL`      | Base operations        | RPC endpoint for Base network               |
+| `ETHEREUM_RPC_URL`  | Ethereum operations    | RPC endpoint for Ethereum network           |
+| `BASESCAN_API_KEY`  | Base verification      | API key for Basescan contract verification  |
+| `ETHERSCAN_API_KEY` | Ethereum verification  | API key for Etherscan contract verification |
+
+#### Typical Deployment Flow
+
+1. **Test everything in dry-run mode first:**
+
+   ```bash
+   make deploy-base deploy-eth configure-base configure-eth
+   ```
+
+2. **Deploy to mainnet:**
+
+   ```bash
+   export BROADCAST=true
+   export DEPLOYER_PK=0x...
+   make deploy-base deploy-eth
+   ```
+
+3. **Configure the deployed contracts:**
+
+   ```bash
+   export OWNER_PK=0x...  # Different key for admin operations
+   make configure-base configure-eth
+   ```
+
+4. **Set up automation:**
+   ```bash
+   export KEEPER_PK=0x...
+   make keeper  # Test keeper operations
+   ```
+
+#### Contract Verification
+
+Contracts are automatically verified during deployment when `BROADCAST=true` and the appropriate API keys are set. If verification fails during deployment, you can retry later:
+
+```bash
+# Re-run deployment with --resume --verify
+forge script script/DeployBase.s.sol --rpc-url $BASE_RPC_URL --resume --verify --etherscan-api-key $BASESCAN_API_KEY
+```
+
+#### Deployment Artifacts
+
+Deployed contract addresses are automatically saved to:
+
+- `deployments/base/` - Base network deployments
+- `broadcast/` - Complete transaction logs and artifacts
+
+#### Safety Features
+
+- **Dry-run by default**: Scripts never broadcast without explicit `BROADCAST=true`
+- **Environment validation**: Scripts check for required environment variables
+- **Chain validation**: Scripts warn when deploying to unexpected networks
+- **Role separation**: Different private keys for deployment vs. administration
+- **Colored output**: Clear visual feedback on operation status
+
 ## Core Contracts
 
 ### HolographFactory
@@ -189,32 +308,43 @@ export KEEPER_ADDRESS="0x..."
 
 ## Deployment
 
-### Base Chain
+> **💡 Quick Start**: Use the simplified Makefile commands documented in the [Development & Deployment](#development--deployment) section above for streamlined deployment.
+
+### Using Makefile (Recommended)
 
 ```bash
-# Deploy FeeRouter
-forge create src/FeeRouter.sol:FeeRouter \
-  --constructor-args $LZ_ENDPOINT $ETH_EID 0 0 0 0 $TREASURY \
-  --rpc-url $BASE_RPC --private-key $DEPLOYER_PK
+# Set up environment
+export BROADCAST=true
+export DEPLOYER_PK=0x...
+export BASE_RPC_URL=https://mainnet.base.org
+export ETHEREUM_RPC_URL=https://eth-mainnet.alchemyapi.io/v2/YOUR_KEY
 
-# Deploy HolographFactory
-forge create src/HolographFactory.sol:HolographFactory \
-  --constructor-args $LZ_ENDPOINT $DOPPLER_AIRLOCK $FEE_ROUTER \
-  --rpc-url $BASE_RPC --private-key $DEPLOYER_PK
+# Deploy to both chains
+make deploy-base deploy-eth
 ```
 
-### Ethereum Chain
+### Manual Deployment (Advanced)
+
+For advanced users who need more control over deployment parameters:
+
+#### Base Chain
 
 ```bash
-# Deploy FeeRouter
-forge create src/FeeRouter.sol:FeeRouter \
-  --constructor-args $LZ_ENDPOINT $BASE_EID $STAKING_REWARDS $HLG $WETH $SWAP_ROUTER $TREASURY \
-  --rpc-url $ETH_RPC --private-key $DEPLOYER_PK
+# Deploy using deployment script
+forge script script/DeployBase.s.sol \
+  --rpc-url $BASE_RPC_URL \
+  --broadcast --private-key $DEPLOYER_PK \
+  --verify --etherscan-api-key $BASESCAN_API_KEY
+```
 
-# Deploy StakingRewards
-forge create src/StakingRewards.sol:StakingRewards \
-  --constructor-args $HLG $FEE_ROUTER \
-  --rpc-url $ETH_RPC --private-key $DEPLOYER_PK
+#### Ethereum Chain
+
+```bash
+# Deploy using deployment script
+forge script script/DeployEthereum.s.sol \
+  --rpc-url $ETHEREUM_RPC_URL \
+  --broadcast --private-key $DEPLOYER_PK \
+  --verify --etherscan-api-key $ETHERSCAN_API_KEY
 ```
 
 ## Operations
