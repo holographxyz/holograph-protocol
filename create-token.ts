@@ -34,17 +34,16 @@ import { privateKeyToAccount } from "viem/accounts";
 import { readFileSync } from "fs";
 import { spawn } from "child_process";
 
-// Contract addresses - Base Sepolia testnet
-const HOLOGRAPH_FACTORY = "0x5290Bee84DC83AC667cF9573eC1edC6FE38eFe50" as const;
+const HOLOGRAPH_FACTORY = "0x49aD74E236A3E7E19B702ce7d1BBb9B89Ae17a95" as const;
 
 const DOPPLER_ADDRESSES = {
-  airlock: "0x3411306cE66c9469BfF1535bA955503C4BdE1c6E",
-  tokenFactory: "0xC69bA223C617F7d936B3cF2012AA644815dBE9fF",
-  governanceFactory: "0x9DbfAAdc8C0cB2C34Ba698Dd9426555336992E20",
-  v4Initializer: "0xCa2079706A4C2A4A1Aa637dFb47D7F27fE58653F",
-  migrator: "0x04A898F3722C38F9Def707bD17dC78920eFa977C",
+  airlock: "0x3411306Ce66c9469BFF1535BA955503c4Bde1C6e",
+  tokenFactory: "0xc69Ba223c617F7D936B3cf2012aa644815dBE9Ff",
+  governanceFactory: "0x9dBFaaDC8c0cB2c34bA698DD9426555336992e20",
+  v4Initializer: "0x8e891d249f1ecbffa6143c03eb1b12843aef09d3", // Latest deployment (July 4, 2025)
+  migrator: "0x04a898f3722c38F9Def707bD17DC78920EFA977C",
   poolManager: "0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408",
-  dopplerDeployer: "0x4bF819DfA4066BD7C9F21ea3dB911bD8c10cB3Ca",
+  dopplerDeployer: "0x60a039e4add40ca95e0475c11e8a4182d06c9aa0", // Latest deployment (July 4, 2025)
 } as const;
 
 const HOLOGRAPH_FACTORY_ABI = [
@@ -250,8 +249,15 @@ function computeCreate2Address(salt: `0x${string}`, initCodeHash: `0x${string}`,
 
 function getDopplerCreationCode(): `0x${string}` {
   try {
-    const bytecode = readFileSync("lib/doppler/out/Doppler.sol/Doppler.bin", "utf8").trim();
-    return `0x${bytecode}` as `0x${string}`;
+    const artifactPath = "lib/doppler/out/Doppler.sol/Doppler.json";
+    const artifactContent = readFileSync(artifactPath, "utf8");
+    const artifact = JSON.parse(artifactContent);
+
+    if (!artifact.bytecode || !artifact.bytecode.object) {
+      throw new Error("Bytecode not found in artifact");
+    }
+
+    return artifact.bytecode.object as `0x${string}`;
   } catch (error) {
     throw new Error(`Could not load Doppler bytecode: ${error}`);
   }
@@ -259,8 +265,15 @@ function getDopplerCreationCode(): `0x${string}` {
 
 function getDERC20CreationCode(): `0x${string}` {
   try {
-    const bytecode = readFileSync("lib/doppler/out/DERC20.sol/DERC20.bin", "utf8").trim();
-    return `0x${bytecode}` as `0x${string}`;
+    const artifactPath = "lib/doppler/out/DERC20.sol/DERC20.json";
+    const artifactContent = readFileSync(artifactPath, "utf8");
+    const artifact = JSON.parse(artifactContent);
+
+    if (!artifact.bytecode || !artifact.bytecode.object) {
+      throw new Error("Bytecode not found in artifact");
+    }
+
+    return artifact.bytecode.object as `0x${string}`;
   } catch (error) {
     throw new Error(`Could not load DERC20 bytecode: ${error}`);
   }
@@ -317,7 +330,7 @@ async function mineValidSalt(
       gamma,
       isToken0,
       numPDSlugs,
-      DOPPLER_ADDRESSES.v4Initializer as Address,
+      DOPPLER_ADDRESSES.v4Initializer as Address, // This is the msg.sender in DopplerDeployer.deploy()
       lpFee,
     ],
   );
@@ -383,6 +396,8 @@ async function mineValidSalt(
     console.log(`✅ Found valid salt: ${saltNum}`);
     console.log(`📍 Hook address: ${hookAddress}`);
     console.log(`📍 Asset address: ${assetAddress}`);
+    console.log(`🔍 Hook flags: ${hookFlags} (required: ${REQUIRED_FLAGS})`);
+    console.log(`🔍 Token ordering: isToken0=${isToken0}, asset < numeraire: ${assetBigInt < numeraireBigInt}`);
     return salt;
   }
 
@@ -397,15 +412,17 @@ async function createToken() {
 
   const account = privateKeyToAccount(privateKey);
 
+  const rpcUrl = process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org";
+
   const publicClient = createPublicClient({
     chain: baseSepolia,
-    transport: http(),
+    transport: http(rpcUrl),
   });
 
   const walletClient = createWalletClient({
     account,
     chain: baseSepolia,
-    transport: http(),
+    transport: http(rpcUrl),
   });
 
   const config = {
@@ -432,9 +449,9 @@ async function createToken() {
   ]);
 
   // Set auction timing with buffer to avoid InvalidStartTime()
-  const latestBlock = await publicClient.getBlock();
-  const blockTime = Number(latestBlock.timestamp);
-  const auctionStart = blockTime + 300;
+  // Use a fixed future time to ensure consistency between mining and deployment
+  const fixedStartTime = Math.floor(Date.now() / 1000) + 600; // 10 minutes from now
+  const auctionStart = fixedStartTime;
   const auctionEnd = auctionStart + config.auctionDurationDays * 24 * 60 * 60;
 
   console.log("⏰ Auction timing:", {
@@ -463,6 +480,7 @@ async function createToken() {
     ],
   );
 
+  console.log("⛏️  Mining valid salt with fixed timing...");
   const salt = await mineValidSalt(
     tokenFactoryData,
     poolInitializerData,
