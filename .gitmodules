@@ -7,3 +7,4 @@
 [submodule "lib/doppler"]
 	path = lib/doppler
 	url = https://github.com/whetstoneresearch/doppler
+	branch = fix/swap-price-limit
