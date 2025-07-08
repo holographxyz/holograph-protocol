@@ -34,7 +34,7 @@ library DopplerAddrBook {
                 tokenFactory: 0xc69Ba223c617F7D936B3cf2012aa644815dBE9Ff,
                 governanceFactory: 0x9dBFaaDC8c0cB2c34bA698DD9426555336992e20,
                 v4Initializer: 0x8E891d249f1ECbfFA6143c03EB1B12843aef09d3,
-                migrator: 0x04a898f3722c38F9Def707bD17DC78920EFA977C,
+                migrator: 0x846a84918aA87c14b86B2298776e8ea5a4e34C9E, // UniswapV4Migrator (latest)
                 poolManager: 0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408,
                 dopplerDeployer: 0x60a039e4aDD40ca95e0475c11e8A4182D06C9Aa0
             });
@@ -350,7 +350,52 @@ contract HolographFactoryTest is Test {
         createParams.tokenFactoryData = tokenFactoryData;
         createParams.governanceFactoryData = governanceData;
         createParams.poolInitializerData = poolInitializerData;
-        createParams.liquidityMigratorData = "";
+        // Create proper liquidityMigratorData for UniswapV4Migrator
+        // The new migrator expects: (uint24 fee, int24 tickSpacing, uint32 lockDuration, BeneficiaryData[] beneficiaries)
+        
+        // Create BeneficiaryData array with proper protocol owner compliance
+        // Must include protocol owner with minimum 5% share and be sorted by address
+        address protocolOwner = 0xaCE07c3c1D3b556D42633211f0Da71dc6F6d1c42;
+        address tokenCreator = creator;
+        
+        // Sort addresses to ensure proper ordering
+        address beneficiary1;
+        address beneficiary2;
+        uint96 shares1;
+        uint96 shares2;
+        
+        if (protocolOwner < tokenCreator) {
+            beneficiary1 = protocolOwner;
+            shares1 = uint96(0.05e18); // 5% for protocol owner
+            beneficiary2 = tokenCreator;
+            shares2 = uint96(0.95e18); // 95% for token creator
+        } else {
+            beneficiary1 = tokenCreator;
+            shares1 = uint96(0.95e18); // 95% for token creator
+            beneficiary2 = protocolOwner;
+            shares2 = uint96(0.05e18); // 5% for protocol owner
+        }
+        
+        // For the UniswapV4Migrator, we need to create a proper BeneficiaryData[] array
+        // The migrator expects: (uint24, int24, uint32, BeneficiaryData[])
+        // Let's construct the data manually to match exactly what TypeScript produces
+        
+        bytes memory beneficiariesArray = abi.encode(
+            uint256(2), // array length  
+            beneficiary1, // first beneficiary address
+            uint256(shares1), // first beneficiary shares (converted to uint256)
+            beneficiary2, // second beneficiary address
+            uint256(shares2) // second beneficiary shares (converted to uint256)
+        );
+        
+        // Now encode the full struct: (uint24, int24, uint32, offset, beneficiariesArray)
+        createParams.liquidityMigratorData = abi.encodePacked(
+            uint256(LP_FEE), // fee (3000) - pad to 32 bytes
+            uint256(uint24(TICK_SPACING)), // tickSpacing (8) - pad to 32 bytes
+            uint256(365 * 24 * 60 * 60), // lockDuration (1 year) - pad to 32 bytes
+            uint256(0x80), // offset to dynamic array (4 * 32 bytes)
+            beneficiariesArray // the actual array data
+        );
         createParams.integrator = address(0);
         createParams.salt = salt;
 
