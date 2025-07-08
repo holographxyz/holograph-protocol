@@ -5,18 +5,11 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import {HolographFactory, CreateParams} from "src/HolographFactory.sol";
 
-// Standalone imports for mining
-import "./doppler/UniswapV4Types.sol";
-import {DopplerMiner} from "./doppler/DopplerMiner.sol";
-import {IDopplerDeployer} from "./doppler/DopplerDeployer.sol";
-import {IGovernanceFactory} from "./doppler/interfaces/IGovernanceFactory.sol";
-import {IPoolInitializer} from "./doppler/interfaces/IPoolInitializer.sol";
-import {ILiquidityMigrator} from "./doppler/interfaces/ILiquidityMigrator.sol";
-import {ITokenFactory} from "./doppler/interfaces/ITokenFactory.sol";
-
-contract DopplerHookStub {
-    fallback() external payable {}
-}
+// Doppler interfaces
+import {ITokenFactory} from "lib/doppler/src/interfaces/ITokenFactory.sol";
+import {IGovernanceFactory} from "lib/doppler/src/interfaces/IGovernanceFactory.sol";
+import {IPoolInitializer} from "lib/doppler/src/interfaces/IPoolInitializer.sol";
+import {ILiquidityMigrator} from "lib/doppler/src/interfaces/ILiquidityMigrator.sol";
 
 library DopplerAddrBook {
     struct DopplerAddrs {
@@ -34,15 +27,16 @@ library DopplerAddrBook {
     }
 
     function getTestnet() internal pure returns (DopplerAddrs memory) {
+        // Updated addresses matching create-token.ts
         return
             DopplerAddrs({
-                poolManager: 0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408,
                 airlock: 0x3411306Ce66c9469BFF1535BA955503c4Bde1C6e,
                 tokenFactory: 0xc69Ba223c617F7D936B3cf2012aa644815dBE9Ff,
-                dopplerDeployer: 0x4Bf819DfA4066Bd7c9f21eA3dB911Bd8C10Cb3ca,
                 governanceFactory: 0x9dBFaaDC8c0cB2c34bA698DD9426555336992e20,
-                v4Initializer: 0xca2079706A4c2a4a1aA637dFB47d7f27Fe58653F,
-                migrator: 0x04a898f3722c38F9Def707bD17DC78920EFA977C
+                v4Initializer: 0x8E891d249f1ECbfFA6143c03EB1B12843aef09d3,
+                migrator: 0x04a898f3722c38F9Def707bD17DC78920EFA977C,
+                poolManager: 0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408,
+                dopplerDeployer: 0x60a039e4aDD40ca95e0475c11e8A4182D06C9Aa0
             });
     }
 
@@ -84,47 +78,43 @@ contract FeeRouterMock {
         emit FeeReceived(msg.value);
     }
 
-    // Add receive() fallback to handle direct ETH transfers
     receive() external payable {
         total += msg.value;
         emit FeeReceived(msg.value);
     }
 }
 
-contract V4InitializerStub {
-    event Create(address poolOrHook, address asset, address numeraire);
-    function deployer() external view returns (address) {
-        return address(this);
-    }
-    function initialize(
-        address asset,
-        address numeraire,
-        uint256 /*numTokensToSell*/,
-        bytes32 /*salt*/,
-        bytes calldata /*data*/
-    ) external returns (address poolOrHook) {
-        // deploy a minimal hook stub
-        poolOrHook = address(new DopplerHookStub());
-        emit Create(poolOrHook, asset, numeraire);
-    }
-    function exitLiquidity(
-        address
-    ) external pure returns (uint160, address, uint128, uint128, address, uint128, uint128) {
-        return (0, address(0), 0, 0, address(0), 0, 0);
-    }
-}
-
 contract HolographFactoryTest is Test {
-    // ── constants ─────────────────────────────────────────────────────────
-    uint256 private constant DEFAULT_NUM_TOKENS_TO_SELL = 100_000e18;
-    uint256 private constant DEFAULT_MINIMUM_PROCEEDS = 100e18;
-    uint256 private constant DEFAULT_MAXIMUM_PROCEEDS = 10_000e18;
-    uint256 private constant DEFAULT_EPOCH_LENGTH = 400 seconds;
-    int24 private constant DEFAULT_GAMMA = 800;
-    int24 private constant DEFAULT_START_TICK = 6_000;
-    int24 private constant DEFAULT_END_TICK = 60_000;
-    uint24 private constant DEFAULT_FEE = 3000;
-    int24 private constant DEFAULT_TICK_SPACING = 8;
+    // Constants matching create-token.ts
+    uint256 private constant INITIAL_SUPPLY = 100_000e18;
+    uint256 private constant MIN_PROCEEDS = 100e18;
+    uint256 private constant MAX_PROCEEDS = 10_000e18;
+    uint256 private constant AUCTION_DURATION = 3 days;
+    uint256 private constant EPOCH_LENGTH = 400;
+    int24 private constant GAMMA = 800;
+    int24 private constant START_TICK = 6_000;
+    int24 private constant END_TICK = 60_000;
+    uint24 private constant LP_FEE = 3000;
+    int24 private constant TICK_SPACING = 8;
+    
+    // Hook flags for salt mining (matching create-token.ts)
+    uint256 private constant BEFORE_INITIALIZE_FLAG = 1 << 13;
+    uint256 private constant AFTER_INITIALIZE_FLAG = 1 << 12;
+    uint256 private constant BEFORE_ADD_LIQUIDITY_FLAG = 1 << 11;
+    uint256 private constant BEFORE_SWAP_FLAG = 1 << 7;
+    uint256 private constant AFTER_SWAP_FLAG = 1 << 6;
+    uint256 private constant BEFORE_DONATE_FLAG = 1 << 5;
+    
+    uint256 private constant REQUIRED_FLAGS = 
+        BEFORE_INITIALIZE_FLAG |
+        AFTER_INITIALIZE_FLAG |
+        BEFORE_ADD_LIQUIDITY_FLAG |
+        BEFORE_SWAP_FLAG |
+        AFTER_SWAP_FLAG |
+        BEFORE_DONATE_FLAG;
+    
+    uint256 private constant FLAG_MASK = 0x3fff;
+    uint256 private constant MAX_SALT_ITERATIONS = 200_000;
 
     DopplerAddrBook.DopplerAddrs private doppler;
     HolographFactory private factory;
@@ -138,12 +128,10 @@ contract HolographFactoryTest is Test {
         doppler = DopplerAddrBook.get(useMainnet);
 
         if (useMainnet) {
-            // Base mainnet has chain ID 8453
             vm.chainId(8453);
             vm.createSelectFork(vm.rpcUrl("base"));
             console.log("=== USING BASE MAINNET ===");
         } else {
-            // Base Sepolia testnet has chain ID 84532
             vm.chainId(84532);
             vm.createSelectFork(vm.rpcUrl("baseSepolia"));
             console.log("=== USING BASE SEPOLIA TESTNET ===");
@@ -151,8 +139,12 @@ contract HolographFactoryTest is Test {
 
         console.log("Doppler addresses:");
         console.log("  Airlock: %s", doppler.airlock);
-        console.log("  PoolManager: %s", doppler.poolManager);
+        console.log("  TokenFactory: %s", doppler.tokenFactory);
+        console.log("  GovernanceFactory: %s", doppler.governanceFactory);
         console.log("  V4Initializer: %s", doppler.v4Initializer);
+        console.log("  Migrator: %s", doppler.migrator);
+        console.log("  PoolManager: %s", doppler.poolManager);
+        console.log("  DopplerDeployer: %s", doppler.dopplerDeployer);
 
         lzEndpoint = new LZEndpointStub();
         feeRouter = new FeeRouterMock();
@@ -160,71 +152,201 @@ contract HolographFactoryTest is Test {
         vm.deal(creator, 1 ether);
     }
 
-    function test_tokenLaunch_endToEnd() public {
-        // 1) tokenFactory data
+    function computeCreate2Address(bytes32 salt, bytes32 initCodeHash, address deployer) internal pure override returns (address) {
+        return address(uint160(uint256(keccak256(abi.encodePacked(
+            bytes1(0xff),
+            deployer,
+            salt,
+            initCodeHash
+        )))));
+    }
+
+    function mineValidSalt(
+        bytes memory tokenFactoryData,
+        bytes memory poolInitializerData,
+        uint256 initialSupply,
+        uint256 numTokensToSell,
+        address numeraire
+    ) internal view returns (bytes32) {
+        console.log("Mining valid salt...");
+        
+        // Decode pool initializer data
+        (
+            uint256 minimumProceeds,
+            uint256 maximumProceeds,
+            uint256 startingTime,
+            uint256 endingTime,
+            int24 startingTick,
+            int24 endingTick,
+            uint256 epochLength,
+            int24 gamma,
+            bool isToken0,
+            uint256 numPDSlugs,
+            uint24 lpFee,
+            int24 tickSpacing
+        ) = abi.decode(
+            poolInitializerData,
+            (uint256, uint256, uint256, uint256, int24, int24, uint256, int24, bool, uint256, uint24, int24)
+        );
+        
+        // Prepare Doppler constructor arguments
+        bytes memory dopplerConstructorArgs = abi.encode(
+            doppler.poolManager,
+            numTokensToSell,
+            minimumProceeds,
+            maximumProceeds,
+            startingTime,
+            endingTime,
+            startingTick,
+            endingTick,
+            epochLength,
+            gamma,
+            isToken0,
+            numPDSlugs,
+            doppler.v4Initializer,
+            lpFee
+        );
+        
+        // Prepare token constructor arguments
+        (
+            string memory name,
+            string memory symbol,
+            uint256 yearlyMintCap,
+            uint256 vestingDuration,
+            address[] memory recipients,
+            uint256[] memory amounts,
+            string memory tokenURI
+        ) = abi.decode(
+            tokenFactoryData,
+            (string, string, uint256, uint256, address[], uint256[], string)
+        );
+        
+        bytes memory tokenConstructorArgs = abi.encode(
+            name,
+            symbol,
+            initialSupply,
+            doppler.airlock,
+            doppler.airlock,
+            yearlyMintCap,
+            vestingDuration,
+            recipients,
+            amounts,
+            tokenURI
+        );
+        
+        // Get real bytecode from artifacts
+        bytes memory dopplerBytecode = vm.getCode("lib/doppler/out/Doppler.sol/Doppler.json");
+        bytes memory derc20Bytecode = vm.getCode("lib/doppler/out/DERC20.sol/DERC20.json");
+        
+        // Calculate init code hashes
+        bytes32 dopplerInitHash = keccak256(abi.encodePacked(dopplerBytecode, dopplerConstructorArgs));
+        bytes32 tokenInitHash = keccak256(abi.encodePacked(derc20Bytecode, tokenConstructorArgs));
+        
+        // Mine salt
+        for (uint256 saltNum = 0; saltNum < MAX_SALT_ITERATIONS; saltNum++) {
+            if (saltNum % 10000 == 0) {
+                console.log("Mining progress: %s/%s", saltNum, MAX_SALT_ITERATIONS);
+            }
+            
+            bytes32 salt = bytes32(saltNum);
+            address hookAddress = computeCreate2Address(salt, dopplerInitHash, doppler.dopplerDeployer);
+            address assetAddress = computeCreate2Address(salt, tokenInitHash, doppler.tokenFactory);
+            
+            // Check hook flags
+            uint256 hookFlags = uint256(uint160(hookAddress)) & FLAG_MASK;
+            if (hookFlags != REQUIRED_FLAGS) {
+                continue;
+            }
+            
+            // Check if hook address is available (should have no code)
+            if (hookAddress.code.length > 0) {
+                continue;
+            }
+            
+            // Check token ordering
+            uint256 assetBigInt = uint256(uint160(assetAddress));
+            uint256 numeraireBigInt = uint256(uint160(numeraire));
+            bool correctOrdering = isToken0 ? assetBigInt < numeraireBigInt : assetBigInt > numeraireBigInt;
+            
+            if (!correctOrdering) {
+                continue;
+            }
+            
+            console.log("Found valid salt: %s", saltNum);
+            console.log("Hook address: %s", hookAddress);
+            console.log("Asset address: %s", assetAddress);
+            console.log("Hook flags: %s (required: %s)", hookFlags, REQUIRED_FLAGS);
+            console.log("Token ordering: isToken0=%s, asset < numeraire: %s", isToken0, assetBigInt < numeraireBigInt);
+            return salt;
+        }
+        
+        revert("Could not find valid salt");
+    }
+
+    function test_tokenLaunch_withRealSaltMining() public {
+        console.log("=== TESTING TOKEN LAUNCH WITH REAL SALT MINING ===");
+        console.log("This test uses actual bytecode for proper salt mining");
+
+        // 1. Prepare token factory data (matching create-token.ts)
         bytes memory tokenFactoryData = abi.encode(
-            "Test Token",
-            "TEST",
-            0,
-            0,
-            new address[](0),
-            new uint256[](0),
-            "TOKEN_URI"
+            "Test Token", // name
+            "TEST", // symbol
+            uint256(0), // yearlyMintCap
+            uint256(0), // vestingDuration
+            new address[](0), // recipients
+            new uint256[](0), // amounts
+            "" // tokenURI
         );
 
-        // 2) governanceFactory data
-        bytes memory governanceData = abi.encode("DAO", 7200, 50_400, 0);
+        // 2. Prepare governance factory data (matching create-token.ts)
+        bytes memory governanceData = abi.encode(
+            "Test Token DAO", // name
+            uint256(7200), // voting delay
+            uint256(50400), // voting period
+            uint256(0) // proposal threshold
+        );
 
-        // Use a fixed timestamp to ensure mining and deployment use the same values
-        // This prevents discrepancies caused by block.timestamp changing between mining and deployment
-        uint256 fixedTime = block.timestamp + 1 hours; // Start auction 1 hour from now
+        // 3. Set auction timing with buffer (matching create-token.ts)
+        uint256 auctionStart = block.timestamp + 600; // 10 minutes from now
+        uint256 auctionEnd = auctionStart + AUCTION_DURATION;
 
-        // 12-field blob expected by UniswapV4Initializer & DopplerDeployer
+        console.log("Auction timing:");
+        console.log("  Start: %s", auctionStart);
+        console.log("  End: %s", auctionEnd);
+        console.log("  Duration: %s seconds", AUCTION_DURATION);
+
+        // 4. Prepare pool initializer data (matching create-token.ts)
         bytes memory poolInitializerData = abi.encode(
-            DEFAULT_MINIMUM_PROCEEDS,
-            DEFAULT_MAXIMUM_PROCEEDS,
-            fixedTime, // Use fixed timestamp
-            fixedTime + 3 days, // Use fixed timestamp
-            DEFAULT_START_TICK,
-            DEFAULT_END_TICK,
-            DEFAULT_EPOCH_LENGTH,
-            DEFAULT_GAMMA,
+            MIN_PROCEEDS, // minimumProceeds
+            MAX_PROCEEDS, // maximumProceeds
+            auctionStart, // startingTime
+            auctionEnd, // endingTime
+            START_TICK, // startingTick
+            END_TICK, // endingTick
+            EPOCH_LENGTH, // epochLength
+            GAMMA, // gamma
             false, // isToken0
-            8, // numPDSlugs
-            3000,
-            8
+            uint256(8), // numPDSlugs
+            LP_FEE, // lpFee
+            TICK_SPACING // tickSpacing
         );
 
-        uint256 initialSupply = 1e23;
-        uint256 numTokensToSell = 1e23;
+        // 5. Mine a valid salt using real bytecode
+        bytes32 salt = mineValidSalt(
+            tokenFactoryData,
+            poolInitializerData,
+            INITIAL_SUPPLY,
+            INITIAL_SUPPLY,
+            address(0) // numeraire (ETH)
+        );
 
-        // Mine for a valid salt with proper hook flags
-        DopplerMiner.MineV4Params memory params = DopplerMiner.MineV4Params({
-            airlock: doppler.airlock,
-            poolManager: doppler.poolManager,
-            initialSupply: initialSupply,
-            numTokensToSell: numTokensToSell,
-            numeraire: address(0),
-            tokenFactory: ITokenFactory(doppler.tokenFactory),
-            tokenFactoryData: tokenFactoryData,
-            poolInitializer: IDopplerDeployer(doppler.v4Initializer),
-            poolInitializerData: poolInitializerData
-        });
+        console.log("Using mined salt: %s", uint256(salt));
 
-        // Use the doppler mineV4 function
-        (bytes32 salt, address hook, address asset) = DopplerMiner.mineV4(params);
-
-        console.log("=== MINING RESULTS ===");
-        console.log("Mined salt: %s", uint256(salt));
-        console.log("Calculated hook: %s", hook);
-        console.log("Calculated asset: %s", asset);
-
-        // 4) assemble CreateParams
+        // 6. Assemble CreateParams (matching create-token.ts)
         CreateParams memory createParams;
-        createParams.initialSupply = DEFAULT_NUM_TOKENS_TO_SELL;
-        createParams.numTokensToSell = DEFAULT_NUM_TOKENS_TO_SELL;
+        createParams.initialSupply = INITIAL_SUPPLY;
+        createParams.numTokensToSell = INITIAL_SUPPLY;
         createParams.numeraire = address(0);
-        // createParams.tokenFactory = ITokenFactory(doppler.tokenFactory); // Type conflict - set via assembly
         createParams.tokenFactoryData = tokenFactoryData;
         createParams.governanceFactoryData = governanceData;
         createParams.poolInitializerData = poolInitializerData;
@@ -232,64 +354,59 @@ contract HolographFactoryTest is Test {
         createParams.integrator = address(0);
         createParams.salt = salt;
 
-        // Use inline assembly for the interface fields that have type conflicts
-        //
-        // WHY ASSEMBLY IS NEEDED:
-        // The CreateParams struct expects interface types imported from doppler's internal "src/interfaces/" path,
-        // but we import the same interfaces from "lib/doppler/src/interfaces/". Even though these are identical files,
-        // Solidity's type system treats them as incompatible types. Assembly bypasses this type checking by directly
-        // manipulating memory addresses.
-        //
-        // CREATEPARAMS STRUCT MEMORY LAYOUT:
-        // Each field occupies 32 bytes (0x20) in memory, regardless of actual size
-        // 0x00: initialSupply        (uint256)       ✓ Set normally
-        // 0x20: numTokensToSell      (uint256)       ✓ Set normally
-        // 0x40: numeraire            (address)       ✓ Set normally
-        // 0x60: tokenFactory         (ITokenFactory) ✓ Set normally (no conflict)
-        // 0x80: tokenFactoryData     (bytes)         ✓ Set normally
-        // 0xA0: governanceFactory    (IGovernanceFactory) ❌ TYPE CONFLICT → Use assembly
-        // 0xC0: governanceFactoryData(bytes)         ✓ Set normally
-        // 0xE0: poolInitializer      (IPoolInitializer)   ❌ TYPE CONFLICT → Use assembly
-        // 0x100: poolInitializerData (bytes)         ✓ Set normally
-        // 0x120: liquidityMigrator   (ILiquidityMigrator) ❌ TYPE CONFLICT → Use assembly
-        // 0x140: liquidityMigratorData(bytes)        ✓ Set normally
-        // 0x160: integrator          (address)       ✓ Set normally
-        // 0x180: salt                (bytes32)       ✓ Set normally
-        address tokenFact = doppler.tokenFactory;
-        address govFactory = doppler.governanceFactory;
-        address poolInit = doppler.v4Initializer;
-        address liquidityMig = doppler.migrator;
+        // Use assembly to set interface fields to avoid type conflicts
+        address tokenFactory = doppler.tokenFactory;
+        address governanceFactory = doppler.governanceFactory;
+        address poolInitializer = doppler.v4Initializer;
+        address liquidityMigrator = doppler.migrator;
 
         assembly {
-            // mstore(memoryLocation, value) stores 32 bytes at the specified memory location
-
-            // Store tokenFactory at offset 0x60 (96 decimal)
-            // Calculation: 0x60 = 3 fields × 32 bytes = field #4 (tokenFactory)
-            mstore(add(createParams, 0x60), tokenFact)
-
-            // Store governanceFactory at offset 0xA0 (160 decimal)
-            // Calculation: 0xA0 = 5 fields × 32 bytes = field #6 (governanceFactory)
-            mstore(add(createParams, 0xa0), govFactory)
-
-            // Store poolInitializer at offset 0xE0 (224 decimal)
-            // Calculation: 0xE0 = 7 fields × 32 bytes = field #8 (poolInitializer)
-            mstore(add(createParams, 0xe0), poolInit)
-
-            // Store liquidityMigrator at offset 0x120 (288 decimal)
-            // Calculation: 0x120 = 9 fields × 32 bytes = field #10 (liquidityMigrator)
-            mstore(add(createParams, 0x120), liquidityMig)
+            mstore(add(createParams, 0x60), tokenFactory)
+            mstore(add(createParams, 0xa0), governanceFactory)
+            mstore(add(createParams, 0xe0), poolInitializer)
+            mstore(add(createParams, 0x120), liquidityMigrator)
         }
 
-        // 5) Execute the token creation - no fee required as per Doppler's free token creation model
-        bytes memory callData = abi.encodeWithSelector(factory.createToken.selector, createParams);
+        // 7. Execute token creation (should succeed with proper salt mining)
+        console.log("=== EXECUTING TOKEN CREATION ===");
         vm.prank(creator);
-        (bool ok, bytes memory returndata) = address(factory).call(callData);
 
-        console.log("createToken success? ", ok);
-        if (!ok) {
-            console.logBytes(returndata);
-        }
+        address tokenAddress = factory.createToken(createParams);
 
-        assertTrue(ok, "createToken reverted; see console above for selector/data");
+        console.log("Token creation successful!");
+        console.log("Token address: %s", tokenAddress);
+        
+        // Verify the token was actually deployed
+        assertTrue(tokenAddress != address(0), "Token address should not be zero");
+        assertTrue(tokenAddress.code.length > 0, "Token should have deployed code");
+        
+        console.log("Test completed successfully - token deployed with real salt mining!");
+    }
+
+    function test_addressesAreCorrect() public {
+        console.log("=== VERIFYING DOPPLER ADDRESSES ===");
+
+        // Verify that all addresses have code deployed (they should be valid contracts)
+        assertTrue(doppler.airlock.code.length > 0, "Airlock should have code");
+        assertTrue(doppler.tokenFactory.code.length > 0, "TokenFactory should have code");
+        assertTrue(doppler.governanceFactory.code.length > 0, "GovernanceFactory should have code");
+        assertTrue(doppler.v4Initializer.code.length > 0, "V4Initializer should have code");
+        assertTrue(doppler.migrator.code.length > 0, "Migrator should have code");
+        assertTrue(doppler.poolManager.code.length > 0, "PoolManager should have code");
+        assertTrue(doppler.dopplerDeployer.code.length > 0, "DopplerDeployer should have code");
+
+        console.log("All Doppler addresses verified successfully");
+    }
+
+    function test_factoryDeployment() public {
+        console.log("=== TESTING FACTORY DEPLOYMENT ===");
+
+        // Verify factory was deployed correctly
+        assertTrue(address(factory).code.length > 0, "Factory should have code");
+
+        // Verify factory has correct airlock address
+        // Note: This would require a getter function in HolographFactory
+        console.log("Factory deployed successfully at: %s", address(factory));
+        console.log("Factory deployment test completed");
     }
 }
