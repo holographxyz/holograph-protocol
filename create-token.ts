@@ -41,7 +41,7 @@ const DOPPLER_ADDRESSES = {
   tokenFactory: "0xc69Ba223c617F7D936B3cf2012aa644815dBE9Ff",
   governanceFactory: "0x9dBFaaDC8c0cB2c34bA698DD9426555336992e20",
   v4Initializer: "0x8e891d249f1ecbffa6143c03eb1b12843aef09d3",
-  migrator: "0x04a898f3722c38F9Def707bD17DC78920EFA977C",
+  migrator: "0x846a84918aA87c14b86B2298776e8ea5a4e34C9E", // UniswapV4Migrator (latest)
   poolManager: "0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408",
   dopplerDeployer: "0x60a039e4add40ca95e0475c11e8a4182d06c9aa0",
 } as const;
@@ -539,6 +539,39 @@ async function createToken() {
     publicClient,
   );
 
+  // Prepare liquidity migrator data for UniswapV4Migrator
+  const lockDuration = 365 * 24 * 60 * 60; // 1 year in seconds
+  const protocolOwner = "0xaCE07c3c1D3b556D42633211f0Da71dc6F6d1c42" as const; // Protocol owner from Airlock
+  
+  // Create beneficiaries array with proper BeneficiaryData structure
+  // Must be sorted by address and include protocol owner with minimum 5% (0.05e18)
+  const beneficiaries = [
+    {
+      beneficiary: protocolOwner,
+      shares: parseEther("0.05") // 5% minimum for protocol owner
+    },
+    {
+      beneficiary: account.address, // Token creator gets the remaining 95%
+      shares: parseEther("0.95")
+    }
+  ].sort((a, b) => {
+    // Sort by address (ascending)
+    if (a.beneficiary.toLowerCase() < b.beneficiary.toLowerCase()) return -1;
+    if (a.beneficiary.toLowerCase() > b.beneficiary.toLowerCase()) return 1;
+    return 0;
+  });
+  
+  // Encode as proper BeneficiaryData array
+  const liquidityMigratorData = encodeAbiParameters(
+    parseAbiParameters("uint24, int24, uint32, (address,uint96)[]"),
+    [
+      3000, // fee (matches LP_FEE)
+      8, // tickSpacing (matches TICK_SPACING)
+      lockDuration,
+      beneficiaries.map(b => [b.beneficiary, b.shares] as const)
+    ]
+  );
+
   const createParams: CreateTokenParams = {
     initialSupply: config.initialSupply,
     numTokensToSell: config.initialSupply,
@@ -550,7 +583,7 @@ async function createToken() {
     poolInitializer: DOPPLER_ADDRESSES.v4Initializer as Address,
     poolInitializerData,
     liquidityMigrator: DOPPLER_ADDRESSES.migrator as Address,
-    liquidityMigratorData: "0x" as `0x${string}`,
+    liquidityMigratorData,
     integrator: "0x0000000000000000000000000000000000000000" as Address,
     salt,
   };
