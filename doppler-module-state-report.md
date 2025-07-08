@@ -63,7 +63,6 @@ The core problem is that CREATE2 address calculation depends on exact bytecode m
 
 - **Immediate**: Cannot create tokens using latest Doppler contracts
 - **Development**: Must use outdated contracts for compatibility
-- **Production**: Risk of bytecode mismatches in production deployments
 
 ### Verification Commands
 

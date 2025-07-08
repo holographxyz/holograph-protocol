@@ -32,12 +32,16 @@ remappings = [
   "forge-std/=lib/forge-std/src/",
   # OpenZeppelin contracts
   "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+  "@openzeppelin/=lib/doppler/lib/v4-core/lib/openzeppelin-contracts/contracts/",
+  # Doppler contracts
+  "doppler/=lib/doppler/src/",
 ]
 
 # Specify include paths to control which directories are searched for imports
 include_paths = [
   "src",
-  "lib/forge-std/src"
+  "lib/forge-std/src",
+  "lib/doppler/src"
 ]
 
 ignored_paths = [
