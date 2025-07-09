@@ -6,10 +6,10 @@ import "forge-std/console.sol";
 import {HolographFactory, CreateParams} from "src/HolographFactory.sol";
 
 // Doppler interfaces
-import {ITokenFactory} from "lib/doppler/src/interfaces/ITokenFactory.sol";
-import {IGovernanceFactory} from "lib/doppler/src/interfaces/IGovernanceFactory.sol";
-import {IPoolInitializer} from "lib/doppler/src/interfaces/IPoolInitializer.sol";
-import {ILiquidityMigrator} from "lib/doppler/src/interfaces/ILiquidityMigrator.sol";
+import {ITokenFactory} from "doppler/ITokenFactory.sol";
+import {IGovernanceFactory} from "doppler/IGovernanceFactory.sol";
+import {IPoolInitializer} from "doppler/IPoolInitializer.sol";
+import {ILiquidityMigrator} from "doppler/ILiquidityMigrator.sol";
 
 library DopplerAddrBook {
     struct DopplerAddrs {
@@ -235,8 +235,8 @@ contract HolographFactoryTest is Test {
         );
         
         // Get real bytecode from artifacts
-        bytes memory dopplerBytecode = vm.getCode("lib/doppler/out/Doppler.sol/Doppler.json");
-        bytes memory derc20Bytecode = vm.getCode("lib/doppler/out/DERC20.sol/DERC20.json");
+        bytes memory dopplerBytecode = vm.getCode("artifacts/doppler/Doppler.json");
+        bytes memory derc20Bytecode = vm.getCode("artifacts/doppler/DERC20.json");
         
         // Calculate init code hashes
         bytes32 dopplerInitHash = keccak256(abi.encodePacked(dopplerBytecode, dopplerConstructorArgs));

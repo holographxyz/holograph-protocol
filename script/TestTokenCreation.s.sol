@@ -5,10 +5,10 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 import "../src/HolographFactory.sol";
 import {CreateParams} from "../src/interfaces/DopplerStructs.sol";
-import {ITokenFactory} from "../test/doppler/interfaces/ITokenFactory.sol";
-import {IGovernanceFactory} from "../test/doppler/interfaces/IGovernanceFactory.sol";
-import {IPoolInitializer} from "../test/doppler/interfaces/IPoolInitializer.sol";
-import {ILiquidityMigrator} from "../test/doppler/interfaces/ILiquidityMigrator.sol";
+import {ITokenFactory} from "doppler/ITokenFactory.sol";
+import {IGovernanceFactory} from "doppler/IGovernanceFactory.sol";
+import {IPoolInitializer} from "doppler/IPoolInitializer.sol";
+import {ILiquidityMigrator} from "doppler/ILiquidityMigrator.sol";
 
 contract TestTokenCreation is Script {
     function run() external {
