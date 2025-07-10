@@ -14,7 +14,7 @@ ffi = true
 fs_permissions = [
   { access = "read", path = "./script" },
   { access = "write", path = "./deployments" },
-  { access = "read", path = "./lib/doppler/out" }
+  { access = "read", path = "./artifacts" }
 ]
 verbosity = 3
 evm_version = "cancun"
@@ -32,16 +32,14 @@ remappings = [
   "forge-std/=lib/forge-std/src/",
   # OpenZeppelin contracts
   "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
-  "@openzeppelin/=lib/doppler/lib/v4-core/lib/openzeppelin-contracts/contracts/",
   # Doppler contracts
-  "doppler/=lib/doppler/src/",
+  "doppler/=src/interfaces/external/doppler/",
 ]
 
 # Specify include paths to control which directories are searched for imports
 include_paths = [
   "src",
-  "lib/forge-std/src",
-  "lib/doppler/src"
+  "lib/forge-std/src"
 ]
 
 ignored_paths = [

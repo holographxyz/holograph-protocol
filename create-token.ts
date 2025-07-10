@@ -136,7 +136,7 @@ const HOLOGRAPH_FACTORY_ABI = [
 // Utility functions
 function loadContractBytecode(contractName: string): `0x${string}` {
   try {
-    const artifactPath = `lib/doppler/out/${contractName}.sol/${contractName}.json`;
+    const artifactPath = `artifacts/doppler/${contractName}.json`;
     const artifactContent = readFileSync(artifactPath, "utf8");
     const artifact = JSON.parse(artifactContent);
 
