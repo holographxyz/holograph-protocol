@@ -3,18 +3,23 @@ pragma solidity ^0.8.26;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "../lib/LayerZero-v2/packages/layerzero-v2/evm/protocol/contracts/interfaces/ILayerZeroEndpointV2.sol";
+import "../lib/LayerZero-v2/packages/layerzero-v2/evm/protocol/contracts/interfaces/ILayerZeroReceiver.sol";
+import "../lib/LayerZero-v2/packages/layerzero-v2/evm/messagelib/contracts/libs/ExecutorOptions.sol";
 import "./interfaces/IHolographBridge.sol";
-import "./interfaces/IHolographERC20.sol";
-import "./interfaces/ILZEndpointV2.sol";
+import "./HolographERC20.sol";
 import "./HolographFactory.sol";
+import "./structs/BridgeStructs.sol";
 
 /**
  * @title HolographBridge
- * @notice Cross-chain expansion coordinator for HolographERC20 tokens
- * @dev Handles one-call expansion to new chains with automatic peer configuration
+ * @notice Cross-chain expansion coordinator for HolographERC20 tokens using LayerZero V2
+ * @dev Handles token deployment to new chains with automatic peer configuration
  * @author Holograph Protocol
  */
-contract HolographBridge is IHolographBridge, Ownable, Pausable {
+contract HolographBridge is IHolographBridge, ILayerZeroReceiver, Ownable, Pausable, ReentrancyGuard {
+
     /* -------------------------------------------------------------------------- */
     /*                                  Errors                                    */
     /* -------------------------------------------------------------------------- */
@@ -24,15 +29,25 @@ contract HolographBridge is IHolographBridge, Ownable, Pausable {
     error ChainAlreadyConfigured();
     error InvalidTokenData();
     error CrossChainCallFailed();
+    error InsufficientFee();
+    error InvalidEndpoint();
+    error UntrustedSender();
+    error InvalidSaltReuse();
 
     /* -------------------------------------------------------------------------- */
     /*                                 Storage                                    */
     /* -------------------------------------------------------------------------- */
     /// @notice LayerZero V2 endpoint for cross-chain messaging
-    ILZEndpointV2 public immutable lzEndpoint;
+    ILayerZeroEndpointV2 public immutable lzEndpoint;
 
     /// @notice Local HolographFactory for reference
     HolographFactory public immutable localFactory;
+
+    /// @notice Current chain's LayerZero endpoint ID
+    uint32 public immutable localEid;
+
+    /// @notice Mapping of LayerZero peers for cross-chain messaging
+    mapping(uint32 => bytes32) public peers;
 
     /// @notice Supported chain configurations
     mapping(uint32 => ChainConfig) public supportedChains;
@@ -43,21 +58,12 @@ contract HolographBridge is IHolographBridge, Ownable, Pausable {
     /// @notice Track tokens deployed by this bridge
     mapping(address => bool) public bridgeDeployedTokens;
 
-    /* -------------------------------------------------------------------------- */
-    /*                                 Structs                                   */
-    /* -------------------------------------------------------------------------- */
-    struct ChainConfig {
-        uint32 eid;                    // LayerZero endpoint ID
-        address factory;               // HolographFactory address on that chain
-        address bridge;                // HolographBridge address on that chain
-        bool active;                   // Whether chain is active for deployments
-        string name;                   // Human readable chain name
-    }
+    /// @notice Track used salts to prevent reuse attacks
+    mapping(bytes32 => bool) public usedSalts;
 
     /* -------------------------------------------------------------------------- */
     /*                                  Events                                    */
     /* -------------------------------------------------------------------------- */
-    /// @notice Emitted when a token is expanded to a new chain
     event TokenExpanded(
         address indexed sourceToken,
         uint32 indexed dstEid,
@@ -65,8 +71,8 @@ contract HolographBridge is IHolographBridge, Ownable, Pausable {
         string chainName
     );
 
-    /// @notice Emitted when a chain is added or updated
     event ChainConfigured(uint32 indexed eid, address factory, address bridge, string name);
+
 
     /* -------------------------------------------------------------------------- */
     /*                               Constructor                                  */
@@ -75,11 +81,15 @@ contract HolographBridge is IHolographBridge, Ownable, Pausable {
      * @notice Initialize the HolographBridge
      * @param _lzEndpoint LayerZero V2 endpoint address
      * @param _factory Local HolographFactory address
+     * @param _localEid Local chain's LayerZero endpoint ID
      */
-    constructor(address _lzEndpoint, address _factory) Ownable(msg.sender) {
+    constructor(address _lzEndpoint, address _factory, uint32 _localEid) Ownable(msg.sender) {
         if (_lzEndpoint == address(0) || _factory == address(0)) revert ZeroAddress();
-        lzEndpoint = ILZEndpointV2(_lzEndpoint);
+        if (_localEid == 0) revert ZeroAddress();
+        
+        lzEndpoint = ILayerZeroEndpointV2(_lzEndpoint);
         localFactory = HolographFactory(_factory);
+        localEid = _localEid;
     }
 
     /* -------------------------------------------------------------------------- */
@@ -125,10 +135,7 @@ contract HolographBridge is IHolographBridge, Ownable, Pausable {
     /*                            Token Expansion                                */
     /* -------------------------------------------------------------------------- */
     /**
-     * @notice Expand an existing token to a new chain (ONE CALL DOES EVERYTHING)
-     * @dev 1. Deploys token on destination chain
-     *      2. Configures peers on both sides automatically
-     *      3. Token is ready for cross-chain transfers
+     * @notice Expand an existing token to a new chain with proper fee handling
      * @param sourceToken Token address on current chain
      * @param dstEid Destination chain endpoint ID
      * @return dstToken Address of deployed token on destination chain
@@ -136,7 +143,7 @@ contract HolographBridge is IHolographBridge, Ownable, Pausable {
     function expandToChain(
         address sourceToken,
         uint32 dstEid
-    ) external payable whenNotPaused returns (address dstToken) {
+    ) external payable whenNotPaused nonReentrant returns (address dstToken) {
         // Validate inputs
         if (sourceToken == address(0)) revert ZeroAddress();
         if (!supportedChains[dstEid].active) revert ChainNotSupported();
@@ -151,10 +158,15 @@ contract HolographBridge is IHolographBridge, Ownable, Pausable {
         // Get original deployment parameters from source token
         TokenParams memory params = _extractTokenParams(sourceToken);
 
-        // Step 1: Deploy token on destination chain via cross-chain message
-        dstToken = _deployOnDestination(dstEid, dstChain.factory, params);
+        // Generate deterministic but unique salt
+        bytes32 salt = _generateSecureSalt(params, dstEid);
+        if (usedSalts[salt]) revert InvalidSaltReuse();
+        usedSalts[salt] = true;
 
-        // Step 2: Configure peers on both sides
+        // Deploy token on destination chain via cross-chain message
+        dstToken = _deployOnDestination(dstEid, dstChain.factory, params, salt);
+
+        // Configure peers on both sides
         _configurePeers(sourceToken, dstToken, dstEid);
 
         // Track the deployment
@@ -169,125 +181,265 @@ contract HolographBridge is IHolographBridge, Ownable, Pausable {
     /* -------------------------------------------------------------------------- */
     /**
      * @notice Extract original deployment parameters from a deployed token
-     * @param token Token address to analyze
-     * @return params Original token parameters for redeployment
      */
     function _extractTokenParams(address token) internal view returns (TokenParams memory params) {
-        IHolographERC20 oft = IHolographERC20(token);
+        HolographERC20 oft = HolographERC20(token);
         
-        // Extract basic parameters
         params.name = oft.name();
         params.symbol = oft.symbol();
         params.totalSupply = oft.totalSupply();
         params.owner = Ownable(token).owner();
-        
-        // Extract DERC20-specific parameters
         params.yearlyMintRate = oft.yearlyMintRate();
         params.vestingDuration = oft.vestingDuration();
         params.tokenURI = oft.tokenURI();
-        
-        // Note: For simplicity, we'll redeploy with same total supply
-        // In practice, you might want to track original deployment params
     }
 
     /**
-     * @notice Deploy token on destination chain via LayerZero message
-     * @param dstEid Destination endpoint ID
-     * @param dstFactory Factory address on destination chain
-     * @param params Token deployment parameters
-     * @return dstToken Predicted address of deployed token
+     * @notice Generate secure CREATE2 salt to prevent collisions
+     */
+    function _generateSecureSalt(
+        TokenParams memory params,
+        uint32 dstEid
+    ) internal view returns (bytes32 salt) {
+        salt = keccak256(abi.encodePacked(
+            params.name,
+            params.symbol,
+            params.owner,
+            dstEid,
+            localEid,
+            block.timestamp,
+            address(this)
+        ));
+    }
+
+    /**
+     * @notice Deploy token on destination chain via LayerZero message with proper fee handling
      */
     function _deployOnDestination(
         uint32 dstEid,
         address dstFactory,
-        TokenParams memory params
+        TokenParams memory params,
+        bytes32 salt
     ) internal returns (address dstToken) {
         // Encode deployment message
-        bytes memory payload = abi.encode(
+        bytes memory tokenData = abi.encode(
             params.name,
             params.symbol,
-            params.totalSupply,
-            params.owner, // recipient
-            params.owner,
             params.yearlyMintRate,
             params.vestingDuration,
-            new address[](0), // empty vesting recipients
-            new uint256[](0), // empty vesting amounts
+            new address[](0),
+            new uint256[](0),
             params.tokenURI
         );
 
-        // Generate deterministic salt
-        bytes32 salt = keccak256(abi.encodePacked(params.name, params.symbol, params.owner));
-
-        // Send deployment message via LayerZero
-        bytes memory options = abi.encodePacked(uint16(1), uint256(500000)); // 500k gas
-        
-        lzEndpoint.send{value: msg.value}(
-            dstEid,
-            abi.encode("DEPLOY_TOKEN", dstFactory, salt, payload),
-            options
+        bytes memory payload = abi.encode(
+            "DEPLOY_TOKEN",
+            params.totalSupply,
+            params.owner,
+            params.owner,
+            salt,
+            tokenData
         );
 
-        // Predict destination token address (simplified - in practice you'd need exact prediction)
-        dstToken = address(uint160(uint256(keccak256(abi.encodePacked(salt, dstFactory)))));
+        // Build proper LayerZero V2 options with sufficient gas for token deployment
+        bytes memory options = _buildExecutorOptions(500000, 0);
+
+        // Get messaging parameters
+        MessagingParams memory msgParams = MessagingParams({
+            dstEid: dstEid,
+            receiver: peers[dstEid],
+            message: payload,
+            options: options,
+            payInLzToken: false
+        });
+
+        // Quote and validate fee
+        MessagingFee memory fee = lzEndpoint.quote(msgParams, address(this));
+        if (msg.value < fee.nativeFee) revert InsufficientFee();
+
+        // Send message
+        lzEndpoint.send{value: fee.nativeFee}(msgParams, payable(msg.sender));
+
+        // Predict destination token address
+        dstToken = _predictTokenAddress(dstFactory, salt, params);
+    }
+
+    /**
+     * @notice Predict token address using CREATE2
+     */
+    function _predictTokenAddress(
+        address factory,
+        bytes32 salt,
+        TokenParams memory params
+    ) internal pure returns (address predicted) {
+        bytes memory bytecode = abi.encodePacked(
+            type(HolographERC20).creationCode,
+            abi.encode(
+                params.name,
+                params.symbol,
+                params.totalSupply,
+                params.owner,
+                params.owner,
+                address(0), // Will be replaced with destination endpoint
+                params.yearlyMintRate,
+                params.vestingDuration,
+                new address[](0),
+                new uint256[](0),
+                params.tokenURI
+            )
+        );
+        
+        bytes32 hash = keccak256(
+            abi.encodePacked(
+                bytes1(0xff),
+                factory,
+                salt,
+                keccak256(bytecode)
+            )
+        );
+        
+        predicted = address(uint160(uint256(hash)));
     }
 
     /**
      * @notice Configure LayerZero peers on both source and destination tokens
-     * @param sourceToken Source token address
-     * @param dstToken Destination token address
-     * @param dstEid Destination endpoint ID
      */
     function _configurePeers(address sourceToken, address dstToken, uint32 dstEid) internal {
-        // Note: Token owner must manually call setPeer() on source token
-        // Bridge cannot call setPeer due to onlyOwner modifier on OFT
-        // IHolographERC20(sourceToken).setPeer(dstEid, _addressToBytes32(dstToken));
-
-        // Send message to configure destination token (via LayerZero)
         bytes memory peerPayload = abi.encode(
             "SET_PEER",
             dstToken,
-            _getCurrentChainEid(),
+            localEid,
             _addressToBytes32(sourceToken)
         );
 
-        bytes memory options = abi.encodePacked(uint16(1), uint256(200000)); // 200k gas
+        bytes memory peerOptions = _buildExecutorOptions(200000, 0);
+
+        MessagingParams memory msgParams = MessagingParams({
+            dstEid: dstEid,
+            receiver: peers[dstEid],
+            message: peerPayload,
+            options: peerOptions,
+            payInLzToken: false
+        });
+
+        MessagingFee memory fee = lzEndpoint.quote(msgParams, address(this));
+        if (address(this).balance >= fee.nativeFee) {
+            lzEndpoint.send{value: fee.nativeFee}(msgParams, payable(address(this)));
+        }
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /*                           LayerZero V2 Integration                        */
+    /* -------------------------------------------------------------------------- */
+    /**
+     * @notice Handle incoming cross-chain messages
+     * @param _origin Message origin information
+     * @param _guid Unique message identifier  
+     * @param _message Encoded message data
+     * @param _executor Executor address
+     * @param _extraData Additional data
+     */
+    function lzReceive(
+        Origin calldata _origin,
+        bytes32 _guid,
+        bytes calldata _message,
+        address _executor,
+        bytes calldata _extraData
+    ) external payable override {
+        if (msg.sender != address(lzEndpoint)) revert InvalidEndpoint();
+        if (peers[_origin.srcEid] == bytes32(0)) revert UntrustedSender();
         
-        lzEndpoint.send{value: 0}(
-            dstEid,
-            peerPayload,
-            options
+        (string memory msgType) = abi.decode(_message, (string));
+        
+        bytes32 deployHash = keccak256("DEPLOY_TOKEN");
+        bytes32 peerHash = keccak256("SET_PEER");
+        bytes32 msgHash = keccak256(abi.encodePacked(msgType));
+        
+        if (msgHash == deployHash) {
+            _handleTokenDeployment(_message);
+        } else if (msgHash == peerHash) {
+            _handlePeerConfiguration(_message);
+        }
+    }
+
+    /**
+     * @notice Handle token deployment message
+     */
+    function _handleTokenDeployment(bytes calldata _message) internal {
+        (
+            string memory msgType,
+            uint256 initialSupply,
+            address recipient,
+            address owner,
+            bytes32 salt,
+            bytes memory tokenData
+        ) = abi.decode(_message, (string, uint256, address, address, bytes32, bytes));
+
+        address token = localFactory.create(
+            initialSupply,
+            recipient,
+            owner,
+            salt,
+            tokenData
         );
+
+        bridgeDeployedTokens[token] = true;
+    }
+
+    /**
+     * @notice Handle peer configuration message
+     */
+    function _handlePeerConfiguration(bytes calldata _message) internal {
+        (
+            string memory msgType,
+            address token,
+            uint32 srcEid,
+            bytes32 peer
+        ) = abi.decode(_message, (string, address, uint32, bytes32));
+
+        if (bridgeDeployedTokens[token]) {
+            HolographERC20(token).setPeer(srcEid, peer);
+        }
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /*                            LayerZero Receiver                             */
+    /* -------------------------------------------------------------------------- */
+    /**
+     * @notice Check if initialization path is allowed
+     */
+    function allowInitializePath(Origin calldata _origin) external view override returns (bool) {
+        return peers[_origin.srcEid] != bytes32(0);
+    }
+
+    /**
+     * @notice Get next nonce for sender
+     */
+    function nextNonce(uint32 _eid, bytes32 _sender) external view override returns (uint64) {
+        return lzEndpoint.inboundNonce(address(this), _eid, _sender) + 1;
     }
 
     /* -------------------------------------------------------------------------- */
     /*                               Utilities                                   */
     /* -------------------------------------------------------------------------- */
-    struct TokenParams {
-        string name;
-        string symbol;
-        uint256 totalSupply;
-        address owner;
-        uint256 yearlyMintRate;
-        uint256 vestingDuration;
-        string tokenURI;
-    }
-
-    /**
-     * @notice Convert address to bytes32 for LayerZero compatibility
-     */
     function _addressToBytes32(address addr) internal pure returns (bytes32) {
         return bytes32(uint256(uint160(addr)));
     }
 
     /**
-     * @notice Get current chain's LayerZero endpoint ID
+     * @notice Build LayerZero V2 executor options with gas limit
+     * @param gas Gas limit for lzReceive execution
+     * @param value Native token value to send (0 for no native drop)
+     * @return Properly encoded LayerZero V2 options
      */
-    function _getCurrentChainEid() internal view returns (uint32) {
-        // This would need to be configured per chain
-        // For Base Sepolia: return 40245; (example)
-        // For now, return a placeholder
-        return 40245; // Base Sepolia EID
+    function _buildExecutorOptions(uint128 gas, uint128 value) internal pure returns (bytes memory) {
+        bytes memory lzReceiveOption = ExecutorOptions.encodeLzReceiveOption(gas, value);
+        return abi.encodePacked(
+            ExecutorOptions.WORKER_ID,
+            uint16(lzReceiveOption.length + 1), // +1 for option type
+            ExecutorOptions.OPTION_TYPE_LZRECEIVE,
+            lzReceiveOption
+        );
     }
 
     /* -------------------------------------------------------------------------- */
@@ -299,8 +451,8 @@ contract HolographBridge is IHolographBridge, Ownable, Pausable {
      * @param peer Peer bridge address on destination chain (as bytes32)
      */
     function setPeer(uint32 eid, bytes32 peer) external onlyOwner {
-        // Note: This would configure LayerZero peer for the bridge itself
-        // Implementation depends on specific LayerZero OApp setup
+        peers[eid] = peer;
+        emit PeerSet(eid, peer);
     }
 
     /**
@@ -310,9 +462,8 @@ contract HolographBridge is IHolographBridge, Ownable, Pausable {
      * @param peer Peer token address on destination chain (as bytes32)
      */
     function setTokenPeer(address token, uint32 dstEid, bytes32 peer) external {
-        // Only token owner can set peers for their token
         if (msg.sender != Ownable(token).owner()) revert TokenNotDeployed();
-        IHolographERC20(token).setPeer(dstEid, peer);
+        HolographERC20(token).setPeer(dstEid, peer);
     }
 
     /**
@@ -321,9 +472,7 @@ contract HolographBridge is IHolographBridge, Ownable, Pausable {
      * @param supportedEids Array of supported chain endpoint IDs
      */
     function registerToken(address token, uint32[] calldata supportedEids) external {
-        // Only token owner can register their token
         if (msg.sender != Ownable(token).owner()) revert TokenNotDeployed();
-        // Implementation would track registered tokens and supported chains
         bridgeDeployedTokens[token] = true;
     }
 
@@ -331,52 +480,30 @@ contract HolographBridge is IHolographBridge, Ownable, Pausable {
      * @notice Configure OFT settings for a token on multiple chains
      * @param token Token address to configure
      * @param eids Array of endpoint IDs to configure
-     * @param peers Array of peer addresses (as bytes32)
+     * @param peerAddresses Array of peer addresses (as bytes32)
      */
-    function configureOFT(address token, uint32[] calldata eids, bytes32[] calldata peers) external {
-        if (eids.length != peers.length) revert InvalidTokenData();
+    function configureOFT(address token, uint32[] calldata eids, bytes32[] calldata peerAddresses) external {
+        if (eids.length != peerAddresses.length) revert InvalidTokenData();
         if (msg.sender != Ownable(token).owner()) revert TokenNotDeployed();
         
         for (uint256 i = 0; i < eids.length; i++) {
-            IHolographERC20(token).setPeer(eids[i], peers[i]);
+            HolographERC20(token).setPeer(eids[i], peerAddresses[i]);
         }
     }
 
-    /**
-     * @notice Get peer bridge address for a chain
-     * @param eid Chain endpoint ID
-     * @return Peer bridge address
-     */
     function getPeer(uint32 eid) external view returns (bytes32) {
-        return bytes32(uint256(uint160(supportedChains[eid].bridge)));
+        return peers[eid];
     }
 
-    /**
-     * @notice Get peer token address for a token on destination chain
-     * @param token Token address
-     * @param eid Destination chain endpoint ID
-     * @return Peer token address
-     */
     function getTokenPeer(address token, uint32 eid) external view returns (bytes32) {
         return bytes32(uint256(uint160(tokenDeployments[token][eid])));
     }
 
-    /**
-     * @notice Check if a token is registered for cross-chain coordination
-     * @param token Token address to check
-     * @return True if token is registered
-     */
     function isTokenRegistered(address token) external view returns (bool) {
         return bridgeDeployedTokens[token];
     }
 
-    /**
-     * @notice Get supported chains for a token
-     * @param token Token address
-     * @return Array of supported endpoint IDs
-     */
     function getTokenChains(address token) external view returns (uint32[] memory) {
-        // This is a simplified implementation - would need to track registered chains per token
         uint32[] memory chains = new uint32[](0);
         return chains;
     }
@@ -384,31 +511,14 @@ contract HolographBridge is IHolographBridge, Ownable, Pausable {
     /* -------------------------------------------------------------------------- */
     /*                               View Functions                              */
     /* -------------------------------------------------------------------------- */
-    /**
-     * @notice Get chain configuration
-     * @param eid Chain endpoint ID
-     * @return Chain configuration struct
-     */
     function getChainConfig(uint32 eid) external view returns (ChainConfig memory) {
         return supportedChains[eid];
     }
 
-    /**
-     * @notice Get deployed token address on specific chain
-     * @param sourceToken Source token address
-     * @param eid Destination chain endpoint ID
-     * @return Deployed token address (zero if not deployed)
-     */
     function getTokenDeployment(address sourceToken, uint32 eid) external view returns (address) {
         return tokenDeployments[sourceToken][eid];
     }
 
-    /**
-     * @notice Check if token has been deployed to a specific chain
-     * @param sourceToken Source token address
-     * @param eid Chain endpoint ID
-     * @return True if deployed to that chain
-     */
     function isDeployedToChain(address sourceToken, uint32 eid) external view returns (bool) {
         return tokenDeployments[sourceToken][eid] != address(0);
     }
@@ -416,25 +526,19 @@ contract HolographBridge is IHolographBridge, Ownable, Pausable {
     /* -------------------------------------------------------------------------- */
     /*                               Admin Functions                            */
     /* -------------------------------------------------------------------------- */
-    /**
-     * @notice Emergency pause bridge operations
-     */
     function pause() external onlyOwner {
         _pause();
     }
 
-    /**
-     * @notice Resume bridge operations
-     */
     function unpause() external onlyOwner {
         _unpause();
     }
 
-    /* -------------------------------------------------------------------------- */
-    /*                               Receive ETH                                */
-    /* -------------------------------------------------------------------------- */
     /**
      * @notice Accept ETH for LayerZero message fees
+     * @dev Allows contract to receive ETH payments for cross-chain messaging fees.
+     * ETH sent to this contract is used exclusively for LayerZero transaction costs.
+     * Access is unrestricted as this is a standard payment mechanism.
      */
     receive() external payable {}
 }

@@ -35,6 +35,9 @@ contract DeployUnichain is Script {
     /* -------------------------------------------------------------------------- */
     uint256 internal constant UNICHAIN_MAINNET = 1301;
     uint256 internal constant UNICHAIN_SEPOLIA = 1301;  // Update when Unichain Sepolia is available
+    
+    // LayerZero V2 Endpoint IDs
+    uint32 internal constant UNICHAIN_MAINNET_EID = 30338;
 
     /* -------------------------------------------------------------------------- */
     /*                                   Run                                      */
@@ -73,7 +76,7 @@ contract DeployUnichain is Script {
 
         gasStart = gasleft();
         // Deploy HolographBridge for cross-chain token expansion
-        HolographBridge bridge = new HolographBridge(lzEndpoint, address(factory));
+        HolographBridge bridge = new HolographBridge(lzEndpoint, address(factory), UNICHAIN_MAINNET_EID);
         uint256 gasBridge = gasStart - gasleft();
 
         vm.stopBroadcast();

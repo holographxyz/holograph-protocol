@@ -12,6 +12,7 @@ import {MockHLG} from "../mock/MockHLG.sol";
 import {MockWETH} from "../mock/MockWETH.sol";
 import {MockSwapRouter} from "../mock/MockSwapRouter.sol";
 import {MockERC20} from "../mock/MockERC20.sol";
+import {Origin} from "../../lib/LayerZero-v2/packages/layerzero-v2/evm/protocol/contracts/interfaces/ILayerZeroEndpointV2.sol";
 
 /**
  * @title FeeRouterTest
@@ -332,7 +333,8 @@ contract FeeRouterTest is Test {
         
         // Mock LayerZero receive call from trusted remote
         vm.prank(address(lzEndpoint));
-        feeRouter.lzReceive(BASE_EID, message, address(0), "");
+        Origin memory origin = Origin({srcEid: BASE_EID, sender: bytes32(uint256(uint160(address(this)))), nonce: 1});
+        feeRouter.lzReceive(origin, keccak256(message), message, address(0), "");
         
         // Should process the received ETH through HLG conversion
     }
@@ -342,7 +344,8 @@ contract FeeRouterTest is Test {
         bytes memory legacyMessage = abi.encode(address(0), amount); // 2-word payload
         
         vm.prank(address(lzEndpoint));
-        feeRouter.lzReceive(BASE_EID, legacyMessage, address(0), "");
+        Origin memory origin2 = Origin({srcEid: BASE_EID, sender: bytes32(uint256(uint160(address(this)))), nonce: 1});
+        feeRouter.lzReceive(origin2, keccak256(legacyMessage), legacyMessage, address(0), "");
     }
 
     function test_RevertLzReceiveNotEndpoint() public {
@@ -350,7 +353,8 @@ contract FeeRouterTest is Test {
         
         vm.prank(alice);
         vm.expectRevert(FeeRouter.NotEndpoint.selector);
-        feeRouter.lzReceive(BASE_EID, message, address(0), "");
+        Origin memory origin = Origin({srcEid: BASE_EID, sender: bytes32(uint256(uint160(address(this)))), nonce: 1});
+        feeRouter.lzReceive(origin, keccak256(message), message, address(0), "");
     }
 
     function test_RevertLzReceiveUntrustedRemote() public {
@@ -358,7 +362,8 @@ contract FeeRouterTest is Test {
         
         vm.prank(address(lzEndpoint));
         vm.expectRevert(FeeRouter.UntrustedRemote.selector);
-        feeRouter.lzReceive(99999, message, address(0), ""); // Untrusted EID
+        Origin memory origin3 = Origin({srcEid: 99999, sender: bytes32(uint256(uint160(address(this)))), nonce: 1});
+        feeRouter.lzReceive(origin3, keccak256(message), message, address(0), ""); // Untrusted EID
     }
 
     /* -------------------------------------------------------------------------- */

@@ -21,6 +21,7 @@ contract HolographFactory is ITokenFactory, Ownable, Pausable, ReentrancyGuard {
     error ZeroAddress();
     error UnauthorizedCaller();
     error InvalidTokenData();
+    error SaltAlreadyUsed();
 
     /* -------------------------------------------------------------------------- */
     /*                                 Storage                                    */
@@ -33,6 +34,9 @@ contract HolographFactory is ITokenFactory, Ownable, Pausable, ReentrancyGuard {
 
     /// @notice Mapping to track deployed tokens
     mapping(address => bool) public deployedTokens;
+
+    /// @notice Mapping to track used CREATE2 salts to prevent reuse attacks
+    mapping(bytes32 => bool) public usedSalts;
 
     /* -------------------------------------------------------------------------- */
     /*                                  Events                                    */
@@ -84,6 +88,10 @@ contract HolographFactory is ITokenFactory, Ownable, Pausable, ReentrancyGuard {
     ) external override whenNotPaused nonReentrant returns (address token) {
         // Verify caller is an authorized Airlock
         if (!authorizedAirlocks[msg.sender]) revert UnauthorizedCaller();
+        
+        // Prevent salt reuse attacks
+        if (usedSalts[salt]) revert SaltAlreadyUsed();
+        usedSalts[salt] = true;
         
         // Decode token metadata from tokenData (matches Doppler DERC20 format)
         (

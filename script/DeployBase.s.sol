@@ -37,6 +37,10 @@ contract DeployBase is Script {
     /* -------------------------------------------------------------------------- */
     uint256 internal constant BASE_MAINNET = 8453;
     uint256 internal constant BASE_SEPOLIA = 84532;
+    
+    // LayerZero V2 Endpoint IDs
+    uint32 internal constant BASE_MAINNET_EID = 30184;
+    uint32 internal constant BASE_SEPOLIA_EID = 40245;
 
     /* -------------------------------------------------------------------------- */
     /*                                   Run                                      */
@@ -94,7 +98,8 @@ contract DeployBase is Script {
 
         gasStart = gasleft();
         // Deploy HolographBridge for cross-chain token expansion
-        HolographBridge bridge = new HolographBridge(lzEndpoint, address(factory));
+        uint32 baseEid = block.chainid == BASE_MAINNET ? BASE_MAINNET_EID : BASE_SEPOLIA_EID;
+        HolographBridge bridge = new HolographBridge(lzEndpoint, address(factory), baseEid);
         uint256 gasBridge = gasStart - gasleft();
 
         vm.stopBroadcast();

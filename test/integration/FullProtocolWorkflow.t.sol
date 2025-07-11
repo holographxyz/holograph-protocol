@@ -63,7 +63,7 @@ contract FullProtocolWorkflowTest is Test {
         
         // Deploy core contracts on Base Sepolia
         factory = new HolographFactory(address(lzEndpoint));
-        bridge = new HolographBridge(address(lzEndpoint), address(factory));
+        bridge = new HolographBridge(address(lzEndpoint), address(factory), SOURCE_EID);
         
         // Deploy FeeRouter with Unichain as remote chain for fee bridging
         feeRouter = new FeeRouter(

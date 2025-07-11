@@ -107,7 +107,7 @@ contract HolographERC20 is OFT, ERC20Votes, ERC20Permit {
     /*                                Modifiers                                   */
     /* -------------------------------------------------------------------------- */
     modifier hasVestingStarted() {
-        require(vestingStart > 0, VestingNotStartedYet());
+        if (vestingStart == 0) revert VestingNotStartedYet();
         _;
     }
 

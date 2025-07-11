@@ -38,6 +38,8 @@ remappings = [
   "@layerzerolabs/lz-evm-oapp-v2/=lib/LayerZero-v2/packages/layerzero-v2/evm/oapp/",
   # LayerZero Protocol v2 contracts
   "@layerzerolabs/lz-evm-protocol-v2/=lib/LayerZero-v2/packages/layerzero-v2/evm/protocol/",
+  # LayerZero MessageLib v2 contracts
+  "@layerzerolabs/lz-evm-messagelib-v2/=lib/LayerZero-v2/packages/layerzero-v2/evm/messagelib/",
 ]
 
 # Specify include paths to control which directories are searched for imports

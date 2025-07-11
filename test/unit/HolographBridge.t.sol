@@ -7,6 +7,7 @@ import {HolographBridge} from "../../src/HolographBridge.sol";
 import {HolographFactory} from "../../src/HolographFactory.sol";
 import {HolographERC20} from "../../src/HolographERC20.sol";
 import {IHolographBridge} from "../../src/interfaces/IHolographBridge.sol";
+import {ChainConfig} from "../../src/structs/BridgeStructs.sol";
 import {MockLZEndpoint} from "../mock/MockLZEndpoint.sol";
 
 /**
@@ -55,11 +56,15 @@ contract HolographBridgeTest is Test {
         factory = new HolographFactory(address(lzEndpoint));
         
         // Deploy bridge
-        bridge = new HolographBridge(address(lzEndpoint), address(factory));
+        bridge = new HolographBridge(address(lzEndpoint), address(factory), BASE_EID);
         
         // Configure supported chains
         bridge.configureChain(ETH_EID, ETH_FACTORY, ETH_BRIDGE, "Ethereum");
         bridge.configureChain(ARB_EID, address(0x5555), address(0x6666), "Arbitrum");
+        
+        // Set peers for cross-chain messaging
+        bridge.setPeer(ETH_EID, bytes32(uint256(uint160(ETH_BRIDGE))));
+        bridge.setPeer(ARB_EID, bytes32(uint256(uint160(address(0x6666)))));
         
         // Deploy a test token through factory
         factory.setAirlockAuthorization(address(this), true);
@@ -107,7 +112,7 @@ contract HolographBridgeTest is Test {
         
         bridge.configureChain(newEid, newFactory, newBridge, chainName);
         
-        HolographBridge.ChainConfig memory config = bridge.getChainConfig(newEid);
+        ChainConfig memory config = bridge.getChainConfig(newEid);
         assertEq(config.eid, newEid);
         assertEq(config.factory, newFactory);
         assertEq(config.bridge, newBridge);
@@ -118,7 +123,7 @@ contract HolographBridgeTest is Test {
     function test_SetChainActive() public {
         // Disable a chain
         bridge.setChainActive(ETH_EID, false);
-        HolographBridge.ChainConfig memory config = bridge.getChainConfig(ETH_EID);
+        ChainConfig memory config = bridge.getChainConfig(ETH_EID);
         assertFalse(config.active);
         
         // Re-enable the chain
@@ -394,7 +399,7 @@ contract HolographBridgeTest is Test {
         
         bridge.configureChain(eid, factoryAddr, bridge_addr, name);
         
-        HolographBridge.ChainConfig memory config = bridge.getChainConfig(eid);
+        ChainConfig memory config = bridge.getChainConfig(eid);
         assertEq(config.eid, eid);
         assertEq(config.factory, factoryAddr);
         assertEq(config.bridge, bridge_addr);
