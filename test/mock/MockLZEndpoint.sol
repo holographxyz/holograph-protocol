@@ -75,4 +75,9 @@ contract MockLZEndpoint {
         delete _lastPayload;
         _lastEid = 0;
     }
+
+    // Mock LayerZero OApp functions
+    function setDelegate(address /*delegate*/) external {
+        // Mock implementation - do nothing
+    }
 }

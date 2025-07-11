@@ -41,6 +41,7 @@ import "./interfaces/ISwapRouter.sol";
 import "./interfaces/IStakingRewards.sol";
 import "./interfaces/IAirlock.sol";
 import "./interfaces/IUniswapV3Factory.sol";
+import "./HolographFactory.sol";
 
 /**
  * @title FeeRouter
@@ -105,6 +106,9 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
     /// @notice Trusted Airlock addresses allowed to push ETH
     mapping(address => bool) public trustedAirlocks;
 
+    /// @notice Trusted HolographFactory addresses for integration
+    mapping(address => bool) public trustedFactories;
+
     /* -------------------------------------------------------------------------- */
     /*                                  Errors                                    */
     /* -------------------------------------------------------------------------- */
@@ -142,6 +146,9 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
 
     /// @notice Emitted when an Airlock is added or removed from trusted list
     event TrustedAirlockSet(address indexed airlock, bool trusted);
+
+    /// @notice Emitted when a HolographFactory is added or removed from trusted list
+    event TrustedFactorySet(address indexed factory, bool trusted);
 
     /* -------------------------------------------------------------------------- */
     /*                               Constructor                                  */
@@ -581,6 +588,17 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
         if (airlock == address(0)) revert ZeroAddress();
         trustedAirlocks[airlock] = trusted;
         emit TrustedAirlockSet(airlock, trusted);
+    }
+
+    /**
+     * @notice Whitelist or remove a HolographFactory for integration
+     * @param factory HolographFactory contract address
+     * @param trusted Boolean indicating whether the Factory is trusted
+     */
+    function setTrustedFactory(address factory, bool trusted) external onlyOwner {
+        if (factory == address(0)) revert ZeroAddress();
+        trustedFactories[factory] = trusted;
+        emit TrustedFactorySet(factory, trusted);
     }
 
     /* -------------------------------------------------------------------------- */
