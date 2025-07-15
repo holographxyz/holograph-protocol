@@ -64,18 +64,18 @@ contract MockLZEndpoint {
     }
 
     // Legacy send function for backwards compatibility
-    function sendLegacy(uint32 eid, bytes calldata payload, bytes calldata /*options*/) external payable {
+    function sendLegacy(uint32 dstEid, bytes calldata payload, bytes calldata /*options*/) external payable {
         _sendCalled = true;
         _lastValue = msg.value;
         _lastPayload = payload;
-        _lastEid = eid;
+        _lastEid = dstEid;
 
-        emit MessageSent(eid, payload, "");
+        emit MessageSent(dstEid, payload, "");
 
         // Simple cross-chain simulation - call the target directly
         if (crossChainTarget != address(0)) {
             // Determine source EID based on destination
-            uint32 srcEid = eid == 30101 ? uint32(30184) : uint32(30101); // ETH_EID : BASE_EID
+            uint32 srcEid = dstEid == 30101 ? uint32(30184) : uint32(30101); // ETH_EID : BASE_EID
 
             // We need to simulate the target endpoint calling lzReceive
             // This is a bit of a hack for testing, but it works

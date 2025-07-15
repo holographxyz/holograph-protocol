@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import "./ITokenFactory.sol";
+import "./external/doppler/ITokenFactory.sol";
 import "./IGovernanceFactory.sol";
 import "./IPoolInitializer.sol";
 import "./ILiquidityMigrator.sol";

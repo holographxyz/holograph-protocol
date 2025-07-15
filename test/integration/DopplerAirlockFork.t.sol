@@ -16,15 +16,11 @@ interface IAirlock {
         PoolInitializer,
         LiquidityMigrator
     }
-    
-    function create(CreateParams calldata createData) external returns (
-        address asset, 
-        address pool, 
-        address governance, 
-        address timelock, 
-        address migrationPool
-    );
-    
+
+    function create(
+        CreateParams calldata createData
+    ) external returns (address asset, address pool, address governance, address timelock, address migrationPool);
+
     function setModuleState(address[] calldata modules, ModuleState[] calldata states) external;
     function getModuleState(address module) external view returns (ModuleState);
     function owner() external view returns (address);
@@ -108,7 +104,7 @@ contract DopplerAirlockForkTest is Test {
     int24 private constant END_TICK = 60_000;
     uint24 private constant LP_FEE = 3000;
     int24 private constant TICK_SPACING = 8;
-    
+
     // Hook flags for salt mining (matching create-token.ts)
     uint256 private constant BEFORE_INITIALIZE_FLAG = 1 << 13;
     uint256 private constant AFTER_INITIALIZE_FLAG = 1 << 12;
@@ -116,22 +112,22 @@ contract DopplerAirlockForkTest is Test {
     uint256 private constant BEFORE_SWAP_FLAG = 1 << 7;
     uint256 private constant AFTER_SWAP_FLAG = 1 << 6;
     uint256 private constant BEFORE_DONATE_FLAG = 1 << 5;
-    
-    uint256 private constant REQUIRED_FLAGS = 
+
+    uint256 private constant REQUIRED_FLAGS =
         BEFORE_INITIALIZE_FLAG |
-        AFTER_INITIALIZE_FLAG |
-        BEFORE_ADD_LIQUIDITY_FLAG |
-        BEFORE_SWAP_FLAG |
-        AFTER_SWAP_FLAG |
-        BEFORE_DONATE_FLAG;
-    
+            AFTER_INITIALIZE_FLAG |
+            BEFORE_ADD_LIQUIDITY_FLAG |
+            BEFORE_SWAP_FLAG |
+            AFTER_SWAP_FLAG |
+            BEFORE_DONATE_FLAG;
+
     uint256 private constant FLAG_MASK = 0x3fff;
     uint256 private constant MAX_SALT_ITERATIONS = 200_000;
 
     DopplerAddrBook.DopplerAddrs private doppler;
     HolographFactory private holographFactory;
     LZEndpointStub private lzEndpoint;
-    
+
     address private creator = address(0xCAFE);
 
     function setUp() public {
@@ -146,6 +142,7 @@ contract DopplerAirlockForkTest is Test {
         } else {
             vm.chainId(84532);
             vm.createSelectFork(vm.rpcUrl("baseSepolia"));
+            console.log("Base Sepolia RPC URL: %s", vm.rpcUrl("baseSepolia"));
             console.log("=== USING BASE SEPOLIA TESTNET ===");
         }
 
@@ -154,19 +151,19 @@ contract DopplerAirlockForkTest is Test {
         // Deploy our custom LayerZero endpoint and HolographFactory
         lzEndpoint = new LZEndpointStub();
         holographFactory = new HolographFactory(address(lzEndpoint));
-        
+
         vm.deal(creator, 1 ether);
-        
+
         console.log("HolographFactory deployed at: %s", address(holographFactory));
         console.log("=== NEW ARCHITECTURE: Airlock -> HolographFactory -> HolographERC20 ===");
     }
 
     function test_factoryInterfaceCompliance() public {
         console.log("=== TESTING ITOKENFACTORY INTERFACE COMPLIANCE ===");
-        
+
         // Authorize test contract as "airlock"
         holographFactory.setAirlockAuthorization(address(this), true);
-        
+
         bytes memory tokenData = abi.encode(
             "Holograph Test Token", // name
             "HTEST", // symbol
@@ -176,7 +173,7 @@ contract DopplerAirlockForkTest is Test {
             new uint256[](0), // amounts
             "https://holograph.xyz/token/htest" // tokenURI
         );
-        
+
         address token = holographFactory.create(
             INITIAL_SUPPLY, // initialSupply
             creator, // recipient
@@ -184,17 +181,17 @@ contract DopplerAirlockForkTest is Test {
             bytes32(uint256(12345)), // salt
             tokenData
         );
-        
+
         assertTrue(token != address(0), "Token should be deployed");
         assertTrue(holographFactory.isDeployedToken(token), "Token should be tracked");
-        
+
         HolographERC20 deployedToken = HolographERC20(token);
         assertEq(deployedToken.name(), "Holograph Test Token");
         assertEq(deployedToken.symbol(), "HTEST");
         assertEq(deployedToken.yearlyMintRate(), 0.015e18);
         assertEq(deployedToken.balanceOf(creator), INITIAL_SUPPLY);
         assertEq(deployedToken.getEndpoint(), address(lzEndpoint));
-        
+
         console.log("Token deployed: %s", token);
         console.log("[OK] ITokenFactory interface fully compliant");
         console.log("[OK] HolographERC20 has LayerZero OFT capabilities");
@@ -218,10 +215,10 @@ contract DopplerAirlockForkTest is Test {
 
     function test_architectureValidation() public {
         console.log("=== ARCHITECTURE VALIDATION ===");
-        
+
         // Test 1: Our factory implements ITokenFactory correctly
         holographFactory.setAirlockAuthorization(address(this), true);
-        
+
         bytes memory tokenData = abi.encode(
             "Architecture Test",
             "ARCH",
@@ -231,22 +228,16 @@ contract DopplerAirlockForkTest is Test {
             new uint256[](0),
             "https://test.com"
         );
-        
+
         // Test 2: Token creation works with our factory
-        address token = holographFactory.create(
-            1000e18,
-            creator,
-            creator,
-            bytes32(uint256(54321)),
-            tokenData
-        );
-        
+        address token = holographFactory.create(1000e18, creator, creator, bytes32(uint256(54321)), tokenData);
+
         // Test 3: Deployed token has correct properties
         HolographERC20 holographToken = HolographERC20(token);
         assertEq(holographToken.name(), "Architecture Test");
         assertEq(holographToken.symbol(), "ARCH");
         assertEq(holographToken.getEndpoint(), address(lzEndpoint));
-        
+
         // Test 4: Address prediction works
         address predicted = holographFactory.predictTokenAddress(
             bytes32(uint256(99999)),
@@ -261,14 +252,14 @@ contract DopplerAirlockForkTest is Test {
             new uint256[](0),
             "https://predicted.com"
         );
-        
+
         assertTrue(predicted != address(0), "Prediction should work");
-        
+
         console.log("[OK] Factory implements ITokenFactory correctly");
         console.log("[OK] HolographERC20 combines LayerZero OFT + DERC20 features");
         console.log("[OK] Address prediction works for salt mining");
         console.log("[OK] Ready for Doppler governance approval");
-        
+
         console.log("");
         console.log("=== INTEGRATION SUMMARY ===");
         console.log("Architecture: Doppler Airlock -> HolographFactory -> HolographERC20");
@@ -284,13 +275,12 @@ contract DopplerAirlockForkTest is Test {
         console.log("3. Deploy and configure with proper permissions");
     }
 
-    function computeCreate2Address(bytes32 salt, bytes32 initCodeHash, address deployer) internal pure override returns (address) {
-        return address(uint160(uint256(keccak256(abi.encodePacked(
-            bytes1(0xff),
-            deployer,
-            salt,
-            initCodeHash
-        )))));
+    function computeCreate2Address(
+        bytes32 salt,
+        bytes32 initCodeHash,
+        address deployer
+    ) internal pure override returns (address) {
+        return address(uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), deployer, salt, initCodeHash)))));
     }
 
     function mineValidSalt(
@@ -301,7 +291,7 @@ contract DopplerAirlockForkTest is Test {
         address numeraire
     ) internal view returns (bytes32) {
         console.log("Mining valid salt for new architecture...");
-        
+
         // Decode pool initializer data
         (
             uint256 minimumProceeds,
@@ -317,10 +307,10 @@ contract DopplerAirlockForkTest is Test {
             uint24 lpFee,
             int24 tickSpacing
         ) = abi.decode(
-            poolInitializerData,
-            (uint256, uint256, uint256, uint256, int24, int24, uint256, int24, bool, uint256, uint24, int24)
-        );
-        
+                poolInitializerData,
+                (uint256, uint256, uint256, uint256, int24, int24, uint256, int24, bool, uint256, uint24, int24)
+            );
+
         // Prepare Doppler constructor arguments
         bytes memory dopplerConstructorArgs = abi.encode(
             doppler.poolManager,
@@ -338,7 +328,7 @@ contract DopplerAirlockForkTest is Test {
             doppler.v4Initializer,
             lpFee
         );
-        
+
         // Prepare token constructor arguments for HolographERC20
         (
             string memory name,
@@ -348,11 +338,8 @@ contract DopplerAirlockForkTest is Test {
             address[] memory recipients,
             uint256[] memory amounts,
             string memory tokenURI
-        ) = abi.decode(
-            tokenFactoryData,
-            (string, string, uint256, uint256, address[], uint256[], string)
-        );
-        
+        ) = abi.decode(tokenFactoryData, (string, string, uint256, uint256, address[], uint256[], string));
+
         bytes memory tokenConstructorArgs = abi.encode(
             name,
             symbol,
@@ -366,11 +353,11 @@ contract DopplerAirlockForkTest is Test {
             amounts,
             tokenURI
         );
-        
+
         // Get real bytecode from artifacts (try different paths for Doppler artifacts)
         bytes memory dopplerBytecode;
         bytes memory holographTokenBytecode;
-        
+
         try vm.getCode("artifacts/doppler/Doppler.json") returns (bytes memory code) {
             dopplerBytecode = code;
         } catch {
@@ -382,52 +369,49 @@ contract DopplerAirlockForkTest is Test {
                 dopplerBytecode = abi.encodePacked(type(LZEndpointStub).creationCode);
             }
         }
-        
+
         // Use HolographERC20 bytecode for new architecture
-        holographTokenBytecode = abi.encodePacked(
-            type(HolographERC20).creationCode,
-            tokenConstructorArgs
-        );
-        
+        holographTokenBytecode = abi.encodePacked(type(HolographERC20).creationCode, tokenConstructorArgs);
+
         // Calculate init code hashes
         bytes32 dopplerInitHash = keccak256(abi.encodePacked(dopplerBytecode, dopplerConstructorArgs));
         bytes32 tokenInitHash = keccak256(holographTokenBytecode);
-        
+
         // Mine salt - start from a reasonable seed to speed up mining
         uint256 startSalt = uint256(keccak256(abi.encodePacked(block.timestamp, address(holographFactory)))) % 50000;
-        
+
         for (uint256 i = 0; i < MAX_SALT_ITERATIONS; i++) {
             uint256 saltNum = (startSalt + i) % MAX_SALT_ITERATIONS;
-            
+
             // Reduce logging frequency to avoid memory issues
             if (i % 50000 == 0 && i > 0) {
                 console.log("Mining progress: %s/%s (current salt: %s)", i, MAX_SALT_ITERATIONS, saltNum);
             }
-            
+
             bytes32 salt = bytes32(saltNum);
             address hookAddress = computeCreate2Address(salt, dopplerInitHash, doppler.dopplerDeployer);
             address assetAddress = computeCreate2Address(salt, tokenInitHash, address(holographFactory));
-            
+
             // Check hook flags first (most likely to fail)
             uint256 hookFlags = uint256(uint160(hookAddress)) & FLAG_MASK;
             if (hookFlags != REQUIRED_FLAGS) {
                 continue;
             }
-            
+
             // Check token ordering
             uint256 assetBigInt = uint256(uint160(assetAddress));
             uint256 numeraireBigInt = uint256(uint160(numeraire));
             bool correctOrdering = isToken0 ? assetBigInt < numeraireBigInt : assetBigInt > numeraireBigInt;
-            
+
             if (!correctOrdering) {
                 continue;
             }
-            
+
             // Check if hook address is available (should have no code) - do this last as it's expensive
             if (hookAddress.code.length > 0) {
                 continue;
             }
-            
+
             console.log("Found valid salt: %s (iteration %s)", saltNum, i);
             console.log("Hook address: %s", hookAddress);
             console.log("Asset address: %s", assetAddress);
@@ -435,7 +419,7 @@ contract DopplerAirlockForkTest is Test {
             console.log("Token ordering: isToken0=%s, asset < numeraire: %s", isToken0, assetBigInt < numeraireBigInt);
             return salt;
         }
-        
+
         revert("Could not find valid salt");
     }
 
@@ -500,14 +484,8 @@ contract DopplerAirlockForkTest is Test {
 
         // 6. Test direct HolographFactory integration (new architecture)
         holographFactory.setAirlockAuthorization(address(this), true);
-        
-        address token = holographFactory.create(
-            INITIAL_SUPPLY,
-            creator,
-            creator,
-            salt,
-            tokenFactoryData
-        );
+
+        address token = holographFactory.create(INITIAL_SUPPLY, creator, creator, salt, tokenFactoryData);
 
         // 7. Verify the token was deployed with correct properties
         assertTrue(token != address(0), "Token address should not be zero");
@@ -531,7 +509,7 @@ contract DopplerAirlockForkTest is Test {
 
     function test_saltMiningPerformance() public {
         console.log("=== SALT MINING PERFORMANCE TEST ===");
-        
+
         bytes memory tokenFactoryData = abi.encode(
             "Performance Test", // name
             "PERF", // symbol
@@ -558,28 +536,16 @@ contract DopplerAirlockForkTest is Test {
         );
 
         uint256 gasStart = gasleft();
-        bytes32 salt = mineValidSalt(
-            tokenFactoryData,
-            poolInitializerData,
-            INITIAL_SUPPLY,
-            INITIAL_SUPPLY,
-            address(0)
-        );
+        bytes32 salt = mineValidSalt(tokenFactoryData, poolInitializerData, INITIAL_SUPPLY, INITIAL_SUPPLY, address(0));
         uint256 gasUsed = gasStart - gasleft();
-        
+
         console.log("Salt mining gas used: %s", gasUsed);
         console.log("Mined salt: %s", uint256(salt));
-        
+
         // Test that this salt works with actual deployment
         holographFactory.setAirlockAuthorization(address(this), true);
-        address token = holographFactory.create(
-            INITIAL_SUPPLY,
-            creator,
-            creator,
-            salt,
-            tokenFactoryData
-        );
-        
+        address token = holographFactory.create(INITIAL_SUPPLY, creator, creator, salt, tokenFactoryData);
+
         assertTrue(token != address(0), "Token should deploy with mined salt");
         console.log("[OK] Salt mining performance acceptable for production use");
     }
@@ -591,19 +557,19 @@ contract DopplerAirlockForkTest is Test {
         // Get the real Doppler Airlock contract
         IAirlock airlock = IAirlock(doppler.airlock);
         address airlockOwner = airlock.owner();
-        
+
         console.log("Airlock owner:", airlockOwner);
         console.log("HolographFactory address:", address(holographFactory));
-        
+
         // Whitelist our HolographFactory in the Airlock as a TokenFactory
         vm.prank(airlockOwner);
         address[] memory modules = new address[](1);
         IAirlock.ModuleState[] memory states = new IAirlock.ModuleState[](1);
         modules[0] = address(holographFactory);
         states[0] = IAirlock.ModuleState.TokenFactory;
-        
+
         airlock.setModuleState(modules, states);
-        
+
         // Verify whitelisting worked
         IAirlock.ModuleState factoryState = airlock.getModuleState(address(holographFactory));
         require(factoryState == IAirlock.ModuleState.TokenFactory, "Factory not whitelisted properly");
@@ -652,7 +618,7 @@ contract DopplerAirlockForkTest is Test {
         // Create proper liquidity migrator data with BeneficiaryData struct format
         // Must include protocol owner with at least 5% and be sorted by address
         address protocolOwner = airlock.owner(); // Use actual airlock owner
-        
+
         // Create BeneficiaryData array (must be sorted by address)
         BeneficiaryData[] memory beneficiaries = new BeneficiaryData[](2);
         if (protocolOwner < creator) {
@@ -679,7 +645,7 @@ contract DopplerAirlockForkTest is Test {
 
         bytes memory liquidityMigratorData = abi.encode(
             uint24(LP_FEE), // fee
-            int24(TICK_SPACING), // tickSpacing  
+            int24(TICK_SPACING), // tickSpacing
             uint32(365 * 24 * 60 * 60), // lockDuration (1 year)
             beneficiaries // BeneficiaryData[] array
         );
@@ -723,13 +689,9 @@ contract DopplerAirlockForkTest is Test {
 
         // This is the key test - actually call through the Airlock!
         vm.prank(creator);
-        (
-            address asset, 
-            address pool, 
-            address governance, 
-            address timelock, 
-            address migrationPool
-        ) = airlock.create(createParams);
+        (address asset, address pool, address governance, address timelock, address migrationPool) = airlock.create(
+            createParams
+        );
 
         console.log("=== DOPPLER AIRLOCK CREATION SUCCESSFUL ===");
         console.log("Asset (HolographERC20):", asset);
@@ -759,7 +721,7 @@ contract DopplerAirlockForkTest is Test {
         console.log("[OK] HolographERC20 deployed with LayerZero OFT capabilities");
         console.log("[OK] DERC20 features preserved");
         console.log("[OK] Complete Doppler ecosystem integration working");
-        
+
         console.log("");
         console.log("=== INTEGRATION COMPLETE ===");
         console.log("[OK] Doppler Airlock -> HolographFactory -> HolographERC20");
@@ -777,14 +739,14 @@ contract DopplerAirlockForkTest is Test {
         // Get the real Doppler Airlock contract
         IAirlock airlock = IAirlock(doppler.airlock);
         address airlockOwner = airlock.owner();
-        
+
         // Whitelist our HolographFactory in the Airlock
         vm.prank(airlockOwner);
         address[] memory modules = new address[](1);
         IAirlock.ModuleState[] memory states = new IAirlock.ModuleState[](1);
         modules[0] = address(holographFactory);
         states[0] = IAirlock.ModuleState.TokenFactory;
-        
+
         airlock.setModuleState(modules, states);
         console.log("[OK] HolographFactory whitelisted in Doppler Airlock");
 
