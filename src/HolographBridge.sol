@@ -8,8 +8,8 @@ import "../lib/LayerZero-v2/packages/layerzero-v2/evm/protocol/contracts/interfa
 import "../lib/LayerZero-v2/packages/layerzero-v2/evm/protocol/contracts/interfaces/ILayerZeroReceiver.sol";
 import "../lib/LayerZero-v2/packages/layerzero-v2/evm/messagelib/contracts/libs/ExecutorOptions.sol";
 import "./interfaces/IHolographBridge.sol";
+import "./interfaces/IHolographFactory.sol";
 import "./HolographERC20.sol";
-import "./HolographFactory.sol";
 import "./structs/BridgeStructs.sol";
 
 /**
@@ -72,7 +72,7 @@ contract HolographBridge is IHolographBridge, ILayerZeroReceiver, Ownable, Pausa
     ILayerZeroEndpointV2 public immutable lzEndpoint;
 
     /// @notice Local HolographFactory for reference
-    HolographFactory public immutable localFactory;
+    IHolographFactory public immutable localFactory;
 
     /// @notice Current chain's LayerZero endpoint ID
     uint32 public immutable localEid;
@@ -119,7 +119,7 @@ contract HolographBridge is IHolographBridge, ILayerZeroReceiver, Ownable, Pausa
         if (_localEid == 0) revert ZeroAddress();
         
         lzEndpoint = ILayerZeroEndpointV2(_lzEndpoint);
-        localFactory = HolographFactory(_factory);
+        localFactory = IHolographFactory(_factory);
         localEid = _localEid;
     }
 

@@ -41,7 +41,7 @@ import "./interfaces/ISwapRouter.sol";
 import "./interfaces/IStakingRewards.sol";
 import "./interfaces/IAirlock.sol";
 import "./interfaces/IUniswapV3Factory.sol";
-import "./HolographFactory.sol";
+import "./interfaces/IHolographFactory.sol";
 
 /**
  * @title FeeRouter
