@@ -174,6 +174,7 @@ contract DopplerAirlockForkTest is Test {
             "https://holograph.xyz/token/htest" // tokenURI
         );
 
+        vm.prank(address(this), address(this)); // Set both msg.sender and tx.origin to test contract
         address token = holographFactory.create(
             INITIAL_SUPPLY, // initialSupply
             creator, // recipient
@@ -184,6 +185,9 @@ contract DopplerAirlockForkTest is Test {
 
         assertTrue(token != address(0), "Token should be deployed");
         assertTrue(holographFactory.isDeployedToken(token), "Token should be tracked");
+        
+        // Verify creator tracking - tx.origin should be tracked as creator
+        assertTrue(holographFactory.isTokenCreator(token, address(this)), "This contract should be creator");
 
         HolographERC20 deployedToken = HolographERC20(token);
         assertEq(deployedToken.name(), "Holograph Test Token");
@@ -230,7 +234,11 @@ contract DopplerAirlockForkTest is Test {
         );
 
         // Test 2: Token creation works with our factory
+        vm.prank(address(this), address(this)); // Set both msg.sender and tx.origin to test contract
         address token = holographFactory.create(1000e18, creator, creator, bytes32(uint256(54321)), tokenData);
+
+        // Verify creator tracking
+        assertTrue(holographFactory.isTokenCreator(token, address(this)), "This contract should be creator");
 
         // Test 3: Deployed token has correct properties
         HolographERC20 holographToken = HolographERC20(token);
@@ -485,7 +493,11 @@ contract DopplerAirlockForkTest is Test {
         // 6. Test direct HolographFactory integration (new architecture)
         holographFactory.setAirlockAuthorization(address(this), true);
 
+        vm.prank(address(this), address(this)); // Set both msg.sender and tx.origin to test contract
         address token = holographFactory.create(INITIAL_SUPPLY, creator, creator, salt, tokenFactoryData);
+
+        // Verify creator tracking
+        assertTrue(holographFactory.isTokenCreator(token, address(this)), "This contract should be creator");
 
         // 7. Verify the token was deployed with correct properties
         assertTrue(token != address(0), "Token address should not be zero");
@@ -544,7 +556,11 @@ contract DopplerAirlockForkTest is Test {
 
         // Test that this salt works with actual deployment
         holographFactory.setAirlockAuthorization(address(this), true);
+        vm.prank(address(this), address(this)); // Set both msg.sender and tx.origin to test contract
         address token = holographFactory.create(INITIAL_SUPPLY, creator, creator, salt, tokenFactoryData);
+
+        // Verify creator tracking
+        assertTrue(holographFactory.isTokenCreator(token, address(this)), "This contract should be creator");
 
         assertTrue(token != address(0), "Token should deploy with mined salt");
         console.log("[OK] Salt mining performance acceptable for production use");
@@ -688,10 +704,12 @@ contract DopplerAirlockForkTest is Test {
         console.log("Using salt:", uint256(salt));
 
         // This is the key test - actually call through the Airlock!
-        vm.prank(creator);
+        // Use startPrank to ensure tx.origin is set correctly
+        vm.startPrank(creator, creator);
         (address asset, address pool, address governance, address timelock, address migrationPool) = airlock.create(
             createParams
         );
+        vm.stopPrank();
 
         console.log("=== DOPPLER AIRLOCK CREATION SUCCESSFUL ===");
         console.log("Asset (HolographERC20):", asset);
@@ -703,6 +721,9 @@ contract DopplerAirlockForkTest is Test {
         // Verify the token is our HolographERC20
         assertTrue(asset != address(0), "Asset should be deployed");
         assertTrue(holographFactory.isDeployedToken(asset), "Asset should be tracked by our factory");
+        
+        // Verify creator tracking - creator should be tracked even though airlock called create()
+        assertTrue(holographFactory.isTokenCreator(asset, creator), "Creator should be tracked as token creator");
 
         HolographERC20 holographToken = HolographERC20(asset);
         assertEq(holographToken.name(), "Doppler Holograph Token");
@@ -766,7 +787,8 @@ contract DopplerAirlockForkTest is Test {
         );
 
         // Call the factory through the Airlock interface (simulating Airlock calling it)
-        vm.prank(address(airlock));
+        // Use prank with tx.origin set to creator to simulate real Airlock behavior
+        vm.prank(address(airlock), creator);
         address token = holographFactory.create(
             INITIAL_SUPPLY,
             creator,
@@ -778,6 +800,10 @@ contract DopplerAirlockForkTest is Test {
         // Verify successful deployment
         assertTrue(token != address(0), "Token should be deployed");
         assertTrue(holographFactory.isDeployedToken(token), "Token should be tracked");
+        
+        // Verify creator tracking - creator should be tracked via tx.origin
+        assertTrue(holographFactory.isTokenCreator(token, creator), "Creator should be tracked via tx.origin");
+        assertFalse(holographFactory.isTokenCreator(token, address(airlock)), "Airlock should not be tracked as creator");
 
         HolographERC20 holographToken = HolographERC20(token);
         assertEq(holographToken.name(), "Direct Airlock Test");

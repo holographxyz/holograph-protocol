@@ -12,6 +12,12 @@ import {MockLZEndpoint} from "../mock/MockLZEndpoint.sol";
  * @dev Tests omnichain functionality, governance, vesting, and inflation controls
  */
 contract HolographERC20Test is Test {
+    
+    /// @notice Mock implementation of isTokenCreator for testing
+    function isTokenCreator(address /*token*/, address caller) external view returns (bool) {
+        // For testing, the owner is considered the creator
+        return caller == owner;
+    }
     HolographERC20 public token;
     MockLZEndpoint public lzEndpoint;
     

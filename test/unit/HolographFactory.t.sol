@@ -37,7 +37,8 @@ contract HolographFactoryTest is Test {
         string symbol,
         uint256 initialSupply,
         address indexed recipient,
-        address indexed owner
+        address indexed owner,
+        address creator
     );
     
     event AirlockAuthorizationSet(address indexed airlock, bool authorized);
@@ -98,10 +99,10 @@ contract HolographFactoryTest is Test {
             TOKEN_URI
         );
 
-        vm.prank(airlock);
+        vm.prank(airlock, airlock);
         // We can't predict the exact token address, so don't check it
         vm.expectEmit(false, true, true, true);
-        emit TokenDeployed(address(0), TOKEN_NAME, TOKEN_SYMBOL, INITIAL_SUPPLY, user, owner);
+        emit TokenDeployed(address(0), TOKEN_NAME, TOKEN_SYMBOL, INITIAL_SUPPLY, user, owner, airlock);
         
         address token = factory.create(
             INITIAL_SUPPLY,
@@ -124,6 +125,9 @@ contract HolographFactoryTest is Test {
         
         // Verify factory tracking
         assertTrue(factory.isDeployedToken(token));
+        
+        // Verify creator tracking (airlock is the caller, tx.origin is the creator)
+        assertTrue(factory.isTokenCreator(token, airlock));
     }
 
     function test_CreateTokenWithVesting() public {
@@ -145,7 +149,7 @@ contract HolographFactoryTest is Test {
             TOKEN_URI
         );
 
-        vm.prank(airlock);
+        vm.prank(airlock, airlock);
         address token = factory.create(
             INITIAL_SUPPLY,
             user,
@@ -185,7 +189,7 @@ contract HolographFactoryTest is Test {
             TOKEN_URI
         );
 
-        vm.prank(airlock);
+        vm.prank(airlock, airlock);
         address actual = factory.create(
             INITIAL_SUPPLY,
             user,
@@ -225,7 +229,7 @@ contract HolographFactoryTest is Test {
     }
 
     function test_RevertOnInvalidTokenData() public {
-        vm.prank(airlock);
+        vm.prank(airlock, airlock);
         vm.expectRevert(HolographFactory.InvalidTokenData.selector);
         
         factory.create(
@@ -250,7 +254,7 @@ contract HolographFactoryTest is Test {
             TOKEN_URI
         );
 
-        vm.prank(airlock);
+        vm.prank(airlock, airlock);
         vm.expectRevert(); // Modern OpenZeppelin uses custom errors
         
         factory.create(
@@ -289,6 +293,69 @@ contract HolographFactoryTest is Test {
     }
 
     /* -------------------------------------------------------------------------- */
+    /*                              Creator Tracking                             */
+    /* -------------------------------------------------------------------------- */
+
+    function test_CreatorTracking() public {
+        bytes memory tokenData = _encodeTokenData(
+            TOKEN_NAME,
+            TOKEN_SYMBOL,
+            YEARLY_MINT_CAP,
+            VESTING_DURATION,
+            new address[](0),
+            new uint256[](0),
+            TOKEN_URI
+        );
+
+        vm.prank(airlock, airlock);
+        address token = factory.create(
+            INITIAL_SUPPLY,
+            user,
+            owner,
+            TEST_SALT,
+            tokenData
+        );
+
+        // Verify creator tracking
+        assertTrue(factory.isTokenCreator(token, airlock));
+        assertFalse(factory.isTokenCreator(token, user));
+        assertFalse(factory.isTokenCreator(token, owner));
+        assertFalse(factory.isTokenCreator(token, address(this)));
+    }
+
+    function test_CreatorTrackingWithTxOrigin() public {
+        bytes memory tokenData = _encodeTokenData(
+            TOKEN_NAME,
+            TOKEN_SYMBOL,
+            YEARLY_MINT_CAP,
+            VESTING_DURATION,
+            new address[](0),
+            new uint256[](0),
+            TOKEN_URI
+        );
+
+        // Simulate a more realistic scenario where tx.origin differs from msg.sender
+        vm.prank(airlock, user); // airlock calls, but user is tx.origin
+        address token = factory.create(
+            INITIAL_SUPPLY,
+            user,
+            owner,
+            TEST_SALT,
+            tokenData
+        );
+
+        // Verify that tx.origin (user) is tracked as creator, not msg.sender (airlock)
+        assertTrue(factory.isTokenCreator(token, user));
+        assertFalse(factory.isTokenCreator(token, airlock));
+    }
+
+    function test_CreatorTrackingForNonexistentToken() public {
+        address nonexistentToken = address(0x9999);
+        assertFalse(factory.isTokenCreator(nonexistentToken, user));
+        assertFalse(factory.isTokenCreator(nonexistentToken, airlock));
+    }
+
+    /* -------------------------------------------------------------------------- */
     /*                              Fuzz Testing                                */
     /* -------------------------------------------------------------------------- */
 
@@ -305,7 +372,7 @@ contract HolographFactoryTest is Test {
             TOKEN_URI
         );
 
-        vm.prank(airlock);
+        vm.prank(airlock, airlock);
         address token = factory.create(
             supply,
             user,
@@ -330,7 +397,7 @@ contract HolographFactoryTest is Test {
             TOKEN_URI
         );
 
-        vm.prank(airlock);
+        vm.prank(airlock, airlock);
         address token = factory.create(
             INITIAL_SUPPLY,
             user,

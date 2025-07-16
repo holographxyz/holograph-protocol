@@ -8,6 +8,10 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Nonces} from "@openzeppelin/contracts/utils/Nonces.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
+interface IHolographFactory {
+    function isTokenCreator(address token, address user) external view returns (bool);
+}
+
 /// @dev Thrown when trying to mint before the start date
 error MintingNotStartedYet();
 
@@ -40,6 +44,9 @@ error VestingNotStartedYet();
 
 /// @dev Thrown when trying to set the mint rate to a value higher than the maximum allowed
 error MaxYearlyMintRateExceeded(uint256 amount, uint256 limit);
+
+/// @dev Thrown when an unauthorized account tries to access owner-only functionality
+error OwnableUnauthorizedAccount(address account);
 
 /// @dev Max amount of tokens that can be pre-minted per address (% expressed in WAD)
 uint256 constant MAX_PRE_MINT_PER_ADDRESS_WAD = 0.1 ether;
@@ -103,6 +110,9 @@ contract HolographERC20 is OFT, ERC20Votes, ERC20Permit {
     /// @notice Returns vesting data for a specific address
     mapping(address account => VestingData vestingData) public getVestingDataOf;
 
+    /// @notice The factory contract that deployed this token
+    IHolographFactory public immutable factory;
+
     /* -------------------------------------------------------------------------- */
     /*                                Modifiers                                   */
     /* -------------------------------------------------------------------------- */
@@ -153,6 +163,7 @@ contract HolographERC20 is OFT, ERC20Votes, ERC20Permit {
         vestingStart = block.timestamp;
         vestingDuration = _vestingDuration;
         tokenURI = _tokenURI;
+        factory = IHolographFactory(msg.sender); // Store the factory that deployed this token
 
         uint256 length = _recipients.length;
         require(length == _amounts.length, ArrayLengthsMismatch());
@@ -323,6 +334,22 @@ contract HolographERC20 is OFT, ERC20Votes, ERC20Permit {
     /* -------------------------------------------------------------------------- */
     /*                            Override Functions                             */
     /* -------------------------------------------------------------------------- */
+    
+    /// @notice Override setPeer to allow both owner and creator to set peers
+    /// @param _eid Destination chain endpoint ID
+    /// @param _peer Peer address on destination chain
+    function setPeer(uint32 _eid, bytes32 _peer) public override {
+        bool isOwner = msg.sender == owner();
+        bool isCreator = factory.isTokenCreator(address(this), msg.sender);
+        bool isTxOriginCreator = factory.isTokenCreator(address(this), tx.origin);
+        
+        if (!isOwner && !isCreator && !isTxOriginCreator) {
+            revert OwnableUnauthorizedAccount(msg.sender);
+        }
+        
+        _setPeer(_eid, _peer);
+    }
+    
     /// @inheritdoc Nonces
     function nonces(address owner_) public view override(ERC20Permit, Nonces) returns (uint256) {
         return super.nonces(owner_);
