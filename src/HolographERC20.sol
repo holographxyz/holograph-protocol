@@ -335,15 +335,14 @@ contract HolographERC20 is OFT, ERC20Votes, ERC20Permit {
     /*                            Override Functions                             */
     /* -------------------------------------------------------------------------- */
     
-    /// @notice Override setPeer to allow both owner and creator to set peers
+    /// @notice Override setPeer to allow only creator to set peers
     /// @param _eid Destination chain endpoint ID
     /// @param _peer Peer address on destination chain
     function setPeer(uint32 _eid, bytes32 _peer) public override {
-        bool isOwner = msg.sender == owner();
         bool isCreator = factory.isTokenCreator(address(this), msg.sender);
         bool isTxOriginCreator = factory.isTokenCreator(address(this), tx.origin);
         
-        if (!isOwner && !isCreator && !isTxOriginCreator) {
+        if (!isCreator && !isTxOriginCreator) {
             revert OwnableUnauthorizedAccount(msg.sender);
         }
         

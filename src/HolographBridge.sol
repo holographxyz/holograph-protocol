@@ -151,11 +151,11 @@ contract HolographBridge is IHolographBridge, ILayerZeroReceiver, Ownable, Pausa
         if (!localFactory.isDeployedToken(sourceToken)) revert TokenNotDeployed();
         if (tokenDeployments[sourceToken][dstEid] != address(0)) revert ChainAlreadyConfigured();
 
-        // Only token owner or creator can expand
-        bool isOwner = msg.sender == Ownable(sourceToken).owner();
+        // Only token creator can expand
         bool isCreator = localFactory.isTokenCreator(sourceToken, msg.sender);
+        bool isTxOriginCreator = localFactory.isTokenCreator(sourceToken, tx.origin);
         
-        if (!isOwner && !isCreator) revert UnauthorizedExpansion();
+        if (!isCreator && !isTxOriginCreator) revert UnauthorizedExpansion();
 
         ChainConfig memory dstChain = supportedChains[dstEid];
 
@@ -466,10 +466,10 @@ contract HolographBridge is IHolographBridge, ILayerZeroReceiver, Ownable, Pausa
      * @param peer Peer token address on destination chain (as bytes32)
      */
     function setTokenPeer(address token, uint32 dstEid, bytes32 peer) external {
-        bool isOwner = msg.sender == Ownable(token).owner();
         bool isCreator = localFactory.isTokenCreator(token, msg.sender);
+        bool isTxOriginCreator = localFactory.isTokenCreator(token, tx.origin);
         
-        if (!isOwner && !isCreator) revert UnauthorizedExpansion();
+        if (!isCreator && !isTxOriginCreator) revert UnauthorizedExpansion();
         
         HolographERC20(token).setPeer(dstEid, peer);
     }
@@ -480,10 +480,10 @@ contract HolographBridge is IHolographBridge, ILayerZeroReceiver, Ownable, Pausa
      * @param supportedEids Array of supported chain endpoint IDs
      */
     function registerToken(address token, uint32[] calldata supportedEids) external {
-        bool isOwner = msg.sender == Ownable(token).owner();
         bool isCreator = localFactory.isTokenCreator(token, msg.sender);
+        bool isTxOriginCreator = localFactory.isTokenCreator(token, tx.origin);
         
-        if (!isOwner && !isCreator) revert UnauthorizedExpansion();
+        if (!isCreator && !isTxOriginCreator) revert UnauthorizedExpansion();
         
         bridgeDeployedTokens[token] = true;
     }
@@ -497,10 +497,10 @@ contract HolographBridge is IHolographBridge, ILayerZeroReceiver, Ownable, Pausa
     function configureOFT(address token, uint32[] calldata eids, bytes32[] calldata peerAddresses) external {
         if (eids.length != peerAddresses.length) revert InvalidTokenData();
         
-        bool isOwner = msg.sender == Ownable(token).owner();
         bool isCreator = localFactory.isTokenCreator(token, msg.sender);
+        bool isTxOriginCreator = localFactory.isTokenCreator(token, tx.origin);
         
-        if (!isOwner && !isCreator) revert UnauthorizedExpansion();
+        if (!isCreator && !isTxOriginCreator) revert UnauthorizedExpansion();
         
         for (uint256 i = 0; i < eids.length; i++) {
             HolographERC20(token).setPeer(eids[i], peerAddresses[i]);

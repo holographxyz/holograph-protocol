@@ -535,15 +535,14 @@ contract FullProtocolWorkflowTest is Test {
         address tokenAddr = _createTestToken();
         HolographERC20 token = HolographERC20(tokenAddr);
         
-        // Expand to Unichain first (must be called by token owner)
-        address tokenOwner = token.owner();
-        vm.deal(tokenOwner, 1 ether);
-        vm.prank(tokenOwner);
+        // Expand to Unichain first (must be called by token creator)
+        vm.deal(creator, 1 ether);
+        vm.prank(creator);
         address unichainToken = bridge.expandToChain{value: 0.5 ether}(tokenAddr, DEST_EID);
         
         // Test direct peer setting for cross-chain communication
         bytes32 unichainPeer = bytes32(uint256(uint160(unichainToken)));
-        vm.prank(tokenOwner);
+        vm.prank(creator);
         token.setPeer(DEST_EID, unichainPeer);
         
         console.log("Base EID:", SOURCE_EID);
@@ -593,15 +592,13 @@ contract FullProtocolWorkflowTest is Test {
     function test_DoubleExpansionToUnichain() public {
         address tokenAddr = _createTestToken();
         
-        // First expansion to Unichain (must be called by token owner)
-        HolographERC20 token = HolographERC20(tokenAddr);
-        address tokenOwner = token.owner();
-        vm.deal(tokenOwner, 1 ether);
-        vm.prank(tokenOwner);
+        // First expansion to Unichain (must be called by token creator)
+        vm.deal(creator, 1 ether);
+        vm.prank(creator);
         bridge.expandToChain{value: 0.5 ether}(tokenAddr, DEST_EID);
         
         // Second expansion to same chain should fail
-        vm.prank(tokenOwner);
+        vm.prank(creator);
         vm.expectRevert(HolographBridge.ChainAlreadyConfigured.selector);
         bridge.expandToChain{value: 0.5 ether}(tokenAddr, DEST_EID);
     }
@@ -613,19 +610,16 @@ contract FullProtocolWorkflowTest is Test {
         console.log("=== Base-Unichain Ecosystem Test ===");
         console.log("Base token address:", baseToken);
         
-        // Expand to Unichain (must be called by token owner)
-        HolographERC20 tokenContract = HolographERC20(baseToken);
-        address tokenOwner = tokenContract.owner();
-        vm.deal(tokenOwner, 1 ether);
-        vm.prank(tokenOwner);
+        // Expand to Unichain (must be called by token creator)
+        vm.deal(creator, 1 ether);
+        vm.prank(creator);
         address unichainToken = bridge.expandToChain{value: 0.5 ether}(baseToken, DEST_EID);
         
         console.log("Unichain token address:", unichainToken);
         
-        // Configure cross-chain peer directly on token
+        // Configure cross-chain peer directly on token (creator can set peers)
         bytes32 unichainPeer = bytes32(uint256(uint160(unichainToken)));
-        address baseTokenOwner = HolographERC20(baseToken).owner();
-        vm.prank(baseTokenOwner);
+        vm.prank(creator);
         HolographERC20(baseToken).setPeer(DEST_EID, unichainPeer);
         
         // Verify deployment state
@@ -718,10 +712,8 @@ contract FullProtocolWorkflowTest is Test {
     function test_GasConsumptionBaseToUnichainExpansion() public {
         address tokenAddr = _createTestToken();
         
-        HolographERC20 token = HolographERC20(tokenAddr);
-        address tokenOwner = token.owner();
-        vm.deal(tokenOwner, 1 ether);
-        vm.prank(tokenOwner);
+        vm.deal(creator, 1 ether);
+        vm.prank(creator);
         uint256 gasBefore = gasleft();
         
         bridge.expandToChain{value: 0.5 ether}(tokenAddr, DEST_EID);

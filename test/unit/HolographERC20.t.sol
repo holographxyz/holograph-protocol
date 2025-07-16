@@ -249,8 +249,8 @@ contract HolographERC20Test is Test {
         // In a real test environment, you'd verify the peer was set correctly
     }
 
-    function test_OnlyOwnerCanSetPeer() public {
-        vm.prank(user);
+    function test_OnlyCreatorCanSetPeer() public {
+        vm.prank(user); // User is not the creator
         vm.expectRevert(); // Modern OpenZeppelin uses custom errors
         token.setPeer(REMOTE_EID, REMOTE_PEER);
     }

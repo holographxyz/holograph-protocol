@@ -150,9 +150,8 @@ contract HolographBridgeTest is Test {
     /* -------------------------------------------------------------------------- */
 
     function test_ExpandToChain() public {
-        // Only token owner can expand
-        vm.prank(tokenOwner);
-        vm.deal(tokenOwner, 1 ether); // For LayerZero fees
+        // Only token creator can expand (test contract is the creator)
+        vm.deal(address(this), 1 ether); // For LayerZero fees
         
         // Can't predict destination token address
         vm.expectEmit(true, true, false, true);
@@ -200,19 +199,18 @@ contract HolographBridgeTest is Test {
     }
 
     function test_RevertExpandToChainUnauthorized() public {
-        vm.prank(user); // Not the token owner or creator
+        vm.deal(user, 1 ether); // Give user ETH so fee check passes
+        vm.prank(user, user); // Set both msg.sender and tx.origin to user (not the token creator)
         vm.expectRevert(HolographBridge.UnauthorizedExpansion.selector);
-        bridge.expandToChain(address(sourceToken), ETH_EID);
+        bridge.expandToChain{value: 0.1 ether}(address(sourceToken), ETH_EID);
     }
 
     function test_RevertExpandToChainAlreadyConfigured() public {
-        // First expansion
-        vm.prank(tokenOwner);
-        vm.deal(tokenOwner, 1 ether);
+        // First expansion (test contract is the creator)
+        vm.deal(address(this), 1 ether);
         bridge.expandToChain{value: 0.1 ether}(address(sourceToken), ETH_EID);
         
         // Try to expand to same chain again
-        vm.prank(tokenOwner);
         vm.expectRevert(HolographBridge.ChainAlreadyConfigured.selector);
         bridge.expandToChain{value: 0.1 ether}(address(sourceToken), ETH_EID);
     }
@@ -220,7 +218,6 @@ contract HolographBridgeTest is Test {
     function test_RevertExpandToChainWhenPaused() public {
         bridge.pause();
         
-        vm.prank(tokenOwner);
         vm.expectRevert(); // Modern OpenZeppelin uses custom errors
         bridge.expandToChain(address(sourceToken), ETH_EID);
     }
@@ -236,10 +233,9 @@ contract HolographBridgeTest is Test {
     }
 
     function test_SetTokenPeer() public {
-        vm.prank(tokenOwner);
+        // Test contract is the creator, so can set peer directly
         bytes32 peerAddr = bytes32(uint256(uint160(address(0x9999))));
         sourceToken.setPeer(ETH_EID, peerAddr);
-        // Set peer directly on token since bridge can't call setPeer due to onlyOwner
     }
 
     function test_RegisterToken() public {
@@ -247,7 +243,7 @@ contract HolographBridgeTest is Test {
         eids[0] = ETH_EID;
         eids[1] = ARB_EID;
         
-        vm.prank(tokenOwner);
+        // Test contract is the creator, so can register token
         bridge.registerToken(address(sourceToken), eids);
         
         assertTrue(bridge.isTokenRegistered(address(sourceToken)));
@@ -262,11 +258,8 @@ contract HolographBridgeTest is Test {
         peers[0] = bytes32(uint256(uint160(address(0x1111))));
         peers[1] = bytes32(uint256(uint160(address(0x2222))));
         
-        // The token owner must call setPeer directly on the token
-        vm.prank(tokenOwner);
+        // The token creator can call setPeer directly on the token (test contract is creator)
         sourceToken.setPeer(eids[0], peers[0]);
-        
-        vm.prank(tokenOwner);
         sourceToken.setPeer(eids[1], peers[1]);
     }
 
@@ -278,13 +271,13 @@ contract HolographBridgeTest is Test {
         bytes32[] memory peers = new bytes32[](1); // Mismatched length
         peers[0] = bytes32(uint256(uint160(address(0x1111))));
         
-        vm.prank(tokenOwner);
+        // Test contract is the creator, so can call configureOFT
         vm.expectRevert(HolographBridge.InvalidTokenData.selector);
         bridge.configureOFT(address(sourceToken), eids, peers);
     }
 
     function test_RevertSetTokenPeerUnauthorized() public {
-        vm.prank(user); // Not token owner or creator
+        vm.prank(user, user); // Set both msg.sender and tx.origin to user (not token creator)
         vm.expectRevert(HolographBridge.UnauthorizedExpansion.selector);
         bridge.setTokenPeer(address(sourceToken), ETH_EID, bytes32(0));
     }
@@ -299,9 +292,8 @@ contract HolographBridgeTest is Test {
     }
 
     function test_GetTokenPeer() public {
-        // First expand to create a deployment
-        vm.prank(tokenOwner);
-        vm.deal(tokenOwner, 1 ether);
+        // First expand to create a deployment (test contract is the creator)
+        vm.deal(address(this), 1 ether);
         address dstToken = bridge.expandToChain{value: 0.1 ether}(address(sourceToken), ETH_EID);
         
         bytes32 peer = bridge.getTokenPeer(address(sourceToken), ETH_EID);
@@ -549,8 +541,8 @@ contract HolographBridgeTest is Test {
     /* -------------------------------------------------------------------------- */
 
     function test_FullExpansionFlow() public {
-        vm.startPrank(tokenOwner);
-        vm.deal(tokenOwner, 2 ether);
+        // Test contract is the creator, so can expand to multiple chains
+        vm.deal(address(this), 2 ether);
         
         // Expand to Ethereum
         address ethToken = bridge.expandToChain{value: 0.5 ether}(address(sourceToken), ETH_EID);
@@ -564,8 +556,6 @@ contract HolographBridgeTest is Test {
         assertNotEq(ethToken, arbToken);
         assertNotEq(ethToken, address(sourceToken));
         assertNotEq(arbToken, address(sourceToken));
-        
-        vm.stopPrank();
     }
 
     /* -------------------------------------------------------------------------- */
