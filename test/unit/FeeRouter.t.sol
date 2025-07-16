@@ -55,6 +55,7 @@ contract FeeRouterTest is Test {
     event TreasuryUpdated(address indexed newTreasury);
     event TrustedAirlockSet(address indexed airlock, bool trusted);
     event TrustedFactorySet(address indexed factory, bool trusted);
+    event HolographFeeUpdated(uint16 oldFeeBps, uint16 newFeeBps);
 
     function setUp() public {
         // Deploy mocks
@@ -117,7 +118,7 @@ contract FeeRouterTest is Test {
         assertEq(address(feeRouter.WETH()), address(weth));
         assertEq(address(feeRouter.swapRouter()), address(swapRouter));
         assertEq(feeRouter.treasury(), treasury);
-        assertEq(feeRouter.HOLO_FEE_BPS(), HOLO_FEE_BPS);
+        assertEq(feeRouter.holographFeeBps(), HOLO_FEE_BPS);
         assertEq(feeRouter.MIN_BRIDGE_VALUE(), MIN_BRIDGE_VALUE);
     }
 
@@ -514,5 +515,69 @@ contract FeeRouterTest is Test {
         uint256 expectedProtocolFee = (amount * 150) / 10_000; // 1.5%
         uint256 expectedTreasuryFee = amount - expectedProtocolFee;
         assertEq(treasury.balance, expectedTreasuryFee);
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /*                            Fee Setting Tests                              */
+    /* -------------------------------------------------------------------------- */
+
+    function test_SetHolographFee() public {
+        // Initial fee should be 150 BPS (1.5%)
+        assertEq(feeRouter.holographFeeBps(), 150);
+        
+        // Owner can set new fee
+        vm.prank(owner);
+        feeRouter.setHolographFee(200); // 2%
+        
+        assertEq(feeRouter.holographFeeBps(), 200);
+        
+        // Fee calculation should use new fee
+        (uint256 protocolFee, uint256 treasuryFee) = feeRouter.calculateFeeSplit(1000e18);
+        assertEq(protocolFee, (1000e18 * 200) / 10_000); // 2%
+        assertEq(treasuryFee, 1000e18 - protocolFee); // 98%
+    }
+    
+    function test_SetHolographFeeEvent() public {
+        vm.expectEmit(true, true, true, true);
+        emit HolographFeeUpdated(150, 300);
+        
+        vm.prank(owner);
+        feeRouter.setHolographFee(300);
+    }
+    
+    function test_RevertSetHolographFeeExceedsMax() public {
+        vm.prank(owner);
+        vm.expectRevert(FeeRouter.FeeExceedsMaximum.selector);
+        feeRouter.setHolographFee(10_001); // > 100%
+    }
+    
+    function test_RevertNonOwnerCannotSetFee() public {
+        vm.prank(alice);
+        vm.expectRevert();
+        feeRouter.setHolographFee(200);
+    }
+    
+    function test_SetHolographFeeZero() public {
+        vm.prank(owner);
+        feeRouter.setHolographFee(0); // 0% fee
+        
+        assertEq(feeRouter.holographFeeBps(), 0);
+        
+        // Fee calculation should use zero fee
+        (uint256 protocolFee, uint256 treasuryFee) = feeRouter.calculateFeeSplit(1000e18);
+        assertEq(protocolFee, 0);
+        assertEq(treasuryFee, 1000e18); // 100% to treasury
+    }
+    
+    function test_SetHolographFeeMaximum() public {
+        vm.prank(owner);
+        feeRouter.setHolographFee(10_000); // 100% fee
+        
+        assertEq(feeRouter.holographFeeBps(), 10_000);
+        
+        // Fee calculation should use maximum fee
+        (uint256 protocolFee, uint256 treasuryFee) = feeRouter.calculateFeeSplit(1000e18);
+        assertEq(protocolFee, 1000e18); // 100% to protocol
+        assertEq(treasuryFee, 0);
     }
 }

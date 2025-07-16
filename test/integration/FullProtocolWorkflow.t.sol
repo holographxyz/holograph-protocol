@@ -567,7 +567,7 @@ contract FullProtocolWorkflowTest is Test {
         assertEq(configuredTreasury, treasury);
         
         // Verify the protocol fee basis points is correct
-        uint256 holographFeeBps = feeRouter.HOLO_FEE_BPS();
+        uint256 holographFeeBps = feeRouter.holographFeeBps();
         assertEq(holographFeeBps, 150); // 1.5%
         
         console.log("Treasury fee:", treasuryFee);

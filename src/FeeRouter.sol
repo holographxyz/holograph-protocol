@@ -58,8 +58,8 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
     /// @notice Uniswap V3 pool fee tier (0.3%)
     uint24 public constant POOL_FEE = 3000;
 
-    /// @notice Protocol fee in basis points (1.5%)
-    uint16 public constant HOLO_FEE_BPS = 150;
+    /// @notice Current protocol fee in basis points (settable by owner)
+    uint16 public holographFeeBps = 150;
 
     /// @notice Minimum value required to bridge (dust protection)
     uint64 public constant MIN_BRIDGE_VALUE = 0.01 ether;
@@ -119,6 +119,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
     error NoRoute();
     error InsufficientOutput();
     error UntrustedSender();
+    error FeeExceedsMaximum();
 
     /* -------------------------------------------------------------------------- */
     /*                                  Events                                    */
@@ -149,6 +150,9 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
 
     /// @notice Emitted when a HolographFactory is added or removed from trusted list
     event TrustedFactorySet(address indexed factory, bool trusted);
+
+    /// @notice Emitted when protocol fee is updated
+    event HolographFeeUpdated(uint16 oldFeeBps, uint16 newFeeBps);
 
     /* -------------------------------------------------------------------------- */
     /*                               Constructor                                  */
@@ -252,7 +256,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
     function _splitFee(address token, uint256 amount) internal {
         if (amount == 0) revert ZeroAmount();
 
-        uint256 protocolFee = (amount * HOLO_FEE_BPS) / 10_000;
+        uint256 protocolFee = (amount * holographFeeBps) / 10_000;
         uint256 treasuryFee = amount - protocolFee;
 
         // Forward treasury share immediately
@@ -638,6 +642,17 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
         emit TrustedFactorySet(factory, trusted);
     }
 
+    /**
+     * @notice Update protocol fee (only owner)
+     * @param newFeeBps New protocol fee in basis points (0-10000)
+     */
+    function setHolographFee(uint16 newFeeBps) external onlyOwner {
+        if (newFeeBps > 10_000) revert FeeExceedsMaximum();
+        uint16 oldFeeBps = holographFeeBps;
+        holographFeeBps = newFeeBps;
+        emit HolographFeeUpdated(oldFeeBps, newFeeBps);
+    }
+
     /* -------------------------------------------------------------------------- */
     /*                                   Views                                    */
     /* -------------------------------------------------------------------------- */
@@ -660,8 +675,8 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
      * @return protocolFee Amount that goes to protocol (1.5%)
      * @return treasuryFee Amount that goes to treasury (98.5%)
      */
-    function calculateFeeSplit(uint256 amount) external pure returns (uint256 protocolFee, uint256 treasuryFee) {
-        protocolFee = (amount * HOLO_FEE_BPS) / 10_000;
+    function calculateFeeSplit(uint256 amount) external view returns (uint256 protocolFee, uint256 treasuryFee) {
+        protocolFee = (amount * holographFeeBps) / 10_000;
         treasuryFee = amount - protocolFee;
     }
 
