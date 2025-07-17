@@ -12,6 +12,12 @@ import {MockLZEndpoint} from "../mock/MockLZEndpoint.sol";
  * @dev Tests omnichain functionality, governance, vesting, and inflation controls
  */
 contract HolographERC20Test is Test {
+    
+    /// @notice Mock implementation of isTokenCreator for testing
+    function isTokenCreator(address /*token*/, address caller) external view returns (bool) {
+        // For testing, the owner is considered the creator
+        return caller == owner;
+    }
     HolographERC20 public token;
     MockLZEndpoint public lzEndpoint;
     
@@ -243,8 +249,8 @@ contract HolographERC20Test is Test {
         // In a real test environment, you'd verify the peer was set correctly
     }
 
-    function test_OnlyOwnerCanSetPeer() public {
-        vm.prank(user);
+    function test_OnlyCreatorCanSetPeer() public {
+        vm.prank(user); // User is not the creator
         vm.expectRevert(); // Modern OpenZeppelin uses custom errors
         token.setPeer(REMOTE_EID, REMOTE_PEER);
     }

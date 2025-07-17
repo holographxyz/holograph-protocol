@@ -193,7 +193,7 @@ contract FullProtocolWorkflowTest is Test {
     address private treasury = address(0x1111);
     address private user = address(0x3333);
 
-    event TokenDeployed(address indexed token, string name, string symbol, uint256 initialSupply, address indexed recipient, address indexed owner);
+    event TokenDeployed(address indexed token, string name, string symbol, uint256 initialSupply, address indexed recipient, address indexed owner, address creator);
     event TokenExpanded(address indexed sourceToken, uint32 indexed dstEid, address indexed dstToken, string chainName);
     event SlicePulled(address indexed airlock, address indexed token, uint256 holoAmt, uint256 treasuryAmt);
 
@@ -282,6 +282,7 @@ contract FullProtocolWorkflowTest is Test {
             "https://holograph.xyz/token/htest" // tokenURI
         );
 
+        vm.prank(address(this), address(this)); // Set both msg.sender and tx.origin to test contract
         address token = factory.create(
             INITIAL_SUPPLY, // initialSupply
             creator, // recipient
@@ -292,6 +293,9 @@ contract FullProtocolWorkflowTest is Test {
 
         assertTrue(token != address(0), "Token should be deployed");
         assertTrue(factory.isDeployedToken(token), "Token should be tracked");
+        
+        // Verify creator tracking - tx.origin should be tracked as creator
+        assertTrue(factory.isTokenCreator(token, address(this)), "This contract should be creator");
 
         HolographERC20 deployedToken = HolographERC20(token);
         assertEq(deployedToken.name(), "Holograph Test Token");
@@ -433,7 +437,7 @@ contract FullProtocolWorkflowTest is Test {
         console.log("Using salt:", uint256(salt));
 
         // This is the key test - actually call through the Airlock!
-        vm.prank(creator);
+        vm.prank(creator, creator); // Set both msg.sender and tx.origin to creator
         (address asset, address pool, address governance, address timelock, address migrationPool) = airlock.create(
             createParams
         );
@@ -448,6 +452,9 @@ contract FullProtocolWorkflowTest is Test {
         // Verify the token is our HolographERC20
         assertTrue(asset != address(0), "Asset should be deployed");
         assertTrue(factory.isDeployedToken(asset), "Asset should be tracked by our factory");
+        
+        // Verify creator tracking - creator should be tracked even though airlock called create()
+        assertTrue(factory.isTokenCreator(asset, creator), "Creator should be tracked as token creator");
 
         HolographERC20 holographToken = HolographERC20(asset);
         assertEq(holographToken.name(), "Doppler Holograph Token");
@@ -474,11 +481,16 @@ contract FullProtocolWorkflowTest is Test {
         console.log("Token name:", sourceToken.name());
         console.log("Token symbol:", sourceToken.symbol());
         
-        // Step 2: Expand from Base to Unichain (must be called by token owner, which is the Airlock)
+        // Step 2: Expand from Base to Unichain (can be called by token owner OR creator)
         HolographERC20 token = HolographERC20(baseToken);
         address tokenOwner = token.owner();
-        vm.deal(tokenOwner, 1 ether); // Fund the token owner (Airlock)
-        vm.prank(tokenOwner);
+        
+        // Verify creator tracking first
+        assertTrue(factory.isTokenCreator(baseToken, creator), "Creator should be tracked");
+        
+        // Creator should be able to expand even though they don't own the token
+        vm.deal(creator, 1 ether);
+        vm.prank(creator);
         
         address unichainToken = bridge.expandToChain{value: 0.5 ether}(baseToken, DEST_EID);
         
@@ -523,15 +535,14 @@ contract FullProtocolWorkflowTest is Test {
         address tokenAddr = _createTestToken();
         HolographERC20 token = HolographERC20(tokenAddr);
         
-        // Expand to Unichain first (must be called by token owner)
-        address tokenOwner = token.owner();
-        vm.deal(tokenOwner, 1 ether);
-        vm.prank(tokenOwner);
+        // Expand to Unichain first (must be called by token creator)
+        vm.deal(creator, 1 ether);
+        vm.prank(creator);
         address unichainToken = bridge.expandToChain{value: 0.5 ether}(tokenAddr, DEST_EID);
         
         // Test direct peer setting for cross-chain communication
         bytes32 unichainPeer = bytes32(uint256(uint160(unichainToken)));
-        vm.prank(tokenOwner);
+        vm.prank(creator);
         token.setPeer(DEST_EID, unichainPeer);
         
         console.log("Base EID:", SOURCE_EID);
@@ -556,7 +567,7 @@ contract FullProtocolWorkflowTest is Test {
         assertEq(configuredTreasury, treasury);
         
         // Verify the protocol fee basis points is correct
-        uint256 holographFeeBps = feeRouter.HOLO_FEE_BPS();
+        uint256 holographFeeBps = feeRouter.holographFeeBps();
         assertEq(holographFeeBps, 150); // 1.5%
         
         console.log("Treasury fee:", treasuryFee);
@@ -572,24 +583,22 @@ contract FullProtocolWorkflowTest is Test {
     function test_UnauthorizedUnichainExpansion() public {
         address tokenAddr = _createTestToken();
         
-        // User who doesn't own the token tries to expand it
+        // User who doesn't own the token or isn't the creator tries to expand it
         vm.prank(user);
-        vm.expectRevert(HolographBridge.TokenNotDeployed.selector);
+        vm.expectRevert(HolographBridge.UnauthorizedExpansion.selector);
         bridge.expandToChain(tokenAddr, DEST_EID);
     }
 
     function test_DoubleExpansionToUnichain() public {
         address tokenAddr = _createTestToken();
         
-        // First expansion to Unichain (must be called by token owner)
-        HolographERC20 token = HolographERC20(tokenAddr);
-        address tokenOwner = token.owner();
-        vm.deal(tokenOwner, 1 ether);
-        vm.prank(tokenOwner);
+        // First expansion to Unichain (must be called by token creator)
+        vm.deal(creator, 1 ether);
+        vm.prank(creator);
         bridge.expandToChain{value: 0.5 ether}(tokenAddr, DEST_EID);
         
         // Second expansion to same chain should fail
-        vm.prank(tokenOwner);
+        vm.prank(creator);
         vm.expectRevert(HolographBridge.ChainAlreadyConfigured.selector);
         bridge.expandToChain{value: 0.5 ether}(tokenAddr, DEST_EID);
     }
@@ -601,19 +610,16 @@ contract FullProtocolWorkflowTest is Test {
         console.log("=== Base-Unichain Ecosystem Test ===");
         console.log("Base token address:", baseToken);
         
-        // Expand to Unichain (must be called by token owner)
-        HolographERC20 tokenContract = HolographERC20(baseToken);
-        address tokenOwner = tokenContract.owner();
-        vm.deal(tokenOwner, 1 ether);
-        vm.prank(tokenOwner);
+        // Expand to Unichain (must be called by token creator)
+        vm.deal(creator, 1 ether);
+        vm.prank(creator);
         address unichainToken = bridge.expandToChain{value: 0.5 ether}(baseToken, DEST_EID);
         
         console.log("Unichain token address:", unichainToken);
         
-        // Configure cross-chain peer directly on token
+        // Configure cross-chain peer directly on token (creator can set peers)
         bytes32 unichainPeer = bytes32(uint256(uint160(unichainToken)));
-        address baseTokenOwner = HolographERC20(baseToken).owner();
-        vm.prank(baseTokenOwner);
+        vm.prank(creator);
         HolographERC20(baseToken).setPeer(DEST_EID, unichainPeer);
         
         // Verify deployment state
@@ -689,7 +695,7 @@ contract FullProtocolWorkflowTest is Test {
         
         uint256 gasBefore = gasleft();
         
-        vm.prank(creator);
+        vm.prank(creator, creator); // Set both msg.sender and tx.origin to creator
         (address tokenAddr,,,,) = airlock.create(createParams);
         
         uint256 gasUsed = gasBefore - gasleft();
@@ -698,15 +704,16 @@ contract FullProtocolWorkflowTest is Test {
         // Verify creation was successful
         assertTrue(tokenAddr != address(0));
         assertTrue(factory.isDeployedToken(tokenAddr));
+        
+        // Verify creator tracking
+        assertTrue(factory.isTokenCreator(tokenAddr, creator), "Creator should be tracked");
     }
 
     function test_GasConsumptionBaseToUnichainExpansion() public {
         address tokenAddr = _createTestToken();
         
-        HolographERC20 token = HolographERC20(tokenAddr);
-        address tokenOwner = token.owner();
-        vm.deal(tokenOwner, 1 ether);
-        vm.prank(tokenOwner);
+        vm.deal(creator, 1 ether);
+        vm.prank(creator);
         uint256 gasBefore = gasleft();
         
         bridge.expandToChain{value: 0.5 ether}(tokenAddr, DEST_EID);
@@ -752,7 +759,11 @@ contract FullProtocolWorkflowTest is Test {
 
         // Test that this salt works with actual deployment
         factory.setAirlockAuthorization(address(this), true);
+        vm.prank(address(this), address(this)); // Set both msg.sender and tx.origin to test contract
         address token = factory.create(INITIAL_SUPPLY, creator, creator, salt, tokenFactoryData);
+
+        // Verify creator tracking
+        assertTrue(factory.isTokenCreator(token, address(this)), "This contract should be creator");
 
         assertTrue(token != address(0), "Token should deploy with mined salt");
         console.log("[OK] Salt mining performance acceptable for production use");
@@ -829,8 +840,12 @@ contract FullProtocolWorkflowTest is Test {
             salt
         );
         
-        vm.prank(creator);
+        vm.prank(creator, creator); // Set both msg.sender and tx.origin to creator
         (address tokenAddr,,,,) = airlock.create(createParams);
+        
+        // Verify creator tracking after token creation
+        assertTrue(factory.isTokenCreator(tokenAddr, creator), "Creator should be tracked via tx.origin");
+        
         return tokenAddr;
     }
 

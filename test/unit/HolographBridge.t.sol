@@ -150,9 +150,8 @@ contract HolographBridgeTest is Test {
     /* -------------------------------------------------------------------------- */
 
     function test_ExpandToChain() public {
-        // Only token owner can expand
-        vm.prank(tokenOwner);
-        vm.deal(tokenOwner, 1 ether); // For LayerZero fees
+        // Only token creator can expand (test contract is the creator)
+        vm.deal(address(this), 1 ether); // For LayerZero fees
         
         // Can't predict destination token address
         vm.expectEmit(true, true, false, true);
@@ -200,19 +199,18 @@ contract HolographBridgeTest is Test {
     }
 
     function test_RevertExpandToChainUnauthorized() public {
-        vm.prank(user); // Not the token owner
-        vm.expectRevert(HolographBridge.TokenNotDeployed.selector);
-        bridge.expandToChain(address(sourceToken), ETH_EID);
+        vm.deal(user, 1 ether); // Give user ETH so fee check passes
+        vm.prank(user, user); // Set both msg.sender and tx.origin to user (not the token creator)
+        vm.expectRevert(HolographBridge.UnauthorizedExpansion.selector);
+        bridge.expandToChain{value: 0.1 ether}(address(sourceToken), ETH_EID);
     }
 
     function test_RevertExpandToChainAlreadyConfigured() public {
-        // First expansion
-        vm.prank(tokenOwner);
-        vm.deal(tokenOwner, 1 ether);
+        // First expansion (test contract is the creator)
+        vm.deal(address(this), 1 ether);
         bridge.expandToChain{value: 0.1 ether}(address(sourceToken), ETH_EID);
         
         // Try to expand to same chain again
-        vm.prank(tokenOwner);
         vm.expectRevert(HolographBridge.ChainAlreadyConfigured.selector);
         bridge.expandToChain{value: 0.1 ether}(address(sourceToken), ETH_EID);
     }
@@ -220,7 +218,6 @@ contract HolographBridgeTest is Test {
     function test_RevertExpandToChainWhenPaused() public {
         bridge.pause();
         
-        vm.prank(tokenOwner);
         vm.expectRevert(); // Modern OpenZeppelin uses custom errors
         bridge.expandToChain(address(sourceToken), ETH_EID);
     }
@@ -236,10 +233,9 @@ contract HolographBridgeTest is Test {
     }
 
     function test_SetTokenPeer() public {
-        vm.prank(tokenOwner);
+        // Test contract is the creator, so can set peer directly
         bytes32 peerAddr = bytes32(uint256(uint160(address(0x9999))));
         sourceToken.setPeer(ETH_EID, peerAddr);
-        // Set peer directly on token since bridge can't call setPeer due to onlyOwner
     }
 
     function test_RegisterToken() public {
@@ -247,7 +243,7 @@ contract HolographBridgeTest is Test {
         eids[0] = ETH_EID;
         eids[1] = ARB_EID;
         
-        vm.prank(tokenOwner);
+        // Test contract is the creator, so can register token
         bridge.registerToken(address(sourceToken), eids);
         
         assertTrue(bridge.isTokenRegistered(address(sourceToken)));
@@ -262,11 +258,8 @@ contract HolographBridgeTest is Test {
         peers[0] = bytes32(uint256(uint160(address(0x1111))));
         peers[1] = bytes32(uint256(uint160(address(0x2222))));
         
-        // The token owner must call setPeer directly on the token
-        vm.prank(tokenOwner);
+        // The token creator can call setPeer directly on the token (test contract is creator)
         sourceToken.setPeer(eids[0], peers[0]);
-        
-        vm.prank(tokenOwner);
         sourceToken.setPeer(eids[1], peers[1]);
     }
 
@@ -278,14 +271,14 @@ contract HolographBridgeTest is Test {
         bytes32[] memory peers = new bytes32[](1); // Mismatched length
         peers[0] = bytes32(uint256(uint160(address(0x1111))));
         
-        vm.prank(tokenOwner);
+        // Test contract is the creator, so can call configureOFT
         vm.expectRevert(HolographBridge.InvalidTokenData.selector);
         bridge.configureOFT(address(sourceToken), eids, peers);
     }
 
     function test_RevertSetTokenPeerUnauthorized() public {
-        vm.prank(user); // Not token owner
-        vm.expectRevert(HolographBridge.TokenNotDeployed.selector);
+        vm.prank(user, user); // Set both msg.sender and tx.origin to user (not token creator)
+        vm.expectRevert(HolographBridge.UnauthorizedExpansion.selector);
         bridge.setTokenPeer(address(sourceToken), ETH_EID, bytes32(0));
     }
 
@@ -299,9 +292,8 @@ contract HolographBridgeTest is Test {
     }
 
     function test_GetTokenPeer() public {
-        // First expand to create a deployment
-        vm.prank(tokenOwner);
-        vm.deal(tokenOwner, 1 ether);
+        // First expand to create a deployment (test contract is the creator)
+        vm.deal(address(this), 1 ether);
         address dstToken = bridge.expandToChain{value: 0.1 ether}(address(sourceToken), ETH_EID);
         
         bytes32 peer = bridge.getTokenPeer(address(sourceToken), ETH_EID);
@@ -351,6 +343,186 @@ contract HolographBridgeTest is Test {
     }
 
     /* -------------------------------------------------------------------------- */
+    /*                              Creator Authorization                        */
+    /* -------------------------------------------------------------------------- */
+
+    function test_CreatorCanExpandToken() public {
+        // Create a new token where the airlock is the owner but user is the creator
+        address airlock = address(0x9999);
+        factory.setAirlockAuthorization(airlock, true);
+        
+        bytes memory tokenData = abi.encode(
+            "Creator Token",
+            "CT",
+            YEARLY_MINT_RATE,
+            VESTING_DURATION,
+            new address[](0),
+            new uint256[](0),
+            TOKEN_URI
+        );
+        
+        // Create token with airlock as caller but user as tx.origin (creator)
+        vm.prank(airlock, user);
+        address creatorToken = factory.create(
+            INITIAL_SUPPLY,
+            airlock, // airlock receives tokens
+            airlock, // airlock owns contract
+            bytes32(uint256(54321)),
+            tokenData
+        );
+        
+        // Verify creator tracking
+        assertTrue(factory.isTokenCreator(creatorToken, user));
+        assertFalse(factory.isTokenCreator(creatorToken, airlock));
+        
+        // Creator (user) should be able to expand the token even though airlock owns it
+        vm.prank(user);
+        vm.deal(user, 1 ether);
+        address dstToken = bridge.expandToChain{value: 0.1 ether}(creatorToken, ETH_EID);
+        
+        assertNotEq(dstToken, address(0));
+        assertTrue(bridge.isDeployedToChain(creatorToken, ETH_EID));
+    }
+
+    function test_CreatorCanSetTokenPeer() public {
+        // Create a new token where the airlock is the owner but user is the creator
+        address airlock = address(0x9999);
+        factory.setAirlockAuthorization(airlock, true);
+        
+        bytes memory tokenData = abi.encode(
+            "Creator Token 2",
+            "CT2",
+            YEARLY_MINT_RATE,
+            VESTING_DURATION,
+            new address[](0),
+            new uint256[](0),
+            TOKEN_URI
+        );
+        
+        // Create token with airlock as caller but user as tx.origin (creator)
+        vm.prank(airlock, user);
+        address creatorToken = factory.create(
+            INITIAL_SUPPLY,
+            airlock,
+            airlock,
+            bytes32(uint256(54322)),
+            tokenData
+        );
+        
+        // Creator should be able to set token peers
+        vm.prank(user, user); // Set both msg.sender and tx.origin to user
+        bytes32 peerAddr = bytes32(uint256(uint160(address(0x9999))));
+        bridge.setTokenPeer(creatorToken, ETH_EID, peerAddr);
+        
+        // No revert means success
+    }
+
+    function test_CreatorCanRegisterToken() public {
+        // Create a new token where the airlock is the owner but user is the creator
+        address airlock = address(0x9999);
+        factory.setAirlockAuthorization(airlock, true);
+        
+        bytes memory tokenData = abi.encode(
+            "Creator Token 3",
+            "CT3",
+            YEARLY_MINT_RATE,
+            VESTING_DURATION,
+            new address[](0),
+            new uint256[](0),
+            TOKEN_URI
+        );
+        
+        // Create token with airlock as caller but user as tx.origin (creator)
+        vm.prank(airlock, user);
+        address creatorToken = factory.create(
+            INITIAL_SUPPLY,
+            airlock,
+            airlock,
+            bytes32(uint256(54323)),
+            tokenData
+        );
+        
+        // Creator should be able to register the token
+        uint32[] memory eids = new uint32[](1);
+        eids[0] = ETH_EID;
+        
+        vm.prank(user);
+        bridge.registerToken(creatorToken, eids);
+        
+        assertTrue(bridge.isTokenRegistered(creatorToken));
+    }
+
+    function test_CreatorCanConfigureOFT() public {
+        // Create a new token where the airlock is the owner but user is the creator
+        address airlock = address(0x9999);
+        factory.setAirlockAuthorization(airlock, true);
+        
+        bytes memory tokenData = abi.encode(
+            "Creator Token 4",
+            "CT4",
+            YEARLY_MINT_RATE,
+            VESTING_DURATION,
+            new address[](0),
+            new uint256[](0),
+            TOKEN_URI
+        );
+        
+        // Create token with airlock as caller but user as tx.origin (creator)
+        vm.prank(airlock, user);
+        address creatorToken = factory.create(
+            INITIAL_SUPPLY,
+            airlock,
+            airlock,
+            bytes32(uint256(54324)),
+            tokenData
+        );
+        
+        // Creator should be able to configure OFT settings
+        uint32[] memory eids = new uint32[](1);
+        eids[0] = ETH_EID;
+        
+        bytes32[] memory peers = new bytes32[](1);
+        peers[0] = bytes32(uint256(uint160(address(0x1111))));
+        
+        vm.prank(user, user); // Set both msg.sender and tx.origin to user
+        bridge.configureOFT(creatorToken, eids, peers);
+        
+        // No revert means success
+    }
+
+    function test_RevertNonCreatorNonOwnerExpansion() public {
+        // Create a new token where the airlock is the owner but user is the creator
+        address airlock = address(0x9999);
+        address randomUser = address(0x8888);
+        factory.setAirlockAuthorization(airlock, true);
+        
+        bytes memory tokenData = abi.encode(
+            "Creator Token 5",
+            "CT5",
+            YEARLY_MINT_RATE,
+            VESTING_DURATION,
+            new address[](0),
+            new uint256[](0),
+            TOKEN_URI
+        );
+        
+        // Create token with airlock as caller but user as tx.origin (creator)
+        vm.prank(airlock, user);
+        address creatorToken = factory.create(
+            INITIAL_SUPPLY,
+            airlock,
+            airlock,
+            bytes32(uint256(54325)),
+            tokenData
+        );
+        
+        // Random user (not owner or creator) should not be able to expand
+        vm.prank(randomUser);
+        vm.expectRevert(HolographBridge.UnauthorizedExpansion.selector);
+        bridge.expandToChain(creatorToken, ETH_EID);
+    }
+
+    /* -------------------------------------------------------------------------- */
     /*                              Edge Cases                                  */
     /* -------------------------------------------------------------------------- */
 
@@ -369,8 +541,8 @@ contract HolographBridgeTest is Test {
     /* -------------------------------------------------------------------------- */
 
     function test_FullExpansionFlow() public {
-        vm.startPrank(tokenOwner);
-        vm.deal(tokenOwner, 2 ether);
+        // Test contract is the creator, so can expand to multiple chains
+        vm.deal(address(this), 2 ether);
         
         // Expand to Ethereum
         address ethToken = bridge.expandToChain{value: 0.5 ether}(address(sourceToken), ETH_EID);
@@ -384,8 +556,6 @@ contract HolographBridgeTest is Test {
         assertNotEq(ethToken, arbToken);
         assertNotEq(ethToken, address(sourceToken));
         assertNotEq(arbToken, address(sourceToken));
-        
-        vm.stopPrank();
     }
 
     /* -------------------------------------------------------------------------- */

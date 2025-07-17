@@ -38,6 +38,9 @@ contract HolographFactory is ITokenFactory, Ownable, Pausable, ReentrancyGuard {
     /// @notice Mapping to track used CREATE2 salts to prevent reuse attacks
     mapping(bytes32 => bool) public usedSalts;
 
+    /// @notice Mapping to track token creators (original transaction initiators)
+    mapping(address => address) public tokenCreators;
+
     /* -------------------------------------------------------------------------- */
     /*                                  Events                                    */
     /* -------------------------------------------------------------------------- */
@@ -48,7 +51,8 @@ contract HolographFactory is ITokenFactory, Ownable, Pausable, ReentrancyGuard {
         string symbol,
         uint256 initialSupply,
         address indexed recipient,
-        address indexed owner
+        address indexed owner,
+        address creator
     );
 
     /// @notice Emitted when an Airlock is authorized or deauthorized
@@ -124,7 +128,10 @@ contract HolographFactory is ITokenFactory, Ownable, Pausable, ReentrancyGuard {
         // Track the deployed token
         deployedTokens[token] = true;
 
-        emit TokenDeployed(token, name, symbol, initialSupply, recipient, owner);
+        // Track the original creator (transaction initiator)
+        tokenCreators[token] = tx.origin;
+
+        emit TokenDeployed(token, name, symbol, initialSupply, recipient, owner, tx.origin);
     }
 
     /* -------------------------------------------------------------------------- */
@@ -204,6 +211,16 @@ contract HolographFactory is ITokenFactory, Ownable, Pausable, ReentrancyGuard {
      */
     function isAuthorizedAirlock(address airlock) external view returns (bool) {
         return authorizedAirlocks[airlock];
+    }
+
+    /**
+     * @notice Check if a user is the creator of a token
+     * @param token Address of the token to check
+     * @param user Address of the user to check
+     * @return True if the user is the creator of the token
+     */
+    function isTokenCreator(address token, address user) external view returns (bool) {
+        return tokenCreators[token] == user;
     }
 
     /**
