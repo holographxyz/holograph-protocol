@@ -4,12 +4,12 @@ pragma solidity ^0.8.26;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import {HolographERC20, MintingNotStartedYet, NoMintableAmount} from "../../src/HolographERC20.sol";
-import {MockLZEndpoint} from "../mock/MockLZEndpoint.sol";
+import {HolographFactory} from "../../src/HolographFactory.sol";
 
 /**
  * @title HolographERC20Test
- * @notice Comprehensive test suite for HolographERC20 combining LayerZero OFT and DERC20 features
- * @dev Tests omnichain functionality, governance, vesting, and inflation controls
+ * @notice Comprehensive test suite for HolographERC20 with DERC20 features
+ * @dev Tests governance, vesting, and inflation controls
  */
 contract HolographERC20Test is Test {
     
@@ -19,7 +19,7 @@ contract HolographERC20Test is Test {
         return caller == owner;
     }
     HolographERC20 public token;
-    MockLZEndpoint public lzEndpoint;
+    HolographFactory public mockFactory;
     
     address public owner = address(this);
     address public user = address(0x1234);
@@ -34,27 +34,25 @@ contract HolographERC20Test is Test {
     uint256 constant VESTING_DURATION = 365 days;
     string constant TOKEN_URI = "https://test.token.uri";
     
-    // LayerZero test constants
-    uint32 constant REMOTE_EID = 101; // Ethereum mainnet EID
-    bytes32 constant REMOTE_PEER = bytes32(uint256(uint160(address(0xabcd))));
 
     event Transfer(address indexed from, address indexed to, uint256 value);
-    event PeerSet(uint32 eid, bytes32 peer);
     event PoolSet(address indexed pool);
     event PoolUnlocked();
 
     function setUp() public {
-        // Deploy mock LayerZero endpoint
-        lzEndpoint = new MockLZEndpoint();
+        // Deploy token implementation
+        token = new HolographERC20();
         
-        // Deploy HolographERC20 token
-        token = new HolographERC20(
+        // Mock factory to act as the initializer
+        mockFactory = HolographFactory(address(this));
+        
+        // Initialize token (simulating clone initialization)
+        token.initialize(
             TOKEN_NAME,
             TOKEN_SYMBOL,
             INITIAL_SUPPLY,
             recipient,
             owner,
-            address(lzEndpoint),
             YEARLY_MINT_RATE,
             VESTING_DURATION,
             new address[](0), // No vesting recipients
@@ -234,36 +232,6 @@ contract HolographERC20Test is Test {
         assertEq(token.getVotes(user), transferAmount);
     }
 
-    /* -------------------------------------------------------------------------- */
-    /*                              LayerZero OFT Features                      */
-    /* -------------------------------------------------------------------------- */
-
-    function test_SetPeer() public {
-        vm.prank(owner);
-        vm.expectEmit(true, false, false, true);
-        emit PeerSet(REMOTE_EID, REMOTE_PEER);
-        
-        token.setPeer(REMOTE_EID, REMOTE_PEER);
-        
-        // Note: Testing actual peer retrieval would require access to LayerZero's internal state
-        // In a real test environment, you'd verify the peer was set correctly
-    }
-
-    function test_OnlyCreatorCanSetPeer() public {
-        vm.prank(user); // User is not the creator
-        vm.expectRevert(); // Modern OpenZeppelin uses custom errors
-        token.setPeer(REMOTE_EID, REMOTE_PEER);
-    }
-
-    function test_TokenAddressFunction() public {
-        // OFT should return itself as the token address
-        assertEq(token.token(), address(token));
-    }
-
-    function test_ApprovalRequiredShouldBeFalse() public {
-        // OFT contracts don't require approval to send tokens
-        assertFalse(token.approvalRequired());
-    }
 
     /* -------------------------------------------------------------------------- */
     /*                              Pool Protection                              */

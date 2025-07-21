@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import {HolographBridge} from "../../src/HolographBridge.sol";
 import {HolographFactory} from "../../src/HolographFactory.sol";
+import {HolographFactoryProxy} from "../../src/HolographFactoryProxy.sol";
 import {HolographERC20} from "../../src/HolographERC20.sol";
 import {IHolographBridge} from "../../src/interfaces/IHolographBridge.sol";
 import {ChainConfig} from "../../src/structs/BridgeStructs.sol";
@@ -52,8 +53,20 @@ contract HolographBridgeTest is Test {
         // Deploy mock LayerZero endpoint
         lzEndpoint = new MockLZEndpoint();
         
-        // Deploy factory
-        factory = new HolographFactory(address(lzEndpoint));
+        // Deploy HolographERC20 implementation for cloning
+        HolographERC20 erc20Implementation = new HolographERC20();
+        
+        // Deploy factory implementation
+        HolographFactory factoryImpl = new HolographFactory(address(erc20Implementation));
+        
+        // Deploy proxy
+        HolographFactoryProxy proxy = new HolographFactoryProxy(address(factoryImpl));
+        
+        // Cast proxy to factory interface
+        factory = HolographFactory(address(proxy));
+        
+        // Initialize factory
+        factory.initialize(address(this));
         
         // Deploy bridge
         bridge = new HolographBridge(address(lzEndpoint), address(factory), BASE_EID);
@@ -179,13 +192,13 @@ contract HolographBridgeTest is Test {
 
     function test_RevertExpandToChainNotDeployed() public {
         // Deploy a token directly (not through factory)
-        HolographERC20 directToken = new HolographERC20(
+        HolographERC20 directToken = new HolographERC20();
+        directToken.initialize(
             "Direct Token",
             "DIRECT",
             1000e18,
             user,
             user,
-            address(lzEndpoint),
             0,
             0,
             new address[](0),
@@ -235,7 +248,7 @@ contract HolographBridgeTest is Test {
     function test_SetTokenPeer() public {
         // Test contract is the creator, so can set peer directly
         bytes32 peerAddr = bytes32(uint256(uint160(address(0x9999))));
-        sourceToken.setPeer(ETH_EID, peerAddr);
+        // sourceToken.setPeer(ETH_EID, peerAddr); // LayerZero setPeer removed - will be added back in v2
     }
 
     function test_RegisterToken() public {
@@ -259,8 +272,8 @@ contract HolographBridgeTest is Test {
         peers[1] = bytes32(uint256(uint160(address(0x2222))));
         
         // The token creator can call setPeer directly on the token (test contract is creator)
-        sourceToken.setPeer(eids[0], peers[0]);
-        sourceToken.setPeer(eids[1], peers[1]);
+        // sourceToken.setPeer(eids[0], peers[0]); // LayerZero setPeer removed - will be added back in v2
+        // sourceToken.setPeer(eids[1], peers[1]); // LayerZero setPeer removed - will be added back in v2
     }
 
     function test_RevertConfigureOFTMismatchedArrays() public {

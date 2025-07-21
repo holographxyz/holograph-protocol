@@ -19,8 +19,12 @@ pragma solidity ^0.8.24;
  *   // Verify on Etherscan-style explorer (after propagation)
  *   # fee router
  *   forge verify-contract --chain-id 8453 $(cat deployments/base/FeeRouter.txt) src/FeeRouter.sol:FeeRouter $ETHERSCAN_API_KEY
- *   # factory
- *   forge verify-contract --chain-id 8453 $(cat deployments/base/HolographFactory.txt) src/HolographFactory.sol:HolographFactory $ETHERSCAN_API_KEY
+ *   # erc20 implementation
+ *   forge verify-contract --chain-id 8453 $(cat deployments/base/HolographERC20.txt) src/HolographERC20.sol:HolographERC20 $ETHERSCAN_API_KEY
+ *   # factory implementation
+ *   forge verify-contract --chain-id 8453 $(cat deployments/base/HolographFactoryImpl.txt) src/HolographFactory.sol:HolographFactory --constructor-args $(cast abi-encode "constructor(address)" $(cat deployments/base/HolographERC20.txt)) $ETHERSCAN_API_KEY
+ *   # factory proxy
+ *   forge verify-contract --chain-id 8453 $(cat deployments/base/HolographFactory.txt) src/HolographFactoryProxy.sol:HolographFactoryProxy --constructor-args $(cast abi-encode "constructor(address)" $(cat deployments/base/HolographFactoryImpl.txt)) $ETHERSCAN_API_KEY
  *   # bridge
  *   forge verify-contract --chain-id 8453 $(cat deployments/base/HolographBridge.txt) src/HolographBridge.sol:HolographBridge $ETHERSCAN_API_KEY
  */
@@ -29,6 +33,8 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 import "../src/FeeRouter.sol";
 import "../src/HolographFactory.sol";
+import "../src/HolographFactoryProxy.sol";
+import "../src/HolographERC20.sol";
 import "../src/HolographBridge.sol";
 
 contract DeployBase is Script {
@@ -91,10 +97,31 @@ contract DeployBase is Script {
         );
         uint256 gasFeeRouter = gasStart - gasleft();
 
+        // Get the deployer address (works for both broadcast and dry-run)
+        address deployer = vm.addr(deployerPk != 0 ? deployerPk : 1);
+
         gasStart = gasleft();
-        // Deploy HolographFactory with LayerZero endpoint
-        HolographFactory factory = new HolographFactory(lzEndpoint);
-        uint256 gasFactory = gasStart - gasleft();
+        // Deploy HolographERC20 implementation (for cloning)
+        HolographERC20 erc20Implementation = new HolographERC20();
+        uint256 gasERC20 = gasStart - gasleft();
+
+        gasStart = gasleft();
+        // Deploy HolographFactory implementation with ERC20 implementation address
+        HolographFactory factoryImpl = new HolographFactory(address(erc20Implementation));
+        uint256 gasFactoryImpl = gasStart - gasleft();
+
+        gasStart = gasleft();
+        // Deploy HolographFactoryProxy pointing to implementation
+        HolographFactoryProxy factoryProxy = new HolographFactoryProxy(address(factoryImpl));
+        uint256 gasFactoryProxy = gasStart - gasleft();
+
+        // Cast proxy to factory interface for initialization
+        HolographFactory factory = HolographFactory(address(factoryProxy));
+        
+        gasStart = gasleft();
+        // Initialize factory through proxy
+        factory.initialize(deployer);
+        uint256 gasInitialize = gasStart - gasleft();
 
         gasStart = gasleft();
         // Deploy HolographBridge for cross-chain token expansion
@@ -107,8 +134,17 @@ contract DeployBase is Script {
         console.log("---------------- Deployment Complete ----------------");
         console.log("FeeRouter deployed at:", address(feeRouter));
         console.log("Gas used:", gasFeeRouter);
-        console.log("HolographFactory deployed at:", address(factory));
-        console.log("Gas used:", gasFactory);
+        console.log("");
+        console.log("HolographERC20 implementation:", address(erc20Implementation));
+        console.log("Gas used:", gasERC20);
+        console.log("");
+        console.log("HolographFactory implementation:", address(factoryImpl));
+        console.log("Gas used:", gasFactoryImpl);
+        console.log("");
+        console.log("HolographFactory proxy:", address(factoryProxy));
+        console.log("Gas used:", gasFactoryProxy);
+        console.log("Initialize gas used:", gasInitialize);
+        console.log("");
         console.log("HolographBridge deployed at:", address(bridge));
         console.log("Gas used:", gasBridge);
 
@@ -117,7 +153,9 @@ contract DeployBase is Script {
         string memory dir = "deployments/base";
         vm.createDir(dir, true);
         vm.writeFile(string.concat(dir, "/FeeRouter.txt"), vm.toString(address(feeRouter)));
-        vm.writeFile(string.concat(dir, "/HolographFactory.txt"), vm.toString(address(factory)));
+        vm.writeFile(string.concat(dir, "/HolographERC20.txt"), vm.toString(address(erc20Implementation)));
+        vm.writeFile(string.concat(dir, "/HolographFactoryImpl.txt"), vm.toString(address(factoryImpl)));
+        vm.writeFile(string.concat(dir, "/HolographFactory.txt"), vm.toString(address(factoryProxy)));
         vm.writeFile(string.concat(dir, "/HolographBridge.txt"), vm.toString(address(bridge)));
     }
 }

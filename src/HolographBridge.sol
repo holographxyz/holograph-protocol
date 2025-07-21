@@ -437,7 +437,8 @@ contract HolographBridge is IHolographBridge, ILayerZeroReceiver, Ownable, Pausa
         ) = abi.decode(_message, (string, address, uint32, bytes32));
 
         if (bridgeDeployedTokens[token]) {
-            HolographERC20(token).setPeer(srcEid, peer);
+            // TODO: Re-enable when OFT functionality is added back in v2
+            // HolographERC20(token).setPeer(srcEid, peer);
         }
     }
 
@@ -507,7 +508,8 @@ contract HolographBridge is IHolographBridge, ILayerZeroReceiver, Ownable, Pausa
         
         if (!isCreator && !isTxOriginCreator) revert UnauthorizedExpansion();
         
-        HolographERC20(token).setPeer(dstEid, peer);
+        // TODO: Re-enable when OFT functionality is added back in v2
+        // HolographERC20(token).setPeer(dstEid, peer);
     }
 
     /**
@@ -540,11 +542,12 @@ contract HolographBridge is IHolographBridge, ILayerZeroReceiver, Ownable, Pausa
         
         if (!isCreator && !isTxOriginCreator) revert UnauthorizedExpansion();
         
-        HolographERC20 tokenContract = HolographERC20(token);
-        for (uint256 i = 0; i < eids.length;) {
-            tokenContract.setPeer(eids[i], peerAddresses[i]);
-            unchecked { ++i; }
-        }
+        // TODO: Re-enable when OFT functionality is added back in v2
+        // HolographERC20 tokenContract = HolographERC20(token);
+        // for (uint256 i = 0; i < eids.length;) {
+        //     tokenContract.setPeer(eids[i], peerAddresses[i]);
+        //     unchecked { ++i; }
+        // }
     }
 
     function getPeer(uint32 eid) external view returns (bytes32) {

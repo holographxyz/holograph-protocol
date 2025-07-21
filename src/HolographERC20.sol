@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import {OFT} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/OFT.sol";
-import {ERC20Votes} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
-import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {Nonces} from "@openzeppelin/contracts/utils/Nonces.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {ERC20VotesUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
+import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {NoncesUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/NoncesUpgradeable.sol";
 import {IHolographFactory} from "./interfaces/IHolographFactory.sol";
 
 /// @dev Thrown when trying to mint before the start date
@@ -46,10 +45,10 @@ error MaxYearlyMintRateExceeded(uint256 amount, uint256 limit);
 error OwnableUnauthorizedAccount(address account);
 
 /// @dev Max amount of tokens that can be pre-minted per address (% expressed in WAD)
-uint256 constant MAX_PRE_MINT_PER_ADDRESS_WAD = 0.1 ether;
+uint256 constant MAX_PRE_MINT_PER_ADDRESS_WAD = 0.2 ether;
 
 /// @dev Max amount of tokens that can be pre-minted in total (% expressed in WAD)
-uint256 constant MAX_TOTAL_PRE_MINT_WAD = 0.1 ether;
+uint256 constant MAX_TOTAL_PRE_MINT_WAD = 0.2 ether;
 
 /// @dev Maximum amount of tokens that can be minted in a year (% expressed in WAD)
 uint256 constant MAX_YEARLY_MINT_RATE_WAD = 0.02 ether;
@@ -69,22 +68,22 @@ struct VestingData {
 
 /**
  * @title HolographERC20
- * @notice Omnichain ERC20 token with DERC20 features powered by LayerZero OFT
- * @dev Combines LayerZero OFT with DERC20 functionality (voting, vesting, inflation controls)
+ * @notice ERC20 token with DERC20 features (voting, vesting, inflation controls)
+ * @dev Upgradeable token implementation for use with clone pattern
  * @author Holograph Protocol
  */
-contract HolographERC20 is OFT, ERC20Votes, ERC20Permit {
+contract HolographERC20 is ERC20Upgradeable, ERC20VotesUpgradeable, ERC20PermitUpgradeable, OwnableUpgradeable {
     /* -------------------------------------------------------------------------- */
     /*                                 Storage                                    */
     /* -------------------------------------------------------------------------- */
     /// @notice Timestamp of the start of the vesting period
-    uint256 public immutable vestingStart;
+    uint256 public vestingStart;
 
     /// @notice Duration of the vesting period (in seconds)
-    uint256 public immutable vestingDuration;
+    uint256 public vestingDuration;
 
     /// @notice Total amount of vested tokens
-    uint256 public immutable vestedTotalAmount;
+    uint256 public vestedTotalAmount;
 
     /// @notice Address of the liquidity pool
     address public pool;
@@ -108,7 +107,7 @@ contract HolographERC20 is OFT, ERC20Votes, ERC20Permit {
     mapping(address account => VestingData vestingData) public getVestingDataOf;
 
     /// @notice The factory contract that deployed this token
-    IHolographFactory public immutable factory;
+    IHolographFactory public factory;
 
     /* -------------------------------------------------------------------------- */
     /*                                Modifiers                                   */
@@ -119,35 +118,39 @@ contract HolographERC20 is OFT, ERC20Votes, ERC20Permit {
     }
 
     /* -------------------------------------------------------------------------- */
-    /*                               Constructor                                  */
+    /*                               Initialize                                   */
     /* -------------------------------------------------------------------------- */
     /**
-     * @notice Initialize the HolographERC20 with omnichain and DERC20 capabilities
+     * @notice Initialize the HolographERC20 with DERC20 capabilities
+     * @dev Called once by the factory after clone deployment
      * @param _name Token name
      * @param _symbol Token symbol
      * @param _initialSupply Initial supply of the token
      * @param _recipient Address receiving the initial supply
      * @param _owner Address receiving the ownership of the token
-     * @param _lzEndpoint LayerZero endpoint address for cross-chain messaging
      * @param _yearlyMintRate Maximum inflation rate of token in a year
      * @param _vestingDuration Duration of the vesting period (in seconds)
      * @param _recipients Array of addresses receiving vested tokens
      * @param _amounts Array of amounts of tokens to be vested
      * @param _tokenURI Uniform Resource Identifier (URI)
      */
-    constructor(
+    function initialize(
         string memory _name,
         string memory _symbol,
         uint256 _initialSupply,
         address _recipient,
         address _owner,
-        address _lzEndpoint,
         uint256 _yearlyMintRate,
         uint256 _vestingDuration,
         address[] memory _recipients,
         uint256[] memory _amounts,
         string memory _tokenURI
-    ) OFT(_name, _symbol, _lzEndpoint, _owner) ERC20Permit(_name) Ownable(_owner) {
+    ) external initializer {
+        // Initialize parent contracts
+        __ERC20_init(_name, _symbol);
+        __ERC20Permit_init(_name);
+        __ERC20Votes_init();
+        __Ownable_init(_owner);
         require(
             _yearlyMintRate <= MAX_YEARLY_MINT_RATE_WAD,
             MaxYearlyMintRateExceeded(_yearlyMintRate, MAX_YEARLY_MINT_RATE_WAD)
@@ -335,39 +338,13 @@ contract HolographERC20 is OFT, ERC20Votes, ERC20Permit {
         return vestedAmount - getVestingDataOf[account].releasedAmount;
     }
 
-    /* -------------------------------------------------------------------------- */
-    /*                              View Functions                               */
-    /* -------------------------------------------------------------------------- */
-    /**
-     * @notice Get the LayerZero endpoint address
-     * @return The LayerZero endpoint address used for cross-chain messaging
-     */
-    function getEndpoint() external view returns (address) {
-        return address(endpoint);
-    }
 
     /* -------------------------------------------------------------------------- */
     /*                            Override Functions                             */
     /* -------------------------------------------------------------------------- */
 
-    /// @notice Override setPeer to allow only creator to set peers
-    /// @param _eid Destination chain endpoint ID
-    /// @param _peer Peer address on destination chain
-    function setPeer(uint32 _eid, bytes32 _peer) public override {
-        // AUTHORIZATION: Same dual-check pattern as HolographBridge for Doppler Airlock compatibility
-        // We check both msg.sender and tx.origin to handle both direct calls and Doppler Airlock integration
-        bool isCreator = factory.isTokenCreator(address(this), msg.sender);
-        bool isTxOriginCreator = factory.isTokenCreator(address(this), tx.origin);
-
-        if (!isCreator && !isTxOriginCreator) {
-            revert OwnableUnauthorizedAccount(msg.sender);
-        }
-
-        _setPeer(_eid, _peer);
-    }
-
-    /// @inheritdoc Nonces
-    function nonces(address owner_) public view override(ERC20Permit, Nonces) returns (uint256) {
+    /// @inheritdoc ERC20PermitUpgradeable
+    function nonces(address owner_) public view override(ERC20PermitUpgradeable, NoncesUpgradeable) returns (uint256) {
         return super.nonces(owner_);
     }
 
@@ -378,7 +355,7 @@ contract HolographERC20 is OFT, ERC20Votes, ERC20Permit {
     }
 
     /// @notice Enhanced transfer function with pool lock protection
-    function _update(address from, address to, uint256 value) internal override(ERC20, ERC20Votes) {
+    function _update(address from, address to, uint256 value) internal override(ERC20Upgradeable, ERC20VotesUpgradeable) {
         if (to == pool && isPoolUnlocked == false) revert PoolLocked();
         super._update(from, to, value);
     }

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Pausable.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
 import {ITokenFactory} from "./interfaces/external/doppler/ITokenFactory.sol";
-import {HolographERC20} from "./HolographERC20.sol";
-import "./interfaces/ILZEndpointV2.sol";
+import {IHolographERC20} from "./interfaces/IHolographERC20.sol";
 
 /**
  * @title HolographFactory
@@ -14,7 +14,7 @@ import "./interfaces/ILZEndpointV2.sol";
  * @dev Implements ITokenFactory interface to integrate with Doppler ecosystem
  * @author Holograph Protocol
  */
-contract HolographFactory is ITokenFactory, Ownable, Pausable, ReentrancyGuard {
+contract HolographFactory is ITokenFactory, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     /* -------------------------------------------------------------------------- */
     /*                                  Errors                                    */
     /* -------------------------------------------------------------------------- */
@@ -26,8 +26,20 @@ contract HolographFactory is ITokenFactory, Ownable, Pausable, ReentrancyGuard {
     /* -------------------------------------------------------------------------- */
     /*                                 Storage                                    */
     /* -------------------------------------------------------------------------- */
-    /// @notice LayerZero V2 endpoint for cross-chain messaging
-    ILZEndpointV2 public immutable lzEndpoint;
+    
+    /**
+     * @notice HolographERC20 implementation address for cloning
+     * @dev This is immutable for gas efficiency and security:
+     * - Immutable variables are read directly from bytecode (~3 gas) vs storage reads (~100-2100 gas)
+     * - Cannot be changed after deployment, preventing accidental updates that could break tokens
+     * - Provides clear separation between upgradeable logic and fixed infrastructure
+     * 
+     * When upgrading the factory to support new token versions:
+     * 1. Deploy new token implementation
+     * 2. Deploy new factory implementation with updated immutable address
+     * 3. Upgrade proxy to point to new factory implementation
+     */
+    address public immutable erc20Implementation;
 
     /// @notice Authorized Doppler Airlock contracts allowed to call create()
     mapping(address => bool) public authorizedAirlocks;
@@ -62,12 +74,29 @@ contract HolographFactory is ITokenFactory, Ownable, Pausable, ReentrancyGuard {
     /*                               Constructor                                  */
     /* -------------------------------------------------------------------------- */
     /**
-     * @notice Initialize the HolographFactory with LayerZero endpoint
-     * @param _lzEndpoint LayerZero V2 endpoint address for omnichain messaging
+     * @notice Constructor sets immutable implementation address
+     * @param _erc20Implementation Address of the HolographERC20 implementation for cloning
+     * @dev Using immutable for gas efficiency - reads cost ~3 gas vs ~100-2100 for storage
      */
-    constructor(address _lzEndpoint) Ownable(msg.sender) {
-        if (_lzEndpoint == address(0)) revert ZeroAddress();
-        lzEndpoint = ILZEndpointV2(_lzEndpoint);
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor(address _erc20Implementation) {
+        if (_erc20Implementation == address(0)) revert ZeroAddress();
+        erc20Implementation = _erc20Implementation;
+        _disableInitializers();
+    }
+    
+    /**
+     * @notice Initialize the HolographFactory
+     * @param _owner Owner address
+     */
+    function initialize(
+        address _owner
+    ) external initializer {
+        if (_owner == address(0)) revert ZeroAddress();
+        
+        __Ownable_init(_owner);
+        __ReentrancyGuard_init();
+        __UUPSUpgradeable_init();
     }
 
     /* -------------------------------------------------------------------------- */
@@ -89,7 +118,7 @@ contract HolographFactory is ITokenFactory, Ownable, Pausable, ReentrancyGuard {
         address owner,
         bytes32 salt,
         bytes calldata tokenData
-    ) external override whenNotPaused nonReentrant returns (address token) {
+    ) external override nonReentrant returns (address token) {
         // Verify caller is an authorized Airlock
         if (!authorizedAirlocks[msg.sender]) revert UnauthorizedCaller();
         
@@ -108,21 +137,21 @@ contract HolographFactory is ITokenFactory, Ownable, Pausable, ReentrancyGuard {
             string memory tokenURI
         ) = _decodeTokenData(tokenData);
         
-        // Deploy HolographERC20 with CREATE2 for deterministic address
-        token = address(
-            new HolographERC20{salt: salt}(
-                name,
-                symbol,
-                initialSupply,
-                recipient,
-                owner,
-                address(lzEndpoint),
-                yearlyMintCap,
-                vestingDuration,
-                recipients,
-                amounts,
-                tokenURI
-            )
+        // Deploy HolographERC20 clone with CREATE2 for deterministic address
+        token = Clones.cloneDeterministic(erc20Implementation, salt);
+        
+        // Initialize the clone
+        IHolographERC20(token).initialize(
+            name,
+            symbol,
+            initialSupply,
+            recipient,
+            owner,
+            yearlyMintCap,
+            vestingDuration,
+            recipients,
+            amounts,
+            tokenURI
         );
 
         // Track the deployed token
@@ -178,19 +207,6 @@ contract HolographFactory is ITokenFactory, Ownable, Pausable, ReentrancyGuard {
         emit AirlockAuthorizationSet(airlock, authorized);
     }
 
-    /**
-     * @notice Emergency pause token deployments
-     */
-    function pause() external onlyOwner {
-        _pause();
-    }
-
-    /**
-     * @notice Resume token deployments after pause
-     */
-    function unpause() external onlyOwner {
-        _unpause();
-    }
 
     /* -------------------------------------------------------------------------- */
     /*                                View Functions                             */
@@ -224,59 +240,16 @@ contract HolographFactory is ITokenFactory, Ownable, Pausable, ReentrancyGuard {
     }
 
     /**
-     * @notice Predict the address of a token deployment using CREATE2
-     * @param salt CREATE2 salt
-     * @param name Token name
-     * @param symbol Token symbol
-     * @param initialSupply Initial token supply
-     * @param recipient Initial token recipient
-     * @param owner Token owner
-     * @param yearlyMintCap Yearly mint cap
-     * @param vestingDuration Vesting duration
-     * @param recipients Vesting recipients
-     * @param amounts Vesting amounts
-     * @param tokenURI Token URI
-     * @return predicted Predicted token address
+     * @notice Authorize contract upgrades (required by UUPS)
+     * @param newImplementation New implementation address
      */
-    function predictTokenAddress(
-        bytes32 salt,
-        string memory name,
-        string memory symbol,
-        uint256 initialSupply,
-        address recipient,
-        address owner,
-        uint256 yearlyMintCap,
-        uint256 vestingDuration,
-        address[] memory recipients,
-        uint256[] memory amounts,
-        string memory tokenURI
-    ) external view returns (address predicted) {
-        bytes memory bytecode = abi.encodePacked(
-            type(HolographERC20).creationCode,
-            abi.encode(
-                name, 
-                symbol, 
-                initialSupply, 
-                recipient, 
-                owner, 
-                address(lzEndpoint),
-                yearlyMintCap,
-                vestingDuration,
-                recipients,
-                amounts,
-                tokenURI
-            )
-        );
-        
-        bytes32 hash = keccak256(
-            abi.encodePacked(
-                bytes1(0xff),
-                address(this),
-                salt,
-                keccak256(bytecode)
-            )
-        );
-        
-        predicted = address(uint160(uint256(hash)));
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+    
+    /**
+     * @notice Get the current implementation version
+     * @return Version string
+     */
+    function version() external pure returns (string memory) {
+        return "1.0.0";
     }
 }

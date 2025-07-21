@@ -4,18 +4,19 @@ pragma solidity ^0.8.26;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import {HolographFactory} from "../../src/HolographFactory.sol";
+import {HolographFactoryProxy} from "../../src/HolographFactoryProxy.sol";
 import {HolographERC20} from "../../src/HolographERC20.sol";
 import {ITokenFactory} from "../../src/interfaces/external/doppler/ITokenFactory.sol";
-import {MockLZEndpoint} from "../mock/MockLZEndpoint.sol";
 
 /**
  * @title HolographFactoryTest
  * @notice Comprehensive test suite for HolographFactory implementing ITokenFactory
- * @dev Tests the new architecture with LayerZero OFT integration
+ * @dev Tests the new architecture with proxy pattern and clone deployments
  */
 contract HolographFactoryTest is Test {
     HolographFactory public factory;
-    MockLZEndpoint public lzEndpoint;
+    HolographFactory public factoryImpl;
+    HolographERC20 public erc20Implementation;
     
     address public owner = address(this);
     address public airlock = address(0x1234);
@@ -44,11 +45,20 @@ contract HolographFactoryTest is Test {
     event AirlockAuthorizationSet(address indexed airlock, bool authorized);
 
     function setUp() public {
-        // Deploy mock LayerZero endpoint
-        lzEndpoint = new MockLZEndpoint();
+        // Deploy ERC20 implementation for cloning
+        erc20Implementation = new HolographERC20();
         
-        // Deploy HolographFactory
-        factory = new HolographFactory(address(lzEndpoint));
+        // Deploy factory implementation
+        factoryImpl = new HolographFactory(address(erc20Implementation));
+        
+        // Deploy proxy
+        HolographFactoryProxy proxy = new HolographFactoryProxy(address(factoryImpl));
+        
+        // Cast proxy to factory interface
+        factory = HolographFactory(address(proxy));
+        
+        // Initialize factory
+        factory.initialize(owner);
         
         // Authorize test airlock
         factory.setAirlockAuthorization(airlock, true);
@@ -59,9 +69,8 @@ contract HolographFactoryTest is Test {
     /* -------------------------------------------------------------------------- */
 
     function test_Constructor() public {
-        assertEq(address(factory.lzEndpoint()), address(lzEndpoint));
+        assertEq(factory.erc20Implementation(), address(erc20Implementation));
         assertEq(factory.owner(), owner);
-        assertFalse(factory.paused());
     }
 
     function test_AuthorizeAirlock() public {
@@ -164,42 +173,6 @@ contract HolographFactoryTest is Test {
         assertEq(holographToken.vestingDuration(), VESTING_DURATION);
     }
 
-    function test_PredictTokenAddress() public {
-        address predicted = factory.predictTokenAddress(
-            TEST_SALT,
-            TOKEN_NAME,
-            TOKEN_SYMBOL,
-            INITIAL_SUPPLY,
-            user,
-            owner,
-            YEARLY_MINT_CAP,
-            VESTING_DURATION,
-            new address[](0),
-            new uint256[](0),
-            TOKEN_URI
-        );
-
-        bytes memory tokenData = _encodeTokenData(
-            TOKEN_NAME,
-            TOKEN_SYMBOL,
-            YEARLY_MINT_CAP,
-            VESTING_DURATION,
-            new address[](0),
-            new uint256[](0),
-            TOKEN_URI
-        );
-
-        vm.prank(airlock, airlock);
-        address actual = factory.create(
-            INITIAL_SUPPLY,
-            user,
-            owner,
-            TEST_SALT,
-            tokenData
-        );
-
-        assertEq(predicted, actual, "Predicted address should match actual deployment");
-    }
 
     /* -------------------------------------------------------------------------- */
     /*                              Access Control                               */
@@ -241,50 +214,11 @@ contract HolographFactoryTest is Test {
         );
     }
 
-    function test_RevertWhenPaused() public {
-        factory.pause();
-        
-        bytes memory tokenData = _encodeTokenData(
-            TOKEN_NAME,
-            TOKEN_SYMBOL,
-            YEARLY_MINT_CAP,
-            VESTING_DURATION,
-            new address[](0),
-            new uint256[](0),
-            TOKEN_URI
-        );
-
-        vm.prank(airlock, airlock);
-        vm.expectRevert(); // Modern OpenZeppelin uses custom errors
-        
-        factory.create(
-            INITIAL_SUPPLY,
-            user,
-            owner,
-            TEST_SALT,
-            tokenData
-        );
-    }
 
     /* -------------------------------------------------------------------------- */
     /*                              Admin Functions                              */
     /* -------------------------------------------------------------------------- */
 
-    function test_PauseUnpause() public {
-        // Test pause
-        factory.pause();
-        assertTrue(factory.paused());
-        
-        // Test unpause
-        factory.unpause();
-        assertFalse(factory.paused());
-    }
-
-    function test_RevertOnNonOwnerPause() public {
-        vm.prank(user);
-        vm.expectRevert(); // Modern OpenZeppelin uses custom errors
-        factory.pause();
-    }
 
     function test_RevertOnNonOwnerAirlockAuth() public {
         vm.prank(user);
