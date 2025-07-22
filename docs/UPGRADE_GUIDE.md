@@ -46,18 +46,19 @@ The factory uses UUPS (Universal Upgradeable Proxy Standard), allowing the imple
 ### Storage Layout Rules
 - Never delete or reorder existing storage variables
 - Only add new variables at the end
-- Use gaps for future storage: `uint256[50] private __gap;`
+- Be careful with inheritance - storage from parent contracts comes first
+- Use tools to verify: `forge inspect src/HolographFactory.sol:HolographFactory storage-layout`
 
 ### Example: Adding new functionality
 ```solidity
 contract HolographFactoryV2 is HolographFactory {
-    // Existing storage preserved...
+    // Existing storage preserved from HolographFactory...
     
-    // New storage at the end
+    // New storage variables added at the end
     mapping(address => uint256) public tokenVersions;
-    uint256[49] private __gap; // Reduced gap
+    address public feeRecipient;
     
-    // New function
+    // New functions
     function setTokenVersion(address token, uint256 version) external onlyOwner {
         tokenVersions[token] = version;
     }
@@ -67,6 +68,19 @@ contract HolographFactoryV2 is HolographFactory {
         return "2.0.0";
     }
 }
+```
+
+### Verifying Storage Layout
+
+Before deploying an upgrade, always verify storage compatibility:
+
+```bash
+# Compare storage layouts
+forge inspect src/HolographFactory.sol:HolographFactory storage-layout > v1_storage.json
+forge inspect src/HolographFactoryV2.sol:HolographFactoryV2 storage-layout > v2_storage.json
+diff v1_storage.json v2_storage.json
+
+# The diff should only show additions at the end, never changes to existing slots
 ```
 
 ## Releasing New HolographERC20 Versions
