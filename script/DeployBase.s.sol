@@ -25,8 +25,6 @@ pragma solidity ^0.8.24;
  *   forge verify-contract --chain-id 8453 $(cat deployments/base/HolographFactory.txt) src/HolographFactory.sol:HolographFactory --constructor-args $(cast abi-encode "constructor(address)" $(cat deployments/base/HolographERC20.txt)) $ETHERSCAN_API_KEY
  *   # factory proxy
  *   forge verify-contract --chain-id 8453 $(cat deployments/base/HolographFactoryProxy.txt) src/HolographFactoryProxy.sol:HolographFactoryProxy --constructor-args $(cast abi-encode "constructor(address)" $(cat deployments/base/HolographFactory.txt)) $ETHERSCAN_API_KEY
- *   # bridge
- *   forge verify-contract --chain-id 8453 $(cat deployments/base/HolographBridge.txt) src/HolographBridge.sol:HolographBridge $ETHERSCAN_API_KEY
  */
 
 import "forge-std/Script.sol";
@@ -35,7 +33,6 @@ import "../src/FeeRouter.sol";
 import "../src/HolographFactory.sol";
 import "../src/HolographFactoryProxy.sol";
 import "../src/HolographERC20.sol";
-import "../src/HolographBridge.sol";
 
 contract DeployBase is Script {
     /* -------------------------------------------------------------------------- */
@@ -44,9 +41,6 @@ contract DeployBase is Script {
     uint256 internal constant BASE_MAINNET = 8453;
     uint256 internal constant BASE_SEPOLIA = 84532;
     
-    // LayerZero V2 Endpoint IDs
-    uint32 internal constant BASE_MAINNET_EID = 30184;
-    uint32 internal constant BASE_SEPOLIA_EID = 40245;
 
     /* -------------------------------------------------------------------------- */
     /*                                   Run                                      */
@@ -86,8 +80,9 @@ contract DeployBase is Script {
 
         uint256 gasStart = gasleft();
         // Deploy FeeRouter – on Base chain we pass zero addresses for Ethereum-specific params
+        // but we still need LayerZero endpoint for bridging fees to Ethereum
         FeeRouter feeRouter = new FeeRouter(
-            lzEndpoint,
+            lzEndpoint, // LayerZero endpoint for fee bridging
             ethEid,
             address(0), // stakingRewards (none on Base)
             address(0), // HLG token (none on Base)
@@ -123,11 +118,6 @@ contract DeployBase is Script {
         factory.initialize(deployer);
         uint256 gasInitialize = gasStart - gasleft();
 
-        gasStart = gasleft();
-        // Deploy HolographBridge for cross-chain token expansion
-        uint32 baseEid = block.chainid == BASE_MAINNET ? BASE_MAINNET_EID : BASE_SEPOLIA_EID;
-        HolographBridge bridge = new HolographBridge(lzEndpoint, address(factory), baseEid);
-        uint256 gasBridge = gasStart - gasleft();
 
         vm.stopBroadcast();
 
@@ -144,9 +134,6 @@ contract DeployBase is Script {
         console.log("HolographFactory proxy:", address(factoryProxy));
         console.log("Gas used:", gasFactoryProxy);
         console.log("Initialize gas used:", gasInitialize);
-        console.log("");
-        console.log("HolographBridge deployed at:", address(bridge));
-        console.log("Gas used:", gasBridge);
 
         /* ----------------------- Persist addresses locally -------------------- */
         // Creates simple text files with addresses under deployments/base/
@@ -156,6 +143,5 @@ contract DeployBase is Script {
         vm.writeFile(string.concat(dir, "/HolographERC20.txt"), vm.toString(address(erc20Implementation)));
         vm.writeFile(string.concat(dir, "/HolographFactory.txt"), vm.toString(address(factoryImpl)));
         vm.writeFile(string.concat(dir, "/HolographFactoryProxy.txt"), vm.toString(address(factoryProxy)));
-        vm.writeFile(string.concat(dir, "/HolographBridge.txt"), vm.toString(address(bridge)));
     }
 }

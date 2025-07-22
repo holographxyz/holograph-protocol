@@ -6,7 +6,6 @@ import "forge-std/console.sol";
 import {HolographFactory} from "../../src/HolographFactory.sol";
 import {HolographFactoryProxy} from "../../src/HolographFactoryProxy.sol";
 import {HolographERC20} from "../../src/HolographERC20.sol";
-import {HolographBridge} from "../../src/HolographBridge.sol";
 import {FeeRouter} from "../../src/FeeRouter.sol";
 import {CreateParams} from "../../src/interfaces/DopplerStructs.sol";
 import {ITokenFactory} from "../../src/interfaces/external/doppler/ITokenFactory.sol";
@@ -128,7 +127,7 @@ library DopplerAddrBook {
 /**
  * @title FullProtocolWorkflowTest
  * @notice End-to-end integration tests for the complete Holograph protocol
- * @dev Tests the full workflow: Doppler Airlock -> Factory -> Token -> Bridge -> Cross-chain
+ * @dev Tests the full workflow: Doppler Airlock -> Factory -> Token creation
  * @dev Uses real Doppler integration on Base Sepolia with proper salt mining
  */
 contract FullProtocolWorkflowTest is Test {
@@ -163,17 +162,9 @@ contract FullProtocolWorkflowTest is Test {
     uint256 private constant FLAG_MASK = 0x3fff;
     uint256 private constant MAX_SALT_ITERATIONS = 200_000;
 
-    // LayerZero endpoint IDs for Base and Unichain
+    // LayerZero endpoint IDs for Base
     uint32 constant BASE_SEPOLIA_EID = 40245;    // Base Sepolia (testnet)
-    uint32 constant UNICHAIN_SEPOLIA_EID = 40328; // Unichain Sepolia (testnet)
-    
-    // Using testnets for testing
     uint32 constant SOURCE_EID = BASE_SEPOLIA_EID;    // Deploy on Base Sepolia
-    uint32 constant DEST_EID = UNICHAIN_SEPOLIA_EID;  // Expand to Unichain Sepolia
-    
-    // Mock factory and bridge addresses on destination chain
-    address constant UNICHAIN_FACTORY = address(0x1111);
-    address constant UNICHAIN_BRIDGE = address(0x2222);
 
     // Token parameters
     string constant TOKEN_NAME = "Holograph Full Protocol Token";
@@ -184,7 +175,6 @@ contract FullProtocolWorkflowTest is Test {
 
     DopplerAddrBook.DopplerAddrs private doppler;
     HolographFactory private factory;
-    HolographBridge private bridge;
     FeeRouter private feeRouter;
     LZEndpointStub private lzEndpoint;
     IAirlock private airlock;
@@ -195,7 +185,6 @@ contract FullProtocolWorkflowTest is Test {
     address private user = address(0x3333);
 
     event TokenDeployed(address indexed token, string name, string symbol, uint256 initialSupply, address indexed recipient, address indexed owner, address creator);
-    event TokenExpanded(address indexed sourceToken, uint32 indexed dstEid, address indexed dstToken, string chainName);
     event SlicePulled(address indexed airlock, address indexed token, uint256 holoAmt, uint256 treasuryAmt);
 
     function setUp() public {
@@ -225,12 +214,11 @@ contract FullProtocolWorkflowTest is Test {
         // Initialize factory
         factory.initialize(address(this));
         
-        bridge = new HolographBridge(address(lzEndpoint), address(factory), SOURCE_EID);
-        
-        // Deploy FeeRouter with Unichain as remote chain for fee bridging
+        // Deploy FeeRouter for bridging integrator fees to Ethereum
+        uint32 ETH_SEPOLIA_EID = 40161; // Ethereum Sepolia for fee bridging
         feeRouter = new FeeRouter(
             address(lzEndpoint),  // endpoint
-            DEST_EID,            // remote EID (Unichain for fee bridging)
+            ETH_SEPOLIA_EID,     // remote EID (Ethereum for fee bridging)
             address(0),          // staking pool (not needed for this test)
             address(0),          // HLG (not needed)
             address(0),          // WETH (not needed)
@@ -245,7 +233,6 @@ contract FullProtocolWorkflowTest is Test {
         vm.deal(user, 5 ether);
 
         console.log("HolographFactory deployed at: %s", address(factory));
-        console.log("HolographBridge deployed at: %s", address(bridge));
         console.log("FeeRouter deployed at: %s", address(feeRouter));
         console.log("=== REAL DOPPLER INTEGRATION: Airlock -> HolographFactory -> HolographERC20 ===");
 
@@ -269,13 +256,6 @@ contract FullProtocolWorkflowTest is Test {
         bytes32 keeperRole = feeRouter.KEEPER_ROLE();
         feeRouter.grantRole(keeperRole, address(this));
 
-        // Configure bridge for Unichain
-        bridge.configureChain(
-            DEST_EID,
-            UNICHAIN_FACTORY,
-            UNICHAIN_BRIDGE,
-            "Unichain Sepolia"
-        );
     }
 
     /* -------------------------------------------------------------------------- */
@@ -484,44 +464,6 @@ contract FullProtocolWorkflowTest is Test {
         console.log("[OK] Complete Doppler ecosystem integration working");
     }
 
-    /* -------------------------------------------------------------------------- */
-    /*                          Base to Unichain Expansion                      */
-    /* -------------------------------------------------------------------------- */
-
-    function test_BaseToUnichainExpansion() public {
-        // Step 1: Create initial token on Base through real Doppler Airlock
-        address baseToken = _createTestToken();
-        HolographERC20 sourceToken = HolographERC20(baseToken);
-        
-        console.log("Base token deployed at:", baseToken);
-        console.log("Token name:", sourceToken.name());
-        console.log("Token symbol:", sourceToken.symbol());
-        
-        // Step 2: Expand from Base to Unichain (can be called by token owner OR creator)
-        HolographERC20 token = HolographERC20(baseToken);
-        address tokenOwner = token.owner();
-        
-        // Verify creator tracking first
-        assertTrue(factory.isTokenCreator(baseToken, creator), "Creator should be tracked");
-        
-        // Creator should be able to expand even though they don't own the token
-        vm.deal(creator, 1 ether);
-        vm.prank(creator);
-        
-        address unichainToken = bridge.expandToChain{value: 0.5 ether}(baseToken, DEST_EID);
-        
-        console.log("Unichain token will be deployed at:", unichainToken);
-        
-        // Step 3: Verify expansion
-        assertTrue(bridge.isDeployedToChain(baseToken, DEST_EID));
-        assertEq(bridge.getTokenDeployment(baseToken, DEST_EID), unichainToken);
-        assertTrue(bridge.isTokenRegistered(unichainToken));
-        
-        // Step 4: Verify tokens have different addresses
-        assertNotEq(baseToken, unichainToken);
-        
-        console.log("Successfully expanded from Base to Unichain");
-    }
 
     function test_BaseTokenFunctionality() public {
         address tokenAddr = _createTestToken();
@@ -547,26 +489,8 @@ contract FullProtocolWorkflowTest is Test {
         console.log("SUCCESS: Base token functionality working correctly");
     }
 
-    function test_LayerZeroBaseUnichainConfiguration() public {
-        address tokenAddr = _createTestToken();
-        HolographERC20 token = HolographERC20(tokenAddr);
-        
-        // Expand to Unichain first (must be called by token creator)
-        vm.deal(creator, 1 ether);
-        vm.prank(creator);
-        address unichainToken = bridge.expandToChain{value: 0.5 ether}(tokenAddr, DEST_EID);
-        
-        // Test direct peer setting for cross-chain communication
-        bytes32 unichainPeer = bytes32(uint256(uint160(unichainToken)));
-        vm.prank(creator);
-        // token.setPeer(DEST_EID, unichainPeer); // LayerZero setPeer removed - will be added back in v2
-        
-        console.log("Base EID:", SOURCE_EID);
-        console.log("Unichain EID:", DEST_EID);
-        console.log("SUCCESS: LayerZero Base-Unichain configuration complete");
-    }
 
-    function test_FeeRouterBaseToUnichain() public {
+    function test_FeeRouter() public {
         // Verify factory is trusted
         assertTrue(feeRouter.trustedFactories(address(factory)));
         
@@ -589,70 +513,13 @@ contract FullProtocolWorkflowTest is Test {
         console.log("Treasury fee:", treasuryFee);
         console.log("Protocol fee:", protocolFee);
         console.log("Treasury address:", configuredTreasury);
-        console.log("SUCCESS: Fee routing configuration works correctly with real Doppler integration");
+        console.log("SUCCESS: Fee routing configuration works correctly");
     }
 
     /* -------------------------------------------------------------------------- */
     /*                          Error Handling                                  */
     /* -------------------------------------------------------------------------- */
 
-    function test_UnauthorizedUnichainExpansion() public {
-        address tokenAddr = _createTestToken();
-        
-        // User who doesn't own the token or isn't the creator tries to expand it
-        vm.prank(user);
-        vm.expectRevert(HolographBridge.UnauthorizedExpansion.selector);
-        bridge.expandToChain(tokenAddr, DEST_EID);
-    }
-
-    function test_DoubleExpansionToUnichain() public {
-        address tokenAddr = _createTestToken();
-        
-        // First expansion to Unichain (must be called by token creator)
-        vm.deal(creator, 1 ether);
-        vm.prank(creator);
-        bridge.expandToChain{value: 0.5 ether}(tokenAddr, DEST_EID);
-        
-        // Second expansion to same chain should fail
-        vm.prank(creator);
-        vm.expectRevert(HolographBridge.ChainAlreadyConfigured.selector);
-        bridge.expandToChain{value: 0.5 ether}(tokenAddr, DEST_EID);
-    }
-
-    function test_BaseUnichainEcosystem() public {
-        // Create token on Base
-        address baseToken = _createTestToken();
-        
-        console.log("=== Base-Unichain Ecosystem Test ===");
-        console.log("Base token address:", baseToken);
-        
-        // Expand to Unichain (must be called by token creator)
-        vm.deal(creator, 1 ether);
-        vm.prank(creator);
-        address unichainToken = bridge.expandToChain{value: 0.5 ether}(baseToken, DEST_EID);
-        
-        console.log("Unichain token address:", unichainToken);
-        
-        // Configure cross-chain peer directly on token (creator can set peers)
-        bytes32 unichainPeer = bytes32(uint256(uint160(unichainToken)));
-        vm.prank(creator);
-        // HolographERC20(baseToken).setPeer(DEST_EID, unichainPeer); // LayerZero setPeer removed - will be added back in v2
-        
-        // Verify deployment state
-        assertTrue(bridge.isDeployedToChain(baseToken, DEST_EID));
-        assertTrue(bridge.isTokenRegistered(unichainToken));
-        
-        // Verify token properties
-        HolographERC20 baseTokenContract = HolographERC20(baseToken);
-        
-        assertEq(baseTokenContract.name(), "Holograph Full Protocol Token");
-        assertEq(baseTokenContract.symbol(), "HFPT");
-        assertEq(baseTokenContract.totalSupply(), INITIAL_SUPPLY);
-        
-        console.log("Token name:", baseTokenContract.name());
-        console.log("Token symbol:", baseTokenContract.symbol());
-        console.log("SUCCESS: Base-Unichain ecosystem configured successfully");
-    }
 
     /* -------------------------------------------------------------------------- */
     /*                          Performance & Gas Tests                         */
@@ -725,18 +592,6 @@ contract FullProtocolWorkflowTest is Test {
         assertTrue(factory.isTokenCreator(tokenAddr, creator), "Creator should be tracked");
     }
 
-    function test_GasConsumptionBaseToUnichainExpansion() public {
-        address tokenAddr = _createTestToken();
-        
-        vm.deal(creator, 1 ether);
-        vm.prank(creator);
-        uint256 gasBefore = gasleft();
-        
-        bridge.expandToChain{value: 0.5 ether}(tokenAddr, DEST_EID);
-        
-        uint256 gasUsed = gasBefore - gasleft();
-        console.log("Gas used for Base->Unichain expansion:", gasUsed);
-    }
 
     function test_saltMiningPerformance() public {
         console.log("=== SALT MINING PERFORMANCE TEST ===");
@@ -792,11 +647,8 @@ contract FullProtocolWorkflowTest is Test {
     function test_DisplayNetworkInfo() public {
         console.log("=== Network Configuration ===");
         console.log("Base Sepolia EID:", BASE_SEPOLIA_EID);
-        console.log("Unichain Sepolia EID:", UNICHAIN_SEPOLIA_EID);
         console.log("Source Chain (Base Sepolia):", SOURCE_EID);
-        console.log("Destination Chain (Unichain Sepolia):", DEST_EID);
         console.log("Factory address:", address(factory));
-        console.log("Bridge address:", address(bridge));
         console.log("FeeRouter address:", address(feeRouter));
         console.log("Real Doppler Airlock:", address(airlock));
     }
