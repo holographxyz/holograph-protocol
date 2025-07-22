@@ -22,9 +22,9 @@ pragma solidity ^0.8.24;
  *   # erc20 implementation
  *   forge verify-contract --chain-id 8453 $(cat deployments/base/HolographERC20.txt) src/HolographERC20.sol:HolographERC20 $ETHERSCAN_API_KEY
  *   # factory implementation
- *   forge verify-contract --chain-id 8453 $(cat deployments/base/HolographFactoryImpl.txt) src/HolographFactory.sol:HolographFactory --constructor-args $(cast abi-encode "constructor(address)" $(cat deployments/base/HolographERC20.txt)) $ETHERSCAN_API_KEY
+ *   forge verify-contract --chain-id 8453 $(cat deployments/base/HolographFactory.txt) src/HolographFactory.sol:HolographFactory --constructor-args $(cast abi-encode "constructor(address)" $(cat deployments/base/HolographERC20.txt)) $ETHERSCAN_API_KEY
  *   # factory proxy
- *   forge verify-contract --chain-id 8453 $(cat deployments/base/HolographFactory.txt) src/HolographFactoryProxy.sol:HolographFactoryProxy --constructor-args $(cast abi-encode "constructor(address)" $(cat deployments/base/HolographFactoryImpl.txt)) $ETHERSCAN_API_KEY
+ *   forge verify-contract --chain-id 8453 $(cat deployments/base/HolographFactoryProxy.txt) src/HolographFactoryProxy.sol:HolographFactoryProxy --constructor-args $(cast abi-encode "constructor(address)" $(cat deployments/base/HolographFactory.txt)) $ETHERSCAN_API_KEY
  *   # bridge
  *   forge verify-contract --chain-id 8453 $(cat deployments/base/HolographBridge.txt) src/HolographBridge.sol:HolographBridge $ETHERSCAN_API_KEY
  */
@@ -154,8 +154,8 @@ contract DeployBase is Script {
         vm.createDir(dir, true);
         vm.writeFile(string.concat(dir, "/FeeRouter.txt"), vm.toString(address(feeRouter)));
         vm.writeFile(string.concat(dir, "/HolographERC20.txt"), vm.toString(address(erc20Implementation)));
-        vm.writeFile(string.concat(dir, "/HolographFactoryImpl.txt"), vm.toString(address(factoryImpl)));
-        vm.writeFile(string.concat(dir, "/HolographFactory.txt"), vm.toString(address(factoryProxy)));
+        vm.writeFile(string.concat(dir, "/HolographFactory.txt"), vm.toString(address(factoryImpl)));
+        vm.writeFile(string.concat(dir, "/HolographFactoryProxy.txt"), vm.toString(address(factoryProxy)));
         vm.writeFile(string.concat(dir, "/HolographBridge.txt"), vm.toString(address(bridge)));
     }
 }
