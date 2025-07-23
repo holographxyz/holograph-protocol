@@ -168,6 +168,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
      * @param _weth WETH9 contract address (zero on non-Ethereum chains)
      * @param _swapRouter Uniswap V3 SwapRouter address (zero on non-Ethereum chains)
      * @param _treasury Initial treasury address for fee collection
+     * @param _owner Initial owner address for the contract
      */
     constructor(
         address _endpoint,
@@ -176,10 +177,12 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
         address _hlg,
         address _weth,
         address _swapRouter,
-        address _treasury
-    ) Ownable(msg.sender) {
+        address _treasury,
+        address _owner
+    ) Ownable(_owner) {
         if (_endpoint == address(0) || _remoteEid == 0) revert ZeroAddress();
         if (_treasury == address(0)) revert ZeroAddress();
+        if (_owner == address(0)) revert ZeroAddress();
 
         lzEndpoint = ILayerZeroEndpointV2(_endpoint);
         remoteEid = _remoteEid;
@@ -196,7 +199,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
         }
         treasury = _treasury;
 
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(DEFAULT_ADMIN_ROLE, _owner);
     }
 
     /* -------------------------------------------------------------------------- */

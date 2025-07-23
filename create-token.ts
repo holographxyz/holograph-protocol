@@ -1,5 +1,8 @@
 /**
  * Holograph Token Creation Script
+ * 
+ * Creates ERC20 tokens through the Doppler Airlock using HolographFactory.
+ * The factory creates HolographERC20 tokens with governance and DeFi features.
  *
  * Environment Variables Required:
  * - PRIVATE_KEY: Private key for the account creating tokens
@@ -7,6 +10,10 @@
  *
  * Optional Environment Variables:
  * - BASE_SEPOLIA_RPC_URL: Custom RPC endpoint (uses public by default)
+ *
+ * Prerequisites:
+ * - HolographFactory must be authorized with Doppler Airlock (✅ Done)
+ * - Factory deployed at: 0x47ca9bEa164E94C38Ec52aB23377dC2072356D10
  */
 
 import dotenv from "dotenv";
@@ -32,12 +39,19 @@ import { privateKeyToAccount } from "viem/accounts";
 import { readFileSync } from "fs";
 import { spawn } from "child_process";
 
-// Constants
-const FEE_ROUTER = "0x10F2c0fdc9799A293b4C726a1314BD73A4AB9f20" as const;
+// Constants - Updated with current deployment addresses
+const FEE_ROUTER = "0xc2D248C46f16d0a6F132ACd0E90A64dB78A86fB0" as const;
+
+// Holograph deployment addresses from deployment.json
+const HOLOGRAPH_ADDRESSES = {
+  factoryProxy: "0x47ca9bEa164E94C38Ec52aB23377dC2072356D10", // HolographFactory Proxy
+  factoryImplementation: "0x08Eb3E7A917bB125613E6Dd2D82ef4D6d6248102", // HolographFactory Implementation
+  erc20Implementation: "0x4679Ba09dcfcC80CF1E6628F9850C54b198b5D6A", // HolographERC20 Implementation
+} as const;
 
 const DOPPLER_ADDRESSES = {
   airlock: "0x3411306Ce66c9469BFF1535BA955503c4Bde1C6e",
-  tokenFactory: "0xbA59B9510806034C3B8a7f46756Feeb5387340e3", // Our HolographFactory
+  tokenFactory: HOLOGRAPH_ADDRESSES.factoryProxy, // Our HolographFactory Proxy
   governanceFactory: "0x9dBFaaDC8c0cB2c34bA698DD9426555336992e20",
   v4Initializer: "0x8e891d249f1ecbffa6143c03eb1b12843aef09d3",
   migrator: "0x846a84918aA87c14b86B2298776e8ea5a4e34C9E", // UniswapV4Migrator (latest)
@@ -157,6 +171,14 @@ function computeCreate2Address(salt: `0x${string}`, initCodeHash: `0x${string}`,
   const packed = concat(["0xff", deployer, salt, initCodeHash]);
   const hash = keccak256(packed);
   return `0x${hash.slice(-40)}` as Address;
+}
+
+function getERC1167Bytecode(implementation: Address): `0x${string}` {
+  // ERC1167 minimal proxy bytecode with implementation address embedded
+  // Format: 0x3d602d80600a3d3981f3363d3d373d3d3d363d73{implementation}5af43d82803e903d91602b57fd5bf3
+  const prefix = "0x3d602d80600a3d3981f3363d3d373d3d3d363d73";
+  const suffix = "0x5af43d82803e903d91602b57fd5bf3";
+  return `${prefix}${implementation.slice(2).toLowerCase()}${suffix}` as `0x${string}`;
 }
 
 function extractTokenAddress(receipt: any): string | null {
@@ -286,47 +308,24 @@ async function verifyTokenContract(
     return;
   }
 
-  const [name, symbol, yearlyMintCap, vestingDuration, recipients, amounts, tokenURI] = decodeAbiParameters(
-    parseAbiParameters("string, string, uint256, uint256, address[], uint256[], string"),
-    createParams.tokenFactoryData,
-  );
-
-  const constructorArgs = encodeAbiParameters(
-    parseAbiParameters("string, string, uint256, address, address, address, uint256, uint256, address[], uint256[], string"),
-    [
-      name,
-      symbol,
-      createParams.initialSupply,
-      DOPPLER_ADDRESSES.airlock as Address, // recipient
-      DOPPLER_ADDRESSES.airlock as Address, // owner  
-      "0x1a44076050125825900e736c501f859c50fE728c" as Address, // LayerZero endpoint Base Sepolia
-      yearlyMintCap,
-      vestingDuration,
-      recipients,
-      amounts,
-      tokenURI,
-    ],
-  );
-
+  console.log("⚠️  Token verification skipped - tokens are deployed as ERC1167 minimal proxies");
+  console.log("💡 The token is a clone of the HolographERC20 implementation:");
+  console.log(`📍 Implementation: ${HOLOGRAPH_ADDRESSES.erc20Implementation}`);
+  console.log(`🔗 View implementation: https://sepolia.basescan.org/address/${HOLOGRAPH_ADDRESSES.erc20Implementation}#code`);
+  console.log(`🔗 View proxy token: https://sepolia.basescan.org/address/${tokenAddress}`);
+  
   try {
-    await verifyContract(tokenAddress, "src/HolographERC20.sol:HolographERC20", constructorArgs, apiKey);
-    console.log("🎉 Token contract verification completed!");
-    console.log(`🔗 View verified contract: https://sepolia.basescan.org/address/${tokenAddress}#code`);
-  } catch (error: any) {
-    console.log("⚠️  Automatic contract verification failed, but the token was created successfully!");
-    console.log("📋 Manual verification instructions:");
-    console.log(`1. Go to: https://sepolia.basescan.org/verifyContract`);
-    console.log(`2. Enter contract address: ${tokenAddress}`);
-    console.log(`3. Select compiler: Solidity (Single file)`);
-    console.log(`4. Select compiler version: v0.8.26+commit.8a97fa7a`);
-    console.log(`5. Select optimization: Yes, with 200 runs`);
-    console.log(`6. Paste the flattened source code (generate with: forge flatten src/HolographERC20.sol)`);
-    console.log(`7. Constructor arguments: ${constructorArgs}`);
-    console.log("");
-    console.log("Or try this command manually:");
-    console.log(
-      `forge verify-contract --verifier etherscan --chain-id ${CHAIN_ID} --etherscan-api-key YOUR_API_KEY --constructor-args ${constructorArgs} --flatten ${tokenAddress} src/HolographERC20.sol:HolographERC20`,
+    // For minimal proxies, we verify against the Clones library pattern
+    console.log("🔍 Attempting to verify as ERC1167 minimal proxy...");
+    await verifyContract(
+      tokenAddress, 
+      "@openzeppelin/contracts/proxy/Clones.sol:Clones", 
+      `000000000000000000000000${HOLOGRAPH_ADDRESSES.erc20Implementation.slice(2)}`, 
+      apiKey
     );
+    console.log("🎉 Proxy contract verification completed!");
+  } catch (error: any) {
+    console.log("ℹ️  Proxy verification not needed - BaseScan should auto-detect ERC1167 proxies");
   }
 
   // Print deployment summary
@@ -394,35 +393,17 @@ async function mineValidSalt(
     ],
   );
 
-  // Prepare token constructor arguments for HolographERC20
-  const [name, symbol, yearlyMintCap, vestingDuration, recipients, amounts, tokenURI] = decodeAbiParameters(
-    parseAbiParameters("string, string, uint256, uint256, address[], uint256[], string"),
-    tokenFactoryData,
-  );
-
-  const tokenConstructorArgs = encodeAbiParameters(
-    parseAbiParameters("string, string, uint256, address, address, address, uint256, uint256, address[], uint256[], string"),
-    [
-      name,
-      symbol,
-      initialSupply,
-      DOPPLER_ADDRESSES.airlock as Address, // recipient
-      DOPPLER_ADDRESSES.airlock as Address, // owner
-      "0x1a44076050125825900e736c501f859c50fE728c" as Address, // LayerZero endpoint Base Sepolia
-      yearlyMintCap,
-      vestingDuration,
-      recipients,
-      amounts,
-      tokenURI,
-    ],
-  );
+  // Note: Token constructor args not needed for ERC1167 minimal proxy CREATE2 calculation
+  // Tokens are deployed as clones of the implementation, not full contracts
 
   // Calculate init code hashes
   const dopplerBytecode = loadContractBytecode("Doppler");
   const dopplerInitHash = keccak256(concat([dopplerBytecode, dopplerConstructorArgs]));
 
-  const holographERC20Bytecode = loadContractBytecode("HolographERC20");
-  const tokenInitHash = keccak256(concat([holographERC20Bytecode, tokenConstructorArgs]));
+  // For HolographFactory, tokens are deployed as ERC1167 minimal proxies
+  // The init code hash is just the ERC1167 bytecode with the implementation address embedded
+  const tokenCloneBytecode = getERC1167Bytecode(HOLOGRAPH_ADDRESSES.erc20Implementation);
+  const tokenInitHash = keccak256(tokenCloneBytecode);
 
   // Mine salt
   for (let saltNum = 0; saltNum < MAX_SALT_ITERATIONS; saltNum++) {

@@ -151,19 +151,19 @@ contract DopplerAirlockForkTest is Test {
 
         // Deploy HolographERC20 implementation for cloning
         HolographERC20 erc20Implementation = new HolographERC20();
-        
+
         // Deploy factory implementation
         HolographFactory factoryImpl = new HolographFactory(address(erc20Implementation));
-        
+
         // Deploy proxy
         HolographFactoryProxy proxy = new HolographFactoryProxy(address(factoryImpl));
-        
+
         // Cast proxy to factory interface
         holographFactory = HolographFactory(address(proxy));
-        
+
         // Initialize factory
         holographFactory.initialize(address(this));
-        
+
         // Note: LayerZero endpoint removed - will be added back in v2
         lzEndpoint = new LZEndpointStub();
 
@@ -200,7 +200,7 @@ contract DopplerAirlockForkTest is Test {
 
         assertTrue(token != address(0), "Token should be deployed");
         assertTrue(holographFactory.isDeployedToken(token), "Token should be tracked");
-        
+
         // Verify creator tracking - tx.origin should be tracked as creator
         assertTrue(holographFactory.isTokenCreator(token, address(this)), "This contract should be creator");
 
@@ -718,7 +718,7 @@ contract DopplerAirlockForkTest is Test {
         // Verify the token is our HolographERC20
         assertTrue(asset != address(0), "Asset should be deployed");
         assertTrue(holographFactory.isDeployedToken(asset), "Asset should be tracked by our factory");
-        
+
         // Verify creator tracking - creator should be tracked even though airlock called create()
         assertTrue(holographFactory.isTokenCreator(asset, creator), "Creator should be tracked as token creator");
 
@@ -736,7 +736,6 @@ contract DopplerAirlockForkTest is Test {
         assertTrue(holographToken.balanceOf(address(airlock)) == 0, "Airlock should have transferred tokens");
 
         console.log("[OK] Token successfully created through Doppler Airlock");
-        console.log("[OK] HolographERC20 deployed with LayerZero OFT capabilities");
         console.log("[OK] DERC20 features preserved");
         console.log("[OK] Complete Doppler ecosystem integration working");
 
@@ -797,10 +796,13 @@ contract DopplerAirlockForkTest is Test {
         // Verify successful deployment
         assertTrue(token != address(0), "Token should be deployed");
         assertTrue(holographFactory.isDeployedToken(token), "Token should be tracked");
-        
+
         // Verify creator tracking - creator should be tracked via tx.origin
         assertTrue(holographFactory.isTokenCreator(token, creator), "Creator should be tracked via tx.origin");
-        assertFalse(holographFactory.isTokenCreator(token, address(airlock)), "Airlock should not be tracked as creator");
+        assertFalse(
+            holographFactory.isTokenCreator(token, address(airlock)),
+            "Airlock should not be tracked as creator"
+        );
 
         HolographERC20 holographToken = HolographERC20(token);
         assertEq(holographToken.name(), "Direct Airlock Test");
@@ -810,7 +812,7 @@ contract DopplerAirlockForkTest is Test {
 
         console.log("Token deployed at:", token);
         console.log("[OK] Airlock successfully called HolographFactory.create()");
-        console.log("[OK] HolographERC20 deployed with LayerZero OFT capabilities");
+        console.log("[OK] HolographERC20 deployed");
         console.log("[OK] Core integration working - ready for full Doppler workflow");
     }
 }

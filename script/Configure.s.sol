@@ -14,7 +14,7 @@ pragma solidity ^0.8.24;
  *   forge script script/Configure.s.sol \
  *       --rpc-url $BASE_RPC \
  *       --broadcast \
- *       --private-key $OWNER_PK
+ *       --private-key $DEPLOYER_PK
  *
  * Required ENV (executed per-chain):
  *   FEE_ROUTER          – address of FeeRouter on the chain this script is run against
@@ -36,8 +36,8 @@ contract Configure is Script {
         /* ------------------------------ env vars ----------------------------- */
         bool shouldBroadcast = vm.envOr("BROADCAST", false);
 
-        // OWNER_PK only required if we intend to broadcast real transactions
-        uint256 ownerPk = shouldBroadcast ? vm.envUint("OWNER_PK") : uint256(0);
+        // DEPLOYER_PK only required if we intend to broadcast real transactions
+        uint256 deployerPk = shouldBroadcast ? vm.envUint("DEPLOYER_PK") : uint256(0);
 
         address payable feeRouterAddr = payable(vm.envAddress("FEE_ROUTER"));
         address factoryAddr = vm.envAddress("HOLOGRAPH_FACTORY");
@@ -63,7 +63,7 @@ contract Configure is Script {
         console.log("Configuring HolographFactory at", factoryAddr);
 
         if (shouldBroadcast) {
-            vm.startBroadcast(ownerPk);
+            vm.startBroadcast(deployerPk);
         } else {
             console.log("Running in dry-run mode (no broadcast)");
             vm.startBroadcast();

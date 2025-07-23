@@ -30,7 +30,7 @@ print-step    = @echo "$(YELLOW)$1$(NC)"
 # ---------------------------------------------------------------------------- #
 #                                   Targets                                   #
 # ---------------------------------------------------------------------------- #
-.PHONY: all help fmt build clean test deploy-base deploy-eth deploy-unichain configure-base configure-eth configure-unichain keeper abi
+.PHONY: all help fmt build clean test deploy-base deploy-base-sepolia deploy-eth deploy-eth-sepolia deploy-unichain deploy-unichain-sepolia configure-base configure-eth configure-unichain keeper abi verify-addresses
 
 ## all: Build and test (default target)
 all: build test
@@ -63,29 +63,53 @@ test: build
 	forge test -vvv
 	$(call print-success,Tests)
 
-## deploy-base: Deploy FeeRouter + Factory + Bridge on Base.
+## deploy-base-sepolia: Deploy FeeRouter + Factory on Base Sepolia (testnet).
+deploy-base-sepolia:
+	@if [ -z "$(BASE_SEPOLIA_RPC_URL)" ]; then echo "$(RED)BASE_SEPOLIA_RPC_URL not set$(NC)"; exit 1; fi
+	@if [ -z "$(BASESCAN_API_KEY)" ]; then echo "$(RED)BASESCAN_API_KEY not set$(NC)"; exit 1; fi
+	$(call print-step,Deploying to Base Sepolia…)
+	forge script script/DeployBase.s.sol --rpc-url $(BASE_SEPOLIA_RPC_URL) $(FORGE_FLAGS) --verify --etherscan-api-key $(BASESCAN_API_KEY)
+	$(call print-success,Base Sepolia deploy)
+
+## deploy-base: Deploy FeeRouter + Factory on Base mainnet.
 deploy-base:
 	@if [ -z "$(BASE_RPC_URL)" ]; then echo "$(RED)BASE_RPC_URL not set$(NC)"; exit 1; fi
 	@if [ -z "$(BASESCAN_API_KEY)" ]; then echo "$(RED)BASESCAN_API_KEY not set$(NC)"; exit 1; fi
-	$(call print-step,Deploying to Base…)
+	$(call print-step,Deploying to Base mainnet…)
 	forge script script/DeployBase.s.sol --rpc-url $(BASE_RPC_URL) $(FORGE_FLAGS) --verify --etherscan-api-key $(BASESCAN_API_KEY)
-	$(call print-success,Base deploy)
+	$(call print-success,Base mainnet deploy)
 
-## deploy-eth: Deploy StakingRewards + FeeRouter on Ethereum.
+## deploy-eth-sepolia: Deploy StakingRewards + FeeRouter on Ethereum Sepolia (testnet).
+deploy-eth-sepolia:
+	@if [ -z "$(ETHEREUM_SEPOLIA_RPC_URL)" ]; then echo "$(RED)ETHEREUM_SEPOLIA_RPC_URL not set$(NC)"; exit 1; fi
+	@if [ -z "$(ETHERSCAN_API_KEY)" ]; then echo "$(RED)ETHERSCAN_API_KEY not set$(NC)"; exit 1; fi
+	$(call print-step,Deploying to Ethereum Sepolia…)
+	forge script script/DeployEthereum.s.sol --rpc-url $(ETHEREUM_SEPOLIA_RPC_URL) $(FORGE_FLAGS) --verify --etherscan-api-key $(ETHERSCAN_API_KEY)
+	$(call print-success,Ethereum Sepolia deploy)
+
+## deploy-eth: Deploy StakingRewards + FeeRouter on Ethereum mainnet.
 deploy-eth:
 	@if [ -z "$(ETHEREUM_RPC_URL)" ]; then echo "$(RED)ETHEREUM_RPC_URL not set$(NC)"; exit 1; fi
 	@if [ -z "$(ETHERSCAN_API_KEY)" ]; then echo "$(RED)ETHERSCAN_API_KEY not set$(NC)"; exit 1; fi
-	$(call print-step,Deploying to Ethereum…)
+	$(call print-step,Deploying to Ethereum mainnet…)
 	forge script script/DeployEthereum.s.sol --rpc-url $(ETHEREUM_RPC_URL) $(FORGE_FLAGS) --verify --etherscan-api-key $(ETHERSCAN_API_KEY)
-	$(call print-success,Ethereum deploy)
+	$(call print-success,Ethereum mainnet deploy)
 
-## deploy-unichain: Deploy Factory + Bridge on Unichain.
+## deploy-unichain-sepolia: Deploy Factory on Unichain Sepolia (testnet).
+deploy-unichain-sepolia:
+	@if [ -z "$(UNICHAIN_SEPOLIA_RPC_URL)" ]; then echo "$(RED)UNICHAIN_SEPOLIA_RPC_URL not set$(NC)"; exit 1; fi
+	@if [ -z "$(UNISCAN_API_KEY)" ]; then echo "$(RED)UNISCAN_API_KEY not set$(NC)"; exit 1; fi
+	$(call print-step,Deploying to Unichain Sepolia…)
+	forge script script/DeployUnichain.s.sol --rpc-url $(UNICHAIN_SEPOLIA_RPC_URL) $(FORGE_FLAGS) --verify --etherscan-api-key $(UNISCAN_API_KEY)
+	$(call print-success,Unichain Sepolia deploy)
+
+## deploy-unichain: Deploy Factory on Unichain mainnet.
 deploy-unichain:
 	@if [ -z "$(UNICHAIN_RPC_URL)" ]; then echo "$(RED)UNICHAIN_RPC_URL not set$(NC)"; exit 1; fi
 	@if [ -z "$(UNISCAN_API_KEY)" ]; then echo "$(RED)UNISCAN_API_KEY not set$(NC)"; exit 1; fi
-	$(call print-step,Deploying to Unichain…)
+	$(call print-step,Deploying to Unichain mainnet…)
 	forge script script/DeployUnichain.s.sol --rpc-url $(UNICHAIN_RPC_URL) $(FORGE_FLAGS) --verify --etherscan-api-key $(UNISCAN_API_KEY)
-	$(call print-success,Unichain deploy)
+	$(call print-success,Unichain mainnet deploy)
 
 ## configure-base: Run Configure.s.sol against Base.
 configure-base:
@@ -114,6 +138,12 @@ keeper:
 	$(call print-step,Running keeper…)
 	forge script script/KeeperPullAndBridge.s.sol --rpc-url $(BASE_RPC_URL) $(FORGE_FLAGS)
 	$(call print-success,Keeper run)
+
+## verify-addresses: Verify deployed contract addresses are consistent across chains.
+verify-addresses:
+	$(call print-step,Verifying deployment addresses…)
+	forge script script/VerifyAddresses.s.sol
+	$(call print-success,Address verification)
 
 ## abi: Generate ABI JSON files from build artifacts.
 abi: build

@@ -26,93 +26,94 @@ pragma solidity ^0.8.26;
  *   forge verify-contract --chain-id 1301 $(cat deployments/unichain/HolographFactoryProxy.txt) src/HolographFactoryProxy.sol:HolographFactoryProxy --constructor-args $(cast abi-encode "constructor(address)" $(cat deployments/unichain/HolographFactory.txt)) $UNISCAN_API_KEY
  */
 
-import "forge-std/Script.sol";
-import "forge-std/console.sol";
 import "../src/HolographFactory.sol";
 import "../src/HolographFactoryProxy.sol";
 import "../src/HolographERC20.sol";
+import "./base/DeploymentBase.sol";
 
-contract DeployUnichain is Script {
+contract DeployUnichain is DeploymentBase {
     /* -------------------------------------------------------------------------- */
     /*                                Constants                                   */
     /* -------------------------------------------------------------------------- */
     uint256 internal constant UNICHAIN_MAINNET = 1301;
     uint256 internal constant UNICHAIN_SEPOLIA = 1301;  // Update when Unichain Sepolia is available
-    
 
     /* -------------------------------------------------------------------------- */
     /*                                   Run                                      */
     /* -------------------------------------------------------------------------- */
     function run() external {
-        /* -------------------------------- Env --------------------------------- */
-        // Toggle on-chain broadcasting via env var so we don't need to pass `--broadcast` every run
-        bool shouldBroadcast = vm.envOr("BROADCAST", false);
-
-        // Only require / read the private key if we intend to broadcast
-        uint256 deployerPk = shouldBroadcast ? vm.envUint("DEPLOYER_PK") : uint256(0);
-
-        // Quick sanity checks
-
         /* ----------------------------- Chain guard ---------------------------- */
         if (block.chainid != UNICHAIN_MAINNET && block.chainid != UNICHAIN_SEPOLIA) {
             console.log("[WARNING] Chain ID does not match known Unichain chains");
         }
+        
+        // Initialize deployment configuration
+        DeploymentConfig memory config = initializeDeployment();
+        
+        // Deploy HolographDeployer using base functionality
+        HolographDeployer holographDeployer = deployHolographDeployer();
+        
+        // Get deployment salts - use EOA address as msg.sender for HolographDeployer
+        ChainConfigs.DeploymentSalts memory salts = getDeploymentSalts(config.deployer);
+        
+        // Initialize addresses struct
+        ContractAddresses memory addresses;
+        addresses.holographDeployer = address(holographDeployer);
 
-        console.log("Deploying to chainId", block.chainid);
-        if (shouldBroadcast) {
-            console.log("Broadcasting TXs as", vm.addr(deployerPk));
-            vm.startBroadcast(deployerPk);
-        } else {
-            console.log("Running in dry-run mode (no broadcast)");
-            vm.startBroadcast();
-        }
-
-        // Get the deployer address (works for both broadcast and dry-run)
-        address deployer = vm.addr(deployerPk != 0 ? deployerPk : 1);
-
+        /* ---------------------- Deploy HolographERC20 Implementation ---------------------- */
+        console.log("\nDeploying HolographERC20 implementation...");
         uint256 gasStart = gasleft();
-        // Deploy HolographERC20 implementation (for cloning)
-        HolographERC20 erc20Implementation = new HolographERC20();
+        bytes memory erc20Bytecode = type(HolographERC20).creationCode;
+        address erc20Implementation = holographDeployer.deploy(erc20Bytecode, salts.erc20Implementation);
         uint256 gasERC20 = gasStart - gasleft();
+        console.log("HolographERC20 deployed at:", erc20Implementation);
+        console.log("Gas used:", gasERC20);
 
+        /* ---------------------- Deploy HolographFactory Implementation ---------------------- */
+        console.log("\nDeploying HolographFactory implementation...");
         gasStart = gasleft();
-        // Deploy HolographFactory implementation with ERC20 implementation address
-        HolographFactory factoryImpl = new HolographFactory(address(erc20Implementation));
+        bytes memory factoryBytecode = abi.encodePacked(
+            type(HolographFactory).creationCode,
+            abi.encode(erc20Implementation)
+        );
+        address factoryImpl = holographDeployer.deploy(factoryBytecode, salts.factory);
         uint256 gasFactoryImpl = gasStart - gasleft();
+        console.log("HolographFactory deployed at:", factoryImpl);
+        console.log("Gas used:", gasFactoryImpl);
 
+        /* ---------------------- Deploy HolographFactory Proxy ---------------------- */
+        console.log("\nDeploying HolographFactory proxy...");
         gasStart = gasleft();
-        // Deploy HolographFactoryProxy pointing to implementation
-        HolographFactoryProxy factoryProxy = new HolographFactoryProxy(address(factoryImpl));
+        // Use a different salt for proxy to get different address
+        bytes32 proxySalt = bytes32(uint256(uint160(config.deployer)) << 96) | bytes32(uint256(6));
+        bytes memory proxyBytecode = abi.encodePacked(
+            type(HolographFactoryProxy).creationCode,
+            abi.encode(factoryImpl)
+        );
+        address factoryProxy = holographDeployer.deploy(proxyBytecode, proxySalt);
         uint256 gasFactoryProxy = gasStart - gasleft();
+        console.log("HolographFactory proxy deployed at:", factoryProxy);
+        console.log("Gas used:", gasFactoryProxy);
 
         // Cast proxy to factory interface for initialization
-        HolographFactory factory = HolographFactory(address(factoryProxy));
+        HolographFactory factory = HolographFactory(factoryProxy);
         
-        gasStart = gasleft();
         // Initialize factory through proxy
-        factory.initialize(deployer);
+        gasStart = gasleft();
+        factory.initialize(config.deployer);
         uint256 gasInitialize = gasStart - gasleft();
+        console.log("Factory initialized, gas used:", gasInitialize);
 
 
+        // Store final addresses
+        addresses.holographERC20 = erc20Implementation;
+        addresses.holographFactory = factoryImpl;
+        addresses.holographFactoryProxy = factoryProxy;
+        
         vm.stopBroadcast();
 
-        console.log("---------------- Deployment Complete ----------------");
-        console.log("HolographERC20 implementation:", address(erc20Implementation));
-        console.log("Gas used:", gasERC20);
-        console.log("");
-        console.log("HolographFactory implementation:", address(factoryImpl));
-        console.log("Gas used:", gasFactoryImpl);
-        console.log("");
-        console.log("HolographFactory proxy:", address(factoryProxy));
-        console.log("Gas used:", gasFactoryProxy);
-        console.log("Initialize gas used:", gasInitialize);
-
-        /* ----------------------- Persist addresses locally -------------------- */
-        // Creates simple text files with addresses under deployments/unichain/
-        string memory dir = "deployments/unichain";
-        vm.createDir(dir, true);
-        vm.writeFile(string.concat(dir, "/HolographERC20.txt"), vm.toString(address(erc20Implementation)));
-        vm.writeFile(string.concat(dir, "/HolographFactory.txt"), vm.toString(address(factoryImpl)));
-        vm.writeFile(string.concat(dir, "/HolographFactoryProxy.txt"), vm.toString(address(factoryProxy)));
+        // Print summary and save deployment
+        printDeploymentSummary(addresses);
+        saveDeployment(config, addresses);
     }
 }

@@ -223,7 +223,8 @@ contract FullProtocolWorkflowTest is Test {
             address(0),          // HLG (not needed)
             address(0),          // WETH (not needed)
             address(0),          // swap router (not needed)
-            treasury             // treasury
+            treasury,            // treasury
+            address(this)        // owner address
         );
 
         // Use real Doppler Airlock from Base Sepolia fork

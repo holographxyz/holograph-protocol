@@ -71,7 +71,8 @@ contract FeeRouterTest is Test {
             address(0), // no HLG on Base
             address(0), // no WETH on Base
             address(0), // no swap router on Base
-            address(owner) // treasury address
+            address(owner), // treasury address
+            owner // owner address
         );
 
         // Deploy StakingRewards
@@ -85,7 +86,8 @@ contract FeeRouterTest is Test {
             address(hlg),
             address(weth),
             address(swapRouter),
-            address(owner) // treasury address
+            address(owner), // treasury address
+            owner // owner address
         );
 
         // Update staking rewards to use the Ethereum fee router

@@ -78,7 +78,8 @@ contract FeeRouterTest is Test {
             address(hlg),
             address(weth),
             address(swapRouter),
-            treasury
+            treasury,
+            owner                   // owner address
         );
         
         // Grant keeper role
