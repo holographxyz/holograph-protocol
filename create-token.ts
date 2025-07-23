@@ -40,7 +40,7 @@ import { readFileSync } from "fs";
 import { spawn } from "child_process";
 
 // Constants - Updated with current deployment addresses
-const FEE_ROUTER = "0xc2D248C46f16d0a6F132ACd0E90A64dB78A86fB0" as const;
+const FEE_ROUTER = "0x2addbd495582389b96C7B06C4D877e6C1B522bD4" as const;
 
 // Holograph deployment addresses from deployment.json
 const HOLOGRAPH_ADDRESSES = {
@@ -184,7 +184,29 @@ function getERC1167Bytecode(implementation: Address): `0x${string}` {
 function extractTokenAddress(receipt: any): string | null {
   for (const log of receipt.logs) {
     try {
-      // Look for TokenDeployed event from HolographFactory
+      // Look for Airlock Create event: event Create(address asset, address indexed numeraire, address initializer, address poolOrHook)
+      if (log.address.toLowerCase() === DOPPLER_ADDRESSES.airlock.toLowerCase()) {
+        const decoded = decodeEventLog({
+          abi: [{
+            type: "event",
+            name: "Create",
+            inputs: [
+              { name: "asset", type: "address", indexed: false },
+              { name: "numeraire", type: "address", indexed: true },
+              { name: "initializer", type: "address", indexed: false },
+              { name: "poolOrHook", type: "address", indexed: false }
+            ]
+          }],
+          data: log.data,
+          topics: log.topics,
+        });
+
+        if (decoded.eventName === "Create" && decoded.args.asset) {
+          return decoded.args.asset as string;
+        }
+      }
+      
+      // Look for HolographFactory TokenDeployed event (backup method)
       if (log.address.toLowerCase() === DOPPLER_ADDRESSES.tokenFactory.toLowerCase()) {
         const decoded = decodeEventLog({
           abi: [{
@@ -196,14 +218,15 @@ function extractTokenAddress(receipt: any): string | null {
               { name: "symbol", type: "string", indexed: false },
               { name: "initialSupply", type: "uint256", indexed: false },
               { name: "recipient", type: "address", indexed: true },
-              { name: "owner", type: "address", indexed: true }
+              { name: "owner", type: "address", indexed: true },
+              { name: "creator", type: "address", indexed: false }
             ]
           }],
           data: log.data,
           topics: log.topics,
         });
 
-        if (decoded.eventName === "TokenDeployed") {
+        if (decoded.eventName === "TokenDeployed" && decoded.args.token) {
           return decoded.args.token as string;
         }
       }
@@ -332,8 +355,8 @@ async function verifyTokenContract(
   console.log("");
   console.log("🎊 DEPLOYMENT SUMMARY:");
   console.log(`📍 Token Address: ${tokenAddress}`);
-  console.log(`📛 Token Name: ${name}`);
-  console.log(`🏷️  Token Symbol: ${symbol}`);
+  console.log(`📛 Token Name: ${config.name}`);
+  console.log(`🏷️  Token Symbol: ${config.symbol}`);
   console.log(`💰 Initial Supply: ${createParams.initialSupply.toString()}`);
   console.log(`🌐 Explorer: https://sepolia.basescan.org/address/${tokenAddress}`);
   console.log(`📄 Contract Code: https://sepolia.basescan.org/address/${tokenAddress}#code`);
@@ -539,7 +562,7 @@ async function createToken() {
 
   // Prepare liquidity migrator data for UniswapV4Migrator
   const lockDuration = 365 * 24 * 60 * 60; // 1 year in seconds
-  const protocolOwner = "0xaCE07c3c1D3b556D42633211f0Da71dc6F6d1c42" as const; // Protocol owner from Airlock
+  const protocolOwner = "0x852a09C89463D236eea2f097623574f23E225769" as const; // Actual Airlock owner
   
   // Create beneficiaries array with proper BeneficiaryData structure
   // Must be sorted by address and include protocol owner with minimum 5% (0.05e18)
@@ -621,9 +644,40 @@ async function createToken() {
       if (tokenAddress) {
         console.log("🎉 Token address:", tokenAddress);
         console.log("🔗 Basescan:", `https://sepolia.basescan.org/address/${tokenAddress}`);
+        
+        // Verify the token contract exists by checking bytecode (with retry for propagation)
+        let deploymentVerified = false;
+        for (let i = 0; i < 3; i++) {
+          try {
+            if (i > 0) {
+              console.log(`🔄 Retrying token verification (attempt ${i + 1}/3)...`);
+              await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+            }
+            
+            const code = await publicClient.getCode({ address: tokenAddress as Address });
+            if (code && code !== '0x') {
+              console.log("✅ Token contract deployment verified!");
+              console.log(`📏 Contract bytecode size: ${(code.length - 2) / 2} bytes`);
+              deploymentVerified = true;
+              break;
+            }
+          } catch (error) {
+            if (i === 2) {
+              console.log("⚠️  Could not verify token contract deployment:", error);
+            }
+          }
+        }
+        
+        if (!deploymentVerified) {
+          console.log("⚠️  Token address found but bytecode verification failed");
+          console.log("💡 The token may still be valid - check the transaction link above");
+        }
+        
         await verifyTokenContract(tokenAddress, createParams, config);
       } else {
         console.log("⚠️  Could not extract token address from transaction logs");
+        console.log("💡 You can find the token address by checking the transaction on BaseScan:");
+        console.log(`🔗 Transaction: https://sepolia.basescan.org/tx/${hash}`);
       }
 
       return hash;

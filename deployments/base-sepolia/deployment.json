@@ -4,7 +4,7 @@
   "chainName": "Base Sepolia",
   "deployedAt": 1753240742,
   "deployer": "0x5f5C3548f96C7DA33A18E5F2F2f13519e1c8bD0d",
-  "feeRouter": "0xc2D248C46f16d0a6F132ACd0E90A64dB78A86fB0",
+  "feeRouter": "0x2addbd495582389b96C7B06C4D877e6C1B522bD4",
   "holographDeployer": "0x6566750584BB5e59Be783c9B39C704e3e37Eab51",
   "holographERC20": "0x4679Ba09dcfcC80CF1E6628F9850C54b198b5D6A",
   "holographFactory": "0x08Eb3E7A917bB125613E6Dd2D82ef4D6d6248102",
