@@ -1,283 +1,357 @@
-# Holograph Doppler Fee Integration - Production Deployment Guide
+# Holograph Protocol Deployment Guide
 
-## 📋 **PRE-DEPLOYMENT CHECKLIST**
+## Overview
 
-### Environment Setup
+Holograph Protocol enables omnichain token creation with deterministic addresses across Ethereum, Base, and Unichain. The protocol uses a UUPS proxy pattern for the factory contract and EIP-1167 minimal proxy pattern for token deployments.
 
-- [ ] **Base RPC URL configured**: `export BASE_RPC="https://base-mainnet.infura.io/v3/YOUR_KEY"`
-- [ ] **Ethereum RPC URL configured**: `export ETH_RPC="https://mainnet.infura.io/v3/YOUR_KEY"`
-- [ ] **Deployer private key secured**: Use hardware wallet or secure key management
-- [ ] **Treasury multisig deployed and verified**
-- [ ] **HLG token contract address confirmed**
-- [ ] **LayerZero V2 endpoints confirmed**
-- [ ] **Uniswap V3 router addresses verified**
+## Architecture
 
-### Pre-Deployment Testing
+### Core Contracts
 
-- [ ] **Fork tests passing**: `forge test --fork-url $BASE_RPC`
-- [ ] **Integration tests complete**: All 41/41 tests passing
-- [ ] **Gas optimization verified**: Review gas snapshots
-- [ ] **Security audit completed** (recommended for mainnet)
+1. **HolographFactory** (UUPS Upgradeable)
+   - Deploys omnichain ERC20 tokens via minimal proxy pattern
+   - Integrates with Doppler Airlock for token launches
+   - Manages token registry and fees
 
-## 🚀 **DEPLOYMENT SEQUENCE**
+2. **HolographERC20** (Implementation)
+   - Base implementation for all tokens
+   - Supports pre-mints, vesting, and metadata
+   - Currently without bridging (to be added in v2)
 
-### Step 1: Deploy FeeRouter on Base
+3. **FeeRouter** 
+   - Collects protocol fees from Doppler Airlocks
+   - Bridges fees cross-chain via LayerZero
+   - Routes to treasury and staking rewards
 
+4. **StakingRewards** (Ethereum only)
+   - Receives HLG from fee burns
+   - Distributes rewards to stakers
+
+5. **HolographDeployer**
+   - Singleton CREATE2 deployer for deterministic addresses
+   - Ensures same addresses across all chains
+
+## Deployment Process
+
+### Prerequisites
+
+1. Install dependencies:
 ```bash
-# Deploy FeeRouter with production parameters
-forge create src/FeeRouter.sol:FeeRouter \
-  --rpc-url $BASE_RPC \
-  --private-key $DEPLOYER_PK \
-  --constructor-args \
-    "0x1a44076050125825900e736c501f859c50fE728c" \  # LayerZero V2 Endpoint (Base)
-    30101 \                                             # Ethereum EID
-    "0x0000000000000000000000000000000000000000" \     # StakingPool (zero on Base)
-    "0x0000000000000000000000000000000000000000" \     # HLG (zero on Base)
-    "0x0000000000000000000000000000000000000000" \     # WETH (zero on Base)
-    "0x0000000000000000000000000000000000000000" \     # SwapRouter (zero on Base)
-    "$TREASURY_MULTISIG_ADDRESS" \                      # Treasury address
-  --verify
+# Install Foundry
+curl -L https://foundry.paradigm.xyz | bash
+foundryup
+
+# Clone repository and install
+git clone <repo>
+cd holograph-2.0
+git submodule update --init --recursive
+npm install
 ```
 
-### Step 2: Deploy FeeRouter on Ethereum
-
+2. Configure environment:
 ```bash
-# Deploy FeeRouter with Ethereum-specific parameters
-forge create src/FeeRouter.sol:FeeRouter \
-  --rpc-url $ETH_RPC \
-  --private-key $DEPLOYER_PK \
-  --constructor-args \
-    "0x1a44076050125825900e736c501f859c50fE728c" \  # LayerZero V2 Endpoint (Ethereum)
-    30184 \                                             # Base EID
-    "$STAKING_REWARDS_ADDRESS" \                        # StakingRewards contract
-    "$HLG_TOKEN_ADDRESS" \                              # HLG token
-    "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" \     # WETH9
-    "0xE592427A0AEce92De3Edee1F18E0157C05861564" \     # Uniswap V3 SwapRouter
-    "$TREASURY_MULTISIG_ADDRESS" \                      # Treasury address
-  --verify
+cp .env.example .env
+# Edit .env with your values:
+# - Private keys
+# - RPC URLs  
+# - API keys
+# - Protocol addresses
 ```
 
-### Step 3: Configure Cross-Chain Trust
+### Deployment Order
+
+**Important**: Contracts can be deployed to any chain in any order thanks to deterministic addressing.
+
+#### 1. Deploy to Base Sepolia (Testnet)
 
 ```bash
-# Set trusted remotes (Base → Ethereum)
-cast send $FEEROUTER_BASE_ADDRESS \
-  "setTrustedRemote(uint32,bytes32)" \
-  30101 \
-  $(cast --to-bytes32 $FEEROUTER_ETH_ADDRESS) \
-  --rpc-url $BASE_RPC --private-key $OWNER_PK
+# Dry run first
+make deploy-base-sepolia
 
-# Set trusted remotes (Ethereum → Base)
-cast send $FEEROUTER_ETH_ADDRESS \
-  "setTrustedRemote(uint32,bytes32)" \
-  30184 \
-  $(cast --to-bytes32 $FEEROUTER_BASE_ADDRESS) \
-  --rpc-url $ETH_RPC --private-key $OWNER_PK
+# Deploy with broadcast
+BROADCAST=true make deploy-base-sepolia
 ```
 
-### Step 4: Deploy/Upgrade HolographFactory
+This deploys:
+- HolographDeployer (if not exists)
+- HolographERC20 implementation
+- HolographFactory implementation
+- HolographFactory proxy
+- FeeRouter
+
+#### 2. Deploy to Ethereum Sepolia (Testnet)
 
 ```bash
-# Deploy new HolographFactory pointing to FeeRouter
-forge create src/HolographFactory.sol:HolographFactory \
-  --rpc-url $BASE_RPC \
-  --private-key $DEPLOYER_PK \
-  --constructor-args \
-    "$LAYERZERO_ENDPOINT_BASE" \
-    "$DOPPLER_AIRLOCK_ADDRESS" \
-    "$FEEROUTER_BASE_ADDRESS" \
-  --verify
+# Dry run
+make deploy-eth-sepolia
+
+# Deploy with broadcast
+BROADCAST=true make deploy-eth-sepolia
 ```
 
-### Step 5: Setup Keeper Roles
+This deploys:
+- HolographDeployer (if not exists)
+- StakingRewards
+- FeeRouter
+
+#### 3. Deploy to Unichain Sepolia (Testnet)
 
 ```bash
-# Grant KEEPER_ROLE to automation addresses
-cast send $FEEROUTER_BASE_ADDRESS \
-  "grantRole(bytes32,address)" \
-  $(cast keccak "KEEPER_ROLE") \
-  $KEEPER_ADDRESS_1 \
-  --rpc-url $BASE_RPC --private-key $OWNER_PK
+# Dry run
+make deploy-unichain-sepolia
 
-cast send $FEEROUTER_ETH_ADDRESS \
-  "grantRole(bytes32,address)" \
-  $(cast keccak "KEEPER_ROLE") \
-  $KEEPER_ADDRESS_1 \
-  --rpc-url $ETH_RPC --private-key $OWNER_PK
+# Deploy with broadcast
+BROADCAST=true make deploy-unichain-sepolia
 ```
 
-## 🔧 **KEEPER AUTOMATION SETUP**
+This deploys:
+- HolographDeployer (if not exists)
+- HolographERC20 implementation
+- HolographFactory implementation
+- HolographFactory proxy
 
-### Update Keeper Script
+### Mainnet Deployment
 
-1. Update `script/KeeperPullAndBridge.s.sol` with deployed addresses:
+Replace `-sepolia` with mainnet targets:
+
+```bash
+# Base Mainnet
+BROADCAST=true make deploy-base
+
+# Ethereum Mainnet  
+BROADCAST=true make deploy-eth
+
+# Unichain Mainnet
+BROADCAST=true make deploy-unichain
+```
+
+### Verify Deployment
+
+After deploying to multiple chains:
+
+```bash
+make verify-addresses
+```
+
+This checks:
+- All contracts deployed successfully
+- Addresses are consistent across chains
+- No configuration mismatches
+
+## Configuration
+
+### 1. Cross-Chain Setup
+
+After deployment, configure LayerZero trusted remotes:
+
+```bash
+# Configure Base
+BROADCAST=true make configure-base
+
+# Configure Ethereum
+BROADCAST=true make configure-eth  
+
+# Configure Unichain
+BROADCAST=true make configure-unichain
+```
+
+The Configure script:
+- Sets trusted remote addresses for FeeRouter
+- Configures cross-chain messaging paths
+- Validates endpoint settings
+
+### 2. Factory Authorization
+
+Set Doppler Airlock authorization on each factory:
 
 ```solidity
-IFeeRouter constant FEE_ROUTER = IFeeRouter(0xYOUR_DEPLOYED_ADDRESS);
+// Via script or direct call
+factory.setAirlockAuthorization(dopplerAirlock, true);
 ```
 
-2. Add actual Airlock addresses to `_getKnownAirlocks()`:
+### 3. Fee Router Setup
+
+Configure trusted factories and airlocks:
 
 ```solidity
-function _getKnownAirlocks() internal pure returns (address[] memory) {
-    address[] memory airlocks = new address[](2);
-    airlocks[0] = 0xAIRLOCK_ADDRESS_1;
-    airlocks[1] = 0xAIRLOCK_ADDRESS_2;
-    return airlocks;
-}
+// Trust the factory
+feeRouter.setTrustedFactory(factoryProxy, true);
+
+// Trust Doppler Airlock
+feeRouter.setTrustedAirlock(dopplerAirlock, true);
 ```
 
-### Run Keeper Automation
+### 4. Staking Rewards (Ethereum only)
 
+Update StakingRewards to use deployed FeeRouter:
+
+```solidity
+stakingRewards.setFeeRouter(feeRouterAddress);
+```
+
+## Upgrade Procedures
+
+### Factory Upgrade (UUPS Pattern)
+
+The HolographFactory uses UUPS proxy pattern for upgrades:
+
+1. **Deploy new implementation**:
+```solidity
+// Deploy new factory implementation
+HolographFactory newImpl = new HolographFactory(erc20Implementation);
+```
+
+2. **Prepare upgrade**:
+```solidity
+// Only owner can upgrade
+factory.upgradeToAndCall(
+    address(newImpl),
+    "" // or initialization data if needed
+);
+```
+
+3. **Verify upgrade**:
 ```bash
-# Base chain keeper (fee collection and bridging)
-forge script script/KeeperPullAndBridge.s.sol \
-  --rpc-url $BASE_RPC --broadcast --private-key $KEEPER_PK
-
-# Set up cron job for automated execution
-# 0 */6 * * * cd /path/to/project && forge script script/KeeperPullAndBridge.s.sol --rpc-url $BASE_RPC --broadcast --private-key $KEEPER_PK
+# Check implementation address changed
+cast call $FACTORY_PROXY "implementation()(address)"
 ```
 
-## 📊 **MONITORING SETUP**
+### Token Implementation Updates
 
-### Dashboard Metrics
+For new token features (e.g., adding bridging):
 
-Monitor these FeeRouter functions for operational health:
-
-```bash
-# Check balances
-cast call $FEEROUTER_ADDRESS "getBalances()" --rpc-url $RPC_URL
-
-# Check bridge readiness
-cast call $FEEROUTER_ADDRESS "getBridgeStatus()" --rpc-url $RPC_URL
-
-# Check specific token balance
-cast call $FEEROUTER_ADDRESS "getTokenBalance(address)" $TOKEN_ADDRESS --rpc-url $RPC_URL
-
-# Calculate fee splits
-cast call $FEEROUTER_ADDRESS "calculateFeeSplit(uint256)" 1000000000000000000 --rpc-url $RPC_URL
+1. **Deploy new HolographERC20 implementation**:
+```solidity
+HolographERC20 newERC20Impl = new HolographERC20();
 ```
 
-### Key Events to Monitor
+2. **Deploy new factory pointing to new implementation**:
+```solidity
+HolographFactory newFactory = new HolographFactory(address(newERC20Impl));
+```
 
-- `SlicePulled`: Fee processing activity
-- `TokenBridged`: Cross-chain transfers
-- `Burned`: HLG token burns on Ethereum
-- `RewardsSent`: Staking rewards distribution
-- `TreasuryUpdated`: Governance changes
+3. **Upgrade factory to new implementation**:
+```solidity
+factory.upgradeToAndCall(address(newFactory), "");
+```
 
-## 🔒 **SECURITY CONSIDERATIONS**
-
-### Access Control
-
-- **Owner**: Can pause/unpause, set treasury, set trusted remotes
-- **KEEPER_ROLE**: Can pull fees and bridge tokens
-- **Treasury**: Receives 98.5% of all fees
+**Note**: Existing tokens keep their current implementation. Only new tokens use the updated implementation.
 
 ### Emergency Procedures
 
-```bash
-# Emergency pause (halts all operations)
-cast send $FEEROUTER_ADDRESS "pause()" --rpc-url $RPC_URL --private-key $OWNER_PK
+1. **Pause Operations**:
+   - Factory: Transfer ownership to multisig
+   - FeeRouter: Use keeper role restrictions
 
-# Resume operations
-cast send $FEEROUTER_ADDRESS "unpause()" --rpc-url $RPC_URL --private-key $OWNER_PK
-```
+2. **Upgrade Path**:
+   - Deploy fixes
+   - Test on testnet
+   - Upgrade via multisig
 
-### Multisig Treasury Setup
+## Operational Procedures
 
-Recommended treasury setup:
+### Keeper Operations
 
-- **Minimum signers**: 3/5 or 4/7 multisig
-- **Signers**: Core team members + advisors
-- **Emergency contacts**: Documented and accessible
-- **Regular sweeps**: Automated or scheduled treasury management
-
-## ⚡ **GAS OPTIMIZATION RESULTS**
-
-The optimized codebase includes:
-
-- **Storage caching**: Reduced SLOAD operations by ~15%
-- **Unchecked arithmetic**: Safe math optimizations
-- **Assembly ETH transfers**: Gas-efficient treasury transfers
-- **Batch operations**: Optimized keeper automation
-
-### Estimated Gas Costs
-
-- `receiveFee()`: ~45,000 gas
-- `pullAndSlice()`: ~65,000 gas
-- `bridge()`: ~55,000 gas + LayerZero fees
-- `bridgeToken()`: ~70,000 gas + LayerZero fees
-
-## 🧪 **POST-DEPLOYMENT TESTING**
-
-### Smoke Tests
+Run keeper to collect and bridge fees:
 
 ```bash
-# Test fee reception
-cast send $FEEROUTER_ADDRESS "receiveFee()" --value 0.01ether --rpc-url $BASE_RPC
-
-# Test monitoring functions
-cast call $FEEROUTER_ADDRESS "getBalances()" --rpc-url $BASE_RPC
-cast call $FEEROUTER_ADDRESS "getBridgeStatus()" --rpc-url $BASE_RPC
-
-# Test treasury balance
-cast balance $TREASURY_ADDRESS --rpc-url $BASE_RPC
+# Collect fees from Airlocks and bridge to Ethereum
+BROADCAST=true make keeper
 ```
 
-### Integration Testing
+The keeper:
+1. Pulls fees from Doppler Airlocks
+2. Bridges collected fees to Ethereum
+3. Burns HLG portion for staking rewards
+4. Sends treasury portion to treasury address
 
-1. **Launch test token** through HolographFactory
-2. **Verify fee routing** to FeeRouter
-3. **Run keeper automation** manually
-4. **Confirm cross-chain bridging** to Ethereum
-5. **Verify HLG burn/stake** distribution
+### Token Creation
 
-## 📈 **SUCCESS METRICS**
+Users create tokens through the factory:
 
-### Technical Metrics
+```typescript
+// Using create-token.ts utility
+npm run create-token
 
-- **Test Coverage**: 41/41 tests passing (100%)
-- **Gas Efficiency**: 10-15% optimization achieved
-- **Security**: Role-based access control implemented
-- **Monitoring**: Comprehensive dashboard capabilities
+// Or direct contract call
+factory.createToken({
+    name: "Token Name",
+    symbol: "TKN",
+    initialSupply: 1000000e18,
+    recipient: deployer,
+    owner: deployer,
+    yearlyMintRate: 200, // 2%
+    vestingDuration: 365 days,
+    recipients: [],
+    amounts: [],
+    tokenURI: "https://..."
+});
+```
 
-### Operational Metrics
+### Monitoring
 
-- **Fee Collection Rate**: % of fees successfully processed
-- **Bridge Success Rate**: % of successful cross-chain transfers
-- **Treasury Health**: Regular balance verification
-- **Keeper Uptime**: Automation reliability metrics
+Track deployment addresses in:
+- `deployments/base/` - Base mainnet
+- `deployments/base-sepolia/` - Base testnet
+- `deployments/ethereum/` - Ethereum mainnet
+- `deployments/ethereum-sepolia/` - Ethereum testnet
+- `deployments/unichain/` - Unichain mainnet
+- `deployments/unichain-sepolia/` - Unichain testnet
 
-## 🔄 **UPGRADE PROCEDURES**
+## Security Considerations
 
-### Contract Upgrades
+1. **Deployment Security**:
+   - Use hardware wallets for mainnet deployments
+   - Verify all addresses before configuration
+   - Test thoroughly on testnets first
 
-Since contracts are not upgradeable:
+2. **Upgrade Security**:
+   - Use multisig for factory ownership
+   - Time-lock upgrades when possible
+   - Audit new implementations
 
-1. **Deploy new contracts** with fixed issues
-2. **Pause old contracts** to prevent new usage
-3. **Migrate accumulated funds** to new contracts
-4. **Update integrations** to point to new addresses
-5. **Resume operations** on new contracts
+3. **Operational Security**:
+   - Limit keeper permissions
+   - Monitor for unusual activity
+   - Have emergency pause procedures
 
-### Emergency Response
+## Troubleshooting
 
-1. **Immediate pause** via emergency multisig
-2. **Assess situation** and determine fix
-3. **Deploy hotfix** if required
-4. **Communicate** with stakeholders
-5. **Resume operations** with monitoring
+### Common Issues
 
-## 📞 **SUPPORT CONTACTS**
+1. **Deployment fails with "contract too large"**:
+   - Contracts are already optimized with proxy patterns
+   - Check compilation settings in foundry.toml
 
-- **Technical Lead**: [Contact Information]
-- **Security Team**: [Emergency Contact]
-- **Treasury Multisig**: [Governance Contact]
-- **Keeper Operations**: [Automation Team]
+2. **Different addresses across chains**:
+   - Ensure using same deployer private key
+   - Check HolographDeployer is at same address
+   - Verify salt generation is consistent
 
----
+3. **Configuration transaction fails**:
+   - Ensure contracts are deployed first
+   - Check owner/role permissions
+   - Verify chain IDs and endpoints
 
-**🎯 Ready for Production Deployment!**
+### Debug Commands
 
-This system has been thoroughly tested, optimized, and documented for production use. The single-slice fee model provides consistent 1.5% protocol fees with 98.5% treasury allocation, comprehensive cross-chain bridging, and robust monitoring capabilities.
+```bash
+# Check deployment sizes
+forge build --sizes
+
+# Verify contract at address
+cast code $ADDRESS
+
+# Check proxy implementation
+cast call $PROXY "implementation()(address)"
+
+# Get factory owner
+cast call $FACTORY "owner()(address)"
+```
+
+## Support
+
+For issues or questions:
+- Review test files in `test/` for examples
+- Check `script/` for deployment patterns
+- Open issues on GitHub

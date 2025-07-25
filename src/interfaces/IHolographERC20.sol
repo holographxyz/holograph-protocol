@@ -1,20 +1,48 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import {IOFT} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title IHolographERC20
  * @notice Interface for HolographERC20 omnichain tokens
- * @dev Combines IOFT and IERC20 interfaces with additional Holograph-specific functions
+ * @dev Extends IERC20 interface with additional Holograph-specific functions
  */
-interface IHolographERC20 is IOFT, IERC20 {
+interface IHolographERC20 is IERC20 {
     /* -------------------------------------------------------------------------- */
     /*                                  Events                                    */
     /* -------------------------------------------------------------------------- */
     /// @notice Emitted when tokens are minted to an address
     event TokensMinted(address indexed to, uint256 amount);
+
+    /* -------------------------------------------------------------------------- */
+    /*                              Initialization                              */
+    /* -------------------------------------------------------------------------- */
+    /**
+     * @notice Initialize the token (for clone pattern)
+     * @param name Token name
+     * @param symbol Token symbol
+     * @param initialSupply Initial supply of the token
+     * @param recipient Address receiving the initial supply
+     * @param owner Address receiving the ownership of the token
+     * @param yearlyMintRate Maximum inflation rate of token in a year
+     * @param vestingDuration Duration of the vesting period (in seconds)
+     * @param recipients Array of addresses receiving vested tokens
+     * @param amounts Array of amounts of tokens to be vested
+     * @param tokenURI_ Uniform Resource Identifier (URI)
+     */
+    function initialize(
+        string memory name,
+        string memory symbol,
+        uint256 initialSupply,
+        address recipient,
+        address owner,
+        uint256 yearlyMintRate,
+        uint256 vestingDuration,
+        address[] memory recipients,
+        uint256[] memory amounts,
+        string memory tokenURI_
+    ) external;
 
     /* -------------------------------------------------------------------------- */
     /*                              Token Functions                              */
@@ -25,12 +53,6 @@ interface IHolographERC20 is IOFT, IERC20 {
      * @param amount Number of tokens to mint
      */
     function mint(address to, uint256 amount) external;
-
-    /**
-     * @notice Get the LayerZero endpoint address
-     * @return The LayerZero endpoint address used for cross-chain messaging
-     */
-    function getEndpoint() external view returns (address);
 
     /* -------------------------------------------------------------------------- */
     /*                              ERC20 Metadata                              */
@@ -67,14 +89,4 @@ interface IHolographERC20 is IOFT, IERC20 {
      * @return The token URI
      */
     function tokenURI() external view returns (string memory);
-
-    /* -------------------------------------------------------------------------- */
-    /*                              LayerZero OFT                               */
-    /* -------------------------------------------------------------------------- */
-    /**
-     * @notice Set a peer for cross-chain communication
-     * @param eid Endpoint ID of the destination chain
-     * @param peer Peer address on the destination chain (as bytes32)
-     */
-    function setPeer(uint32 eid, bytes32 peer) external;
 }

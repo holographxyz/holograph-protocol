@@ -18,10 +18,10 @@ contract TestTokenCreation is Script {
 
         // Doppler Airlock address - update with actual address when available
         IAirlock airlock = IAirlock(0x742D35cC6634C0532925a3b8D4014dd1C4D9dC07);
-        
+
         // HolographFactory address (must be whitelisted by Doppler)
         address holographFactory = 0x5290Bee84DC83AC667cF9573eC1edC6FE38eFe50;
-        
+
         // FeeRouter as integrator
         address feeRouter = 0x10F2c0fdc9799A293b4C726a1314BD73A4AB9f20;
 
@@ -76,11 +76,7 @@ contract TestTokenCreation is Script {
         vm.startPrank(testAccount);
 
         try airlock.create(params) returns (
-            address asset,
-            address pool,
-            address governance,
-            address timelock,
-            address migrationPool
+            address asset, address pool, address governance, address timelock, address migrationPool
         ) {
             console.log("Token creation successful!");
             console.log("Asset (HolographERC20):", asset);

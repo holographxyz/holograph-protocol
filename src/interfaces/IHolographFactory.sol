@@ -15,14 +15,14 @@ interface IHolographFactory {
      * @return True if the user is the creator of the token, false otherwise
      */
     function isTokenCreator(address token, address user) external view returns (bool);
-    
+
     /**
      * @notice Check if a token was deployed by this factory
      * @param token The token address to check
      * @return True if the token was deployed by this factory, false otherwise
      */
     function isDeployedToken(address token) external view returns (bool);
-    
+
     /**
      * @notice Create a new token with specified parameters
      * @param initialSupply Initial supply of the token
@@ -32,11 +32,7 @@ interface IHolographFactory {
      * @param tokenData Encoded token creation parameters
      * @return token Address of the created token
      */
-    function create(
-        uint256 initialSupply,
-        address recipient,
-        address owner,
-        bytes32 salt,
-        bytes memory tokenData
-    ) external returns (address token);
+    function create(uint256 initialSupply, address recipient, address owner, bytes32 salt, bytes memory tokenData)
+        external
+        returns (address token);
 }

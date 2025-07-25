@@ -30,13 +30,9 @@ interface IUniswapV4Initializer {
      * @param data Encoded initialization data
      * @return Address of the created hook
      */
-    function initialize(
-        address asset,
-        address numeraire,
-        uint256 numTokensToSell,
-        bytes32 salt,
-        bytes calldata data
-    ) external returns (address);
+    function initialize(address asset, address numeraire, uint256 numTokensToSell, bytes32 salt, bytes calldata data)
+        external
+        returns (address);
 
     /**
      * @notice Exit liquidity from a hook
@@ -49,9 +45,7 @@ interface IUniswapV4Initializer {
      * @return fees1 Fees for token1
      * @return balance1 Balance of token1
      */
-    function exitLiquidity(
-        address hook
-    )
+    function exitLiquidity(address hook)
         external
         returns (
             uint160 sqrtPriceX96,

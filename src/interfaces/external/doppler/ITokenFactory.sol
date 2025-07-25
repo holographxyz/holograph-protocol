@@ -15,11 +15,7 @@ interface ITokenFactory {
      * @param salt Salt used in create2 deployment to determine contract address
      * @return Address of the newly deployed token
      */
-    function create(
-        uint256 initialSupply,
-        address recipient,
-        address owner,
-        bytes32 salt,
-        bytes calldata tokenData
-    ) external returns (address);
+    function create(uint256 initialSupply, address recipient, address owner, bytes32 salt, bytes calldata tokenData)
+        external
+        returns (address);
 }

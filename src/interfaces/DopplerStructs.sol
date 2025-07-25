@@ -17,7 +17,6 @@ import "./ILiquidityMigrator.sol";
  *
  *      Original source: https://github.com/whetstoneresearch/doppler/blob/main/src/Airlock.sol
  */
-
 struct CreateParams {
     uint256 initialSupply;
     uint256 numTokensToSell;

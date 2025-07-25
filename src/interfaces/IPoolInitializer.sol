@@ -6,17 +6,11 @@ pragma solidity ^0.8.24;
  * @notice Mirror of Doppler's pool initializer interface needed for explorer verification.
  */
 interface IPoolInitializer {
-    function initialize(
-        address asset,
-        address numeraire,
-        uint256 numTokensToSell,
-        bytes32 salt,
-        bytes calldata data
-    ) external returns (address pool);
+    function initialize(address asset, address numeraire, uint256 numTokensToSell, bytes32 salt, bytes calldata data)
+        external
+        returns (address pool);
 
-    function exitLiquidity(
-        address pool
-    )
+    function exitLiquidity(address pool)
         external
         returns (
             uint160 sqrtPriceX96,

@@ -7,8 +7,7 @@ pragma solidity ^0.8.24;
  *         imports like `import "src/interfaces/IGovernanceFactory.sol"` during verification.
  */
 interface IGovernanceFactory {
-    function create(
-        address asset,
-        bytes calldata governanceData
-    ) external returns (address governance, address timelockController);
+    function create(address asset, bytes calldata governanceData)
+        external
+        returns (address governance, address timelockController);
 }

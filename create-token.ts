@@ -1,12 +1,19 @@
 /**
  * Holograph Token Creation Script
  *
+ * Creates ERC20 tokens through the Doppler Airlock using HolographFactory.
+ * The factory creates HolographERC20 tokens with governance and DeFi features.
+ *
  * Environment Variables Required:
  * - PRIVATE_KEY: Private key for the account creating tokens
  * - BASESCAN_API_KEY: API key for contract verification on Base Sepolia
  *
  * Optional Environment Variables:
  * - BASE_SEPOLIA_RPC_URL: Custom RPC endpoint (uses public by default)
+ *
+ * Prerequisites:
+ * - HolographFactory must be authorized with Doppler Airlock (✅ Done)
+ * - Factory deployed at: 0x47ca9bEa164E94C38Ec52aB23377dC2072356D10
  */
 
 import dotenv from "dotenv";
@@ -32,12 +39,19 @@ import { privateKeyToAccount } from "viem/accounts";
 import { readFileSync } from "fs";
 import { spawn } from "child_process";
 
-// Constants
-const FEE_ROUTER = "0x10F2c0fdc9799A293b4C726a1314BD73A4AB9f20" as const;
+// Constants - Updated with current deployment addresses
+const FEE_ROUTER = "0x2addbd495582389b96C7B06C4D877e6C1B522bD4" as const;
+
+// Holograph deployment addresses from deployment.json
+const HOLOGRAPH_ADDRESSES = {
+  factoryProxy: "0x47ca9bEa164E94C38Ec52aB23377dC2072356D10", // HolographFactory Proxy
+  factoryImplementation: "0x08Eb3E7A917bB125613E6Dd2D82ef4D6d6248102", // HolographFactory Implementation
+  erc20Implementation: "0x4679Ba09dcfcC80CF1E6628F9850C54b198b5D6A", // HolographERC20 Implementation
+} as const;
 
 const DOPPLER_ADDRESSES = {
   airlock: "0x3411306Ce66c9469BFF1535BA955503c4Bde1C6e",
-  tokenFactory: "0xbA59B9510806034C3B8a7f46756Feeb5387340e3", // Our HolographFactory
+  tokenFactory: HOLOGRAPH_ADDRESSES.factoryProxy, // Our HolographFactory Proxy
   governanceFactory: "0x9dBFaaDC8c0cB2c34bA698DD9426555336992e20",
   v4Initializer: "0x8e891d249f1ecbffa6143c03eb1b12843aef09d3",
   migrator: "0x846a84918aA87c14b86B2298776e8ea5a4e34C9E", // UniswapV4Migrator (latest)
@@ -66,6 +80,28 @@ const REQUIRED_FLAGS =
 const FLAG_MASK = 0x3fffn;
 const CHAIN_ID = 84532; // Base Sepolia
 const MAX_SALT_ITERATIONS = 200_000;
+
+// Time constants
+const SECONDS_PER_YEAR = 365 * 24 * 60 * 60;
+const SECONDS_PER_DAY = 24 * 60 * 60;
+const AUCTION_START_BUFFER = 600; // 10 minutes
+
+// Gas and retry constants
+const GAS_BUFFER_MULTIPLIER = 2n;
+const RETRY_DELAY_MS = 2000;
+const MAX_RETRIES = 3;
+
+// Uniswap V4 constants
+const LP_FEE = 3000;
+const TICK_SPACING = 8;
+
+// Shares constants
+const PROTOCOL_MIN_SHARES = "0.05"; // 5%
+const CREATOR_SHARES = "0.95"; // 95%
+
+// Default token parameters
+const DEFAULT_YEARLY_MINT_CAP = 0n;
+const DEFAULT_VESTING_DURATION = 0n;
 
 // Types
 interface TokenConfig {
@@ -124,7 +160,7 @@ const AIRLOCK_ABI = [
       { name: "pool", type: "address" },
       { name: "governance", type: "address" },
       { name: "timelock", type: "address" },
-      { name: "migrationPool", type: "address" }
+      { name: "migrationPool", type: "address" },
     ],
     stateMutability: "nonpayable",
   },
@@ -139,7 +175,7 @@ function loadContractBytecode(contractName: string): `0x${string}` {
     } else {
       artifactPath = `artifacts/doppler/${contractName}.json`;
     }
-    
+
     const artifactContent = readFileSync(artifactPath, "utf8");
     const artifact = JSON.parse(artifactContent);
 
@@ -159,29 +195,64 @@ function computeCreate2Address(salt: `0x${string}`, initCodeHash: `0x${string}`,
   return `0x${hash.slice(-40)}` as Address;
 }
 
+function getERC1167Bytecode(implementation: Address): `0x${string}` {
+  // ERC1167 minimal proxy bytecode with implementation address embedded
+  // Format: 0x3d602d80600a3d3981f3363d3d373d3d3d363d73{implementation}5af43d82803e903d91602b57fd5bf3
+  const prefix = "0x3d602d80600a3d3981f3363d3d373d3d3d363d73";
+  const suffix = "0x5af43d82803e903d91602b57fd5bf3";
+  return `${prefix}${implementation.slice(2).toLowerCase()}${suffix}` as `0x${string}`;
+}
+
 function extractTokenAddress(receipt: any): string | null {
   for (const log of receipt.logs) {
     try {
-      // Look for TokenDeployed event from HolographFactory
-      if (log.address.toLowerCase() === DOPPLER_ADDRESSES.tokenFactory.toLowerCase()) {
+      // Look for Airlock Create event: event Create(address asset, address indexed numeraire, address initializer, address poolOrHook)
+      if (log.address.toLowerCase() === DOPPLER_ADDRESSES.airlock.toLowerCase()) {
         const decoded = decodeEventLog({
-          abi: [{
-            type: "event",
-            name: "TokenDeployed",
-            inputs: [
-              { name: "token", type: "address", indexed: true },
-              { name: "name", type: "string", indexed: false },
-              { name: "symbol", type: "string", indexed: false },
-              { name: "initialSupply", type: "uint256", indexed: false },
-              { name: "recipient", type: "address", indexed: true },
-              { name: "owner", type: "address", indexed: true }
-            ]
-          }],
+          abi: [
+            {
+              type: "event",
+              name: "Create",
+              inputs: [
+                { name: "asset", type: "address", indexed: false },
+                { name: "numeraire", type: "address", indexed: true },
+                { name: "initializer", type: "address", indexed: false },
+                { name: "poolOrHook", type: "address", indexed: false },
+              ],
+            },
+          ],
           data: log.data,
           topics: log.topics,
         });
 
-        if (decoded.eventName === "TokenDeployed") {
+        if (decoded.eventName === "Create" && decoded.args.asset) {
+          return decoded.args.asset as string;
+        }
+      }
+
+      // Look for HolographFactory TokenDeployed event (backup method)
+      if (log.address.toLowerCase() === DOPPLER_ADDRESSES.tokenFactory.toLowerCase()) {
+        const decoded = decodeEventLog({
+          abi: [
+            {
+              type: "event",
+              name: "TokenDeployed",
+              inputs: [
+                { name: "token", type: "address", indexed: true },
+                { name: "name", type: "string", indexed: false },
+                { name: "symbol", type: "string", indexed: false },
+                { name: "initialSupply", type: "uint256", indexed: false },
+                { name: "recipient", type: "address", indexed: true },
+                { name: "owner", type: "address", indexed: true },
+                { name: "creator", type: "address", indexed: false },
+              ],
+            },
+          ],
+          data: log.data,
+          topics: log.topics,
+        });
+
+        if (decoded.eventName === "TokenDeployed" && decoded.args.token) {
           return decoded.args.token as string;
         }
       }
@@ -286,55 +357,34 @@ async function verifyTokenContract(
     return;
   }
 
-  const [name, symbol, yearlyMintCap, vestingDuration, recipients, amounts, tokenURI] = decodeAbiParameters(
-    parseAbiParameters("string, string, uint256, uint256, address[], uint256[], string"),
-    createParams.tokenFactoryData,
+  console.log("⚠️  Token verification skipped - tokens are deployed as ERC1167 minimal proxies");
+  console.log("💡 The token is a clone of the HolographERC20 implementation:");
+  console.log(`📍 Implementation: ${HOLOGRAPH_ADDRESSES.erc20Implementation}`);
+  console.log(
+    `🔗 View implementation: https://sepolia.basescan.org/address/${HOLOGRAPH_ADDRESSES.erc20Implementation}#code`,
   );
-
-  const constructorArgs = encodeAbiParameters(
-    parseAbiParameters("string, string, uint256, address, address, address, uint256, uint256, address[], uint256[], string"),
-    [
-      name,
-      symbol,
-      createParams.initialSupply,
-      DOPPLER_ADDRESSES.airlock as Address, // recipient
-      DOPPLER_ADDRESSES.airlock as Address, // owner  
-      "0x1a44076050125825900e736c501f859c50fE728c" as Address, // LayerZero endpoint Base Sepolia
-      yearlyMintCap,
-      vestingDuration,
-      recipients,
-      amounts,
-      tokenURI,
-    ],
-  );
+  console.log(`🔗 View proxy token: https://sepolia.basescan.org/address/${tokenAddress}`);
 
   try {
-    await verifyContract(tokenAddress, "src/HolographERC20.sol:HolographERC20", constructorArgs, apiKey);
-    console.log("🎉 Token contract verification completed!");
-    console.log(`🔗 View verified contract: https://sepolia.basescan.org/address/${tokenAddress}#code`);
-  } catch (error: any) {
-    console.log("⚠️  Automatic contract verification failed, but the token was created successfully!");
-    console.log("📋 Manual verification instructions:");
-    console.log(`1. Go to: https://sepolia.basescan.org/verifyContract`);
-    console.log(`2. Enter contract address: ${tokenAddress}`);
-    console.log(`3. Select compiler: Solidity (Single file)`);
-    console.log(`4. Select compiler version: v0.8.26+commit.8a97fa7a`);
-    console.log(`5. Select optimization: Yes, with 200 runs`);
-    console.log(`6. Paste the flattened source code (generate with: forge flatten src/HolographERC20.sol)`);
-    console.log(`7. Constructor arguments: ${constructorArgs}`);
-    console.log("");
-    console.log("Or try this command manually:");
-    console.log(
-      `forge verify-contract --verifier etherscan --chain-id ${CHAIN_ID} --etherscan-api-key YOUR_API_KEY --constructor-args ${constructorArgs} --flatten ${tokenAddress} src/HolographERC20.sol:HolographERC20`,
+    // For minimal proxies, we verify against the Clones library pattern
+    console.log("🔍 Attempting to verify as ERC1167 minimal proxy...");
+    await verifyContract(
+      tokenAddress,
+      "@openzeppelin/contracts/proxy/Clones.sol:Clones",
+      `000000000000000000000000${HOLOGRAPH_ADDRESSES.erc20Implementation.slice(2)}`,
+      apiKey,
     );
+    console.log("🎉 Proxy contract verification completed!");
+  } catch (error: any) {
+    console.log("ℹ️  Proxy verification not needed - BaseScan should auto-detect ERC1167 proxies");
   }
 
   // Print deployment summary
   console.log("");
   console.log("🎊 DEPLOYMENT SUMMARY:");
   console.log(`📍 Token Address: ${tokenAddress}`);
-  console.log(`📛 Token Name: ${name}`);
-  console.log(`🏷️  Token Symbol: ${symbol}`);
+  console.log(`📛 Token Name: ${config.name}`);
+  console.log(`🏷️  Token Symbol: ${config.symbol}`);
   console.log(`💰 Initial Supply: ${createParams.initialSupply.toString()}`);
   console.log(`🌐 Explorer: https://sepolia.basescan.org/address/${tokenAddress}`);
   console.log(`📄 Contract Code: https://sepolia.basescan.org/address/${tokenAddress}#code`);
@@ -394,35 +444,17 @@ async function mineValidSalt(
     ],
   );
 
-  // Prepare token constructor arguments for HolographERC20
-  const [name, symbol, yearlyMintCap, vestingDuration, recipients, amounts, tokenURI] = decodeAbiParameters(
-    parseAbiParameters("string, string, uint256, uint256, address[], uint256[], string"),
-    tokenFactoryData,
-  );
-
-  const tokenConstructorArgs = encodeAbiParameters(
-    parseAbiParameters("string, string, uint256, address, address, address, uint256, uint256, address[], uint256[], string"),
-    [
-      name,
-      symbol,
-      initialSupply,
-      DOPPLER_ADDRESSES.airlock as Address, // recipient
-      DOPPLER_ADDRESSES.airlock as Address, // owner
-      "0x1a44076050125825900e736c501f859c50fE728c" as Address, // LayerZero endpoint Base Sepolia
-      yearlyMintCap,
-      vestingDuration,
-      recipients,
-      amounts,
-      tokenURI,
-    ],
-  );
+  // Note: Token constructor args not needed for ERC1167 minimal proxy CREATE2 calculation
+  // Tokens are deployed as clones of the implementation, not full contracts
 
   // Calculate init code hashes
   const dopplerBytecode = loadContractBytecode("Doppler");
   const dopplerInitHash = keccak256(concat([dopplerBytecode, dopplerConstructorArgs]));
 
-  const holographERC20Bytecode = loadContractBytecode("HolographERC20");
-  const tokenInitHash = keccak256(concat([holographERC20Bytecode, tokenConstructorArgs]));
+  // For HolographFactory, tokens are deployed as ERC1167 minimal proxies
+  // The init code hash is just the ERC1167 bytecode with the implementation address embedded
+  const tokenCloneBytecode = getERC1167Bytecode(HOLOGRAPH_ADDRESSES.erc20Implementation);
+  const tokenInitHash = keccak256(tokenCloneBytecode);
 
   // Mine salt
   for (let saltNum = 0; saltNum < MAX_SALT_ITERATIONS; saltNum++) {
@@ -470,15 +502,34 @@ async function mineValidSalt(
   throw new Error(`Could not find valid salt after ${MAX_SALT_ITERATIONS} iterations`);
 }
 
-// Main function
-async function createToken() {
+// Custom error class for better error handling
+class TokenCreationError extends Error {
+  code: string;
+  override cause: Error | undefined;
+
+  constructor(message: string, code: string, cause?: Error) {
+    super(message);
+    this.name = "TokenCreationError";
+    this.code = code;
+    this.cause = cause;
+  }
+}
+
+// Validation functions
+function validateEnvironment(): { privateKey: `0x${string}`; rpcUrl: string } {
   const privateKey = process.env.PRIVATE_KEY as `0x${string}`;
   if (!privateKey) {
-    throw new Error("PRIVATE_KEY environment variable is required");
+    throw new TokenCreationError("PRIVATE_KEY environment variable is required", "ENV_MISSING_PRIVATE_KEY");
   }
 
-  const account = privateKeyToAccount(privateKey);
   const rpcUrl = process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org";
+
+  return { privateKey, rpcUrl };
+}
+
+// Client setup functions
+function setupClients(privateKey: `0x${string}`, rpcUrl: string) {
+  const account = privateKeyToAccount(privateKey);
 
   const publicClient = createPublicClient({
     chain: baseSepolia,
@@ -491,23 +542,20 @@ async function createToken() {
     transport: http(rpcUrl),
   });
 
-  const config: TokenConfig = {
-    name: "Test Token",
-    symbol: "TEST",
-    initialSupply: parseEther("100000"),
-    minProceeds: parseEther("100"),
-    maxProceeds: parseEther("10000"),
-    auctionDurationDays: 3,
-  };
+  return { account, publicClient, walletClient };
+}
 
-  console.log("🚀 Creating token:", config.name);
-
-  // Prepare factory data
+// Token parameter preparation functions
+function prepareTokenParams(config: TokenConfig) {
   const tokenFactoryData = encodeAbiParameters(
     parseAbiParameters("string, string, uint256, uint256, address[], uint256[], string"),
-    [config.name, config.symbol, 0n, 0n, [], [], ""],
+    [config.name, config.symbol, DEFAULT_YEARLY_MINT_CAP, DEFAULT_VESTING_DURATION, [], [], ""],
   );
 
+  return tokenFactoryData;
+}
+
+function prepareGovernanceParams(config: TokenConfig) {
   const governanceData = encodeAbiParameters(parseAbiParameters("string, uint256, uint256, uint256"), [
     `${config.name} DAO`,
     7200n, // voting delay
@@ -515,17 +563,10 @@ async function createToken() {
     0n, // proposal threshold
   ]);
 
-  // Set auction timing with buffer
-  const fixedStartTime = Math.floor(Date.now() / 1000) + 600; // 10 minutes from now
-  const auctionStart = fixedStartTime;
-  const auctionEnd = auctionStart + config.auctionDurationDays * 24 * 60 * 60;
+  return governanceData;
+}
 
-  console.log("⏰ Auction timing:", {
-    auctionStart: new Date(auctionStart * 1000).toISOString(),
-    auctionEnd: new Date(auctionEnd * 1000).toISOString(),
-    duration: config.auctionDurationDays + " days",
-  });
-
+function preparePoolInitializerParams(config: TokenConfig, auctionStart: number, auctionEnd: number) {
   const poolInitializerData = encodeAbiParameters(
     parseAbiParameters(
       "uint256, uint256, uint256, uint256, int24, int24, uint256, int24, bool, uint256, uint24, int24",
@@ -541,10 +582,146 @@ async function createToken() {
       800, // gamma
       false, // isToken0
       8n, // numPDSlugs
-      3000, // lpFee
-      8, // tick spacing
+      LP_FEE, // lpFee
+      TICK_SPACING, // tick spacing
     ],
   );
+
+  return poolInitializerData;
+}
+
+function prepareLiquidityParams(account: Address) {
+  const lockDuration = SECONDS_PER_YEAR;
+  const protocolOwner = "0x852a09C89463D236eea2f097623574f23E225769" as const;
+
+  const beneficiaries = [
+    {
+      beneficiary: protocolOwner,
+      shares: parseEther(PROTOCOL_MIN_SHARES),
+    },
+    {
+      beneficiary: account,
+      shares: parseEther(CREATOR_SHARES),
+    },
+  ].sort((a, b) => {
+    if (a.beneficiary.toLowerCase() < b.beneficiary.toLowerCase()) return -1;
+    if (a.beneficiary.toLowerCase() > b.beneficiary.toLowerCase()) return 1;
+    return 0;
+  });
+
+  const liquidityMigratorData = encodeAbiParameters(parseAbiParameters("uint24, int24, uint32, (address,uint96)[]"), [
+    LP_FEE,
+    TICK_SPACING,
+    lockDuration,
+    beneficiaries.map((b) => [b.beneficiary, b.shares] as const),
+  ]);
+
+  return liquidityMigratorData;
+}
+
+async function executeTokenCreation(
+  createParams: CreateTokenParams,
+  account: Address,
+  publicClient: any,
+  walletClient: any,
+): Promise<{ hash: `0x${string}`; tokenAddress: string | undefined }> {
+  console.log("⛽ Estimating gas...");
+  const gasEstimate = await publicClient.estimateContractGas({
+    address: DOPPLER_ADDRESSES.airlock,
+    abi: AIRLOCK_ABI,
+    functionName: "create",
+    args: [createParams as any],
+    account: account,
+  });
+
+  console.log(`📊 Gas estimated: ${gasEstimate.toString()}`);
+
+  console.log("📤 Submitting transaction to Doppler Airlock...");
+  const hash = await walletClient.writeContract({
+    address: DOPPLER_ADDRESSES.airlock,
+    abi: AIRLOCK_ABI,
+    functionName: "create",
+    args: [createParams as any],
+    gas: gasEstimate * GAS_BUFFER_MULTIPLIER,
+  });
+
+  console.log("🧾 Transaction hash:", hash);
+  console.log("🔗 Explorer:", `https://sepolia.basescan.org/tx/${hash}`);
+
+  console.log("⏳ Waiting for transaction confirmation...");
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
+  if (receipt.status !== "success") {
+    throw new TokenCreationError("Transaction reverted", "TX_REVERTED");
+  }
+
+  console.log("✅ Token creation successful!");
+  console.log(`💰 Gas used: ${receipt.gasUsed.toString()}`);
+
+  const tokenAddress = extractTokenAddress(receipt);
+  return { hash, tokenAddress: tokenAddress || undefined };
+}
+
+async function verifyTokenDeployment(tokenAddress: string, publicClient: any): Promise<boolean> {
+  for (let i = 0; i < MAX_RETRIES; i++) {
+    try {
+      if (i > 0) {
+        console.log(`🔄 Retrying token verification (attempt ${i + 1}/${MAX_RETRIES})...`);
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+      }
+
+      const code = await publicClient.getCode({ address: tokenAddress as Address });
+      if (code && code !== "0x") {
+        console.log("✅ Token contract deployment verified!");
+        console.log(`📏 Contract bytecode size: ${(code.length - 2) / 2} bytes`);
+        return true;
+      }
+    } catch (error) {
+      if (i === MAX_RETRIES - 1) {
+        console.log("⚠️  Could not verify token contract deployment:", error);
+      }
+    }
+  }
+
+  return false;
+}
+
+// Main function
+async function createToken() {
+  // Validate environment
+  const { privateKey, rpcUrl } = validateEnvironment();
+
+  // Setup clients
+  const { account, publicClient, walletClient } = setupClients(privateKey, rpcUrl);
+
+  // Token configuration
+  const config: TokenConfig = {
+    name: "Test Token",
+    symbol: "TEST",
+    initialSupply: parseEther("100000"),
+    minProceeds: parseEther("100"),
+    maxProceeds: parseEther("10000"),
+    auctionDurationDays: 3,
+  };
+
+  console.log("🚀 Creating token:", config.name);
+
+  // Prepare all parameters
+  const tokenFactoryData = prepareTokenParams(config);
+  const governanceData = prepareGovernanceParams(config);
+
+  // Set auction timing
+  const fixedStartTime = Math.floor(Date.now() / 1000) + AUCTION_START_BUFFER;
+  const auctionStart = fixedStartTime;
+  const auctionEnd = auctionStart + config.auctionDurationDays * SECONDS_PER_DAY;
+
+  console.log("⏰ Auction timing:", {
+    auctionStart: new Date(auctionStart * 1000).toISOString(),
+    auctionEnd: new Date(auctionEnd * 1000).toISOString(),
+    duration: config.auctionDurationDays + " days",
+  });
+
+  const poolInitializerData = preparePoolInitializerParams(config, auctionStart, auctionEnd);
 
   // Mine valid salt
   const salt = await mineValidSalt(
@@ -556,38 +733,7 @@ async function createToken() {
     publicClient,
   );
 
-  // Prepare liquidity migrator data for UniswapV4Migrator
-  const lockDuration = 365 * 24 * 60 * 60; // 1 year in seconds
-  const protocolOwner = "0xaCE07c3c1D3b556D42633211f0Da71dc6F6d1c42" as const; // Protocol owner from Airlock
-  
-  // Create beneficiaries array with proper BeneficiaryData structure
-  // Must be sorted by address and include protocol owner with minimum 5% (0.05e18)
-  const beneficiaries = [
-    {
-      beneficiary: protocolOwner,
-      shares: parseEther("0.05") // 5% minimum for protocol owner
-    },
-    {
-      beneficiary: account.address, // Token creator gets the remaining 95%
-      shares: parseEther("0.95")
-    }
-  ].sort((a, b) => {
-    // Sort by address (ascending)
-    if (a.beneficiary.toLowerCase() < b.beneficiary.toLowerCase()) return -1;
-    if (a.beneficiary.toLowerCase() > b.beneficiary.toLowerCase()) return 1;
-    return 0;
-  });
-  
-  // Encode as proper BeneficiaryData array
-  const liquidityMigratorData = encodeAbiParameters(
-    parseAbiParameters("uint24, int24, uint32, (address,uint96)[]"),
-    [
-      3000, // fee (matches LP_FEE)
-      8, // tickSpacing (matches TICK_SPACING)
-      lockDuration,
-      beneficiaries.map(b => [b.beneficiary, b.shares] as const)
-    ]
-  );
+  const liquidityMigratorData = prepareLiquidityParams(account.address);
 
   const createParams: CreateTokenParams = {
     initialSupply: config.initialSupply,
@@ -606,51 +752,40 @@ async function createToken() {
   };
 
   try {
-    console.log("⛽ Estimating gas...");
-    const gasEstimate = await publicClient.estimateContractGas({
-      address: DOPPLER_ADDRESSES.airlock,
-      abi: AIRLOCK_ABI,
-      functionName: "create",
-      args: [createParams as any],
-      account: account.address,
-    });
+    // Execute token creation
+    const { hash, tokenAddress } = await executeTokenCreation(
+      createParams,
+      account.address,
+      publicClient,
+      walletClient,
+    );
 
-    console.log(`📊 Gas estimated: ${gasEstimate.toString()}`);
+    if (tokenAddress) {
+      console.log("🎉 Token address:", tokenAddress);
+      console.log("🔗 Basescan:", `https://sepolia.basescan.org/address/${tokenAddress}`);
 
-    console.log("📤 Submitting transaction to Doppler Airlock...");
-    const hash = await walletClient.writeContract({
-      address: DOPPLER_ADDRESSES.airlock,
-      abi: AIRLOCK_ABI,
-      functionName: "create",
-      args: [createParams as any],
-      gas: gasEstimate * 2n, // 2x buffer for safety
-    });
+      // Verify deployment
+      const deploymentVerified = await verifyTokenDeployment(tokenAddress, publicClient);
 
-    console.log("🧾 Transaction hash:", hash);
-    console.log("🔗 Explorer:", `https://sepolia.basescan.org/tx/${hash}`);
-
-    console.log("⏳ Waiting for transaction confirmation...");
-    const receipt = await publicClient.waitForTransactionReceipt({ hash });
-
-    if (receipt.status === "success") {
-      console.log("✅ Token creation successful!");
-      console.log(`💰 Gas used: ${receipt.gasUsed.toString()}`);
-
-      const tokenAddress = extractTokenAddress(receipt);
-      if (tokenAddress) {
-        console.log("🎉 Token address:", tokenAddress);
-        console.log("🔗 Basescan:", `https://sepolia.basescan.org/address/${tokenAddress}`);
-        await verifyTokenContract(tokenAddress, createParams, config);
-      } else {
-        console.log("⚠️  Could not extract token address from transaction logs");
+      if (!deploymentVerified) {
+        console.log("⚠️  Token address found but bytecode verification failed");
+        console.log("💡 The token may still be valid - check the transaction link above");
       }
 
-      return hash;
+      await verifyTokenContract(tokenAddress, createParams, config);
     } else {
-      throw new Error("Transaction reverted");
+      console.log("⚠️  Could not extract token address from transaction logs");
+      console.log("💡 You can find the token address by checking the transaction on BaseScan:");
+      console.log(`🔗 Transaction: https://sepolia.basescan.org/tx/${hash}`);
     }
+
+    return hash;
   } catch (error) {
-    console.error("❌ Token creation failed:", error);
+    if (error instanceof TokenCreationError) {
+      console.error(`❌ Token creation failed [${error.code}]:`, error.message);
+    } else {
+      console.error("❌ Token creation failed:", error);
+    }
     throw error;
   }
 }

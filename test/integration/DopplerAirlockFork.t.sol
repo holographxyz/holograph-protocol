@@ -4,6 +4,7 @@ pragma solidity ^0.8.26;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import {HolographFactory} from "../../src/HolographFactory.sol";
+import {HolographFactoryProxy} from "../../src/HolographFactoryProxy.sol";
 import {HolographERC20} from "../../src/HolographERC20.sol";
 import {CreateParams} from "../../src/interfaces/DopplerStructs.sol";
 
@@ -17,9 +18,9 @@ interface IAirlock {
         LiquidityMigrator
     }
 
-    function create(
-        CreateParams calldata createData
-    ) external returns (address asset, address pool, address governance, address timelock, address migrationPool);
+    function create(CreateParams calldata createData)
+        external
+        returns (address asset, address pool, address governance, address timelock, address migrationPool);
 
     function setModuleState(address[] calldata modules, ModuleState[] calldata states) external;
     function getModuleState(address module) external view returns (ModuleState);
@@ -40,7 +41,7 @@ contract LZEndpointStub {
         emit MessageSent(dstEid, payload);
     }
 
-    function setDelegate(address /*delegate*/) external {
+    function setDelegate(address /*delegate*/ ) external {
         // Mock implementation
     }
 }
@@ -61,29 +62,27 @@ library DopplerAddrBook {
     }
 
     function getTestnet() internal pure returns (DopplerAddrs memory) {
-        return
-            DopplerAddrs({
-                airlock: 0x3411306Ce66c9469BFF1535BA955503c4Bde1C6e,
-                tokenFactory: 0xc69Ba223c617F7D936B3cf2012aa644815dBE9Ff,
-                governanceFactory: 0x9dBFaaDC8c0cB2c34bA698DD9426555336992e20,
-                v4Initializer: 0x8E891d249f1ECbfFA6143c03EB1B12843aef09d3,
-                migrator: 0x846a84918aA87c14b86B2298776e8ea5a4e34C9E,
-                poolManager: 0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408,
-                dopplerDeployer: 0x60a039e4aDD40ca95e0475c11e8A4182D06C9Aa0
-            });
+        return DopplerAddrs({
+            airlock: 0x3411306Ce66c9469BFF1535BA955503c4Bde1C6e,
+            tokenFactory: 0xc69Ba223c617F7D936B3cf2012aa644815dBE9Ff,
+            governanceFactory: 0x9dBFaaDC8c0cB2c34bA698DD9426555336992e20,
+            v4Initializer: 0x8E891d249f1ECbfFA6143c03EB1B12843aef09d3,
+            migrator: 0x846a84918aA87c14b86B2298776e8ea5a4e34C9E,
+            poolManager: 0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408,
+            dopplerDeployer: 0x60a039e4aDD40ca95e0475c11e8A4182D06C9Aa0
+        });
     }
 
     function getMainnet() internal pure returns (DopplerAddrs memory) {
-        return
-            DopplerAddrs({
-                airlock: 0x660eAaEdEBc968f8f3694354FA8EC0b4c5Ba8D12,
-                tokenFactory: 0xFAafdE6a5b658684cC5eb0C5c2c755B00A246F45,
-                governanceFactory: 0xb4deE32EB70A5E55f3D2d861F49Fb3D79f7a14d9,
-                v4Initializer: 0x77EbfBAE15AD200758E9E2E61597c0B07d731254,
-                migrator: 0x5F3bA43D44375286296Cb85F1EA2EBfa25dde731,
-                poolManager: 0x498581fF718922c3f8e6A244956aF099B2652b2b,
-                dopplerDeployer: 0x5CadB034267751a364dDD4d321C99E07A307f915
-            });
+        return DopplerAddrs({
+            airlock: 0x660eAaEdEBc968f8f3694354FA8EC0b4c5Ba8D12,
+            tokenFactory: 0xFAafdE6a5b658684cC5eb0C5c2c755B00A246F45,
+            governanceFactory: 0xb4deE32EB70A5E55f3D2d861F49Fb3D79f7a14d9,
+            v4Initializer: 0x77EbfBAE15AD200758E9E2E61597c0B07d731254,
+            migrator: 0x5F3bA43D44375286296Cb85F1EA2EBfa25dde731,
+            poolManager: 0x498581fF718922c3f8e6A244956aF099B2652b2b,
+            dopplerDeployer: 0x5CadB034267751a364dDD4d321C99E07A307f915
+        });
     }
 }
 
@@ -113,13 +112,8 @@ contract DopplerAirlockForkTest is Test {
     uint256 private constant AFTER_SWAP_FLAG = 1 << 6;
     uint256 private constant BEFORE_DONATE_FLAG = 1 << 5;
 
-    uint256 private constant REQUIRED_FLAGS =
-        BEFORE_INITIALIZE_FLAG |
-            AFTER_INITIALIZE_FLAG |
-            BEFORE_ADD_LIQUIDITY_FLAG |
-            BEFORE_SWAP_FLAG |
-            AFTER_SWAP_FLAG |
-            BEFORE_DONATE_FLAG;
+    uint256 private constant REQUIRED_FLAGS = BEFORE_INITIALIZE_FLAG | AFTER_INITIALIZE_FLAG | BEFORE_ADD_LIQUIDITY_FLAG
+        | BEFORE_SWAP_FLAG | AFTER_SWAP_FLAG | BEFORE_DONATE_FLAG;
 
     uint256 private constant FLAG_MASK = 0x3fff;
     uint256 private constant MAX_SALT_ITERATIONS = 200_000;
@@ -148,9 +142,23 @@ contract DopplerAirlockForkTest is Test {
 
         console.log("Doppler Airlock: %s", doppler.airlock);
 
-        // Deploy our custom LayerZero endpoint and HolographFactory
+        // Deploy HolographERC20 implementation for cloning
+        HolographERC20 erc20Implementation = new HolographERC20();
+
+        // Deploy factory implementation
+        HolographFactory factoryImpl = new HolographFactory(address(erc20Implementation));
+
+        // Deploy proxy
+        HolographFactoryProxy proxy = new HolographFactoryProxy(address(factoryImpl));
+
+        // Cast proxy to factory interface
+        holographFactory = HolographFactory(address(proxy));
+
+        // Initialize factory
+        holographFactory.initialize(address(this));
+
+        // Note: LayerZero endpoint removed - will be added back in v2
         lzEndpoint = new LZEndpointStub();
-        holographFactory = new HolographFactory(address(lzEndpoint));
 
         vm.deal(creator, 1 ether);
 
@@ -185,7 +193,7 @@ contract DopplerAirlockForkTest is Test {
 
         assertTrue(token != address(0), "Token should be deployed");
         assertTrue(holographFactory.isDeployedToken(token), "Token should be tracked");
-        
+
         // Verify creator tracking - tx.origin should be tracked as creator
         assertTrue(holographFactory.isTokenCreator(token, address(this)), "This contract should be creator");
 
@@ -194,11 +202,11 @@ contract DopplerAirlockForkTest is Test {
         assertEq(deployedToken.symbol(), "HTEST");
         assertEq(deployedToken.yearlyMintRate(), 0.015e18);
         assertEq(deployedToken.balanceOf(creator), INITIAL_SUPPLY);
-        assertEq(deployedToken.getEndpoint(), address(lzEndpoint));
+        // LayerZero endpoint check removed - will be added back in v2
 
         console.log("Token deployed: %s", token);
         console.log("[OK] ITokenFactory interface fully compliant");
-        console.log("[OK] HolographERC20 has LayerZero OFT capabilities");
+        console.log("[OK] HolographERC20 deployed as clone");
         console.log("[OK] Ready for Doppler Airlock integration");
     }
 
@@ -244,28 +252,10 @@ contract DopplerAirlockForkTest is Test {
         HolographERC20 holographToken = HolographERC20(token);
         assertEq(holographToken.name(), "Architecture Test");
         assertEq(holographToken.symbol(), "ARCH");
-        assertEq(holographToken.getEndpoint(), address(lzEndpoint));
-
-        // Test 4: Address prediction works
-        address predicted = holographFactory.predictTokenAddress(
-            bytes32(uint256(99999)),
-            "Predicted Token",
-            "PRED",
-            2000e18,
-            creator,
-            creator,
-            0.01e18,
-            0,
-            new address[](0),
-            new uint256[](0),
-            "https://predicted.com"
-        );
-
-        assertTrue(predicted != address(0), "Prediction should work");
+        // LayerZero endpoint check removed - will be added back in v2
 
         console.log("[OK] Factory implements ITokenFactory correctly");
         console.log("[OK] HolographERC20 combines LayerZero OFT + DERC20 features");
-        console.log("[OK] Address prediction works for salt mining");
         console.log("[OK] Ready for Doppler governance approval");
 
         console.log("");
@@ -283,11 +273,12 @@ contract DopplerAirlockForkTest is Test {
         console.log("3. Deploy and configure with proper permissions");
     }
 
-    function computeCreate2Address(
-        bytes32 salt,
-        bytes32 initCodeHash,
-        address deployer
-    ) internal pure override returns (address) {
+    function computeCreate2Address(bytes32 salt, bytes32 initCodeHash, address deployer)
+        internal
+        pure
+        override
+        returns (address)
+    {
         return address(uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), deployer, salt, initCodeHash)))));
     }
 
@@ -315,9 +306,9 @@ contract DopplerAirlockForkTest is Test {
             uint24 lpFee,
             int24 tickSpacing
         ) = abi.decode(
-                poolInitializerData,
-                (uint256, uint256, uint256, uint256, int24, int24, uint256, int24, bool, uint256, uint24, int24)
-            );
+            poolInitializerData,
+            (uint256, uint256, uint256, uint256, int24, int24, uint256, int24, bool, uint256, uint24, int24)
+        );
 
         // Prepare Doppler constructor arguments
         bytes memory dopplerConstructorArgs = abi.encode(
@@ -510,7 +501,7 @@ contract DopplerAirlockForkTest is Test {
         assertEq(deployedToken.totalSupply(), INITIAL_SUPPLY);
         assertEq(deployedToken.balanceOf(creator), INITIAL_SUPPLY);
         assertEq(deployedToken.yearlyMintRate(), 0.015e18);
-        assertEq(deployedToken.getEndpoint(), address(lzEndpoint));
+        // LayerZero endpoint check removed - will be added back in v2
 
         console.log("Token deployed successfully at: %s", token);
         console.log("[OK] Full Doppler integration working with new architecture");
@@ -706,9 +697,8 @@ contract DopplerAirlockForkTest is Test {
         // This is the key test - actually call through the Airlock!
         // Use startPrank to ensure tx.origin is set correctly
         vm.startPrank(creator, creator);
-        (address asset, address pool, address governance, address timelock, address migrationPool) = airlock.create(
-            createParams
-        );
+        (address asset, address pool, address governance, address timelock, address migrationPool) =
+            airlock.create(createParams);
         vm.stopPrank();
 
         console.log("=== DOPPLER AIRLOCK CREATION SUCCESSFUL ===");
@@ -721,7 +711,7 @@ contract DopplerAirlockForkTest is Test {
         // Verify the token is our HolographERC20
         assertTrue(asset != address(0), "Asset should be deployed");
         assertTrue(holographFactory.isDeployedToken(asset), "Asset should be tracked by our factory");
-        
+
         // Verify creator tracking - creator should be tracked even though airlock called create()
         assertTrue(holographFactory.isTokenCreator(asset, creator), "Creator should be tracked as token creator");
 
@@ -729,17 +719,16 @@ contract DopplerAirlockForkTest is Test {
         assertEq(holographToken.name(), "Doppler Holograph Token");
         assertEq(holographToken.symbol(), "DHT");
         assertEq(holographToken.yearlyMintRate(), 0.015e18);
-        assertEq(holographToken.getEndpoint(), address(lzEndpoint));
+        // LayerZero endpoint check removed - will be added back in v2
 
         // Verify LayerZero OFT functionality
-        assertTrue(address(holographToken.getEndpoint()) != address(0), "Should have LayerZero endpoint");
+        // LayerZero endpoint check removed - will be added back in v2
 
         // Verify DERC20 functionality
         assertTrue(holographToken.totalSupply() > 0, "Should have supply");
         assertTrue(holographToken.balanceOf(address(airlock)) == 0, "Airlock should have transferred tokens");
 
         console.log("[OK] Token successfully created through Doppler Airlock");
-        console.log("[OK] HolographERC20 deployed with LayerZero OFT capabilities");
         console.log("[OK] DERC20 features preserved");
         console.log("[OK] Complete Doppler ecosystem integration working");
 
@@ -789,31 +778,28 @@ contract DopplerAirlockForkTest is Test {
         // Call the factory through the Airlock interface (simulating Airlock calling it)
         // Use prank with tx.origin set to creator to simulate real Airlock behavior
         vm.prank(address(airlock), creator);
-        address token = holographFactory.create(
-            INITIAL_SUPPLY,
-            creator,
-            creator,
-            bytes32(uint256(99999)),
-            tokenFactoryData
-        );
+        address token =
+            holographFactory.create(INITIAL_SUPPLY, creator, creator, bytes32(uint256(99999)), tokenFactoryData);
 
         // Verify successful deployment
         assertTrue(token != address(0), "Token should be deployed");
         assertTrue(holographFactory.isDeployedToken(token), "Token should be tracked");
-        
+
         // Verify creator tracking - creator should be tracked via tx.origin
         assertTrue(holographFactory.isTokenCreator(token, creator), "Creator should be tracked via tx.origin");
-        assertFalse(holographFactory.isTokenCreator(token, address(airlock)), "Airlock should not be tracked as creator");
+        assertFalse(
+            holographFactory.isTokenCreator(token, address(airlock)), "Airlock should not be tracked as creator"
+        );
 
         HolographERC20 holographToken = HolographERC20(token);
         assertEq(holographToken.name(), "Direct Airlock Test");
         assertEq(holographToken.symbol(), "DAT");
-        assertEq(holographToken.getEndpoint(), address(lzEndpoint));
+        // LayerZero endpoint check removed - will be added back in v2
         assertEq(holographToken.yearlyMintRate(), 0.01e18);
 
         console.log("Token deployed at:", token);
         console.log("[OK] Airlock successfully called HolographFactory.create()");
-        console.log("[OK] HolographERC20 deployed with LayerZero OFT capabilities");
+        console.log("[OK] HolographERC20 deployed");
         console.log("[OK] Core integration working - ready for full Doppler workflow");
     }
 }

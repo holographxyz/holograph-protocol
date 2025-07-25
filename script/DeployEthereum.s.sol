@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.26;
 
 /**
  * @title DeployEthereum
@@ -15,13 +15,12 @@ pragma solidity ^0.8.24;
  *       --broadcast \
  *       --private-key $DEPLOYER_PK
  */
-
-import "forge-std/Script.sol";
-import "forge-std/console.sol";
 import "../src/FeeRouter.sol";
 import "../src/StakingRewards.sol";
+import "./base/DeploymentBase.sol";
+import "./config/DeploymentConstants.sol";
 
-contract DeployEthereum is Script {
+contract DeployEthereum is DeploymentBase {
     /* -------------------------------------------------------------------------- */
     /*                              Ethereum chainIds                             */
     /* -------------------------------------------------------------------------- */
@@ -29,13 +28,22 @@ contract DeployEthereum is Script {
     uint256 internal constant ETH_SEPOLIA = 11155111;
 
     function run() external {
-        /* -------------------------------- Env --------------------------------- */
-        // Optional BROADCAST env var allows running the script in dry-run mode without
-        // passing the `--broadcast` flag each time. When BROADCAST is set to true the
-        // DEPLOYER_PK env var must also be supplied so the txs can be signed.
-        bool shouldBroadcast = vm.envOr("BROADCAST", false);
+        /* ----------------------------- Chain guard ---------------------------- */
+        if (block.chainid != ETH_MAINNET && block.chainid != ETH_SEPOLIA) {
+            console.log("[WARNING] Deploying to non-Ethereum chainId", block.chainid);
+        }
 
-        uint256 deployerPk = shouldBroadcast ? vm.envUint("DEPLOYER_PK") : uint256(0);
+        // Mainnet safety check
+        if (DeploymentConstants.isMainnet(block.chainid)) {
+            console.log("WARNING: You are about to deploy to MAINNET!");
+            console.log("Chain ID:", block.chainid);
+            require(vm.envOr("MAINNET", false), "Set MAINNET=true to deploy to mainnet");
+        }
+
+        // Initialize deployment configuration
+        DeploymentConfig memory config = initializeDeployment();
+
+        // Environment variables
         address lzEndpoint = vm.envAddress("LZ_ENDPOINT");
         uint32 baseEid = uint32(vm.envUint("BASE_EID"));
 
@@ -44,62 +52,72 @@ contract DeployEthereum is Script {
         address swapRouter = vm.envAddress("SWAP_ROUTER");
         address treasury = vm.envAddress("TREASURY");
 
-        // Validation
-        require(lzEndpoint != address(0), "LZ_ENDPOINT not set");
+        // Validate env variables
+        DeploymentConstants.validateNonZeroAddress(lzEndpoint, "LZ_ENDPOINT");
         require(baseEid != 0, "BASE_EID not set");
-        require(hlg != address(0), "HLG not set");
-        require(weth != address(0), "WETH not set");
-        require(swapRouter != address(0), "SWAP_ROUTER not set");
-        require(treasury != address(0), "TREASURY not set");
+        DeploymentConstants.validateNonZeroAddress(hlg, "HLG");
+        DeploymentConstants.validateNonZeroAddress(weth, "WETH");
+        DeploymentConstants.validateNonZeroAddress(swapRouter, "SWAP_ROUTER");
+        DeploymentConstants.validateNonZeroAddress(treasury, "TREASURY");
 
-        if (block.chainid != ETH_MAINNET && block.chainid != ETH_SEPOLIA) {
-            console.log("[WARNING] Deploying to non-Ethereum chainId", block.chainid);
-        }
+        // Validate deployment account has sufficient gas
+        require(gasleft() >= DeploymentConstants.MIN_DEPLOYMENT_GAS, "Insufficient gas for deployment");
 
-        // Deployer address is needed both for logging and as a temporary FeeRouter placeholder
-        address deployer = shouldBroadcast ? vm.addr(deployerPk) : msg.sender;
+        // Deploy HolographDeployer using base functionality
+        HolographDeployer holographDeployer = deployHolographDeployer();
 
-        if (shouldBroadcast) {
-            console.log("Broadcasting TXs as", deployer);
-            vm.startBroadcast(deployerPk);
-        } else {
-            console.log("Running in dry-run mode (no broadcast)");
-            vm.startBroadcast();
-        }
+        // Get deployment salts - use EOA address as msg.sender for HolographDeployer
+        ChainConfigs.DeploymentSalts memory salts = getDeploymentSalts(config.deployer);
 
+        // Initialize addresses struct
+        ContractAddresses memory addresses;
+        addresses.holographDeployer = address(holographDeployer);
+
+        /* ---------------------- Deploy StakingRewards ---------------------- */
+        console.log("\nDeploying StakingRewards...");
         uint256 gasStart = gasleft();
-        // Deploy StakingRewards first with temporary feeRouter = deployer
-        StakingRewards stakingRewards = new StakingRewards(hlg, deployer);
+        // Deploy with temporary feeRouter = deployer
+        bytes memory stakingBytecode =
+            abi.encodePacked(type(StakingRewards).creationCode, abi.encode(hlg, config.deployer));
+        // Use a unique salt for StakingRewards
+        bytes32 stakingSalt = bytes32(uint256(uint160(config.deployer)) << 96) | bytes32(uint256(6));
+        address stakingRewards = holographDeployer.deploy(stakingBytecode, stakingSalt);
         uint256 gasStaking = gasStart - gasleft();
+        console.log("StakingRewards deployed at:", stakingRewards);
+        console.log("Gas used:", gasStaking);
 
+        /* ---------------------- Deploy FeeRouter ---------------------- */
+        console.log("\nDeploying FeeRouter...");
         gasStart = gasleft();
-        // Deploy FeeRouter with staking pool address
-        FeeRouter feeRouter = new FeeRouter(
-            lzEndpoint,
-            baseEid,
-            address(stakingRewards),
-            hlg,
-            weth,
-            swapRouter,
-            treasury
+        bytes memory feeRouterBytecode = abi.encodePacked(
+            type(FeeRouter).creationCode,
+            abi.encode(
+                lzEndpoint,
+                baseEid,
+                stakingRewards,
+                hlg,
+                weth,
+                swapRouter,
+                treasury,
+                config.deployer // Set deployer as owner
+            )
         );
+        address feeRouter = holographDeployer.deploy(feeRouterBytecode, salts.feeRouter);
         uint256 gasFeeRouter = gasStart - gasleft();
+        console.log("FeeRouter deployed at:", feeRouter);
+        console.log("Gas used:", gasFeeRouter);
 
         // Update stakingRewards to use actual FeeRouter address
-        stakingRewards.setFeeRouter(address(feeRouter));
+        StakingRewards(stakingRewards).setFeeRouter(feeRouter);
+
+        // Store final addresses
+        addresses.stakingRewards = stakingRewards;
+        addresses.feeRouter = feeRouter;
 
         vm.stopBroadcast();
 
-        console.log("-------------- Deployment Complete --------------");
-        console.log("StakingRewards:", address(stakingRewards));
-        console.log("Gas used:", gasStaking);
-        console.log("FeeRouter:", address(feeRouter));
-        console.log("Gas used:", gasFeeRouter);
-
-        // Persist addresses to deployments/eth/
-        string memory dir = "deployments/eth";
-        vm.createDir(dir, true);
-        vm.writeFile(string.concat(dir, "/StakingRewards.txt"), vm.toString(address(stakingRewards)));
-        vm.writeFile(string.concat(dir, "/FeeRouter.txt"), vm.toString(address(feeRouter)));
+        // Print summary and save deployment
+        printDeploymentSummary(addresses);
+        saveDeployment(config, addresses);
     }
 }
