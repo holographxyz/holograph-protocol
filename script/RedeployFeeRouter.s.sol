@@ -30,7 +30,7 @@ contract RedeployFeeRouter is Script {
         address deployer = shouldBroadcast ? vm.addr(deployerPk) : address(this);
         
         // Deployment addresses (from deployment.json)  
-        address holographDeployer = 0x6566750584BB5e59Be783c9b39C704e3e37Eab51;
+        address holographDeployer = 0x6566750584BB5e59Be783c9B39C704e3e37Eab51;
         address treasury = deployer; // Use deployer as treasury
         
         // LayerZero endpoint for Base Sepolia

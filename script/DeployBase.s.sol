@@ -32,6 +32,7 @@ import "../src/HolographFactory.sol";
 import "../src/HolographFactoryProxy.sol";
 import "../src/HolographERC20.sol";
 import "./base/DeploymentBase.sol";
+import "./config/DeploymentConstants.sol";
 
 contract DeployBase is DeploymentBase {
     /* -------------------------------------------------------------------------- */
@@ -49,6 +50,13 @@ contract DeployBase is DeploymentBase {
             console.log("[WARNING] Chain ID does not match known Base chains");
         }
         
+        // Mainnet safety check
+        if (DeploymentConstants.isMainnet(block.chainid)) {
+            console.log("WARNING: You are about to deploy to MAINNET!");
+            console.log("Chain ID:", block.chainid);
+            require(vm.envOr("MAINNET_DEPLOYMENT_CONFIRMED", false), "Set MAINNET_DEPLOYMENT_CONFIRMED=true to deploy to mainnet");
+        }
+        
         // Initialize deployment configuration
         DeploymentConfig memory config = initializeDeployment();
         
@@ -58,11 +66,14 @@ contract DeployBase is DeploymentBase {
         address treasury = vm.envAddress("TREASURY");
         uint32 ethEid = uint32(vm.envUint("ETH_EID"));
 
-        // Quick sanity checks
-        require(lzEndpoint != address(0), "LZ_ENDPOINT not set");
-        require(dopplerAirlock != address(0), "DOPPLER_AIRLOCK not set");
-        require(treasury != address(0), "TREASURY not set");
+        // Comprehensive validation of environment variables
+        DeploymentConstants.validateNonZeroAddress(lzEndpoint, "LZ_ENDPOINT");
+        DeploymentConstants.validateNonZeroAddress(dopplerAirlock, "DOPPLER_AIRLOCK");
+        DeploymentConstants.validateNonZeroAddress(treasury, "TREASURY");
         require(ethEid != 0, "ETH_EID not set");
+        
+        // Validate deployment account has sufficient gas
+        require(gasleft() >= DeploymentConstants.MIN_DEPLOYMENT_GAS, "Insufficient gas for deployment");
         
         // Gas tracking variable
         uint256 gasStart;

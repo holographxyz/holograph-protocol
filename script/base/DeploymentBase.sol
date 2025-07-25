@@ -10,6 +10,17 @@ import "../config/ChainConfigs.sol";
  * @title DeploymentBase
  * @notice Base contract for Holograph deployment scripts
  * @dev Provides common functionality and JSON output for all deployments
+ * 
+ * Salt Generation Strategy:
+ * - Uses deterministic salts based on deployer address and contract type
+ * - Ensures consistent addresses across different chains
+ * - First 20 bytes of salt must match the deployer address (HolographDeployer requirement)
+ * - Remaining 12 bytes are used for contract-specific identification
+ * 
+ * Environment Variables Required:
+ * - DEPLOYER_PK: Private key for deployment (required when BROADCAST=true)
+ * - BROADCAST: Set to true to execute transactions (default: false for dry-run)
+ * - Chain-specific variables are defined in individual deployment scripts
  */
 abstract contract DeploymentBase is Script {
     /* -------------------------------------------------------------------------- */
@@ -70,6 +81,9 @@ abstract contract DeploymentBase is Script {
     
     /**
      * @notice Deploy HolographDeployer using standard CREATE2 deployer
+     * @dev Uses the canonical CREATE2 deployer at 0x4e59b44847b379578588920cA78FbF26c0B4956C
+     *      This ensures the HolographDeployer has the same address on all chains
+     *      The DEPLOYER_SALT constant ensures deterministic deployment
      * @return holographDeployer The HolographDeployer instance
      */
     function deployHolographDeployer() internal returns (HolographDeployer holographDeployer) {
@@ -241,6 +255,12 @@ abstract contract DeploymentBase is Script {
     
     /**
      * @notice Get deployment salts for consistent addresses
+     * @dev Generates deterministic salts where:
+     *      - First 20 bytes: deployer address (required by HolographDeployer)
+     *      - Last 12 bytes: contract-specific identifier
+     *      This ensures each contract type has a unique but predictable address
+     * @param deployer The address that will deploy the contracts
+     * @return DeploymentSalts struct containing salts for each contract type
      */
     function getDeploymentSalts(address deployer) internal pure returns (ChainConfigs.DeploymentSalts memory) {
         return ChainConfigs.getDeploymentSalts(deployer);

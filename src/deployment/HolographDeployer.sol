@@ -45,6 +45,8 @@ contract HolographDeployer is Ownable, EIP712 {
     error DeploymentFailed();
     error InitializationFailed();
     error AddressMismatch();
+    error PreDeploymentAddressMismatch(address expected, address computed);
+    error PostDeploymentAddressMismatch(address expected, address actual);
     error ContractAlreadyDeployed();
     error InvalidSignature();
     error SignatureExpired();
@@ -145,7 +147,7 @@ contract HolographDeployer is Ownable, EIP712 {
         // Pre-deployment validation
         address computedAddress = computeAddress(creationCode, salt);
         if (computedAddress != expectedAddress) {
-            revert AddressMismatch();
+            revert PreDeploymentAddressMismatch(expectedAddress, computedAddress);
         }
 
         // Deploy using standard deploy function
@@ -153,7 +155,7 @@ contract HolographDeployer is Ownable, EIP712 {
         
         // Post-deployment validation (should match pre-validation, but extra safety)
         if (deployed != expectedAddress) {
-            revert AddressMismatch();
+            revert PostDeploymentAddressMismatch(expectedAddress, deployed);
         }
     }
 
@@ -174,7 +176,7 @@ contract HolographDeployer is Ownable, EIP712 {
         // Pre-deployment validation
         address computedAddress = computeAddress(creationCode, salt);
         if (computedAddress != expectedAddress) {
-            revert AddressMismatch();
+            revert PreDeploymentAddressMismatch(expectedAddress, computedAddress);
         }
 
         // Deploy using deployAndCall function
@@ -182,7 +184,7 @@ contract HolographDeployer is Ownable, EIP712 {
         
         // Post-deployment validation (should match pre-validation, but extra safety)
         if (deployed != expectedAddress) {
-            revert AddressMismatch();
+            revert PostDeploymentAddressMismatch(expectedAddress, deployed);
         }
     }
 
@@ -270,6 +272,18 @@ contract HolographDeployer is Ownable, EIP712 {
         bytes32 salt
     ) public view returns (bool) {
         return deployed == computeAddress(creationCode, salt) && deployed.code.length > 0;
+    }
+
+    /**
+     * @notice Verify that a deployed address matches the expected address
+     * @param expected The expected address
+     * @param actual The actual deployed address
+     * @dev Reverts with PostDeploymentAddressMismatch if addresses don't match
+     */
+    function verifyDeploymentAddress(address expected, address actual) public pure {
+        if (expected != actual) {
+            revert PostDeploymentAddressMismatch(expected, actual);
+        }
     }
 
     /* -------------------------------------------------------------------------- */

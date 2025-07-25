@@ -81,6 +81,28 @@ const FLAG_MASK = 0x3fffn;
 const CHAIN_ID = 84532; // Base Sepolia
 const MAX_SALT_ITERATIONS = 200_000;
 
+// Time constants
+const SECONDS_PER_YEAR = 365 * 24 * 60 * 60;
+const SECONDS_PER_DAY = 24 * 60 * 60;
+const AUCTION_START_BUFFER = 600; // 10 minutes
+
+// Gas and retry constants
+const GAS_BUFFER_MULTIPLIER = 2n;
+const RETRY_DELAY_MS = 2000;
+const MAX_RETRIES = 3;
+
+// Uniswap V4 constants
+const LP_FEE = 3000;
+const TICK_SPACING = 8;
+
+// Shares constants
+const PROTOCOL_MIN_SHARES = "0.05"; // 5%
+const CREATOR_SHARES = "0.95"; // 95%
+
+// Default token parameters
+const DEFAULT_YEARLY_MINT_CAP = 0n;
+const DEFAULT_VESTING_DURATION = 0n;
+
 // Types
 interface TokenConfig {
   name: string;
@@ -474,16 +496,38 @@ async function mineValidSalt(
   throw new Error(`Could not find valid salt after ${MAX_SALT_ITERATIONS} iterations`);
 }
 
-// Main function
-async function createToken() {
+// Custom error class for better error handling
+class TokenCreationError extends Error {
+  code: string;
+  override cause: Error | undefined;
+  
+  constructor(message: string, code: string, cause?: Error) {
+    super(message);
+    this.name = 'TokenCreationError';
+    this.code = code;
+    this.cause = cause;
+  }
+}
+
+// Validation functions
+function validateEnvironment(): { privateKey: `0x${string}`, rpcUrl: string } {
   const privateKey = process.env.PRIVATE_KEY as `0x${string}`;
   if (!privateKey) {
-    throw new Error("PRIVATE_KEY environment variable is required");
+    throw new TokenCreationError(
+      "PRIVATE_KEY environment variable is required",
+      "ENV_MISSING_PRIVATE_KEY"
+    );
   }
 
-  const account = privateKeyToAccount(privateKey);
   const rpcUrl = process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org";
+  
+  return { privateKey, rpcUrl };
+}
 
+// Client setup functions
+function setupClients(privateKey: `0x${string}`, rpcUrl: string) {
+  const account = privateKeyToAccount(privateKey);
+  
   const publicClient = createPublicClient({
     chain: baseSepolia,
     transport: http(rpcUrl),
@@ -495,41 +539,34 @@ async function createToken() {
     transport: http(rpcUrl),
   });
 
-  const config: TokenConfig = {
-    name: "Test Token",
-    symbol: "TEST",
-    initialSupply: parseEther("100000"),
-    minProceeds: parseEther("100"),
-    maxProceeds: parseEther("10000"),
-    auctionDurationDays: 3,
-  };
+  return { account, publicClient, walletClient };
+}
 
-  console.log("🚀 Creating token:", config.name);
-
-  // Prepare factory data
+// Token parameter preparation functions
+function prepareTokenParams(config: TokenConfig) {
   const tokenFactoryData = encodeAbiParameters(
     parseAbiParameters("string, string, uint256, uint256, address[], uint256[], string"),
-    [config.name, config.symbol, 0n, 0n, [], [], ""],
+    [config.name, config.symbol, DEFAULT_YEARLY_MINT_CAP, DEFAULT_VESTING_DURATION, [], [], ""],
   );
+  
+  return tokenFactoryData;
+}
 
-  const governanceData = encodeAbiParameters(parseAbiParameters("string, uint256, uint256, uint256"), [
-    `${config.name} DAO`,
-    7200n, // voting delay
-    50400n, // voting period
-    0n, // proposal threshold
-  ]);
+function prepareGovernanceParams(config: TokenConfig) {
+  const governanceData = encodeAbiParameters(
+    parseAbiParameters("string, uint256, uint256, uint256"), 
+    [
+      `${config.name} DAO`,
+      7200n, // voting delay
+      50400n, // voting period
+      0n, // proposal threshold
+    ]
+  );
+  
+  return governanceData;
+}
 
-  // Set auction timing with buffer
-  const fixedStartTime = Math.floor(Date.now() / 1000) + 600; // 10 minutes from now
-  const auctionStart = fixedStartTime;
-  const auctionEnd = auctionStart + config.auctionDurationDays * 24 * 60 * 60;
-
-  console.log("⏰ Auction timing:", {
-    auctionStart: new Date(auctionStart * 1000).toISOString(),
-    auctionEnd: new Date(auctionEnd * 1000).toISOString(),
-    duration: config.auctionDurationDays + " days",
-  });
-
+function preparePoolInitializerParams(config: TokenConfig, auctionStart: number, auctionEnd: number) {
   const poolInitializerData = encodeAbiParameters(
     parseAbiParameters(
       "uint256, uint256, uint256, uint256, int24, int24, uint256, int24, bool, uint256, uint24, int24",
@@ -545,11 +582,153 @@ async function createToken() {
       800, // gamma
       false, // isToken0
       8n, // numPDSlugs
-      3000, // lpFee
-      8, // tick spacing
+      LP_FEE, // lpFee
+      TICK_SPACING, // tick spacing
     ],
   );
+  
+  return poolInitializerData;
+}
 
+function prepareLiquidityParams(account: Address) {
+  const lockDuration = SECONDS_PER_YEAR;
+  const protocolOwner = "0x852a09C89463D236eea2f097623574f23E225769" as const;
+  
+  const beneficiaries = [
+    {
+      beneficiary: protocolOwner,
+      shares: parseEther(PROTOCOL_MIN_SHARES)
+    },
+    {
+      beneficiary: account,
+      shares: parseEther(CREATOR_SHARES)
+    }
+  ].sort((a, b) => {
+    if (a.beneficiary.toLowerCase() < b.beneficiary.toLowerCase()) return -1;
+    if (a.beneficiary.toLowerCase() > b.beneficiary.toLowerCase()) return 1;
+    return 0;
+  });
+  
+  const liquidityMigratorData = encodeAbiParameters(
+    parseAbiParameters("uint24, int24, uint32, (address,uint96)[]"),
+    [
+      LP_FEE,
+      TICK_SPACING,
+      lockDuration,
+      beneficiaries.map(b => [b.beneficiary, b.shares] as const)
+    ]
+  );
+  
+  return liquidityMigratorData;
+}
+
+async function executeTokenCreation(
+  createParams: CreateTokenParams,
+  account: Address,
+  publicClient: any,
+  walletClient: any
+): Promise<{ hash: `0x${string}`, tokenAddress: string | undefined }> {
+  console.log("⛽ Estimating gas...");
+  const gasEstimate = await publicClient.estimateContractGas({
+    address: DOPPLER_ADDRESSES.airlock,
+    abi: AIRLOCK_ABI,
+    functionName: "create",
+    args: [createParams as any],
+    account: account,
+  });
+
+  console.log(`📊 Gas estimated: ${gasEstimate.toString()}`);
+
+  console.log("📤 Submitting transaction to Doppler Airlock...");
+  const hash = await walletClient.writeContract({
+    address: DOPPLER_ADDRESSES.airlock,
+    abi: AIRLOCK_ABI,
+    functionName: "create",
+    args: [createParams as any],
+    gas: gasEstimate * GAS_BUFFER_MULTIPLIER,
+  });
+
+  console.log("🧾 Transaction hash:", hash);
+  console.log("🔗 Explorer:", `https://sepolia.basescan.org/tx/${hash}`);
+
+  console.log("⏳ Waiting for transaction confirmation...");
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
+  if (receipt.status !== "success") {
+    throw new TokenCreationError("Transaction reverted", "TX_REVERTED");
+  }
+
+  console.log("✅ Token creation successful!");
+  console.log(`💰 Gas used: ${receipt.gasUsed.toString()}`);
+
+  const tokenAddress = extractTokenAddress(receipt);
+  return { hash, tokenAddress: tokenAddress || undefined };
+}
+
+async function verifyTokenDeployment(
+  tokenAddress: string,
+  publicClient: any
+): Promise<boolean> {
+  for (let i = 0; i < MAX_RETRIES; i++) {
+    try {
+      if (i > 0) {
+        console.log(`🔄 Retrying token verification (attempt ${i + 1}/${MAX_RETRIES})...`);
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+      }
+      
+      const code = await publicClient.getCode({ address: tokenAddress as Address });
+      if (code && code !== '0x') {
+        console.log("✅ Token contract deployment verified!");
+        console.log(`📏 Contract bytecode size: ${(code.length - 2) / 2} bytes`);
+        return true;
+      }
+    } catch (error) {
+      if (i === MAX_RETRIES - 1) {
+        console.log("⚠️  Could not verify token contract deployment:", error);
+      }
+    }
+  }
+  
+  return false;
+}
+
+// Main function
+async function createToken() {
+  // Validate environment
+  const { privateKey, rpcUrl } = validateEnvironment();
+  
+  // Setup clients
+  const { account, publicClient, walletClient } = setupClients(privateKey, rpcUrl);
+  
+  // Token configuration
+  const config: TokenConfig = {
+    name: "Test Token",
+    symbol: "TEST",
+    initialSupply: parseEther("100000"),
+    minProceeds: parseEther("100"),
+    maxProceeds: parseEther("10000"),
+    auctionDurationDays: 3,
+  };
+
+  console.log("🚀 Creating token:", config.name);
+
+  // Prepare all parameters
+  const tokenFactoryData = prepareTokenParams(config);
+  const governanceData = prepareGovernanceParams(config);
+  
+  // Set auction timing
+  const fixedStartTime = Math.floor(Date.now() / 1000) + AUCTION_START_BUFFER;
+  const auctionStart = fixedStartTime;
+  const auctionEnd = auctionStart + config.auctionDurationDays * SECONDS_PER_DAY;
+
+  console.log("⏰ Auction timing:", {
+    auctionStart: new Date(auctionStart * 1000).toISOString(),
+    auctionEnd: new Date(auctionEnd * 1000).toISOString(),
+    duration: config.auctionDurationDays + " days",
+  });
+
+  const poolInitializerData = preparePoolInitializerParams(config, auctionStart, auctionEnd);
+  
   // Mine valid salt
   const salt = await mineValidSalt(
     tokenFactoryData,
@@ -560,38 +739,7 @@ async function createToken() {
     publicClient,
   );
 
-  // Prepare liquidity migrator data for UniswapV4Migrator
-  const lockDuration = 365 * 24 * 60 * 60; // 1 year in seconds
-  const protocolOwner = "0x852a09C89463D236eea2f097623574f23E225769" as const; // Actual Airlock owner
-  
-  // Create beneficiaries array with proper BeneficiaryData structure
-  // Must be sorted by address and include protocol owner with minimum 5% (0.05e18)
-  const beneficiaries = [
-    {
-      beneficiary: protocolOwner,
-      shares: parseEther("0.05") // 5% minimum for protocol owner
-    },
-    {
-      beneficiary: account.address, // Token creator gets the remaining 95%
-      shares: parseEther("0.95")
-    }
-  ].sort((a, b) => {
-    // Sort by address (ascending)
-    if (a.beneficiary.toLowerCase() < b.beneficiary.toLowerCase()) return -1;
-    if (a.beneficiary.toLowerCase() > b.beneficiary.toLowerCase()) return 1;
-    return 0;
-  });
-  
-  // Encode as proper BeneficiaryData array
-  const liquidityMigratorData = encodeAbiParameters(
-    parseAbiParameters("uint24, int24, uint32, (address,uint96)[]"),
-    [
-      3000, // fee (matches LP_FEE)
-      8, // tickSpacing (matches TICK_SPACING)
-      lockDuration,
-      beneficiaries.map(b => [b.beneficiary, b.shares] as const)
-    ]
-  );
+  const liquidityMigratorData = prepareLiquidityParams(account.address);
 
   const createParams: CreateTokenParams = {
     initialSupply: config.initialSupply,
@@ -610,82 +758,40 @@ async function createToken() {
   };
 
   try {
-    console.log("⛽ Estimating gas...");
-    const gasEstimate = await publicClient.estimateContractGas({
-      address: DOPPLER_ADDRESSES.airlock,
-      abi: AIRLOCK_ABI,
-      functionName: "create",
-      args: [createParams as any],
-      account: account.address,
-    });
-
-    console.log(`📊 Gas estimated: ${gasEstimate.toString()}`);
-
-    console.log("📤 Submitting transaction to Doppler Airlock...");
-    const hash = await walletClient.writeContract({
-      address: DOPPLER_ADDRESSES.airlock,
-      abi: AIRLOCK_ABI,
-      functionName: "create",
-      args: [createParams as any],
-      gas: gasEstimate * 2n, // 2x buffer for safety
-    });
-
-    console.log("🧾 Transaction hash:", hash);
-    console.log("🔗 Explorer:", `https://sepolia.basescan.org/tx/${hash}`);
-
-    console.log("⏳ Waiting for transaction confirmation...");
-    const receipt = await publicClient.waitForTransactionReceipt({ hash });
-
-    if (receipt.status === "success") {
-      console.log("✅ Token creation successful!");
-      console.log(`💰 Gas used: ${receipt.gasUsed.toString()}`);
-
-      const tokenAddress = extractTokenAddress(receipt);
-      if (tokenAddress) {
-        console.log("🎉 Token address:", tokenAddress);
-        console.log("🔗 Basescan:", `https://sepolia.basescan.org/address/${tokenAddress}`);
-        
-        // Verify the token contract exists by checking bytecode (with retry for propagation)
-        let deploymentVerified = false;
-        for (let i = 0; i < 3; i++) {
-          try {
-            if (i > 0) {
-              console.log(`🔄 Retrying token verification (attempt ${i + 1}/3)...`);
-              await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
-            }
-            
-            const code = await publicClient.getCode({ address: tokenAddress as Address });
-            if (code && code !== '0x') {
-              console.log("✅ Token contract deployment verified!");
-              console.log(`📏 Contract bytecode size: ${(code.length - 2) / 2} bytes`);
-              deploymentVerified = true;
-              break;
-            }
-          } catch (error) {
-            if (i === 2) {
-              console.log("⚠️  Could not verify token contract deployment:", error);
-            }
-          }
-        }
-        
-        if (!deploymentVerified) {
-          console.log("⚠️  Token address found but bytecode verification failed");
-          console.log("💡 The token may still be valid - check the transaction link above");
-        }
-        
-        await verifyTokenContract(tokenAddress, createParams, config);
-      } else {
-        console.log("⚠️  Could not extract token address from transaction logs");
-        console.log("💡 You can find the token address by checking the transaction on BaseScan:");
-        console.log(`🔗 Transaction: https://sepolia.basescan.org/tx/${hash}`);
+    // Execute token creation
+    const { hash, tokenAddress } = await executeTokenCreation(
+      createParams,
+      account.address,
+      publicClient,
+      walletClient
+    );
+    
+    if (tokenAddress) {
+      console.log("🎉 Token address:", tokenAddress);
+      console.log("🔗 Basescan:", `https://sepolia.basescan.org/address/${tokenAddress}`);
+      
+      // Verify deployment
+      const deploymentVerified = await verifyTokenDeployment(tokenAddress, publicClient);
+      
+      if (!deploymentVerified) {
+        console.log("⚠️  Token address found but bytecode verification failed");
+        console.log("💡 The token may still be valid - check the transaction link above");
       }
-
-      return hash;
+      
+      await verifyTokenContract(tokenAddress, createParams, config);
     } else {
-      throw new Error("Transaction reverted");
+      console.log("⚠️  Could not extract token address from transaction logs");
+      console.log("💡 You can find the token address by checking the transaction on BaseScan:");
+      console.log(`🔗 Transaction: https://sepolia.basescan.org/tx/${hash}`);
     }
+
+    return hash;
   } catch (error) {
-    console.error("❌ Token creation failed:", error);
+    if (error instanceof TokenCreationError) {
+      console.error(`❌ Token creation failed [${error.code}]:`, error.message);
+    } else {
+      console.error("❌ Token creation failed:", error);
+    }
     throw error;
   }
 }

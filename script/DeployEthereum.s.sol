@@ -19,6 +19,7 @@ pragma solidity ^0.8.26;
 import "../src/FeeRouter.sol";
 import "../src/StakingRewards.sol";
 import "./base/DeploymentBase.sol";
+import "./config/DeploymentConstants.sol";
 
 contract DeployEthereum is DeploymentBase {
     /* -------------------------------------------------------------------------- */
@@ -33,6 +34,13 @@ contract DeployEthereum is DeploymentBase {
             console.log("[WARNING] Deploying to non-Ethereum chainId", block.chainid);
         }
         
+        // Mainnet safety check
+        if (DeploymentConstants.isMainnet(block.chainid)) {
+            console.log("WARNING: You are about to deploy to MAINNET!");
+            console.log("Chain ID:", block.chainid);
+            require(vm.envOr("MAINNET_DEPLOYMENT_CONFIRMED", false), "Set MAINNET_DEPLOYMENT_CONFIRMED=true to deploy to mainnet");
+        }
+        
         // Initialize deployment configuration
         DeploymentConfig memory config = initializeDeployment();
         
@@ -45,13 +53,16 @@ contract DeployEthereum is DeploymentBase {
         address swapRouter = vm.envAddress("SWAP_ROUTER");
         address treasury = vm.envAddress("TREASURY");
 
-        // Validation
-        require(lzEndpoint != address(0), "LZ_ENDPOINT not set");
+        // Comprehensive validation of environment variables
+        DeploymentConstants.validateNonZeroAddress(lzEndpoint, "LZ_ENDPOINT");
         require(baseEid != 0, "BASE_EID not set");
-        require(hlg != address(0), "HLG not set");
-        require(weth != address(0), "WETH not set");
-        require(swapRouter != address(0), "SWAP_ROUTER not set");
-        require(treasury != address(0), "TREASURY not set");
+        DeploymentConstants.validateNonZeroAddress(hlg, "HLG");
+        DeploymentConstants.validateNonZeroAddress(weth, "WETH");
+        DeploymentConstants.validateNonZeroAddress(swapRouter, "SWAP_ROUTER");
+        DeploymentConstants.validateNonZeroAddress(treasury, "TREASURY");
+        
+        // Validate deployment account has sufficient gas
+        require(gasleft() >= DeploymentConstants.MIN_DEPLOYMENT_GAS, "Insufficient gas for deployment");
         
         // Deploy HolographDeployer using base functionality
         HolographDeployer holographDeployer = deployHolographDeployer();
