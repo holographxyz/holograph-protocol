@@ -49,45 +49,45 @@ contract DeployBase is DeploymentBase {
         if (block.chainid != BASE_MAINNET && block.chainid != BASE_SEPOLIA) {
             console.log("[WARNING] Chain ID does not match known Base chains");
         }
-        
+
         // Mainnet safety check
         if (DeploymentConstants.isMainnet(block.chainid)) {
             console.log("WARNING: You are about to deploy to MAINNET!");
             console.log("Chain ID:", block.chainid);
-            require(vm.envOr("MAINNET_DEPLOYMENT_CONFIRMED", false), "Set MAINNET_DEPLOYMENT_CONFIRMED=true to deploy to mainnet");
+            require(vm.envOr("MAINNET", false), "Set MAINNET=true to deploy to mainnet");
         }
-        
+
         // Initialize deployment configuration
         DeploymentConfig memory config = initializeDeployment();
-        
+
         // Environment variables
         address lzEndpoint = vm.envAddress("LZ_ENDPOINT");
         address dopplerAirlock = vm.envAddress("DOPPLER_AIRLOCK");
         address treasury = vm.envAddress("TREASURY");
         uint32 ethEid = uint32(vm.envUint("ETH_EID"));
 
-        // Comprehensive validation of environment variables
+        // Validate env variables
         DeploymentConstants.validateNonZeroAddress(lzEndpoint, "LZ_ENDPOINT");
         DeploymentConstants.validateNonZeroAddress(dopplerAirlock, "DOPPLER_AIRLOCK");
         DeploymentConstants.validateNonZeroAddress(treasury, "TREASURY");
         require(ethEid != 0, "ETH_EID not set");
-        
+
         // Validate deployment account has sufficient gas
         require(gasleft() >= DeploymentConstants.MIN_DEPLOYMENT_GAS, "Insufficient gas for deployment");
-        
+
         // Gas tracking variable
         uint256 gasStart;
-        
+
         // Deploy HolographDeployer using base functionality
         HolographDeployer holographDeployer = deployHolographDeployer();
-        
+
         // Get deployment salts - use EOA address as msg.sender for HolographDeployer
         ChainConfigs.DeploymentSalts memory salts = getDeploymentSalts(config.deployer);
-        
+
         // Initialize addresses struct
         ContractAddresses memory addresses;
         addresses.holographDeployer = address(holographDeployer);
-        
+
         /* ---------------------- Deploy HolographERC20 Implementation ---------------------- */
         console.log("\nDeploying HolographERC20 implementation...");
         gasStart = gasleft();
@@ -125,13 +125,13 @@ contract DeployBase is DeploymentBase {
 
         // Cast proxy to factory interface for initialization
         HolographFactory factory = HolographFactory(factoryProxy);
-        
+
         // Initialize factory through proxy
         gasStart = gasleft();
         factory.initialize(config.deployer);
         uint256 gasInitialize = gasStart - gasleft();
         console.log("Factory initialized, gas used:", gasInitialize);
-        
+
         /* ---------------------- Deploy FeeRouter ---------------------- */
         console.log("\nDeploying FeeRouter...");
         gasStart = gasleft();
@@ -153,13 +153,12 @@ contract DeployBase is DeploymentBase {
         console.log("FeeRouter deployed at:", feeRouter);
         console.log("Gas used:", gasFeeRouter);
 
-
         // Store final addresses
         addresses.holographERC20 = erc20Implementation;
         addresses.holographFactory = factoryImpl;
         addresses.holographFactoryProxy = factoryProxy;
         addresses.feeRouter = feeRouter;
-        
+
         vm.stopBroadcast();
 
         // Print summary and save deployment

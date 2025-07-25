@@ -33,17 +33,17 @@ contract DeployEthereum is DeploymentBase {
         if (block.chainid != ETH_MAINNET && block.chainid != ETH_SEPOLIA) {
             console.log("[WARNING] Deploying to non-Ethereum chainId", block.chainid);
         }
-        
+
         // Mainnet safety check
         if (DeploymentConstants.isMainnet(block.chainid)) {
             console.log("WARNING: You are about to deploy to MAINNET!");
             console.log("Chain ID:", block.chainid);
-            require(vm.envOr("MAINNET_DEPLOYMENT_CONFIRMED", false), "Set MAINNET_DEPLOYMENT_CONFIRMED=true to deploy to mainnet");
+            require(vm.envOr("MAINNET", false), "Set MAINNET=true to deploy to mainnet");
         }
-        
+
         // Initialize deployment configuration
         DeploymentConfig memory config = initializeDeployment();
-        
+
         // Environment variables
         address lzEndpoint = vm.envAddress("LZ_ENDPOINT");
         uint32 baseEid = uint32(vm.envUint("BASE_EID"));
@@ -53,23 +53,23 @@ contract DeployEthereum is DeploymentBase {
         address swapRouter = vm.envAddress("SWAP_ROUTER");
         address treasury = vm.envAddress("TREASURY");
 
-        // Comprehensive validation of environment variables
+        // Validate env variables
         DeploymentConstants.validateNonZeroAddress(lzEndpoint, "LZ_ENDPOINT");
         require(baseEid != 0, "BASE_EID not set");
         DeploymentConstants.validateNonZeroAddress(hlg, "HLG");
         DeploymentConstants.validateNonZeroAddress(weth, "WETH");
         DeploymentConstants.validateNonZeroAddress(swapRouter, "SWAP_ROUTER");
         DeploymentConstants.validateNonZeroAddress(treasury, "TREASURY");
-        
+
         // Validate deployment account has sufficient gas
         require(gasleft() >= DeploymentConstants.MIN_DEPLOYMENT_GAS, "Insufficient gas for deployment");
-        
+
         // Deploy HolographDeployer using base functionality
         HolographDeployer holographDeployer = deployHolographDeployer();
-        
+
         // Get deployment salts - use EOA address as msg.sender for HolographDeployer
         ChainConfigs.DeploymentSalts memory salts = getDeploymentSalts(config.deployer);
-        
+
         // Initialize addresses struct
         ContractAddresses memory addresses;
         addresses.holographDeployer = address(holographDeployer);
@@ -112,7 +112,7 @@ contract DeployEthereum is DeploymentBase {
 
         // Update stakingRewards to use actual FeeRouter address
         StakingRewards(stakingRewards).setFeeRouter(feeRouter);
-        
+
         // Store final addresses
         addresses.stakingRewards = stakingRewards;
         addresses.feeRouter = feeRouter;
