@@ -26,7 +26,6 @@ pragma solidity ^0.8.26;
  *   # factory proxy
  *   forge verify-contract --chain-id 8453 $(cat deployments/base/HolographFactoryProxy.txt) src/HolographFactoryProxy.sol:HolographFactoryProxy --constructor-args $(cast abi-encode "constructor(address)" $(cat deployments/base/HolographFactory.txt)) $ETHERSCAN_API_KEY
  */
-
 import "../src/FeeRouter.sol";
 import "../src/HolographFactory.sol";
 import "../src/HolographFactoryProxy.sol";
@@ -100,10 +99,8 @@ contract DeployBase is DeploymentBase {
         /* ---------------------- Deploy HolographFactory Implementation ---------------------- */
         console.log("\nDeploying HolographFactory implementation...");
         gasStart = gasleft();
-        bytes memory factoryBytecode = abi.encodePacked(
-            type(HolographFactory).creationCode,
-            abi.encode(erc20Implementation)
-        );
+        bytes memory factoryBytecode =
+            abi.encodePacked(type(HolographFactory).creationCode, abi.encode(erc20Implementation));
         address factoryImpl = holographDeployer.deploy(factoryBytecode, salts.factory);
         uint256 gasFactoryImpl = gasStart - gasleft();
         console.log("HolographFactory deployed at:", factoryImpl);
@@ -114,10 +111,7 @@ contract DeployBase is DeploymentBase {
         gasStart = gasleft();
         // Use a different salt for proxy to get different address
         bytes32 proxySalt = bytes32(uint256(uint160(config.deployer)) << 96) | bytes32(uint256(6));
-        bytes memory proxyBytecode = abi.encodePacked(
-            type(HolographFactoryProxy).creationCode,
-            abi.encode(factoryImpl)
-        );
+        bytes memory proxyBytecode = abi.encodePacked(type(HolographFactoryProxy).creationCode, abi.encode(factoryImpl));
         address factoryProxy = holographDeployer.deploy(proxyBytecode, proxySalt);
         uint256 gasFactoryProxy = gasStart - gasleft();
         console.log("HolographFactory proxy deployed at:", factoryProxy);

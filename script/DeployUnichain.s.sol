@@ -25,7 +25,6 @@ pragma solidity ^0.8.26;
  *   # factory proxy
  *   forge verify-contract --chain-id 1301 $(cat deployments/unichain/HolographFactoryProxy.txt) src/HolographFactoryProxy.sol:HolographFactoryProxy --constructor-args $(cast abi-encode "constructor(address)" $(cat deployments/unichain/HolographFactory.txt)) $UNISCAN_API_KEY
  */
-
 import "../src/HolographFactory.sol";
 import "../src/HolographFactoryProxy.sol";
 import "../src/HolographERC20.sol";
@@ -36,7 +35,7 @@ contract DeployUnichain is DeploymentBase {
     /*                                Constants                                   */
     /* -------------------------------------------------------------------------- */
     uint256 internal constant UNICHAIN_MAINNET = 1301;
-    uint256 internal constant UNICHAIN_SEPOLIA = 1301;  // Update when Unichain Sepolia is available
+    uint256 internal constant UNICHAIN_SEPOLIA = 1301; // Update when Unichain Sepolia is available
 
     /* -------------------------------------------------------------------------- */
     /*                                   Run                                      */
@@ -46,16 +45,16 @@ contract DeployUnichain is DeploymentBase {
         if (block.chainid != UNICHAIN_MAINNET && block.chainid != UNICHAIN_SEPOLIA) {
             console.log("[WARNING] Chain ID does not match known Unichain chains");
         }
-        
+
         // Initialize deployment configuration
         DeploymentConfig memory config = initializeDeployment();
-        
+
         // Deploy HolographDeployer using base functionality
         HolographDeployer holographDeployer = deployHolographDeployer();
-        
+
         // Get deployment salts - use EOA address as msg.sender for HolographDeployer
         ChainConfigs.DeploymentSalts memory salts = getDeploymentSalts(config.deployer);
-        
+
         // Initialize addresses struct
         ContractAddresses memory addresses;
         addresses.holographDeployer = address(holographDeployer);
@@ -72,10 +71,8 @@ contract DeployUnichain is DeploymentBase {
         /* ---------------------- Deploy HolographFactory Implementation ---------------------- */
         console.log("\nDeploying HolographFactory implementation...");
         gasStart = gasleft();
-        bytes memory factoryBytecode = abi.encodePacked(
-            type(HolographFactory).creationCode,
-            abi.encode(erc20Implementation)
-        );
+        bytes memory factoryBytecode =
+            abi.encodePacked(type(HolographFactory).creationCode, abi.encode(erc20Implementation));
         address factoryImpl = holographDeployer.deploy(factoryBytecode, salts.factory);
         uint256 gasFactoryImpl = gasStart - gasleft();
         console.log("HolographFactory deployed at:", factoryImpl);
@@ -86,10 +83,7 @@ contract DeployUnichain is DeploymentBase {
         gasStart = gasleft();
         // Use a different salt for proxy to get different address
         bytes32 proxySalt = bytes32(uint256(uint160(config.deployer)) << 96) | bytes32(uint256(6));
-        bytes memory proxyBytecode = abi.encodePacked(
-            type(HolographFactoryProxy).creationCode,
-            abi.encode(factoryImpl)
-        );
+        bytes memory proxyBytecode = abi.encodePacked(type(HolographFactoryProxy).creationCode, abi.encode(factoryImpl));
         address factoryProxy = holographDeployer.deploy(proxyBytecode, proxySalt);
         uint256 gasFactoryProxy = gasStart - gasleft();
         console.log("HolographFactory proxy deployed at:", factoryProxy);
@@ -97,19 +91,18 @@ contract DeployUnichain is DeploymentBase {
 
         // Cast proxy to factory interface for initialization
         HolographFactory factory = HolographFactory(factoryProxy);
-        
+
         // Initialize factory through proxy
         gasStart = gasleft();
         factory.initialize(config.deployer);
         uint256 gasInitialize = gasStart - gasleft();
         console.log("Factory initialized, gas used:", gasInitialize);
 
-
         // Store final addresses
         addresses.holographERC20 = erc20Implementation;
         addresses.holographFactory = factoryImpl;
         addresses.holographFactoryProxy = factoryProxy;
-        
+
         vm.stopBroadcast();
 
         // Print summary and save deployment

@@ -2,8 +2,10 @@
 pragma solidity ^0.8.26;
 
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import {ERC20VotesUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
-import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
+import {ERC20VotesUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
+import {ERC20PermitUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {NoncesUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/NoncesUpgradeable.sol";
 import {IHolographFactory} from "./interfaces/IHolographFactory.sol";
@@ -263,8 +265,8 @@ contract HolographERC20 is ERC20Upgradeable, ERC20VotesUpgradeable, ERC20PermitU
             //
             // This saves ~1000 gas by avoiding overflow checks on safe operations.
             unchecked {
-                uint256 partialYearMint = (supply * yearlyMintRate_ * (block.timestamp - lastMintTimestamp_)) /
-                    (1 ether * 365 days);
+                uint256 partialYearMint =
+                    (supply * yearlyMintRate_ * (block.timestamp - lastMintTimestamp_)) / (1 ether * 365 days);
                 mintableAmount += partialYearMint;
             }
         }
@@ -290,8 +292,7 @@ contract HolographERC20 is ERC20Upgradeable, ERC20VotesUpgradeable, ERC20PermitU
      */
     function updateMintRate(uint256 newMintRate) external onlyOwner {
         require(
-            newMintRate <= MAX_YEARLY_MINT_RATE_WAD,
-            MaxYearlyMintRateExceeded(newMintRate, MAX_YEARLY_MINT_RATE_WAD)
+            newMintRate <= MAX_YEARLY_MINT_RATE_WAD, MaxYearlyMintRateExceeded(newMintRate, MAX_YEARLY_MINT_RATE_WAD)
         );
 
         if (currentYearStart != 0 && (block.timestamp - lastMintTimestamp) != 0) {
@@ -338,7 +339,6 @@ contract HolographERC20 is ERC20Upgradeable, ERC20VotesUpgradeable, ERC20PermitU
         return vestedAmount - getVestingDataOf[account].releasedAmount;
     }
 
-
     /* -------------------------------------------------------------------------- */
     /*                            Override Functions                             */
     /* -------------------------------------------------------------------------- */
@@ -355,7 +355,10 @@ contract HolographERC20 is ERC20Upgradeable, ERC20VotesUpgradeable, ERC20PermitU
     }
 
     /// @notice Enhanced transfer function with pool lock protection
-    function _update(address from, address to, uint256 value) internal override(ERC20Upgradeable, ERC20VotesUpgradeable) {
+    function _update(address from, address to, uint256 value)
+        internal
+        override(ERC20Upgradeable, ERC20VotesUpgradeable)
+    {
         if (to == pool && isPoolUnlocked == false) revert PoolLocked();
         super._update(from, to, value);
     }

@@ -26,14 +26,14 @@ contract HolographFactory is ITokenFactory, UUPSUpgradeable, OwnableUpgradeable,
     /* -------------------------------------------------------------------------- */
     /*                                 Storage                                    */
     /* -------------------------------------------------------------------------- */
-    
+
     /**
      * @notice HolographERC20 implementation address for cloning
      * @dev This is immutable for gas efficiency and security:
      * - Immutable variables are read directly from bytecode (~3 gas) vs storage reads (~100-2100 gas)
      * - Cannot be changed after deployment, preventing accidental updates that could break tokens
      * - Provides clear separation between upgradeable logic and fixed infrastructure
-     * 
+     *
      * When upgrading the factory to support new token versions:
      * 1. Deploy new token implementation
      * 2. Deploy new factory implementation with updated immutable address
@@ -84,16 +84,14 @@ contract HolographFactory is ITokenFactory, UUPSUpgradeable, OwnableUpgradeable,
         erc20Implementation = _erc20Implementation;
         _disableInitializers();
     }
-    
+
     /**
      * @notice Initialize the HolographFactory
      * @param _owner Owner address
      */
-    function initialize(
-        address _owner
-    ) external initializer {
+    function initialize(address _owner) external initializer {
         if (_owner == address(0)) revert ZeroAddress();
-        
+
         __Ownable_init(_owner);
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
@@ -112,20 +110,19 @@ contract HolographFactory is ITokenFactory, UUPSUpgradeable, OwnableUpgradeable,
      * @param tokenData Encoded token metadata (matches DERC20 format)
      * @return token Address of the newly deployed HolographERC20 token
      */
-    function create(
-        uint256 initialSupply,
-        address recipient,
-        address owner,
-        bytes32 salt,
-        bytes calldata tokenData
-    ) external override nonReentrant returns (address token) {
+    function create(uint256 initialSupply, address recipient, address owner, bytes32 salt, bytes calldata tokenData)
+        external
+        override
+        nonReentrant
+        returns (address token)
+    {
         // Verify caller is an authorized Airlock
         if (!authorizedAirlocks[msg.sender]) revert UnauthorizedCaller();
-        
+
         // Prevent salt reuse attacks
         if (usedSalts[salt]) revert SaltAlreadyUsed();
         usedSalts[salt] = true;
-        
+
         // Decode token metadata from tokenData (matches Doppler DERC20 format)
         (
             string memory name,
@@ -136,22 +133,13 @@ contract HolographFactory is ITokenFactory, UUPSUpgradeable, OwnableUpgradeable,
             uint256[] memory amounts,
             string memory tokenURI
         ) = _decodeTokenData(tokenData);
-        
+
         // Deploy HolographERC20 clone with CREATE2 for deterministic address
         token = Clones.cloneDeterministic(erc20Implementation, salt);
-        
+
         // Initialize the clone
         IHolographERC20(token).initialize(
-            name,
-            symbol,
-            initialSupply,
-            recipient,
-            owner,
-            yearlyMintCap,
-            vestingDuration,
-            recipients,
-            amounts,
-            tokenURI
+            name, symbol, initialSupply, recipient, owner, yearlyMintCap, vestingDuration, recipients, amounts, tokenURI
         );
 
         // Track the deployed token
@@ -171,25 +159,29 @@ contract HolographFactory is ITokenFactory, UUPSUpgradeable, OwnableUpgradeable,
      * @dev Expects tokenData format: (string, string, uint256, uint256, address[], uint256[], string)
      * @param tokenData Encoded token metadata
      * @return name Token name
-     * @return symbol Token symbol  
+     * @return symbol Token symbol
      * @return yearlyMintCap Yearly mint cap
      * @return vestingDuration Vesting duration
      * @return recipients Vesting recipients
      * @return amounts Vesting amounts
      * @return tokenURI Token URI
      */
-    function _decodeTokenData(bytes calldata tokenData) internal pure returns (
-        string memory name,
-        string memory symbol,
-        uint256 yearlyMintCap,
-        uint256 vestingDuration,
-        address[] memory recipients,
-        uint256[] memory amounts,
-        string memory tokenURI
-    ) {
+    function _decodeTokenData(bytes calldata tokenData)
+        internal
+        pure
+        returns (
+            string memory name,
+            string memory symbol,
+            uint256 yearlyMintCap,
+            uint256 vestingDuration,
+            address[] memory recipients,
+            uint256[] memory amounts,
+            string memory tokenURI
+        )
+    {
         if (tokenData.length == 0) revert InvalidTokenData();
-        
-        (name, symbol, yearlyMintCap, vestingDuration, recipients, amounts, tokenURI) = 
+
+        (name, symbol, yearlyMintCap, vestingDuration, recipients, amounts, tokenURI) =
             abi.decode(tokenData, (string, string, uint256, uint256, address[], uint256[], string));
     }
 
@@ -206,7 +198,6 @@ contract HolographFactory is ITokenFactory, UUPSUpgradeable, OwnableUpgradeable,
         authorizedAirlocks[airlock] = authorized;
         emit AirlockAuthorizationSet(airlock, authorized);
     }
-
 
     /* -------------------------------------------------------------------------- */
     /*                                View Functions                             */
@@ -244,7 +235,7 @@ contract HolographFactory is ITokenFactory, UUPSUpgradeable, OwnableUpgradeable,
      * @param newImplementation New implementation address
      */
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
-    
+
     /**
      * @notice Get the current implementation version
      * @return Version string

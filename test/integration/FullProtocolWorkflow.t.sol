@@ -23,9 +23,9 @@ interface IAirlock {
         LiquidityMigrator
     }
 
-    function create(
-        CreateParams calldata createData
-    ) external returns (address asset, address pool, address governance, address timelock, address migrationPool);
+    function create(CreateParams calldata createData)
+        external
+        returns (address asset, address pool, address governance, address timelock, address migrationPool);
 
     function setModuleState(address[] calldata modules, ModuleState[] calldata states) external;
     function getModuleState(address module) external view returns (ModuleState);
@@ -62,16 +62,20 @@ contract LZEndpointStub {
         MessagingFee fee;
     }
 
-    function send(MessagingParams calldata params, address /*refundAddress*/) external payable returns (MessagingReceipt memory receipt) {
+    function send(MessagingParams calldata params, address /*refundAddress*/ )
+        external
+        payable
+        returns (MessagingReceipt memory receipt)
+    {
         emit MessageSent(params.dstEid, params.message);
-        
+
         // Return mock receipt
         receipt.guid = keccak256(abi.encodePacked(params.dstEid, params.message, block.timestamp));
         receipt.nonce = 1;
         receipt.fee = MessagingFee(msg.value, 0);
     }
 
-    function setDelegate(address /*delegate*/) external {
+    function setDelegate(address /*delegate*/ ) external {
         // Mock implementation
     }
 
@@ -98,29 +102,27 @@ library DopplerAddrBook {
     }
 
     function getTestnet() internal pure returns (DopplerAddrs memory) {
-        return
-            DopplerAddrs({
-                airlock: 0x3411306Ce66c9469BFF1535BA955503c4Bde1C6e,
-                tokenFactory: 0xc69Ba223c617F7D936B3cf2012aa644815dBE9Ff,
-                governanceFactory: 0x9dBFaaDC8c0cB2c34bA698DD9426555336992e20,
-                v4Initializer: 0x8E891d249f1ECbfFA6143c03EB1B12843aef09d3,
-                migrator: 0x846a84918aA87c14b86B2298776e8ea5a4e34C9E,
-                poolManager: 0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408,
-                dopplerDeployer: 0x60a039e4aDD40ca95e0475c11e8A4182D06C9Aa0
-            });
+        return DopplerAddrs({
+            airlock: 0x3411306Ce66c9469BFF1535BA955503c4Bde1C6e,
+            tokenFactory: 0xc69Ba223c617F7D936B3cf2012aa644815dBE9Ff,
+            governanceFactory: 0x9dBFaaDC8c0cB2c34bA698DD9426555336992e20,
+            v4Initializer: 0x8E891d249f1ECbfFA6143c03EB1B12843aef09d3,
+            migrator: 0x846a84918aA87c14b86B2298776e8ea5a4e34C9E,
+            poolManager: 0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408,
+            dopplerDeployer: 0x60a039e4aDD40ca95e0475c11e8A4182D06C9Aa0
+        });
     }
 
     function getMainnet() internal pure returns (DopplerAddrs memory) {
-        return
-            DopplerAddrs({
-                airlock: 0x660eAaEdEBc968f8f3694354FA8EC0b4c5Ba8D12,
-                tokenFactory: 0xFAafdE6a5b658684cC5eb0C5c2c755B00A246F45,
-                governanceFactory: 0xb4deE32EB70A5E55f3D2d861F49Fb3D79f7a14d9,
-                v4Initializer: 0x77EbfBAE15AD200758E9E2E61597c0B07d731254,
-                migrator: 0x5F3bA43D44375286296Cb85F1EA2EBfa25dde731,
-                poolManager: 0x498581fF718922c3f8e6A244956aF099B2652b2b,
-                dopplerDeployer: 0x5CadB034267751a364dDD4d321C99E07A307f915
-            });
+        return DopplerAddrs({
+            airlock: 0x660eAaEdEBc968f8f3694354FA8EC0b4c5Ba8D12,
+            tokenFactory: 0xFAafdE6a5b658684cC5eb0C5c2c755B00A246F45,
+            governanceFactory: 0xb4deE32EB70A5E55f3D2d861F49Fb3D79f7a14d9,
+            v4Initializer: 0x77EbfBAE15AD200758E9E2E61597c0B07d731254,
+            migrator: 0x5F3bA43D44375286296Cb85F1EA2EBfa25dde731,
+            poolManager: 0x498581fF718922c3f8e6A244956aF099B2652b2b,
+            dopplerDeployer: 0x5CadB034267751a364dDD4d321C99E07A307f915
+        });
     }
 }
 
@@ -151,20 +153,15 @@ contract FullProtocolWorkflowTest is Test {
     uint256 private constant AFTER_SWAP_FLAG = 1 << 6;
     uint256 private constant BEFORE_DONATE_FLAG = 1 << 5;
 
-    uint256 private constant REQUIRED_FLAGS =
-        BEFORE_INITIALIZE_FLAG |
-            AFTER_INITIALIZE_FLAG |
-            BEFORE_ADD_LIQUIDITY_FLAG |
-            BEFORE_SWAP_FLAG |
-            AFTER_SWAP_FLAG |
-            BEFORE_DONATE_FLAG;
+    uint256 private constant REQUIRED_FLAGS = BEFORE_INITIALIZE_FLAG | AFTER_INITIALIZE_FLAG | BEFORE_ADD_LIQUIDITY_FLAG
+        | BEFORE_SWAP_FLAG | AFTER_SWAP_FLAG | BEFORE_DONATE_FLAG;
 
     uint256 private constant FLAG_MASK = 0x3fff;
     uint256 private constant MAX_SALT_ITERATIONS = 200_000;
 
     // LayerZero endpoint IDs for Base
-    uint32 constant BASE_SEPOLIA_EID = 40245;    // Base Sepolia (testnet)
-    uint32 constant SOURCE_EID = BASE_SEPOLIA_EID;    // Deploy on Base Sepolia
+    uint32 constant BASE_SEPOLIA_EID = 40245; // Base Sepolia (testnet)
+    uint32 constant SOURCE_EID = BASE_SEPOLIA_EID; // Deploy on Base Sepolia
 
     // Token parameters
     string constant TOKEN_NAME = "Holograph Full Protocol Token";
@@ -184,47 +181,55 @@ contract FullProtocolWorkflowTest is Test {
     address private treasury = address(0x1111);
     address private user = address(0x3333);
 
-    event TokenDeployed(address indexed token, string name, string symbol, uint256 initialSupply, address indexed recipient, address indexed owner, address creator);
+    event TokenDeployed(
+        address indexed token,
+        string name,
+        string symbol,
+        uint256 initialSupply,
+        address indexed recipient,
+        address indexed owner,
+        address creator
+    );
     event SlicePulled(address indexed airlock, address indexed token, uint256 holoAmt, uint256 treasuryAmt);
 
     function setUp() public {
         // Create fork of Base Sepolia for real Doppler integration testing
         vm.createSelectFork(vm.rpcUrl("baseSepolia"));
         console.log("=== USING BASE SEPOLIA TESTNET FOR FULL PROTOCOL WORKFLOW ===");
-        
+
         // Initialize Doppler addresses for Base Sepolia
         doppler = DopplerAddrBook.getTestnet();
         console.log("Doppler Airlock: %s", doppler.airlock);
 
         // Deploy our custom LayerZero endpoint and contracts
         lzEndpoint = new LZEndpointStub();
-        
+
         // Deploy HolographERC20 implementation for cloning
         HolographERC20 erc20Implementation = new HolographERC20();
-        
+
         // Deploy factory implementation
         HolographFactory factoryImpl = new HolographFactory(address(erc20Implementation));
-        
+
         // Deploy proxy
         HolographFactoryProxy proxy = new HolographFactoryProxy(address(factoryImpl));
-        
+
         // Cast proxy to factory interface
         factory = HolographFactory(address(proxy));
-        
+
         // Initialize factory
         factory.initialize(address(this));
-        
+
         // Deploy FeeRouter for bridging integrator fees to Ethereum
         uint32 ETH_SEPOLIA_EID = 40161; // Ethereum Sepolia for fee bridging
         feeRouter = new FeeRouter(
-            address(lzEndpoint),  // endpoint
-            ETH_SEPOLIA_EID,     // remote EID (Ethereum for fee bridging)
-            address(0),          // staking pool (not needed for this test)
-            address(0),          // HLG (not needed)
-            address(0),          // WETH (not needed)
-            address(0),          // swap router (not needed)
-            treasury,            // treasury
-            address(this)        // owner address
+            address(lzEndpoint), // endpoint
+            ETH_SEPOLIA_EID, // remote EID (Ethereum for fee bridging)
+            address(0), // staking pool (not needed for this test)
+            address(0), // HLG (not needed)
+            address(0), // WETH (not needed)
+            address(0), // swap router (not needed)
+            treasury, // treasury
+            address(this) // owner address
         );
 
         // Use real Doppler Airlock from Base Sepolia fork
@@ -256,7 +261,6 @@ contract FullProtocolWorkflowTest is Test {
         // Grant keeper role to test contract for fee collection
         bytes32 keeperRole = feeRouter.KEEPER_ROLE();
         feeRouter.grantRole(keeperRole, address(this));
-
     }
 
     /* -------------------------------------------------------------------------- */
@@ -290,7 +294,7 @@ contract FullProtocolWorkflowTest is Test {
 
         assertTrue(token != address(0), "Token should be deployed");
         assertTrue(factory.isDeployedToken(token), "Token should be tracked");
-        
+
         // Verify creator tracking - tx.origin should be tracked as creator
         assertTrue(factory.isTokenCreator(token, address(this)), "This contract should be creator");
 
@@ -435,9 +439,8 @@ contract FullProtocolWorkflowTest is Test {
 
         // This is the key test - actually call through the Airlock!
         vm.prank(creator, creator); // Set both msg.sender and tx.origin to creator
-        (address asset, address pool, address governance, address timelock, address migrationPool) = airlock.create(
-            createParams
-        );
+        (address asset, address pool, address governance, address timelock, address migrationPool) =
+            airlock.create(createParams);
 
         console.log("=== DOPPLER AIRLOCK CREATION SUCCESSFUL ===");
         console.log("Asset (HolographERC20):", asset);
@@ -449,7 +452,7 @@ contract FullProtocolWorkflowTest is Test {
         // Verify the token is our HolographERC20
         assertTrue(asset != address(0), "Asset should be deployed");
         assertTrue(factory.isDeployedToken(asset), "Asset should be tracked by our factory");
-        
+
         // Verify creator tracking - creator should be tracked even though airlock called create()
         assertTrue(factory.isTokenCreator(asset, creator), "Creator should be tracked as token creator");
 
@@ -465,52 +468,50 @@ contract FullProtocolWorkflowTest is Test {
         console.log("[OK] Complete Doppler ecosystem integration working");
     }
 
-
     function test_BaseTokenFunctionality() public {
         address tokenAddr = _createTestToken();
         HolographERC20 token = HolographERC20(tokenAddr);
-        
+
         // Test basic token properties and governance functionality
         assertEq(token.totalSupply(), INITIAL_SUPPLY);
         assertEq(token.name(), TOKEN_NAME);
         assertEq(token.symbol(), TOKEN_SYMBOL);
-        
+
         // Note: In the Doppler ecosystem, tokens are distributed through the auction/pool mechanism
         // rather than being directly held by the creator, so we test governance instead
-        
+
         // Test that the token has LayerZero OFT capabilities
         // LayerZero endpoint check removed - will be added back in v2
-        
+
         // Test that the token owner is the Airlock (proper integration)
         assertEq(token.owner(), address(airlock));
-        
+
         // Test yearly mint rate is set correctly
         assertEq(token.yearlyMintRate(), YEARLY_MINT_RATE);
-        
+
         console.log("SUCCESS: Base token functionality working correctly");
     }
-
 
     function test_FeeRouter() public {
         // Verify factory is trusted
         assertTrue(feeRouter.trustedFactories(address(factory)));
-        
-        // Test fee calculation and configuration 
+
+        // Test fee calculation and configuration
         uint256 feeAmount = 2 ether;
-        
+
         // Verify fee split calculation works correctly
         (uint256 protocolFee, uint256 treasuryFee) = feeRouter.calculateFeeSplit(feeAmount);
         assertEq(protocolFee, (feeAmount * 150) / 10000); // 1.5%
-        assertEq(treasuryFee, feeAmount - protocolFee);   // 98.5%
-        
+        assertEq(treasuryFee, feeAmount - protocolFee); // 98.5%
+
         // Verify the treasury configuration is correct
         address configuredTreasury = feeRouter.treasury();
         assertEq(configuredTreasury, treasury);
-        
+
         // Verify the protocol fee basis points is correct
         uint256 holographFeeBps = feeRouter.holographFeeBps();
         assertEq(holographFeeBps, 150); // 1.5%
-        
+
         console.log("Treasury fee:", treasuryFee);
         console.log("Protocol fee:", protocolFee);
         console.log("Treasury address:", configuredTreasury);
@@ -521,7 +522,6 @@ contract FullProtocolWorkflowTest is Test {
     /*                          Error Handling                                  */
     /* -------------------------------------------------------------------------- */
 
-
     /* -------------------------------------------------------------------------- */
     /*                          Performance & Gas Tests                         */
     /* -------------------------------------------------------------------------- */
@@ -529,19 +529,13 @@ contract FullProtocolWorkflowTest is Test {
     function test_GasConsumptionBaseTokenCreation() public {
         // Prepare token factory data
         bytes memory tokenFactoryData = abi.encode(
-            TOKEN_NAME,
-            TOKEN_SYMBOL,
-            YEARLY_MINT_RATE,
-            VESTING_DURATION,
-            new address[](0),
-            new uint256[](0),
-            TOKEN_URI
+            TOKEN_NAME, TOKEN_SYMBOL, YEARLY_MINT_RATE, VESTING_DURATION, new address[](0), new uint256[](0), TOKEN_URI
         );
 
         // Prepare pool initializer data with proper timing
         uint256 auctionStart = block.timestamp + 600; // 10 minutes from now
         uint256 auctionEnd = auctionStart + 3 days;
-        
+
         bytes memory poolInitializerData = abi.encode(
             MIN_PROCEEDS, // minimumProceeds
             MAX_PROCEEDS, // maximumProceeds
@@ -576,23 +570,22 @@ contract FullProtocolWorkflowTest is Test {
             TOKEN_URI,
             salt
         );
-        
+
         uint256 gasBefore = gasleft();
-        
+
         vm.prank(creator, creator); // Set both msg.sender and tx.origin to creator
         (address tokenAddr,,,,) = airlock.create(createParams);
-        
+
         uint256 gasUsed = gasBefore - gasleft();
         console.log("Gas used for Base token creation through real Doppler Airlock:", gasUsed);
-        
+
         // Verify creation was successful
         assertTrue(tokenAddr != address(0));
         assertTrue(factory.isDeployedToken(tokenAddr));
-        
+
         // Verify creator tracking
         assertTrue(factory.isTokenCreator(tokenAddr, creator), "Creator should be tracked");
     }
-
 
     function test_saltMiningPerformance() public {
         console.log("=== SALT MINING PERFORMANCE TEST ===");
@@ -661,19 +654,13 @@ contract FullProtocolWorkflowTest is Test {
     function _createTestToken() internal returns (address) {
         // Prepare token factory data
         bytes memory tokenFactoryData = abi.encode(
-            TOKEN_NAME,
-            TOKEN_SYMBOL,
-            YEARLY_MINT_RATE,
-            VESTING_DURATION,
-            new address[](0),
-            new uint256[](0),
-            TOKEN_URI
+            TOKEN_NAME, TOKEN_SYMBOL, YEARLY_MINT_RATE, VESTING_DURATION, new address[](0), new uint256[](0), TOKEN_URI
         );
 
         // Prepare pool initializer data with proper timing
         uint256 auctionStart = block.timestamp + 600; // 10 minutes from now
         uint256 auctionEnd = auctionStart + 3 days;
-        
+
         bytes memory poolInitializerData = abi.encode(
             MIN_PROCEEDS, // minimumProceeds
             MAX_PROCEEDS, // maximumProceeds
@@ -708,13 +695,13 @@ contract FullProtocolWorkflowTest is Test {
             TOKEN_URI,
             salt
         );
-        
+
         vm.prank(creator, creator); // Set both msg.sender and tx.origin to creator
         (address tokenAddr,,,,) = airlock.create(createParams);
-        
+
         // Verify creator tracking after token creation
         assertTrue(factory.isTokenCreator(tokenAddr, creator), "Creator should be tracked via tx.origin");
-        
+
         return tokenAddr;
     }
 
@@ -729,43 +716,36 @@ contract FullProtocolWorkflowTest is Test {
         bytes32 salt
     ) internal view returns (CreateParams memory) {
         // Build token factory data for HolographERC20
-        bytes memory tokenFactoryData = abi.encode(
-            name,
-            symbol,
-            yearlyMintCap,
-            vestingDuration,
-            recipients,
-            amounts,
-            tokenURI
-        );
-        
+        bytes memory tokenFactoryData =
+            abi.encode(name, symbol, yearlyMintCap, vestingDuration, recipients, amounts, tokenURI);
+
         // Build governance factory data
         bytes memory governanceData = abi.encode(
             string.concat(name, " DAO"),
-            uint256(7200),  // voting delay
+            uint256(7200), // voting delay
             uint256(50400), // voting period
-            uint256(0)      // proposal threshold
+            uint256(0) // proposal threshold
         );
-        
+
         // Build pool initializer data
         uint256 auctionStart = block.timestamp + 600; // 10 minutes from now
         uint256 auctionEnd = auctionStart + 3 days;
-        
+
         bytes memory poolInitializerData = abi.encode(
-            MIN_PROCEEDS,      // minProceeds
-            MAX_PROCEEDS,    // maxProceeds
-            auctionStart,   // startingTime
-            auctionEnd,     // endingTime
-            START_TICK,    // startingTick
-            END_TICK,   // endingTick
-            EPOCH_LENGTH,   // epochLength
-            GAMMA,     // gamma
-            false,          // isToken0
-            uint256(8),     // numPDSlugs
-            LP_FEE,   // fee
-            TICK_SPACING        // tickSpacing
+            MIN_PROCEEDS, // minProceeds
+            MAX_PROCEEDS, // maxProceeds
+            auctionStart, // startingTime
+            auctionEnd, // endingTime
+            START_TICK, // startingTick
+            END_TICK, // endingTick
+            EPOCH_LENGTH, // epochLength
+            GAMMA, // gamma
+            false, // isToken0
+            uint256(8), // numPDSlugs
+            LP_FEE, // fee
+            TICK_SPACING // tickSpacing
         );
-        
+
         // Create proper liquidity migrator data with BeneficiaryData struct format
         // Use hardcoded protocol owner to avoid external calls during setup
         address protocolOwner = 0x852a09C89463D236eea2f097623574f23E225769; // Real airlock owner
@@ -816,16 +796,17 @@ contract FullProtocolWorkflowTest is Test {
             integrator: address(feeRouter), // FeeRouter as integrator
             salt: salt
         });
-        
+
         return params;
     }
 
     // Salt mining functions (adapted from DopplerAirlockFork)
-    function computeCreate2Address(
-        bytes32 salt,
-        bytes32 initCodeHash,
-        address deployer
-    ) internal pure override returns (address) {
+    function computeCreate2Address(bytes32 salt, bytes32 initCodeHash, address deployer)
+        internal
+        pure
+        override
+        returns (address)
+    {
         return address(uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), deployer, salt, initCodeHash)))));
     }
 
@@ -853,9 +834,9 @@ contract FullProtocolWorkflowTest is Test {
             uint24 lpFee,
             int24 tickSpacing
         ) = abi.decode(
-                poolInitializerData,
-                (uint256, uint256, uint256, uint256, int24, int24, uint256, int24, bool, uint256, uint24, int24)
-            );
+            poolInitializerData,
+            (uint256, uint256, uint256, uint256, int24, int24, uint256, int24, bool, uint256, uint24, int24)
+        );
 
         // Prepare Doppler constructor arguments
         bytes memory dopplerConstructorArgs = abi.encode(

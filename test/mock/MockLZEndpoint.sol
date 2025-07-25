@@ -2,7 +2,12 @@
 pragma solidity ^0.8.24;
 
 import {FeeRouter} from "../../src/FeeRouter.sol";
-import {MessagingParams, MessagingFee, MessagingReceipt, Origin} from "../../lib/LayerZero-v2/packages/layerzero-v2/evm/protocol/contracts/interfaces/ILayerZeroEndpointV2.sol";
+import {
+    MessagingParams,
+    MessagingFee,
+    MessagingReceipt,
+    Origin
+} from "../../lib/LayerZero-v2/packages/layerzero-v2/evm/protocol/contracts/interfaces/ILayerZeroEndpointV2.sol";
 
 contract MockLZEndpoint {
     event MessageSent(uint32 dstEid, bytes payload, bytes options);
@@ -25,15 +30,23 @@ contract MockLZEndpoint {
     }
 
     // LayerZero V2 quote function
-    function quote(MessagingParams calldata _params, address /*_sender*/) external pure returns (MessagingFee memory) {
+    function quote(MessagingParams calldata _params, address /*_sender*/ )
+        external
+        pure
+        returns (MessagingFee memory)
+    {
         return MessagingFee({
             nativeFee: 0.001 ether, // Mock fee
             lzTokenFee: 0
         });
     }
 
-    // LayerZero V2 send function  
-    function send(MessagingParams calldata _params, address /*_refundAddress*/) external payable returns (MessagingReceipt memory) {
+    // LayerZero V2 send function
+    function send(MessagingParams calldata _params, address /*_refundAddress*/ )
+        external
+        payable
+        returns (MessagingReceipt memory)
+    {
         _sendCalled = true;
         _lastValue = msg.value;
         _lastPayload = _params.message;
@@ -49,10 +62,7 @@ contract MockLZEndpoint {
             // We need to simulate the target endpoint calling lzReceive
             // This is a bit of a hack for testing, but it works
             MockLZEndpoint(targetEndpoint).deliverMessage{value: msg.value}(
-                crossChainTarget,
-                srcEid,
-                _params.message,
-                msg.sender
+                crossChainTarget, srcEid, _params.message, msg.sender
             );
         }
 
@@ -64,7 +74,7 @@ contract MockLZEndpoint {
     }
 
     // Legacy send function for backwards compatibility
-    function sendLegacy(uint32 dstEid, bytes calldata payload, bytes calldata /*options*/) external payable {
+    function sendLegacy(uint32 dstEid, bytes calldata payload, bytes calldata /*options*/ ) external payable {
         _sendCalled = true;
         _lastValue = msg.value;
         _lastPayload = payload;
@@ -80,28 +90,15 @@ contract MockLZEndpoint {
             // We need to simulate the target endpoint calling lzReceive
             // This is a bit of a hack for testing, but it works
             MockLZEndpoint(targetEndpoint).deliverMessage{value: msg.value}(
-                crossChainTarget,
-                srcEid,
-                payload,
-                msg.sender
+                crossChainTarget, srcEid, payload, msg.sender
             );
         }
     }
 
     // Helper function to deliver the message as if we were the endpoint
     function deliverMessage(address target, uint32 srcEid, bytes calldata payload, address sender) external payable {
-        Origin memory origin = Origin({
-            srcEid: srcEid,
-            sender: bytes32(uint256(uint160(sender))),
-            nonce: 1
-        });
-        FeeRouter(payable(target)).lzReceive{value: msg.value}(
-            origin,
-            keccak256(payload),
-            payload,
-            address(this),
-            ""
-        );
+        Origin memory origin = Origin({srcEid: srcEid, sender: bytes32(uint256(uint160(sender))), nonce: 1});
+        FeeRouter(payable(target)).lzReceive{value: msg.value}(origin, keccak256(payload), payload, address(this), "");
     }
 
     // Test helper functions
@@ -129,7 +126,11 @@ contract MockLZEndpoint {
     }
 
     // LayerZero V2 interface functions
-    function inboundNonce(address /*_receiver*/, uint32 /*_srcEid*/, bytes32 /*_sender*/) external pure returns (uint64) {
+    function inboundNonce(address, /*_receiver*/ uint32, /*_srcEid*/ bytes32 /*_sender*/ )
+        external
+        pure
+        returns (uint64)
+    {
         return 1;
     }
 
@@ -138,7 +139,7 @@ contract MockLZEndpoint {
     }
 
     // Mock LayerZero OApp functions
-    function setDelegate(address /*delegate*/) external {
+    function setDelegate(address /*delegate*/ ) external {
         // Mock implementation - do nothing
     }
 }

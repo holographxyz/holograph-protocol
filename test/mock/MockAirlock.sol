@@ -26,9 +26,7 @@ contract MockAirlock is IAirlock {
      * @notice Mock implementation of create function
      * @dev Calls the tokenFactory (should be HolographFactory) to create the token
      */
-    function create(
-        CreateParams calldata params
-    )
+    function create(CreateParams calldata params)
         external
         override
         returns (address asset, address pool, address governance, address timelock, address migrationPool)
@@ -41,13 +39,13 @@ contract MockAirlock is IAirlock {
             params.salt,
             params.tokenFactoryData
         );
-        
+
         // Mock addresses for other Doppler components
         pool = address(0x1001);
         governance = address(0x1002);
         timelock = address(0x1003);
         migrationPool = address(0x1004);
-        
+
         return (asset, pool, governance, timelock, migrationPool);
     }
 
@@ -68,7 +66,7 @@ contract MockAirlock is IAirlock {
             require(address(this).balance >= amount, "MockAirlock: Insufficient ETH");
 
             // Direct transfer; FeeRouter has a receive() fallback that accepts ETH
-            (bool ok, ) = to.call{value: amount}("");
+            (bool ok,) = to.call{value: amount}("");
             require(ok, "MockAirlock: ETH transfer failed");
         } else {
             // ERC-20 case
@@ -146,11 +144,7 @@ contract MockAirlock is IAirlock {
 }
 
 interface ITokenFactory {
-    function create(
-        uint256 initialSupply,
-        address recipient,
-        address owner,
-        bytes32 salt,
-        bytes calldata tokenData
-    ) external returns (address token);
+    function create(uint256 initialSupply, address recipient, address owner, bytes32 salt, bytes calldata tokenData)
+        external
+        returns (address token);
 }

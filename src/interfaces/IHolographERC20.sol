@@ -54,7 +54,6 @@ interface IHolographERC20 is IERC20 {
      */
     function mint(address to, uint256 amount) external;
 
-
     /* -------------------------------------------------------------------------- */
     /*                              ERC20 Metadata                              */
     /* -------------------------------------------------------------------------- */
@@ -90,5 +89,4 @@ interface IHolographERC20 is IERC20 {
      * @return The token URI
      */
     function tokenURI() external view returns (string memory);
-
 }

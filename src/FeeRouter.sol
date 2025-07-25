@@ -27,7 +27,6 @@ pragma solidity ^0.8.24;
  *   • Emergency pause functionality
  * ----------------------------------------------------------------------------
  */
-
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
@@ -213,11 +212,11 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
      * @param token Token contract address
      * @param amt Amount to collect
      */
-    function collectAirlockFees(
-        address airlock,
-        address token,
-        uint256 amt
-    ) external onlyRole(KEEPER_ROLE) nonReentrant {
+    function collectAirlockFees(address airlock, address token, uint256 amt)
+        external
+        onlyRole(KEEPER_ROLE)
+        nonReentrant
+    {
         if (airlock == address(0)) revert ZeroAddress();
         if (amt == 0) revert ZeroAmount();
 
@@ -338,7 +337,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
             options: options,
             payInLzToken: false
         });
-        
+
         lzEndpoint.send{value: bal}(msgParams, payable(msg.sender));
         emit TokenBridged(address(0), bal, n);
     }
@@ -369,7 +368,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
             options: options,
             payInLzToken: false
         });
-        
+
         lzEndpoint.send(msgParams, payable(msg.sender));
         emit TokenBridged(token, bal, n);
     }
@@ -383,7 +382,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
      * @dev Processes bridged tokens through local HLG swap/burn/stake and verifies the caller is a trusted remote
      * @param _origin Message origin information
      * @param _guid Unique message identifier
-     * @param _message Encoded token, amount, and slippage protection data  
+     * @param _message Encoded token, amount, and slippage protection data
      * @param _executor Executor address
      * @param _extraData Additional data
      */

@@ -1,6 +1,7 @@
 artifacts/
 cache/
 dist/
+lib/
 node_modules/
 out/
 *.log
@@ -8,3 +9,4 @@ out/
 *.yaml
 *.lock
 package-lock.json
+*.sol

@@ -1,6 +1,6 @@
 /**
  * Holograph Token Creation Script
- * 
+ *
  * Creates ERC20 tokens through the Doppler Airlock using HolographFactory.
  * The factory creates HolographERC20 tokens with governance and DeFi features.
  *
@@ -160,7 +160,7 @@ const AIRLOCK_ABI = [
       { name: "pool", type: "address" },
       { name: "governance", type: "address" },
       { name: "timelock", type: "address" },
-      { name: "migrationPool", type: "address" }
+      { name: "migrationPool", type: "address" },
     ],
     stateMutability: "nonpayable",
   },
@@ -175,7 +175,7 @@ function loadContractBytecode(contractName: string): `0x${string}` {
     } else {
       artifactPath = `artifacts/doppler/${contractName}.json`;
     }
-    
+
     const artifactContent = readFileSync(artifactPath, "utf8");
     const artifact = JSON.parse(artifactContent);
 
@@ -209,16 +209,18 @@ function extractTokenAddress(receipt: any): string | null {
       // Look for Airlock Create event: event Create(address asset, address indexed numeraire, address initializer, address poolOrHook)
       if (log.address.toLowerCase() === DOPPLER_ADDRESSES.airlock.toLowerCase()) {
         const decoded = decodeEventLog({
-          abi: [{
-            type: "event",
-            name: "Create",
-            inputs: [
-              { name: "asset", type: "address", indexed: false },
-              { name: "numeraire", type: "address", indexed: true },
-              { name: "initializer", type: "address", indexed: false },
-              { name: "poolOrHook", type: "address", indexed: false }
-            ]
-          }],
+          abi: [
+            {
+              type: "event",
+              name: "Create",
+              inputs: [
+                { name: "asset", type: "address", indexed: false },
+                { name: "numeraire", type: "address", indexed: true },
+                { name: "initializer", type: "address", indexed: false },
+                { name: "poolOrHook", type: "address", indexed: false },
+              ],
+            },
+          ],
           data: log.data,
           topics: log.topics,
         });
@@ -227,23 +229,25 @@ function extractTokenAddress(receipt: any): string | null {
           return decoded.args.asset as string;
         }
       }
-      
+
       // Look for HolographFactory TokenDeployed event (backup method)
       if (log.address.toLowerCase() === DOPPLER_ADDRESSES.tokenFactory.toLowerCase()) {
         const decoded = decodeEventLog({
-          abi: [{
-            type: "event",
-            name: "TokenDeployed",
-            inputs: [
-              { name: "token", type: "address", indexed: true },
-              { name: "name", type: "string", indexed: false },
-              { name: "symbol", type: "string", indexed: false },
-              { name: "initialSupply", type: "uint256", indexed: false },
-              { name: "recipient", type: "address", indexed: true },
-              { name: "owner", type: "address", indexed: true },
-              { name: "creator", type: "address", indexed: false }
-            ]
-          }],
+          abi: [
+            {
+              type: "event",
+              name: "TokenDeployed",
+              inputs: [
+                { name: "token", type: "address", indexed: true },
+                { name: "name", type: "string", indexed: false },
+                { name: "symbol", type: "string", indexed: false },
+                { name: "initialSupply", type: "uint256", indexed: false },
+                { name: "recipient", type: "address", indexed: true },
+                { name: "owner", type: "address", indexed: true },
+                { name: "creator", type: "address", indexed: false },
+              ],
+            },
+          ],
           data: log.data,
           topics: log.topics,
         });
@@ -356,17 +360,19 @@ async function verifyTokenContract(
   console.log("⚠️  Token verification skipped - tokens are deployed as ERC1167 minimal proxies");
   console.log("💡 The token is a clone of the HolographERC20 implementation:");
   console.log(`📍 Implementation: ${HOLOGRAPH_ADDRESSES.erc20Implementation}`);
-  console.log(`🔗 View implementation: https://sepolia.basescan.org/address/${HOLOGRAPH_ADDRESSES.erc20Implementation}#code`);
+  console.log(
+    `🔗 View implementation: https://sepolia.basescan.org/address/${HOLOGRAPH_ADDRESSES.erc20Implementation}#code`,
+  );
   console.log(`🔗 View proxy token: https://sepolia.basescan.org/address/${tokenAddress}`);
-  
+
   try {
     // For minimal proxies, we verify against the Clones library pattern
     console.log("🔍 Attempting to verify as ERC1167 minimal proxy...");
     await verifyContract(
-      tokenAddress, 
-      "@openzeppelin/contracts/proxy/Clones.sol:Clones", 
-      `000000000000000000000000${HOLOGRAPH_ADDRESSES.erc20Implementation.slice(2)}`, 
-      apiKey
+      tokenAddress,
+      "@openzeppelin/contracts/proxy/Clones.sol:Clones",
+      `000000000000000000000000${HOLOGRAPH_ADDRESSES.erc20Implementation.slice(2)}`,
+      apiKey,
     );
     console.log("🎉 Proxy contract verification completed!");
   } catch (error: any) {
@@ -500,34 +506,31 @@ async function mineValidSalt(
 class TokenCreationError extends Error {
   code: string;
   override cause: Error | undefined;
-  
+
   constructor(message: string, code: string, cause?: Error) {
     super(message);
-    this.name = 'TokenCreationError';
+    this.name = "TokenCreationError";
     this.code = code;
     this.cause = cause;
   }
 }
 
 // Validation functions
-function validateEnvironment(): { privateKey: `0x${string}`, rpcUrl: string } {
+function validateEnvironment(): { privateKey: `0x${string}`; rpcUrl: string } {
   const privateKey = process.env.PRIVATE_KEY as `0x${string}`;
   if (!privateKey) {
-    throw new TokenCreationError(
-      "PRIVATE_KEY environment variable is required",
-      "ENV_MISSING_PRIVATE_KEY"
-    );
+    throw new TokenCreationError("PRIVATE_KEY environment variable is required", "ENV_MISSING_PRIVATE_KEY");
   }
 
   const rpcUrl = process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org";
-  
+
   return { privateKey, rpcUrl };
 }
 
 // Client setup functions
 function setupClients(privateKey: `0x${string}`, rpcUrl: string) {
   const account = privateKeyToAccount(privateKey);
-  
+
   const publicClient = createPublicClient({
     chain: baseSepolia,
     transport: http(rpcUrl),
@@ -548,21 +551,18 @@ function prepareTokenParams(config: TokenConfig) {
     parseAbiParameters("string, string, uint256, uint256, address[], uint256[], string"),
     [config.name, config.symbol, DEFAULT_YEARLY_MINT_CAP, DEFAULT_VESTING_DURATION, [], [], ""],
   );
-  
+
   return tokenFactoryData;
 }
 
 function prepareGovernanceParams(config: TokenConfig) {
-  const governanceData = encodeAbiParameters(
-    parseAbiParameters("string, uint256, uint256, uint256"), 
-    [
-      `${config.name} DAO`,
-      7200n, // voting delay
-      50400n, // voting period
-      0n, // proposal threshold
-    ]
-  );
-  
+  const governanceData = encodeAbiParameters(parseAbiParameters("string, uint256, uint256, uint256"), [
+    `${config.name} DAO`,
+    7200n, // voting delay
+    50400n, // voting period
+    0n, // proposal threshold
+  ]);
+
   return governanceData;
 }
 
@@ -586,39 +586,36 @@ function preparePoolInitializerParams(config: TokenConfig, auctionStart: number,
       TICK_SPACING, // tick spacing
     ],
   );
-  
+
   return poolInitializerData;
 }
 
 function prepareLiquidityParams(account: Address) {
   const lockDuration = SECONDS_PER_YEAR;
   const protocolOwner = "0x852a09C89463D236eea2f097623574f23E225769" as const;
-  
+
   const beneficiaries = [
     {
       beneficiary: protocolOwner,
-      shares: parseEther(PROTOCOL_MIN_SHARES)
+      shares: parseEther(PROTOCOL_MIN_SHARES),
     },
     {
       beneficiary: account,
-      shares: parseEther(CREATOR_SHARES)
-    }
+      shares: parseEther(CREATOR_SHARES),
+    },
   ].sort((a, b) => {
     if (a.beneficiary.toLowerCase() < b.beneficiary.toLowerCase()) return -1;
     if (a.beneficiary.toLowerCase() > b.beneficiary.toLowerCase()) return 1;
     return 0;
   });
-  
-  const liquidityMigratorData = encodeAbiParameters(
-    parseAbiParameters("uint24, int24, uint32, (address,uint96)[]"),
-    [
-      LP_FEE,
-      TICK_SPACING,
-      lockDuration,
-      beneficiaries.map(b => [b.beneficiary, b.shares] as const)
-    ]
-  );
-  
+
+  const liquidityMigratorData = encodeAbiParameters(parseAbiParameters("uint24, int24, uint32, (address,uint96)[]"), [
+    LP_FEE,
+    TICK_SPACING,
+    lockDuration,
+    beneficiaries.map((b) => [b.beneficiary, b.shares] as const),
+  ]);
+
   return liquidityMigratorData;
 }
 
@@ -626,8 +623,8 @@ async function executeTokenCreation(
   createParams: CreateTokenParams,
   account: Address,
   publicClient: any,
-  walletClient: any
-): Promise<{ hash: `0x${string}`, tokenAddress: string | undefined }> {
+  walletClient: any,
+): Promise<{ hash: `0x${string}`; tokenAddress: string | undefined }> {
   console.log("⛽ Estimating gas...");
   const gasEstimate = await publicClient.estimateContractGas({
     address: DOPPLER_ADDRESSES.airlock,
@@ -665,19 +662,16 @@ async function executeTokenCreation(
   return { hash, tokenAddress: tokenAddress || undefined };
 }
 
-async function verifyTokenDeployment(
-  tokenAddress: string,
-  publicClient: any
-): Promise<boolean> {
+async function verifyTokenDeployment(tokenAddress: string, publicClient: any): Promise<boolean> {
   for (let i = 0; i < MAX_RETRIES; i++) {
     try {
       if (i > 0) {
         console.log(`🔄 Retrying token verification (attempt ${i + 1}/${MAX_RETRIES})...`);
-        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
       }
-      
+
       const code = await publicClient.getCode({ address: tokenAddress as Address });
-      if (code && code !== '0x') {
+      if (code && code !== "0x") {
         console.log("✅ Token contract deployment verified!");
         console.log(`📏 Contract bytecode size: ${(code.length - 2) / 2} bytes`);
         return true;
@@ -688,7 +682,7 @@ async function verifyTokenDeployment(
       }
     }
   }
-  
+
   return false;
 }
 
@@ -696,10 +690,10 @@ async function verifyTokenDeployment(
 async function createToken() {
   // Validate environment
   const { privateKey, rpcUrl } = validateEnvironment();
-  
+
   // Setup clients
   const { account, publicClient, walletClient } = setupClients(privateKey, rpcUrl);
-  
+
   // Token configuration
   const config: TokenConfig = {
     name: "Test Token",
@@ -715,7 +709,7 @@ async function createToken() {
   // Prepare all parameters
   const tokenFactoryData = prepareTokenParams(config);
   const governanceData = prepareGovernanceParams(config);
-  
+
   // Set auction timing
   const fixedStartTime = Math.floor(Date.now() / 1000) + AUCTION_START_BUFFER;
   const auctionStart = fixedStartTime;
@@ -728,7 +722,7 @@ async function createToken() {
   });
 
   const poolInitializerData = preparePoolInitializerParams(config, auctionStart, auctionEnd);
-  
+
   // Mine valid salt
   const salt = await mineValidSalt(
     tokenFactoryData,
@@ -763,21 +757,21 @@ async function createToken() {
       createParams,
       account.address,
       publicClient,
-      walletClient
+      walletClient,
     );
-    
+
     if (tokenAddress) {
       console.log("🎉 Token address:", tokenAddress);
       console.log("🔗 Basescan:", `https://sepolia.basescan.org/address/${tokenAddress}`);
-      
+
       // Verify deployment
       const deploymentVerified = await verifyTokenDeployment(tokenAddress, publicClient);
-      
+
       if (!deploymentVerified) {
         console.log("⚠️  Token address found but bytecode verification failed");
         console.log("💡 The token may still be valid - check the transaction link above");
       }
-      
+
       await verifyTokenContract(tokenAddress, createParams, config);
     } else {
       console.log("⚠️  Could not extract token address from transaction logs");

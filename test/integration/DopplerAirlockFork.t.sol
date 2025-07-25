@@ -18,9 +18,9 @@ interface IAirlock {
         LiquidityMigrator
     }
 
-    function create(
-        CreateParams calldata createData
-    ) external returns (address asset, address pool, address governance, address timelock, address migrationPool);
+    function create(CreateParams calldata createData)
+        external
+        returns (address asset, address pool, address governance, address timelock, address migrationPool);
 
     function setModuleState(address[] calldata modules, ModuleState[] calldata states) external;
     function getModuleState(address module) external view returns (ModuleState);
@@ -41,7 +41,7 @@ contract LZEndpointStub {
         emit MessageSent(dstEid, payload);
     }
 
-    function setDelegate(address /*delegate*/) external {
+    function setDelegate(address /*delegate*/ ) external {
         // Mock implementation
     }
 }
@@ -62,29 +62,27 @@ library DopplerAddrBook {
     }
 
     function getTestnet() internal pure returns (DopplerAddrs memory) {
-        return
-            DopplerAddrs({
-                airlock: 0x3411306Ce66c9469BFF1535BA955503c4Bde1C6e,
-                tokenFactory: 0xc69Ba223c617F7D936B3cf2012aa644815dBE9Ff,
-                governanceFactory: 0x9dBFaaDC8c0cB2c34bA698DD9426555336992e20,
-                v4Initializer: 0x8E891d249f1ECbfFA6143c03EB1B12843aef09d3,
-                migrator: 0x846a84918aA87c14b86B2298776e8ea5a4e34C9E,
-                poolManager: 0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408,
-                dopplerDeployer: 0x60a039e4aDD40ca95e0475c11e8A4182D06C9Aa0
-            });
+        return DopplerAddrs({
+            airlock: 0x3411306Ce66c9469BFF1535BA955503c4Bde1C6e,
+            tokenFactory: 0xc69Ba223c617F7D936B3cf2012aa644815dBE9Ff,
+            governanceFactory: 0x9dBFaaDC8c0cB2c34bA698DD9426555336992e20,
+            v4Initializer: 0x8E891d249f1ECbfFA6143c03EB1B12843aef09d3,
+            migrator: 0x846a84918aA87c14b86B2298776e8ea5a4e34C9E,
+            poolManager: 0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408,
+            dopplerDeployer: 0x60a039e4aDD40ca95e0475c11e8A4182D06C9Aa0
+        });
     }
 
     function getMainnet() internal pure returns (DopplerAddrs memory) {
-        return
-            DopplerAddrs({
-                airlock: 0x660eAaEdEBc968f8f3694354FA8EC0b4c5Ba8D12,
-                tokenFactory: 0xFAafdE6a5b658684cC5eb0C5c2c755B00A246F45,
-                governanceFactory: 0xb4deE32EB70A5E55f3D2d861F49Fb3D79f7a14d9,
-                v4Initializer: 0x77EbfBAE15AD200758E9E2E61597c0B07d731254,
-                migrator: 0x5F3bA43D44375286296Cb85F1EA2EBfa25dde731,
-                poolManager: 0x498581fF718922c3f8e6A244956aF099B2652b2b,
-                dopplerDeployer: 0x5CadB034267751a364dDD4d321C99E07A307f915
-            });
+        return DopplerAddrs({
+            airlock: 0x660eAaEdEBc968f8f3694354FA8EC0b4c5Ba8D12,
+            tokenFactory: 0xFAafdE6a5b658684cC5eb0C5c2c755B00A246F45,
+            governanceFactory: 0xb4deE32EB70A5E55f3D2d861F49Fb3D79f7a14d9,
+            v4Initializer: 0x77EbfBAE15AD200758E9E2E61597c0B07d731254,
+            migrator: 0x5F3bA43D44375286296Cb85F1EA2EBfa25dde731,
+            poolManager: 0x498581fF718922c3f8e6A244956aF099B2652b2b,
+            dopplerDeployer: 0x5CadB034267751a364dDD4d321C99E07A307f915
+        });
     }
 }
 
@@ -114,13 +112,8 @@ contract DopplerAirlockForkTest is Test {
     uint256 private constant AFTER_SWAP_FLAG = 1 << 6;
     uint256 private constant BEFORE_DONATE_FLAG = 1 << 5;
 
-    uint256 private constant REQUIRED_FLAGS =
-        BEFORE_INITIALIZE_FLAG |
-            AFTER_INITIALIZE_FLAG |
-            BEFORE_ADD_LIQUIDITY_FLAG |
-            BEFORE_SWAP_FLAG |
-            AFTER_SWAP_FLAG |
-            BEFORE_DONATE_FLAG;
+    uint256 private constant REQUIRED_FLAGS = BEFORE_INITIALIZE_FLAG | AFTER_INITIALIZE_FLAG | BEFORE_ADD_LIQUIDITY_FLAG
+        | BEFORE_SWAP_FLAG | AFTER_SWAP_FLAG | BEFORE_DONATE_FLAG;
 
     uint256 private constant FLAG_MASK = 0x3fff;
     uint256 private constant MAX_SALT_ITERATIONS = 200_000;
@@ -280,11 +273,12 @@ contract DopplerAirlockForkTest is Test {
         console.log("3. Deploy and configure with proper permissions");
     }
 
-    function computeCreate2Address(
-        bytes32 salt,
-        bytes32 initCodeHash,
-        address deployer
-    ) internal pure override returns (address) {
+    function computeCreate2Address(bytes32 salt, bytes32 initCodeHash, address deployer)
+        internal
+        pure
+        override
+        returns (address)
+    {
         return address(uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), deployer, salt, initCodeHash)))));
     }
 
@@ -312,9 +306,9 @@ contract DopplerAirlockForkTest is Test {
             uint24 lpFee,
             int24 tickSpacing
         ) = abi.decode(
-                poolInitializerData,
-                (uint256, uint256, uint256, uint256, int24, int24, uint256, int24, bool, uint256, uint24, int24)
-            );
+            poolInitializerData,
+            (uint256, uint256, uint256, uint256, int24, int24, uint256, int24, bool, uint256, uint24, int24)
+        );
 
         // Prepare Doppler constructor arguments
         bytes memory dopplerConstructorArgs = abi.encode(
@@ -703,9 +697,8 @@ contract DopplerAirlockForkTest is Test {
         // This is the key test - actually call through the Airlock!
         // Use startPrank to ensure tx.origin is set correctly
         vm.startPrank(creator, creator);
-        (address asset, address pool, address governance, address timelock, address migrationPool) = airlock.create(
-            createParams
-        );
+        (address asset, address pool, address governance, address timelock, address migrationPool) =
+            airlock.create(createParams);
         vm.stopPrank();
 
         console.log("=== DOPPLER AIRLOCK CREATION SUCCESSFUL ===");
@@ -785,13 +778,8 @@ contract DopplerAirlockForkTest is Test {
         // Call the factory through the Airlock interface (simulating Airlock calling it)
         // Use prank with tx.origin set to creator to simulate real Airlock behavior
         vm.prank(address(airlock), creator);
-        address token = holographFactory.create(
-            INITIAL_SUPPLY,
-            creator,
-            creator,
-            bytes32(uint256(99999)),
-            tokenFactoryData
-        );
+        address token =
+            holographFactory.create(INITIAL_SUPPLY, creator, creator, bytes32(uint256(99999)), tokenFactoryData);
 
         // Verify successful deployment
         assertTrue(token != address(0), "Token should be deployed");
@@ -800,8 +788,7 @@ contract DopplerAirlockForkTest is Test {
         // Verify creator tracking - creator should be tracked via tx.origin
         assertTrue(holographFactory.isTokenCreator(token, creator), "Creator should be tracked via tx.origin");
         assertFalse(
-            holographFactory.isTokenCreator(token, address(airlock)),
-            "Airlock should not be tracked as creator"
+            holographFactory.isTokenCreator(token, address(airlock)), "Airlock should not be tracked as creator"
         );
 
         HolographERC20 holographToken = HolographERC20(token);

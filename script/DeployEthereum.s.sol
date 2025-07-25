@@ -15,7 +15,6 @@ pragma solidity ^0.8.26;
  *       --broadcast \
  *       --private-key $DEPLOYER_PK
  */
-
 import "../src/FeeRouter.sol";
 import "../src/StakingRewards.sol";
 import "./base/DeploymentBase.sol";
@@ -78,10 +77,8 @@ contract DeployEthereum is DeploymentBase {
         console.log("\nDeploying StakingRewards...");
         uint256 gasStart = gasleft();
         // Deploy with temporary feeRouter = deployer
-        bytes memory stakingBytecode = abi.encodePacked(
-            type(StakingRewards).creationCode,
-            abi.encode(hlg, config.deployer)
-        );
+        bytes memory stakingBytecode =
+            abi.encodePacked(type(StakingRewards).creationCode, abi.encode(hlg, config.deployer));
         // Use a unique salt for StakingRewards
         bytes32 stakingSalt = bytes32(uint256(uint160(config.deployer)) << 96) | bytes32(uint256(6));
         address stakingRewards = holographDeployer.deploy(stakingBytecode, stakingSalt);

@@ -7,16 +7,15 @@ pragma solidity ^0.8.26;
  * @dev Maintains consistent configuration across all supported chains
  */
 library ChainConfigs {
-    
     /* -------------------------------------------------------------------------- */
     /*                              Chain Identifiers                             */
     /* -------------------------------------------------------------------------- */
-    
+
     // Mainnets
     uint256 constant ETHEREUM_MAINNET = 1;
     uint256 constant BASE_MAINNET = 8453;
     uint256 constant UNICHAIN_MAINNET = 1301;
-    
+
     // Testnets
     uint256 constant ETHEREUM_SEPOLIA = 11155111;
     uint256 constant BASE_SEPOLIA = 84532;
@@ -25,7 +24,7 @@ library ChainConfigs {
     /* -------------------------------------------------------------------------- */
     /*                          LayerZero Endpoint IDs                            */
     /* -------------------------------------------------------------------------- */
-    
+
     struct EndpointIds {
         uint32 ethereum;
         uint32 base;
@@ -34,24 +33,24 @@ library ChainConfigs {
 
     function getMainnetEndpointIds() internal pure returns (EndpointIds memory) {
         return EndpointIds({
-            ethereum: 30101,     // Ethereum mainnet
-            base: 30184,         // Base mainnet
-            unichain: 30328      // Unichain mainnet (TODO: Verify endpoint ID)
+            ethereum: 30101, // Ethereum mainnet
+            base: 30184, // Base mainnet
+            unichain: 30328 // Unichain mainnet (TODO: Verify endpoint ID)
         });
     }
 
     function getTestnetEndpointIds() internal pure returns (EndpointIds memory) {
         return EndpointIds({
-            ethereum: 40161,     // Ethereum Sepolia
-            base: 40245,         // Base Sepolia
-            unichain: 40328      // Unichain Sepolia
+            ethereum: 40161, // Ethereum Sepolia
+            base: 40245, // Base Sepolia
+            unichain: 40328 // Unichain Sepolia
         });
     }
 
     /* -------------------------------------------------------------------------- */
     /*                            Chain Configuration                             */
     /* -------------------------------------------------------------------------- */
-    
+
     struct ChainConfig {
         uint256 chainId;
         string name;
@@ -125,8 +124,8 @@ library ChainConfigs {
             chainId: UNICHAIN_MAINNET,
             name: "Unichain",
             currency: "ETH",
-            lzEndpointId: 30328,  // TODO: Verify endpoint ID
-            lzEndpoint: 0x1a44076050125825900e736c501f859c50fE728c,  // TODO: Verify endpoint address
+            lzEndpointId: 30328, // TODO: Verify endpoint ID
+            lzEndpoint: 0x1a44076050125825900e736c501f859c50fE728c, // TODO: Verify endpoint address
             isTestnet: false
         });
     }
@@ -140,7 +139,7 @@ library ChainConfigs {
             name: "Unichain Sepolia",
             currency: "ETH",
             lzEndpointId: 40328,
-            lzEndpoint: 0x6EDCE65403992e310A62460808c4b910D972f10f,  // TODO: Verify endpoint address
+            lzEndpoint: 0x6EDCE65403992e310A62460808c4b910D972f10f, // TODO: Verify endpoint address
             isTestnet: true
         });
     }
@@ -171,7 +170,7 @@ library ChainConfigs {
     /* -------------------------------------------------------------------------- */
     /*                          Protocol Configuration                            */
     /* -------------------------------------------------------------------------- */
-    
+
     struct ProtocolConfig {
         address treasury;
         address stakingRewards;
@@ -209,7 +208,7 @@ library ChainConfigs {
     /* -------------------------------------------------------------------------- */
     /*                         Deployment Configuration                           */
     /* -------------------------------------------------------------------------- */
-    
+
     struct DeploymentSalts {
         bytes32 deployer;
         bytes32 config;
@@ -227,10 +226,10 @@ library ChainConfigs {
         // Generate deterministic salts with deployer address in first 20 bytes (left-aligned)
         // This ensures HolographDeployer.deploy() salt validation passes
         bytes32 deployerPrefix = bytes32(uint256(uint160(deployer)) << 96);
-        
+
         return DeploymentSalts({
             deployer: deployerPrefix | bytes32(uint256(1)),
-            config: deployerPrefix | bytes32(uint256(2)), 
+            config: deployerPrefix | bytes32(uint256(2)),
             factory: deployerPrefix | bytes32(uint256(3)),
             feeRouter: deployerPrefix | bytes32(uint256(4)),
             erc20Implementation: deployerPrefix | bytes32(uint256(5))
@@ -240,16 +239,14 @@ library ChainConfigs {
     /* -------------------------------------------------------------------------- */
     /*                              Helper Functions                              */
     /* -------------------------------------------------------------------------- */
-    
+
     /**
      * @notice Check if a chain ID represents a testnet
      * @param chainId The chain ID to check
      * @return True if testnet, false if mainnet
      */
     function isTestnet(uint256 chainId) internal pure returns (bool) {
-        return chainId == ETHEREUM_SEPOLIA ||
-               chainId == BASE_SEPOLIA ||
-               chainId == UNICHAIN_SEPOLIA;
+        return chainId == ETHEREUM_SEPOLIA || chainId == BASE_SEPOLIA || chainId == UNICHAIN_SEPOLIA;
     }
 
     /**

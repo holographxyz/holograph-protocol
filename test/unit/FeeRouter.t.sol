@@ -12,7 +12,8 @@ import {MockHLG} from "../mock/MockHLG.sol";
 import {MockWETH} from "../mock/MockWETH.sol";
 import {MockSwapRouter} from "../mock/MockSwapRouter.sol";
 import {MockERC20} from "../mock/MockERC20.sol";
-import {Origin} from "../../lib/LayerZero-v2/packages/layerzero-v2/evm/protocol/contracts/interfaces/ILayerZeroEndpointV2.sol";
+import {Origin} from
+    "../../lib/LayerZero-v2/packages/layerzero-v2/evm/protocol/contracts/interfaces/ILayerZeroEndpointV2.sol";
 
 /**
  * @title FeeRouterTest
@@ -30,22 +31,22 @@ contract FeeRouterTest is Test {
     MockHLG public hlg;
     MockWETH public weth;
     MockSwapRouter public swapRouter;
-    
+
     // Test addresses
     address public owner = address(0x1234567890123456789012345678901234567890);
     address public keeper = address(0x0987654321098765432109876543210987654321);
     address public treasury = address(0x1111111111111111111111111111111111111111);
     address public alice = address(0x2222222222222222222222222222222222222222);
     address public bob = address(0x3333333333333333333333333333333333333333);
-    
+
     // Network configuration - Base and Unichain
-    uint32 constant BASE_EID = 40245;        // Base Sepolia
-    uint32 constant UNICHAIN_EID = 40328;    // Unichain Sepolia
-    uint32 constant ETHEREUM_EID = 30101;    // For legacy compatibility
-    
+    uint32 constant BASE_EID = 40245; // Base Sepolia
+    uint32 constant UNICHAIN_EID = 40328; // Unichain Sepolia
+    uint32 constant ETHEREUM_EID = 30101; // For legacy compatibility
+
     // Protocol constants
     uint24 constant POOL_FEE = 3000;
-    uint16 constant HOLO_FEE_BPS = 150;      // 1.5%
+    uint16 constant HOLO_FEE_BPS = 150; // 1.5%
     uint64 constant MIN_BRIDGE_VALUE = 0.01 ether;
 
     // Events
@@ -65,42 +66,42 @@ contract FeeRouterTest is Test {
         swapRouter = new MockSwapRouter();
         stakingPool = new MockStakingRewards(address(hlg));
         airlock = new MockAirlock();
-        
+
         // Deploy factory for new architecture integration
         factory = new HolographFactory(address(lzEndpoint));
-        
+
         // Deploy FeeRouter with Unichain as remote chain
         vm.startPrank(owner);
         feeRouter = new FeeRouter(
             address(lzEndpoint),
-            UNICHAIN_EID,           // Remote EID (Unichain)
+            UNICHAIN_EID, // Remote EID (Unichain)
             address(stakingPool),
             address(hlg),
             address(weth),
             address(swapRouter),
             treasury,
-            owner                   // owner address
+            owner // owner address
         );
-        
+
         // Grant keeper role
         feeRouter.grantRole(feeRouter.KEEPER_ROLE(), keeper);
-        
+
         // Set up trusted contracts for new architecture
         feeRouter.setTrustedAirlock(address(airlock), true);
         feeRouter.setTrustedFactory(address(factory), true);
         feeRouter.setTrustedRemote(BASE_EID, bytes32(uint256(uint160(address(0x4444)))));
-        
+
         vm.stopPrank();
-        
+
         // Fund test accounts
         vm.deal(alice, 10 ether);
         vm.deal(bob, 10 ether);
         vm.deal(address(feeRouter), 1 ether);
         vm.deal(address(airlock), 10 ether);
-        
+
         // Setup MockSwapRouter for token swaps
         swapRouter.setOutputToken(address(hlg));
-        
+
         // Mint tokens to MockSwapRouter for swap operations
         hlg.mint(address(swapRouter), 1_000_000e18);
         weth.mint(address(swapRouter), 1_000_000e18);
@@ -126,7 +127,7 @@ contract FeeRouterTest is Test {
     function test_FeeCalculation() public {
         uint256 amount = 1 ether;
         (uint256 protocolFee, uint256 treasuryFee) = feeRouter.calculateFeeSplit(amount);
-        
+
         assertEq(protocolFee, (amount * HOLO_FEE_BPS) / 10_000); // 1.5%
         assertEq(treasuryFee, amount - protocolFee); // 98.5%
         assertEq(protocolFee + treasuryFee, amount);
@@ -138,20 +139,20 @@ contract FeeRouterTest is Test {
 
     function test_CollectAirlockFeesETH() public {
         uint256 amount = 0.5 ether;
-        
+
         // Setup: fund the airlock to simulate fees
         vm.deal(address(airlock), amount);
         airlock.setCollectableAmount(address(0), amount);
-        
+
         uint256 holoAmt = (amount * HOLO_FEE_BPS) / 10_000; // 1.5%
         uint256 treasuryAmt = amount - holoAmt; // 98.5%
-        
+
         vm.expectEmit(true, true, false, true);
         emit SlicePulled(keeper, address(0), holoAmt, treasuryAmt);
-        
+
         vm.prank(keeper);
         feeRouter.collectAirlockFees(address(airlock), address(0), amount);
-        
+
         // Verify treasury received the correct amount
         assertEq(treasury.balance, treasuryAmt);
     }
@@ -159,14 +160,14 @@ contract FeeRouterTest is Test {
     function test_CollectAirlockFeesERC20() public {
         MockERC20 token = new MockERC20("Test Token", "TEST");
         uint256 amount = 1000e18;
-        
+
         // Setup airlock with ERC20 tokens
         token.mint(address(airlock), amount);
         airlock.setCollectableAmount(address(token), amount);
-        
+
         vm.prank(keeper);
         feeRouter.collectAirlockFees(address(airlock), address(token), amount);
-        
+
         // Verify treasury received 98.5%
         uint256 expectedTreasuryFee = (amount * 9850) / 10_000;
         assertEq(token.balanceOf(treasury), expectedTreasuryFee);
@@ -197,13 +198,13 @@ contract FeeRouterTest is Test {
     function test_BridgeETH() public {
         uint256 bridgeAmount = 0.05 ether; // Above MIN_BRIDGE_VALUE
         vm.deal(address(feeRouter), bridgeAmount);
-        
+
         vm.prank(keeper);
         vm.expectEmit(true, false, false, true);
         emit TokenBridged(address(0), bridgeAmount, 1);
-        
+
         feeRouter.bridge(200_000, 0);
-        
+
         // Verify nonce incremented and LayerZero was called
         assertEq(feeRouter.nonce(UNICHAIN_EID), 1);
         assertTrue(lzEndpoint.sendCalled());
@@ -213,10 +214,10 @@ contract FeeRouterTest is Test {
     function test_BridgeDustProtection() public {
         // Set balance below MIN_BRIDGE_VALUE
         vm.deal(address(feeRouter), 0.005 ether);
-        
+
         vm.prank(keeper);
         feeRouter.bridge(200_000, 0);
-        
+
         // Should not bridge or increment nonce
         assertEq(feeRouter.nonce(UNICHAIN_EID), 0);
         assertEq(address(feeRouter).balance, 0.005 ether);
@@ -235,21 +236,21 @@ contract FeeRouterTest is Test {
     function test_BridgeERC20() public {
         MockERC20 token = new MockERC20("Test Token", "TEST");
         uint256 amount = 100e18;
-        
+
         token.mint(address(feeRouter), amount);
-        
+
         vm.prank(keeper);
         vm.expectEmit(true, false, false, true);
         emit TokenBridged(address(token), amount, 1);
-        
+
         feeRouter.bridgeERC20(address(token), 200_000, 0);
-        
+
         assertEq(feeRouter.nonce(UNICHAIN_EID), 1);
     }
 
     function test_BridgeERC20OnlyKeeper() public {
         MockERC20 token = new MockERC20("Test", "TEST");
-        
+
         vm.expectRevert();
         vm.prank(alice);
         feeRouter.bridgeERC20(address(token), 200_000, 0);
@@ -261,14 +262,14 @@ contract FeeRouterTest is Test {
 
     function test_SetTrustedAirlock() public {
         address newAirlock = address(0x5555);
-        
+
         vm.expectEmit(true, false, false, true);
         emit TrustedAirlockSet(newAirlock, true);
-        
+
         vm.prank(owner);
         feeRouter.setTrustedAirlock(newAirlock, true);
         assertTrue(feeRouter.trustedAirlocks(newAirlock));
-        
+
         // Test removal
         vm.prank(owner);
         feeRouter.setTrustedAirlock(newAirlock, false);
@@ -277,14 +278,14 @@ contract FeeRouterTest is Test {
 
     function test_SetTrustedFactory() public {
         address newFactory = address(0x6666);
-        
+
         vm.expectEmit(true, false, false, true);
         emit TrustedFactorySet(newFactory, true);
-        
+
         vm.prank(owner);
         feeRouter.setTrustedFactory(newFactory, true);
         assertTrue(feeRouter.trustedFactories(newFactory));
-        
+
         // Test removal
         vm.prank(owner);
         feeRouter.setTrustedFactory(newFactory, false);
@@ -293,10 +294,10 @@ contract FeeRouterTest is Test {
 
     function test_SetTrustedRemote() public {
         bytes32 remoteAddr = bytes32(uint256(uint160(address(0x7777))));
-        
+
         vm.expectEmit(true, false, false, true);
         emit TrustedRemoteSet(BASE_EID, remoteAddr);
-        
+
         vm.prank(owner);
         feeRouter.setTrustedRemote(BASE_EID, remoteAddr);
         assertEq(feeRouter.trustedRemotes(BASE_EID), remoteAddr);
@@ -304,10 +305,10 @@ contract FeeRouterTest is Test {
 
     function test_SetTreasury() public {
         address newTreasury = address(0x8888);
-        
+
         vm.expectEmit(true, false, false, true);
         emit TreasuryUpdated(newTreasury);
-        
+
         vm.prank(owner);
         feeRouter.setTreasury(newTreasury);
         assertEq(feeRouter.treasury(), newTreasury);
@@ -332,19 +333,19 @@ contract FeeRouterTest is Test {
     function test_LzReceiveETH() public {
         uint256 amount = 1 ether;
         bytes memory message = abi.encode(address(0), amount, uint256(0));
-        
+
         // Mock LayerZero receive call from trusted remote
         vm.prank(address(lzEndpoint));
         Origin memory origin = Origin({srcEid: BASE_EID, sender: bytes32(uint256(uint160(address(this)))), nonce: 1});
         feeRouter.lzReceive(origin, keccak256(message), message, address(0), "");
-        
+
         // Should process the received ETH through HLG conversion
     }
 
     function test_LzReceiveLegacyMessage() public {
         uint256 amount = 1 ether;
         bytes memory legacyMessage = abi.encode(address(0), amount); // 2-word payload
-        
+
         vm.prank(address(lzEndpoint));
         Origin memory origin2 = Origin({srcEid: BASE_EID, sender: bytes32(uint256(uint160(address(this)))), nonce: 1});
         feeRouter.lzReceive(origin2, keccak256(legacyMessage), legacyMessage, address(0), "");
@@ -352,7 +353,7 @@ contract FeeRouterTest is Test {
 
     function test_RevertLzReceiveNotEndpoint() public {
         bytes memory message = abi.encode(address(0), 1 ether, uint256(0));
-        
+
         vm.prank(alice);
         vm.expectRevert(FeeRouter.NotEndpoint.selector);
         Origin memory origin = Origin({srcEid: BASE_EID, sender: bytes32(uint256(uint160(address(this)))), nonce: 1});
@@ -361,7 +362,7 @@ contract FeeRouterTest is Test {
 
     function test_RevertLzReceiveUntrustedRemote() public {
         bytes memory message = abi.encode(address(0), 1 ether, uint256(0));
-        
+
         vm.prank(address(lzEndpoint));
         vm.expectRevert(FeeRouter.UntrustedRemote.selector);
         Origin memory origin3 = Origin({srcEid: 99999, sender: bytes32(uint256(uint160(address(this)))), nonce: 1});
@@ -376,7 +377,7 @@ contract FeeRouterTest is Test {
         vm.prank(owner);
         feeRouter.pause();
         assertTrue(feeRouter.paused());
-        
+
         vm.prank(owner);
         feeRouter.unpause();
         assertFalse(feeRouter.paused());
@@ -395,10 +396,10 @@ contract FeeRouterTest is Test {
     function test_ReceiveETHFromTrustedAirlock() public {
         uint256 amount = 1 ether;
         vm.deal(address(airlock), amount);
-        
+
         vm.prank(address(airlock));
         (bool success,) = address(feeRouter).call{value: amount}("");
-        
+
         assertTrue(success);
         // ETH is processed through fee splitting in receive()
     }
@@ -416,12 +417,12 @@ contract FeeRouterTest is Test {
     function test_GetBalances() public {
         uint256 ethAmount = 2 ether;
         uint256 hlgAmount = 1000e18;
-        
+
         vm.deal(address(feeRouter), ethAmount);
         hlg.mint(address(feeRouter), hlgAmount);
-        
+
         (uint256 ethBalance, uint256 hlgBalance) = feeRouter.getBalances();
-        
+
         assertEq(ethBalance, ethAmount);
         assertEq(hlgBalance, hlgAmount);
     }
@@ -434,20 +435,20 @@ contract FeeRouterTest is Test {
         // Step 1: Verify new architecture components are trusted
         assertTrue(feeRouter.trustedFactories(address(factory)));
         assertTrue(feeRouter.trustedAirlocks(address(airlock)));
-        
+
         // Step 2: Simulate Doppler Airlock fee collection
         uint256 feeAmount = 2 ether;
         vm.deal(address(airlock), feeAmount);
         airlock.setCollectableAmount(address(0), feeAmount);
-        
+
         // Step 3: Keeper collects fees from airlock
         vm.prank(keeper);
         feeRouter.collectAirlockFees(address(airlock), address(0), feeAmount);
-        
+
         // Step 4: Verify fee split (1.5% protocol, 98.5% treasury)
         uint256 expectedTreasuryFee = (feeAmount * 9850) / 10_000;
         assertEq(treasury.balance, expectedTreasuryFee);
-        
+
         // Step 5: Bridge accumulated protocol fees if above threshold
         if (address(feeRouter).balance >= MIN_BRIDGE_VALUE) {
             vm.prank(keeper);
@@ -461,19 +462,19 @@ contract FeeRouterTest is Test {
         console.log("Base EID:", BASE_EID);
         console.log("Unichain EID (Remote):", UNICHAIN_EID);
         console.log("FeeRouter configured for Base -> Unichain bridging");
-        
+
         // Simulate fee collection on Base
         uint256 feeAmount = 1 ether;
         vm.deal(address(airlock), feeAmount);
         airlock.setCollectableAmount(address(0), feeAmount);
-        
+
         vm.prank(keeper);
         feeRouter.collectAirlockFees(address(airlock), address(0), feeAmount);
-        
+
         // Verify treasury received fees
         uint256 expectedTreasuryFee = (feeAmount * 9850) / 10_000;
         assertEq(treasury.balance, expectedTreasuryFee);
-        
+
         console.log("Base fee collection and treasury distribution successful");
     }
 
@@ -483,9 +484,9 @@ contract FeeRouterTest is Test {
 
     function testFuzz_FeeSplit(uint256 amount) public {
         vm.assume(amount > 0 && amount <= type(uint128).max);
-        
+
         (uint256 protocolFee, uint256 treasuryFee) = feeRouter.calculateFeeSplit(amount);
-        
+
         assertEq(protocolFee + treasuryFee, amount);
         assertEq(protocolFee, (amount * 150) / 10_000);
         assertGe(treasuryFee, (amount * 9800) / 10_000); // At least 98%
@@ -493,25 +494,25 @@ contract FeeRouterTest is Test {
 
     function testFuzz_BridgeAmount(uint256 amount) public {
         vm.assume(amount >= MIN_BRIDGE_VALUE && amount <= 100 ether);
-        
+
         vm.deal(address(feeRouter), amount);
-        
+
         vm.prank(keeper);
         feeRouter.bridge(200_000, 0);
-        
+
         assertEq(feeRouter.nonce(UNICHAIN_EID), 1);
         assertTrue(lzEndpoint.sendCalled());
     }
 
     function testFuzz_AirlockFeeCollection(uint256 amount) public {
         vm.assume(amount > 0 && amount <= 10 ether);
-        
+
         vm.deal(address(airlock), amount);
         airlock.setCollectableAmount(address(0), amount);
-        
+
         vm.prank(keeper);
         feeRouter.collectAirlockFees(address(airlock), address(0), amount);
-        
+
         // Verify treasury receives the correct amount (amount - protocolFee)
         uint256 expectedProtocolFee = (amount * 150) / 10_000; // 1.5%
         uint256 expectedTreasuryFee = amount - expectedProtocolFee;
@@ -525,57 +526,57 @@ contract FeeRouterTest is Test {
     function test_SetHolographFee() public {
         // Initial fee should be 150 BPS (1.5%)
         assertEq(feeRouter.holographFeeBps(), 150);
-        
+
         // Owner can set new fee
         vm.prank(owner);
         feeRouter.setHolographFee(200); // 2%
-        
+
         assertEq(feeRouter.holographFeeBps(), 200);
-        
+
         // Fee calculation should use new fee
         (uint256 protocolFee, uint256 treasuryFee) = feeRouter.calculateFeeSplit(1000e18);
         assertEq(protocolFee, (1000e18 * 200) / 10_000); // 2%
         assertEq(treasuryFee, 1000e18 - protocolFee); // 98%
     }
-    
+
     function test_SetHolographFeeEvent() public {
         vm.expectEmit(true, true, true, true);
         emit HolographFeeUpdated(150, 300);
-        
+
         vm.prank(owner);
         feeRouter.setHolographFee(300);
     }
-    
+
     function test_RevertSetHolographFeeExceedsMax() public {
         vm.prank(owner);
         vm.expectRevert(FeeRouter.FeeExceedsMaximum.selector);
         feeRouter.setHolographFee(10_001); // > 100%
     }
-    
+
     function test_RevertNonOwnerCannotSetFee() public {
         vm.prank(alice);
         vm.expectRevert();
         feeRouter.setHolographFee(200);
     }
-    
+
     function test_SetHolographFeeZero() public {
         vm.prank(owner);
         feeRouter.setHolographFee(0); // 0% fee
-        
+
         assertEq(feeRouter.holographFeeBps(), 0);
-        
+
         // Fee calculation should use zero fee
         (uint256 protocolFee, uint256 treasuryFee) = feeRouter.calculateFeeSplit(1000e18);
         assertEq(protocolFee, 0);
         assertEq(treasuryFee, 1000e18); // 100% to treasury
     }
-    
+
     function test_SetHolographFeeMaximum() public {
         vm.prank(owner);
         feeRouter.setHolographFee(10_000); // 100% fee
-        
+
         assertEq(feeRouter.holographFeeBps(), 10_000);
-        
+
         // Fee calculation should use maximum fee
         (uint256 protocolFee, uint256 treasuryFee) = feeRouter.calculateFeeSplit(1000e18);
         assertEq(protocolFee, 1000e18); // 100% to protocol

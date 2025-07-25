@@ -25,7 +25,6 @@ pragma solidity ^0.8.24;
  *   KEEPER_ADDRESS      – address receiving KEEPER_ROLE
  *   DOPPLER_AIRLOCK     – address of trusted Doppler Airlock contract (add more via code)
  */
-
 import "forge-std/Script.sol";
 import "../src/FeeRouter.sol";
 import "../src/HolographFactory.sol";
@@ -101,7 +100,6 @@ contract Configure is Script {
         } catch {
             console.log("[WARN] setTrustedFactory failed - perhaps already trusted");
         }
-
 
         vm.stopBroadcast();
     }
