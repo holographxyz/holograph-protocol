@@ -27,20 +27,20 @@ pragma solidity ^0.8.24;
  *   • Emergency pause functionality
  * ----------------------------------------------------------------------------
  */
-
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "./interfaces/ILZEndpointV2.sol";
-import "./interfaces/ILZReceiverV2.sol";
+import "../lib/LayerZero-v2/packages/layerzero-v2/evm/protocol/contracts/interfaces/ILayerZeroEndpointV2.sol";
+import "../lib/LayerZero-v2/packages/layerzero-v2/evm/protocol/contracts/interfaces/ILayerZeroReceiver.sol";
 import "./interfaces/IWETH9.sol";
 import "./interfaces/ISwapRouter.sol";
 import "./interfaces/IStakingRewards.sol";
 import "./interfaces/IAirlock.sol";
 import "./interfaces/IUniswapV3Factory.sol";
+import "./interfaces/IHolographFactory.sol";
 
 /**
  * @title FeeRouter
@@ -48,7 +48,7 @@ import "./interfaces/IUniswapV3Factory.sol";
  * @dev 1.5% protocol fee, 98.5% to treasury - all fees processed uniformly
  * @author Holograph Protocol
  */
-contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZReceiverV2 {
+contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZeroReceiver {
     using SafeERC20 for IERC20;
 
     /* -------------------------------------------------------------------------- */
@@ -57,8 +57,8 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
     /// @notice Uniswap V3 pool fee tier (0.3%)
     uint24 public constant POOL_FEE = 3000;
 
-    /// @notice Protocol fee in basis points (1.5%)
-    uint16 public constant HOLO_FEE_BPS = 150;
+    /// @notice Current protocol fee in basis points (settable by owner)
+    uint16 public holographFeeBps = 150;
 
     /// @notice Minimum value required to bridge (dust protection)
     uint64 public constant MIN_BRIDGE_VALUE = 0.01 ether;
@@ -70,7 +70,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
     /*                                Immutables                                  */
     /* -------------------------------------------------------------------------- */
     /// @notice LayerZero V2 endpoint for cross-chain messaging
-    ILZEndpointV2 public immutable lzEndpoint;
+    ILayerZeroEndpointV2 public immutable lzEndpoint;
 
     /// @notice Remote chain endpoint ID (Ethereum ⇄ Base)
     uint32 public immutable remoteEid;
@@ -105,6 +105,9 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
     /// @notice Trusted Airlock addresses allowed to push ETH
     mapping(address => bool) public trustedAirlocks;
 
+    /// @notice Trusted HolographFactory addresses for integration
+    mapping(address => bool) public trustedFactories;
+
     /* -------------------------------------------------------------------------- */
     /*                                  Errors                                    */
     /* -------------------------------------------------------------------------- */
@@ -115,6 +118,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
     error NoRoute();
     error InsufficientOutput();
     error UntrustedSender();
+    error FeeExceedsMaximum();
 
     /* -------------------------------------------------------------------------- */
     /*                                  Events                                    */
@@ -143,6 +147,12 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
     /// @notice Emitted when an Airlock is added or removed from trusted list
     event TrustedAirlockSet(address indexed airlock, bool trusted);
 
+    /// @notice Emitted when a HolographFactory is added or removed from trusted list
+    event TrustedFactorySet(address indexed factory, bool trusted);
+
+    /// @notice Emitted when protocol fee is updated
+    event HolographFeeUpdated(uint16 oldFeeBps, uint16 newFeeBps);
+
     /* -------------------------------------------------------------------------- */
     /*                               Constructor                                  */
     /* -------------------------------------------------------------------------- */
@@ -157,6 +167,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
      * @param _weth WETH9 contract address (zero on non-Ethereum chains)
      * @param _swapRouter Uniswap V3 SwapRouter address (zero on non-Ethereum chains)
      * @param _treasury Initial treasury address for fee collection
+     * @param _owner Initial owner address for the contract
      */
     constructor(
         address _endpoint,
@@ -165,12 +176,14 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
         address _hlg,
         address _weth,
         address _swapRouter,
-        address _treasury
-    ) Ownable(msg.sender) {
+        address _treasury,
+        address _owner
+    ) Ownable(_owner) {
         if (_endpoint == address(0) || _remoteEid == 0) revert ZeroAddress();
         if (_treasury == address(0)) revert ZeroAddress();
+        if (_owner == address(0)) revert ZeroAddress();
 
-        lzEndpoint = ILZEndpointV2(_endpoint);
+        lzEndpoint = ILayerZeroEndpointV2(_endpoint);
         remoteEid = _remoteEid;
         stakingPool = IStakingRewards(_stakingPool);
         HLG = IERC20(_hlg);
@@ -185,7 +198,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
         }
         treasury = _treasury;
 
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(DEFAULT_ADMIN_ROLE, _owner);
     }
 
     /* -------------------------------------------------------------------------- */
@@ -199,11 +212,11 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
      * @param token Token contract address
      * @param amt Amount to collect
      */
-    function collectAirlockFees(
-        address airlock,
-        address token,
-        uint256 amt
-    ) external onlyRole(KEEPER_ROLE) nonReentrant {
+    function collectAirlockFees(address airlock, address token, uint256 amt)
+        external
+        onlyRole(KEEPER_ROLE)
+        nonReentrant
+    {
         if (airlock == address(0)) revert ZeroAddress();
         if (amt == 0) revert ZeroAmount();
 
@@ -245,7 +258,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
     function _splitFee(address token, uint256 amount) internal {
         if (amount == 0) revert ZeroAmount();
 
-        uint256 protocolFee = (amount * HOLO_FEE_BPS) / 10_000;
+        uint256 protocolFee = (amount * holographFeeBps) / 10_000;
         uint256 treasuryFee = amount - protocolFee;
 
         // Forward treasury share immediately
@@ -316,7 +329,16 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
         bytes memory payload = abi.encode(address(0), bal, minHlg);
         bytes memory options = _buildLzReceiveOption(minGas);
 
-        lzEndpoint.send{value: bal}(remoteEid, payload, options);
+        // Build LayerZero V2 messaging parameters
+        MessagingParams memory msgParams = MessagingParams({
+            dstEid: remoteEid,
+            receiver: trustedRemotes[remoteEid],
+            message: payload,
+            options: options,
+            payInLzToken: false
+        });
+
+        lzEndpoint.send{value: bal}(msgParams, payable(msg.sender));
         emit TokenBridged(address(0), bal, n);
     }
 
@@ -331,14 +353,23 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
         uint256 bal = IERC20(token).balanceOf(address(this));
         if (bal < MIN_BRIDGE_VALUE) return;
 
-        // Single approval call instead of potential multiple
+        // Safe approval using OpenZeppelin SafeERC20
         IERC20(token).forceApprove(address(lzEndpoint), bal);
 
         uint64 n = ++nonce[remoteEid];
         bytes memory payload = abi.encode(token, bal, minHlg);
         bytes memory options = _buildLzReceiveOption(minGas);
 
-        lzEndpoint.send(remoteEid, payload, options);
+        // Build LayerZero V2 messaging parameters
+        MessagingParams memory msgParams = MessagingParams({
+            dstEid: remoteEid,
+            receiver: trustedRemotes[remoteEid],
+            message: payload,
+            options: options,
+            payInLzToken: false
+        });
+
+        lzEndpoint.send(msgParams, payable(msg.sender));
         emit TokenBridged(token, bal, n);
     }
 
@@ -349,19 +380,28 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
     /**
      * @notice Handle incoming protocol fees from Base chain
      * @dev Processes bridged tokens through local HLG swap/burn/stake and verifies the caller is a trusted remote
-     * @param srcEid Source chain endpoint ID
-     * @param message Encoded token, amount, and slippage protection data
+     * @param _origin Message origin information
+     * @param _guid Unique message identifier
+     * @param _message Encoded token, amount, and slippage protection data
+     * @param _executor Executor address
+     * @param _extraData Additional data
      */
-    function lzReceive(uint32 srcEid, bytes calldata message, address, bytes calldata) external payable override {
-        _enforceEndpointAndRemote(srcEid);
+    function lzReceive(
+        Origin calldata _origin,
+        bytes32 _guid,
+        bytes calldata _message,
+        address _executor,
+        bytes calldata _extraData
+    ) external payable override {
+        _enforceEndpointAndRemote(_origin.srcEid);
 
-        if (message.length == 96) {
+        if (_message.length == 96) {
             // (token, amount, minOut)
-            (address token, uint256 amount, uint256 minHlg) = abi.decode(message, (address, uint256, uint256));
+            (address token, uint256 amount, uint256 minHlg) = abi.decode(_message, (address, uint256, uint256));
             _convertToHLG(token, amount, minHlg);
         } else {
             // Legacy 2-word payload: treat second word as amount, ignore slippage
-            (address token, uint256 amount) = abi.decode(message, (address, uint256));
+            (address token, uint256 amount) = abi.decode(_message, (address, uint256));
             _convertToHLG(token, amount, 0);
         }
     }
@@ -370,6 +410,16 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
     function _enforceEndpointAndRemote(uint32 srcEid) internal view {
         if (msg.sender != address(lzEndpoint)) revert NotEndpoint();
         if (trustedRemotes[srcEid] == bytes32(0)) revert UntrustedRemote();
+    }
+
+    /// @notice Check if initialization path is allowed
+    function allowInitializePath(Origin calldata _origin) external view returns (bool) {
+        return trustedRemotes[_origin.srcEid] != bytes32(0);
+    }
+
+    /// @notice Get next nonce for sender
+    function nextNonce(uint32 _eid, bytes32 _sender) external view returns (uint64) {
+        return lzEndpoint.inboundNonce(address(this), _eid, _sender) + 1;
     }
 
     /* -------------------------------------------------------------------------- */
@@ -583,6 +633,28 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
         emit TrustedAirlockSet(airlock, trusted);
     }
 
+    /**
+     * @notice Whitelist or remove a HolographFactory for integration
+     * @param factory HolographFactory contract address
+     * @param trusted Boolean indicating whether the Factory is trusted
+     */
+    function setTrustedFactory(address factory, bool trusted) external onlyOwner {
+        if (factory == address(0)) revert ZeroAddress();
+        trustedFactories[factory] = trusted;
+        emit TrustedFactorySet(factory, trusted);
+    }
+
+    /**
+     * @notice Update protocol fee (only owner)
+     * @param newFeeBps New protocol fee in basis points (0-10000)
+     */
+    function setHolographFee(uint16 newFeeBps) external onlyOwner {
+        if (newFeeBps > 10_000) revert FeeExceedsMaximum();
+        uint16 oldFeeBps = holographFeeBps;
+        holographFeeBps = newFeeBps;
+        emit HolographFeeUpdated(oldFeeBps, newFeeBps);
+    }
+
     /* -------------------------------------------------------------------------- */
     /*                                   Views                                    */
     /* -------------------------------------------------------------------------- */
@@ -605,8 +677,8 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILZRece
      * @return protocolFee Amount that goes to protocol (1.5%)
      * @return treasuryFee Amount that goes to treasury (98.5%)
      */
-    function calculateFeeSplit(uint256 amount) external pure returns (uint256 protocolFee, uint256 treasuryFee) {
-        protocolFee = (amount * HOLO_FEE_BPS) / 10_000;
+    function calculateFeeSplit(uint256 amount) external view returns (uint256 protocolFee, uint256 treasuryFee) {
+        protocolFee = (amount * holographFeeBps) / 10_000;
         treasuryFee = amount - protocolFee;
     }
 

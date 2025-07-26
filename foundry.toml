@@ -3,7 +3,7 @@ solc = "0.8.26"
 auto_detect_solc = false
 auto_detect_remappings = false
 bytecode_hash = "none"
-optimizer_runs = 0
+optimizer_runs = 1
 optimizer = true
 
 sparse_mode = true
@@ -32,8 +32,15 @@ remappings = [
   "forge-std/=lib/forge-std/src/",
   # OpenZeppelin contracts
   "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+  "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
   # Doppler contracts
   "doppler/=src/interfaces/external/doppler/",
+  # LayerZero OFT contracts
+  "@layerzerolabs/lz-evm-oapp-v2/=lib/LayerZero-v2/packages/layerzero-v2/evm/oapp/",
+  # LayerZero Protocol v2 contracts
+  "@layerzerolabs/lz-evm-protocol-v2/=lib/LayerZero-v2/packages/layerzero-v2/evm/protocol/",
+  # LayerZero MessageLib v2 contracts
+  "@layerzerolabs/lz-evm-messagelib-v2/=lib/LayerZero-v2/packages/layerzero-v2/evm/messagelib/",
 ]
 
 # Specify include paths to control which directories are searched for imports
@@ -66,6 +73,13 @@ runs = 10000
 runs = 100000
 
 [profile.debug]
-via_ir = false
-optimizer_runs = 200
+via_ir = true
+optimizer_runs = 1
 fuzz.runs = 100
+
+[profile.deploy]
+solc = "0.8.26"
+optimizer = true
+optimizer_runs = 20000
+via_ir = true
+bytecode_hash = "none"

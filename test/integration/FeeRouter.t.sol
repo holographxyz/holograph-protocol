@@ -12,6 +12,8 @@ import {MockLZEndpoint} from "../mock/MockLZEndpoint.sol";
 import {MockWETH} from "../mock/MockWETH.sol";
 import {MockSwapRouter, ISwapRouter} from "../mock/MockSwapRouter.sol";
 import {MockAirlock} from "../mock/MockAirlock.sol";
+import {Origin} from
+    "../../lib/LayerZero-v2/packages/layerzero-v2/evm/protocol/contracts/interfaces/ILayerZeroEndpointV2.sol";
 
 contract FeeRouterTest is Test {
     // Contracts
@@ -70,7 +72,8 @@ contract FeeRouterTest is Test {
             address(0), // no HLG on Base
             address(0), // no WETH on Base
             address(0), // no swap router on Base
-            address(owner) // treasury address
+            address(owner), // treasury address
+            owner // owner address
         );
 
         // Deploy StakingRewards
@@ -84,7 +87,8 @@ contract FeeRouterTest is Test {
             address(hlg),
             address(weth),
             address(swapRouter),
-            address(owner) // treasury address
+            address(owner), // treasury address
+            owner // owner address
         );
 
         // Update staking rewards to use the Ethereum fee router
@@ -272,12 +276,18 @@ contract FeeRouterTest is Test {
 
         // Try to call lzReceive from untrusted address (should fail)
         vm.expectRevert(FeeRouter.NotEndpoint.selector);
-        feeRouterBase.lzReceive(ETH_EID, abi.encode(address(0), 100 ether), address(0x999), "");
+        Origin memory origin1 = Origin({srcEid: ETH_EID, sender: bytes32(uint256(uint160(address(0x999)))), nonce: 1});
+        feeRouterBase.lzReceive(
+            origin1, keccak256(abi.encode(address(0), 100 ether)), abi.encode(address(0), 100 ether), address(0x999), ""
+        );
 
         // Test with correct endpoint but untrusted remote (should fail)
         vm.startPrank(address(lzEndpointBase));
         vm.expectRevert(FeeRouter.UntrustedRemote.selector);
-        feeRouterBase.lzReceive(99999, abi.encode(address(0), 100 ether), address(0x999), ""); // Use untrusted EID
+        Origin memory origin2 = Origin({srcEid: 99999, sender: bytes32(uint256(uint160(address(0x999)))), nonce: 1});
+        feeRouterBase.lzReceive(
+            origin2, keccak256(abi.encode(address(0), 100 ether)), abi.encode(address(0), 100 ether), address(0x999), ""
+        ); // Use untrusted EID
         vm.stopPrank();
 
         // NOTE: The security validation tests above are the main focus of this test
@@ -384,7 +394,7 @@ contract FeeRouterTest is Test {
         emit MockLZEndpoint.MessageSent(
             ETH_EID,
             abi.encode(address(0), protocolFeeAmount, minHlgForStakers), // token, amount, minHlg
-            "" // MockLZEndpoint always emits empty options
+            abi.encodePacked(uint16(1), minGas) // LayerZero V2 options with gas limit
         );
 
         vm.prank(owner);

@@ -4,28 +4,32 @@ A protocol for deploying omnichain tokens with deterministic addresses across mu
 
 ## Overview
 
-Holograph Protocol enables the creation of ERC-20 tokens that exist natively across multiple chains with identical contract addresses. Rather than traditional bridge mechanisms, tokens are minted directly on destination chains through LayerZero V2 messaging.
+Holograph Protocol enables the creation of ERC-20 tokens with deterministic addresses across supported chains. The protocol integrates with Doppler's token factory system for secure token launches and automates fee collection through LayerZero V2 cross-chain messaging.
 
 ### Key Features
 
-- **Deterministic Addresses**: Same contract address across all supported chains
-- **Direct Minting**: No lock/unlock bridge mechanisms required
-- **Doppler Integration**: Built on Doppler Airlock for token launches
+- **Deterministic Addresses**: CREATE2-based deployment ensures consistent addresses across chains
+- **Doppler Integration**: Authorized token factory for Doppler Airlock launches
 - **Fee Automation**: Automated fee collection and cross-chain distribution
-- **LayerZero V2**: Secure cross-chain messaging infrastructure
+- **LayerZero V2**: Cross-chain fee bridging infrastructure
+- **HolographDeployer**: Deterministic contract deployment system with salt validation
 
 ### Architecture
 
 ```
-Base Chain                   LayerZero V2              Ethereum Chain
+Base/Unichain                LayerZero V2              Ethereum Chain
 ┌─────────────────┐         ┌─────────────┐          ┌─────────────────┐
-│ HolographFactory│────────▶│   Message   │─────────▶│   Token Mint    │
-│                 │         │   Passing   │          │                 │
-│ FeeRouter       │────────▶│             │─────────▶│ Fee Processing  │
+│ Doppler Airlock │────────▶│             │          │                 │
+│       ↓         │         │   Message   │          │                 │
+│ HolographFactory│         │   Passing   │          │                 │
 │                 │         │             │          │                 │
-│ Doppler Airlock │         │             │          │ StakingRewards  │
+│ FeeRouter       │────────▶│   (Fees)    │─────────▶│ Fee Processing  │
+│                 │         │             │          │                 │
+│ HolographERC20  │         │             │          │ StakingRewards  │
 └─────────────────┘         └─────────────┘          └─────────────────┘
 ```
+
+**Note**: Cross-chain token bridging is temporarily deferred. Currently, only fee bridging is supported through LayerZero V2.
 
 ## Development & Deployment
 
@@ -51,11 +55,13 @@ make help
 **Dry-run mode (default - safe for testing):**
 
 ```bash
-make deploy-base    # Simulate Base deployment
-make deploy-eth     # Simulate Ethereum deployment
-make configure-base # Simulate Base configuration
-make configure-eth  # Simulate Ethereum configuration
-make keeper         # Simulate keeper operations
+make deploy-base        # Simulate Base deployment
+make deploy-eth         # Simulate Ethereum deployment
+make deploy-unichain    # Simulate Unichain deployment
+make configure-base     # Simulate Base configuration
+make configure-eth      # Simulate Ethereum configuration
+make configure-unichain # Simulate Unichain configuration
+make keeper             # Simulate keeper operations
 ```
 
 **Live deployment mode:**
@@ -63,21 +69,24 @@ make keeper         # Simulate keeper operations
 ```bash
 # Set environment variables
 export BROADCAST=true
-export DEPLOYER_PK=0x...  # For deploy-base and deploy-eth
-export OWNER_PK=0x...     # For configure-base and configure-eth
+export DEPLOYER_PK=0x...  # For deploy-* commands
+export OWNER_PK=0x...     # For configure-* commands
 export KEEPER_PK=0x...    # For keeper operations
 
 # Required RPC URLs
 export BASE_RPC_URL=https://mainnet.base.org
 export ETHEREUM_RPC_URL=https://eth-mainnet.alchemyapi.io/v2/YOUR_KEY
+export UNICHAIN_RPC_URL=https://mainnet.unichain.org
 
 # Required API keys for verification
 export BASESCAN_API_KEY=your_basescan_key
 export ETHERSCAN_API_KEY=your_etherscan_key
+export UNISCAN_API_KEY=your_uniscan_key
 
 # Now run actual deployments
-make deploy-base    # Deploy to Base mainnet
-make deploy-eth     # Deploy to Ethereum mainnet
+make deploy-base        # Deploy to Base mainnet
+make deploy-eth         # Deploy to Ethereum mainnet
+make deploy-unichain    # Deploy to Unichain mainnet
 ```
 
 #### Environment Variables
@@ -90,15 +99,18 @@ make deploy-eth     # Deploy to Ethereum mainnet
 | `KEEPER_PK`         | `keeper` command       | Private key for automated operations        |
 | `BASE_RPC_URL`      | Base operations        | RPC endpoint for Base network               |
 | `ETHEREUM_RPC_URL`  | Ethereum operations    | RPC endpoint for Ethereum network           |
+| `UNICHAIN_RPC_URL`  | Unichain operations    | RPC endpoint for Unichain network           |
 | `BASESCAN_API_KEY`  | Base verification      | API key for Basescan contract verification  |
 | `ETHERSCAN_API_KEY` | Ethereum verification  | API key for Etherscan contract verification |
+| `UNISCAN_API_KEY`   | Unichain verification  | API key for Uniscan contract verification   |
 
 #### Typical Deployment Flow
 
 1. **Test everything in dry-run mode first:**
 
    ```bash
-   make deploy-base deploy-eth configure-base configure-eth
+   make deploy-base deploy-eth deploy-unichain
+   make configure-base configure-eth configure-unichain
    ```
 
 2. **Deploy to mainnet:**
@@ -106,17 +118,23 @@ make deploy-eth     # Deploy to Ethereum mainnet
    ```bash
    export BROADCAST=true
    export DEPLOYER_PK=0x...
-   make deploy-base deploy-eth
+   make deploy-base deploy-eth deploy-unichain
    ```
 
-3. **Configure the deployed contracts:**
+3. **Verify deployment consistency:**
+
+   ```bash
+   make verify-addresses  # Check addresses match across chains
+   ```
+
+4. **Configure the deployed contracts:**
 
    ```bash
    export OWNER_PK=0x...  # Different key for admin operations
-   make configure-base configure-eth
+   make configure-base configure-eth configure-unichain
    ```
 
-4. **Set up automation:**
+5. **Set up automation:**
    ```bash
    export KEEPER_PK=0x...
    make keeper  # Test keeper operations
@@ -136,7 +154,13 @@ forge script script/DeployBase.s.sol --rpc-url $BASE_RPC_URL --resume --verify -
 Deployed contract addresses are automatically saved to:
 
 - `deployments/base/` - Base network deployments
+- `deployments/ethereum/` - Ethereum network deployments
+- `deployments/unichain/` - Unichain network deployments
 - `broadcast/` - Complete transaction logs and artifacts
+
+Each deployment directory contains:
+- `deployment.json` - Complete deployment information
+- Individual `.txt` files for each contract address
 
 #### Safety Features
 
@@ -148,13 +172,32 @@ Deployed contract addresses are automatically saved to:
 
 ## Core Contracts
 
-### HolographFactory
+### HolographDeployer
 
-Entry point for token launches and cross-chain operations.
+Deterministic contract deployment system using CREATE2 for cross-chain address consistency.
 
 ```solidity
-function createToken(CreateParams calldata params) external payable returns (address asset);
-function bridgeToken(uint32 dstEid, address token, address recipient, uint256 amount, bytes calldata options) external payable;
+function deploy(bytes memory creationCode, bytes32 salt) external returns (address deployed);
+function deployAndInitialize(bytes memory creationCode, bytes32 salt, bytes memory initData) external returns (address deployed);
+function computeAddress(bytes memory creationCode, bytes32 salt) external view returns (address);
+```
+
+### HolographFactory
+
+Doppler-authorized token factory implementing ITokenFactory for omnichain token creation.
+
+```solidity
+// Called by Doppler Airlock contracts only
+function create(
+    uint256 initialSupply,
+    address recipient,
+    address owner,
+    bytes32 salt,
+    bytes calldata tokenData
+) external returns (address token);
+
+function setAirlockAuthorization(address airlock, bool authorized) external; // Owner only
+function isTokenCreator(address token, address user) external view returns (bool);
 ```
 
 ### FeeRouter
@@ -180,10 +223,11 @@ function addRewards(uint256 amount) external; // FeeRouter only
 
 ## Token Launch Process
 
-1. Call `HolographFactory.createToken()` with token parameters - **no launch fees required**
-2. Factory automatically sets FeeRouter as integrator for Doppler trading fee collection
-3. Token deployed through Doppler Airlock with deterministic CREATE2 address
-4. Identical contract address immediately available for cross-chain bridging
+1. Create token through Doppler Airlock (which calls HolographFactory.create())
+2. Airlock handles auction mechanics and initial distribution
+3. HolographFactory deploys HolographERC20 with deterministic CREATE2 address
+4. FeeRouter automatically set as integrator for trading fee collection
+5. Token address consistent across all supported chains (Base, Ethereum, Unichain)
 
 ## Fee Model
 
@@ -195,33 +239,48 @@ function addRewards(uint256 amount) external; // FeeRouter only
 
 ## Integration
 
-### Token Launch
+### Token Launch via TypeScript
 
-```solidity
-CreateParams memory params = CreateParams({
-    name: "MyToken",
-    symbol: "MTK",
-    decimals: 18,
-    initialSupply: 1000000e18,
-    salt: bytes32(uint256(1)),
-    integrator: address(0), // Auto-set to FeeRouter
-    royaltyFeePercentage: 500,
-    royaltyRecipient: msg.sender
-});
+Use the provided TypeScript utility to create tokens through Doppler:
 
-// Free token launch - no ETH required
-address token = holographFactory.createToken(params);
+```typescript
+import { createToken, TokenConfig } from './create-token.js'
+import { parseEther } from 'viem'
+
+const config: TokenConfig = {
+  name: "MyToken",
+  symbol: "MTK",
+  initialSupply: parseEther("1000000"),
+  minProceeds: parseEther("100"),
+  maxProceeds: parseEther("10000"),
+  auctionDurationDays: 3
+}
+
+const result = await createToken(config, process.env.PRIVATE_KEY)
 ```
 
-### Cross-Chain Bridging
+### Direct Factory Authorization
+
+For authorized Airlock contracts:
 
 ```solidity
-holographFactory.bridgeToken{value: bridgeFee}(
-    destinationEid,
-    tokenAddress,
+// Only callable by authorized Doppler Airlock contracts
+bytes memory tokenData = abi.encode(
+    name,
+    symbol,
+    yearlyMintCap,
+    vestingDuration,
+    recipients,
+    amounts,
+    tokenURI
+);
+
+address token = holographFactory.create(
+    initialSupply,
     recipient,
-    amount,
-    lzOptions
+    owner,
+    salt,
+    tokenData
 );
 ```
 
@@ -242,6 +301,14 @@ feeRouter.bridge(minGas, minHlgOut);
 - **Owner**: Contract administration, trusted remote management, treasury updates
 - **KEEPER_ROLE**: Automated fee collection (`collectAirlockFees`) and cross-chain bridging
 - **FeeRouter Authorization**: Only designated FeeRouter can add rewards to StakingRewards
+- **Airlock Authorization**: Only whitelisted Doppler Airlock contracts can create tokens
+
+### Deployment Security
+
+- **Salt Validation**: HolographDeployer requires first 20 bytes of salt to match sender address
+- **Deterministic Addresses**: CREATE2 ensures consistent addresses, preventing address confusion
+- **Griefing Protection**: Salt validation prevents malicious actors from front-running deployments
+- **Signed Deployments**: Support for gasless deployment with signature verification
 
 ### Cross-Chain Security
 
@@ -306,11 +373,22 @@ export HOLOGRAPH_FACTORY="0x..."
 export KEEPER_ADDRESS="0x..."
 ```
 
-## Deployment
+## Deployment Infrastructure
+
+### HolographDeployer
+
+All Holograph contracts are deployed through the HolographDeployer system, which ensures deterministic addresses across chains:
+
+- **CREATE2 Deployment**: Contracts have identical addresses on all chains
+- **Salt Validation**: First 20 bytes of salt must match deployer address to prevent griefing
+- **Batch Operations**: Deploy and initialize contracts in a single transaction
+- **Signed Deployments**: Support for gasless deployment via signed messages
+
+### Deployment Process
 
 > **💡 Quick Start**: Use the simplified Makefile commands documented in the [Development & Deployment](#development--deployment) section above for streamlined deployment.
 
-### Using Makefile (Recommended)
+#### Using Makefile (Recommended)
 
 ```bash
 # Set up environment
@@ -318,9 +396,10 @@ export BROADCAST=true
 export DEPLOYER_PK=0x...
 export BASE_RPC_URL=https://mainnet.base.org
 export ETHEREUM_RPC_URL=https://eth-mainnet.alchemyapi.io/v2/YOUR_KEY
+export UNICHAIN_RPC_URL=https://mainnet.unichain.org
 
-# Deploy to both chains
-make deploy-base deploy-eth
+# Deploy to all chains
+make deploy-base deploy-eth deploy-unichain
 ```
 
 ### Manual Deployment (Advanced)
@@ -345,6 +424,16 @@ forge script script/DeployEthereum.s.sol \
   --rpc-url $ETHEREUM_RPC_URL \
   --broadcast --private-key $DEPLOYER_PK \
   --verify --etherscan-api-key $ETHERSCAN_API_KEY
+```
+
+#### Unichain
+
+```bash
+# Deploy using deployment script
+forge script script/DeployUnichain.s.sol \
+  --rpc-url $UNICHAIN_RPC_URL \
+  --broadcast --private-key $DEPLOYER_PK \
+  --verify --etherscan-api-key $UNISCAN_API_KEY
 ```
 
 ## Operations

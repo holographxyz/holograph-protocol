@@ -4,35 +4,42 @@ pragma solidity ^0.8.24;
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 import "../src/HolographFactory.sol";
+import "../src/interfaces/IAirlock.sol";
 import {CreateParams} from "../src/interfaces/DopplerStructs.sol";
-import {ITokenFactory} from "doppler/ITokenFactory.sol";
-import {IGovernanceFactory} from "doppler/IGovernanceFactory.sol";
-import {IPoolInitializer} from "doppler/IPoolInitializer.sol";
-import {ILiquidityMigrator} from "doppler/ILiquidityMigrator.sol";
+import {ITokenFactory} from "../src/interfaces/external/doppler/ITokenFactory.sol";
+import {IGovernanceFactory} from "../src/interfaces/IGovernanceFactory.sol";
+import {IPoolInitializer} from "../src/interfaces/IPoolInitializer.sol";
+import {ILiquidityMigrator} from "../src/interfaces/ILiquidityMigrator.sol";
 
 contract TestTokenCreation is Script {
     function run() external {
         // Use Base Sepolia testnet
         vm.createSelectFork("https://sepolia.base.org");
 
-        // Deployed HolographFactory address
-        HolographFactory factory = HolographFactory(0x5290Bee84DC83AC667cF9573eC1edC6FE38eFe50);
+        // Doppler Airlock address - update with actual address when available
+        IAirlock airlock = IAirlock(0x742D35cC6634C0532925a3b8D4014dd1C4D9dC07);
+
+        // HolographFactory address (must be whitelisted by Doppler)
+        address holographFactory = 0x5290Bee84DC83AC667cF9573eC1edC6FE38eFe50;
+
+        // FeeRouter as integrator
+        address feeRouter = 0x10F2c0fdc9799A293b4C726a1314BD73A4AB9f20;
 
         // Test account (replace with your actual account)
         address testAccount = 0x5f5C3548f96C7DA33A18E5F2F2f13519e1c8bD0d;
 
-        // Prepare test data similar to the script
+        // Prepare test token factory data for HolographERC20
         bytes memory tokenFactoryData = abi.encode(
-            "Standard Token",
-            "STD",
-            0,
-            0,
-            new address[](0),
-            new uint256[](0),
-            "TOKEN_URI"
+            "Test Holograph Token",
+            "THT",
+            18, // decimals
+            1000000 ether, // initialSupply
+            new address[](0), // minters (empty)
+            new uint256[](0), // mintAmounts (empty)
+            "https://metadata.example.com/test-token" // tokenURI
         );
 
-        bytes memory governanceData = abi.encode("Standard Token DAO", 7200, 50_400, 0);
+        bytes memory governanceData = abi.encode("Test Token DAO", 7200, 50_400, 0);
 
         uint256 currentTime = block.timestamp;
         bytes memory poolInitializerData = abi.encode(
@@ -50,39 +57,33 @@ contract TestTokenCreation is Script {
             8 // tickSpacing
         );
 
-        CreateParams memory params;
-        params.initialSupply = 100000 ether;
-        params.numTokensToSell = 100000 ether;
-        params.numeraire = address(0);
-        params.tokenFactoryData = tokenFactoryData;
-        params.governanceFactoryData = governanceData;
-        params.poolInitializerData = poolInitializerData;
-        params.liquidityMigratorData = "";
-        params.integrator = address(0);
-        params.salt = bytes32(uint256(10422));
-        
-        // Use assembly to set interface fields to avoid type conflicts
-        // These are the same interfaces but from different import paths
-        address tokenFactoryAddr = 0xc69Ba223c617F7D936B3cf2012aa644815dBE9Ff;
-        address governanceFactoryAddr = 0x9dBFaaDC8c0cB2c34bA698DD9426555336992e20;
-        address poolInitializerAddr = 0xca2079706A4c2a4a1aA637dFB47d7f27Fe58653F;
-        address liquidityMigratorAddr = 0x04a898f3722c38F9Def707bD17DC78920EFA977C;
-        
-        assembly {
-            // tokenFactory at offset 0x60 (96 decimal) - field #4
-            mstore(add(params, 0x60), tokenFactoryAddr)
-            // governanceFactory at offset 0xA0 (160 decimal) - field #6
-            mstore(add(params, 0xA0), governanceFactoryAddr)
-            // poolInitializer at offset 0xE0 (224 decimal) - field #8
-            mstore(add(params, 0xE0), poolInitializerAddr)
-            // liquidityMigrator at offset 0x120 (288 decimal) - field #10
-            mstore(add(params, 0x120), liquidityMigratorAddr)
-        }
+        CreateParams memory params = CreateParams({
+            initialSupply: 1000000 ether,
+            numTokensToSell: 500000 ether,
+            numeraire: address(0), // ETH
+            tokenFactory: ITokenFactory(holographFactory), // Use our HolographFactory
+            tokenFactoryData: tokenFactoryData,
+            governanceFactory: IGovernanceFactory(0x9dBFaaDC8c0cB2c34bA698DD9426555336992e20), // Doppler governance factory
+            governanceFactoryData: governanceData,
+            poolInitializer: IPoolInitializer(0xca2079706A4c2a4a1aA637dFB47d7f27Fe58653F), // Doppler pool initializer
+            poolInitializerData: poolInitializerData,
+            liquidityMigrator: ILiquidityMigrator(0x04a898f3722c38F9Def707bD17DC78920EFA977C), // Doppler migrator
+            liquidityMigratorData: "",
+            integrator: feeRouter, // FeeRouter as integrator
+            salt: bytes32(uint256(12345)) // Test salt
+        });
 
         vm.startPrank(testAccount);
 
-        try factory.createToken(params) returns (address asset) {
-            console.log("Token created successfully at:", asset);
+        try airlock.create(params) returns (
+            address asset, address pool, address governance, address timelock, address migrationPool
+        ) {
+            console.log("Token creation successful!");
+            console.log("Asset (HolographERC20):", asset);
+            console.log("Pool:", pool);
+            console.log("Governance:", governance);
+            console.log("Timelock:", timelock);
+            console.log("Migration Pool:", migrationPool);
         } catch Error(string memory reason) {
             console.log("Error:", reason);
         } catch (bytes memory lowLevelData) {

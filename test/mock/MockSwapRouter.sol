@@ -30,9 +30,12 @@ contract MockSwapRouter is ISwapRouter {
         _exchangeRate = rate;
     }
 
-    function exactInputSingle(
-        ExactInputSingleParams calldata params
-    ) external payable override returns (uint256 amountOut) {
+    function exactInputSingle(ExactInputSingleParams calldata params)
+        external
+        payable
+        override
+        returns (uint256 amountOut)
+    {
         // Transfer input token from caller
         IERC20(params.tokenIn).safeTransferFrom(msg.sender, address(this), params.amountIn);
 

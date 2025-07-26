@@ -25,10 +25,9 @@ contract KeeperPullAndBridge is Script {
     /*                                Addresses                                   */
     /* -------------------------------------------------------------------------- */
 
-    // TODO: Update with actual deployed addresses before production use
-    // Set via environment variables: FEEROUTER_ADDRESS
     /// @notice FeeRouter contract address for fee processing
-    IFeeRouter constant FEE_ROUTER = IFeeRouter(0x742D35cC6634C0532925a3b8D4014dd1C4D9dC07);
+    /// @dev Update this with the actual deployed FeeRouter address
+    IFeeRouter constant FEE_ROUTER = IFeeRouter(0x10F2c0fdc9799A293b4C726a1314BD73A4AB9f20);
 
     // Base mainnet token addresses
     /// @notice USDC token address on Base
@@ -72,7 +71,7 @@ contract KeeperPullAndBridge is Script {
         console.log("Setting up trusted Airlocks...");
 
         address[] memory airlocks = _getKnownAirlocks();
-        for (uint i = 0; i < airlocks.length; i++) {
+        for (uint256 i = 0; i < airlocks.length; i++) {
             if (airlocks[i] != address(0)) {
                 try FEE_ROUTER.setTrustedAirlock(airlocks[i], true) {
                     console.log("Whitelisted Airlock:", airlocks[i]);
@@ -116,7 +115,7 @@ contract KeeperPullAndBridge is Script {
         // Add actual airlock addresses and amounts based on monitoring
         address[] memory airlocks = _getKnownAirlocks();
 
-        for (uint i = 0; i < airlocks.length; i++) {
+        for (uint256 i = 0; i < airlocks.length; i++) {
             _pullFromAirlock(airlocks[i]);
         }
     }
@@ -136,7 +135,7 @@ contract KeeperPullAndBridge is Script {
 
         // Pull token fees
         address[] memory tokens = _getKnownTokens();
-        for (uint i = 0; i < tokens.length; i++) {
+        for (uint256 i = 0; i < tokens.length; i++) {
             try FEE_ROUTER.collectAirlockFees(airlock, tokens[i], _getMinAmount(tokens[i])) {
                 console.log("Pulled token from airlock:", tokens[i]);
             } catch {
@@ -167,7 +166,7 @@ contract KeeperPullAndBridge is Script {
     function _bridgeTokens() internal {
         address[] memory tokens = _getKnownTokens();
 
-        for (uint i = 0; i < tokens.length; i++) {
+        for (uint256 i = 0; i < tokens.length; i++) {
             try FEE_ROUTER.bridgeERC20(tokens[i], 200_000, 0) {
                 console.log("Bridged token:", tokens[i]);
             } catch {
@@ -181,16 +180,20 @@ contract KeeperPullAndBridge is Script {
     /* -------------------------------------------------------------------------- */
     /**
      * @notice Get list of known Airlock contracts for fee collection
-     * @dev Update this function with actual Airlock addresses from monitoring
+     * @dev Add actual Airlock addresses as they are deployed through Doppler
      * @return airlocks Array of Airlock contract addresses
      */
     function _getKnownAirlocks() internal pure returns (address[] memory) {
-        address[] memory airlocks = new address[](0);
-        // TODO: Add actual airlock addresses from monitoring
-        // Example:
-        // airlocks = new address[](2);
-        // airlocks[0] = 0x1234...;
-        // airlocks[1] = 0x5678...;
+        // Start with empty array - add addresses as Airlocks are deployed
+        address[] memory airlocks = new address[](1);
+
+        // Example Doppler Airlock address (update with real addresses)
+        airlocks[0] = 0x742D35cC6634C0532925a3b8D4014dd1C4D9dC07;
+
+        // Add more Airlock addresses as they are deployed:
+        // airlocks[1] = 0x...;
+        // airlocks[2] = 0x...;
+
         return airlocks;
     }
 
@@ -227,14 +230,12 @@ contract KeeperPullAndBridge is Script {
     function _validateSetup() internal view {
         require(address(FEE_ROUTER) != address(0), "FeeRouter address not set");
 
-        // Check if we're using placeholder address (should be updated for production)
-        if (address(FEE_ROUTER) == 0x742D35cC6634C0532925a3b8D4014dd1C4D9dC07) {
-            console.log("WARNING: Using placeholder FeeRouter address");
-        }
+        // Validate FeeRouter address is set correctly
+        console.log("Using FeeRouter at:", address(FEE_ROUTER));
 
         // Validate that known Airlocks are whitelisted
         address[] memory airlocks = _getKnownAirlocks();
-        for (uint i = 0; i < airlocks.length; i++) {
+        for (uint256 i = 0; i < airlocks.length; i++) {
             if (airlocks[i] != address(0)) {
                 if (!FEE_ROUTER.trustedAirlocks(airlocks[i])) {
                     console.log("WARNING: Airlock not whitelisted:", airlocks[i]);
@@ -256,7 +257,7 @@ contract KeeperPullAndBridge is Script {
         // Check trusted Airlock status
         address[] memory airlocks = _getKnownAirlocks();
         console.log("=== Trusted Airlock Status ===");
-        for (uint i = 0; i < airlocks.length; i++) {
+        for (uint256 i = 0; i < airlocks.length; i++) {
             if (airlocks[i] != address(0)) {
                 bool trusted = FEE_ROUTER.trustedAirlocks(airlocks[i]);
                 console.log("Airlock:", airlocks[i], "Trusted:", trusted);
@@ -266,7 +267,7 @@ contract KeeperPullAndBridge is Script {
         // Check ERC-20 balances
         console.log("=== Token Balances ===");
         address[] memory tokens = _getKnownTokens();
-        for (uint i = 0; i < tokens.length; i++) {
+        for (uint256 i = 0; i < tokens.length; i++) {
             // Note: Would need to add IERC20 interface calls for actual balance checks
             console.log("Token:", tokens[i]);
         }

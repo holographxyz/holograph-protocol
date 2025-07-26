@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import "./ITokenFactory.sol";
+import "./external/doppler/ITokenFactory.sol";
 import "./IGovernanceFactory.sol";
 import "./IPoolInitializer.sol";
 import "./ILiquidityMigrator.sol";
@@ -17,7 +17,6 @@ import "./ILiquidityMigrator.sol";
  *
  *      Original source: https://github.com/whetstoneresearch/doppler/blob/main/src/Airlock.sol
  */
-
 struct CreateParams {
     uint256 initialSupply;
     uint256 numTokensToSell;

@@ -1,156 +1,246 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.26;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Pausable.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {CreateParams} from "./interfaces/DopplerStructs.sol";
-import "./interfaces/IAirlock.sol";
-import "./interfaces/IFeeRouter.sol";
-import "./interfaces/ILZEndpointV2.sol";
-import "./interfaces/ILZReceiverV2.sol";
-import "./interfaces/IMintableERC20.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
+import {ITokenFactory} from "./interfaces/external/doppler/ITokenFactory.sol";
+import {IHolographERC20} from "./interfaces/IHolographERC20.sol";
 
 /**
  * @title HolographFactory
- * @notice Token launch factory with Doppler integration
- * @dev Entry point for creating omnichain tokens via Doppler Airlock
+ * @notice Custom token factory for deploying HolographERC20 omnichain tokens via Doppler Airlock
+ * @dev Implements ITokenFactory interface to integrate with Doppler ecosystem
  * @author Holograph Protocol
  */
-contract HolographFactory is Ownable, Pausable, ReentrancyGuard, ILZReceiverV2 {
-    using SafeERC20 for IERC20;
-
+contract HolographFactory is ITokenFactory, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     /* -------------------------------------------------------------------------- */
     /*                                  Errors                                    */
     /* -------------------------------------------------------------------------- */
     error ZeroAddress();
-    error ZeroAmount();
-    error NotEndpoint();
+    error UnauthorizedCaller();
+    error InvalidTokenData();
+    error SaltAlreadyUsed();
 
     /* -------------------------------------------------------------------------- */
     /*                                 Storage                                    */
     /* -------------------------------------------------------------------------- */
-    /// @notice LayerZero V2 endpoint for cross-chain messaging
-    ILZEndpointV2 public immutable lzEndpoint;
 
-    /// @notice Doppler Airlock contract for token creation
-    IAirlock public immutable dopplerAirlock;
+    /**
+     * @notice HolographERC20 implementation address for cloning
+     * @dev This is immutable for gas efficiency and security:
+     * - Immutable variables are read directly from bytecode (~3 gas) vs storage reads (~100-2100 gas)
+     * - Cannot be changed after deployment, preventing accidental updates that could break tokens
+     * - Provides clear separation between upgradeable logic and fixed infrastructure
+     *
+     * When upgrading the factory to support new token versions:
+     * 1. Deploy new token implementation
+     * 2. Deploy new factory implementation with updated immutable address
+     * 3. Upgrade proxy to point to new factory implementation
+     */
+    address public immutable erc20Implementation;
 
-    /// @notice FeeRouter contract for fee processing
-    IFeeRouter public immutable feeRouter;
+    /// @notice Authorized Doppler Airlock contracts allowed to call create()
+    mapping(address => bool) public authorizedAirlocks;
 
-    /// @notice Nonce tracking for cross-chain message ordering
-    mapping(uint32 => uint64) public nonce;
+    /// @notice Mapping to track deployed tokens
+    mapping(address => bool) public deployedTokens;
+
+    /// @notice Mapping to track used CREATE2 salts to prevent reuse attacks
+    mapping(bytes32 => bool) public usedSalts;
+
+    /// @notice Mapping to track token creators (original transaction initiators)
+    mapping(address => address) public tokenCreators;
 
     /* -------------------------------------------------------------------------- */
     /*                                  Events                                    */
     /* -------------------------------------------------------------------------- */
-    /// @notice Emitted when a new token is successfully launched
-    event TokenLaunched(address indexed asset, bytes32 salt);
+    /// @notice Emitted when a new HolographERC20 token is deployed
+    event TokenDeployed(
+        address indexed token,
+        string name,
+        string symbol,
+        uint256 initialSupply,
+        address indexed recipient,
+        address indexed owner,
+        address creator
+    );
 
-    /// @notice Emitted when tokens are bridged to destination chain
-    event CrossChainMint(uint32 indexed dstEid, address token, address to, uint256 amount, uint64 nonce);
+    /// @notice Emitted when an Airlock is authorized or deauthorized
+    event AirlockAuthorizationSet(address indexed airlock, bool authorized);
 
     /* -------------------------------------------------------------------------- */
     /*                               Constructor                                  */
     /* -------------------------------------------------------------------------- */
     /**
-     * @notice Initialize the HolographFactory with required contract addresses
-     * @dev Validates all provided addresses to ensure the factory is deployed with valid dependencies
-     * @param _endpoint LayerZero V2 endpoint for cross-chain messaging
-     * @param _airlock Doppler Airlock contract for token creation
-     * @param _feeRouter FeeRouter contract for fee processing and distribution
+     * @notice Constructor sets immutable implementation address
+     * @param _erc20Implementation Address of the HolographERC20 implementation for cloning
+     * @dev Using immutable for gas efficiency - reads cost ~3 gas vs ~100-2100 for storage
      */
-    constructor(address _endpoint, address _airlock, address _feeRouter) Ownable(msg.sender) {
-        if (_endpoint == address(0) || _airlock == address(0) || _feeRouter == address(0)) revert ZeroAddress();
-        lzEndpoint = ILZEndpointV2(_endpoint);
-        dopplerAirlock = IAirlock(_airlock);
-        feeRouter = IFeeRouter(_feeRouter);
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor(address _erc20Implementation) {
+        if (_erc20Implementation == address(0)) revert ZeroAddress();
+        erc20Implementation = _erc20Implementation;
+        _disableInitializers();
+    }
+
+    /**
+     * @notice Initialize the HolographFactory
+     * @param _owner Owner address
+     */
+    function initialize(address _owner) external initializer {
+        if (_owner == address(0)) revert ZeroAddress();
+
+        __Ownable_init(_owner);
+        __ReentrancyGuard_init();
+        __UUPSUpgradeable_init();
     }
 
     /* -------------------------------------------------------------------------- */
-    /*                               Token Launch                                 */
+    /*                            ITokenFactory Implementation                   */
     /* -------------------------------------------------------------------------- */
     /**
-     * @notice Launch a new omnichain token via Doppler Airlock
-     * @dev Aligns with Doppler's free token creation model – no launch fees required; guarded by nonReentrant and whenNotPaused modifiers
-     * @param params Doppler CreateParams containing token configuration
-     * @return asset Address of the newly created token
+     * @notice Deploy a new HolographERC20 token via CREATE2
+     * @dev Called by authorized Doppler Airlock contracts during token creation
+     * @param initialSupply Initial supply of tokens to mint
+     * @param recipient Address to receive the initial token supply
+     * @param owner Address that will own the deployed token contract
+     * @param salt CREATE2 salt for deterministic address generation
+     * @param tokenData Encoded token metadata (matches DERC20 format)
+     * @return token Address of the newly deployed HolographERC20 token
      */
-    function createToken(CreateParams calldata params) external nonReentrant whenNotPaused returns (address asset) {
-        // Set FeeRouter as integrator for Doppler trading fee collection
-        CreateParams memory modifiedParams = params;
-        modifiedParams.integrator = address(feeRouter);
+    function create(uint256 initialSupply, address recipient, address owner, bytes32 salt, bytes calldata tokenData)
+        external
+        override
+        nonReentrant
+        returns (address token)
+    {
+        // Verify caller is an authorized Airlock
+        if (!authorizedAirlocks[msg.sender]) revert UnauthorizedCaller();
 
-        (asset, , , , ) = dopplerAirlock.create(modifiedParams);
-        emit TokenLaunched(asset, params.salt);
-    }
+        // Prevent salt reuse attacks
+        if (usedSalts[salt]) revert SaltAlreadyUsed();
+        usedSalts[salt] = true;
 
-    /* -------------------------------------------------------------------------- */
-    /*                             Cross-Chain Bridge                             */
-    /* -------------------------------------------------------------------------- */
-    /**
-     * @notice Bridge tokens to destination chain and mint to recipient
-     * @dev Sends LayerZero message with mint instruction to destination factory; nonReentrant to block re-entrancy attacks
-     * @param dstEid Destination chain endpoint ID
-     * @param token Token contract address to mint on destination
-     * @param recipient Address to receive minted tokens on destination
-     * @param amount Amount of tokens to mint on destination
-     * @param options LayerZero execution options (gas limits, etc.)
-     */
-    function bridgeToken(
-        uint32 dstEid,
-        address token,
-        address recipient,
-        uint256 amount,
-        bytes calldata options
-    ) external payable nonReentrant {
-        if (token == address(0) || recipient == address(0)) revert ZeroAddress();
-        if (amount == 0) revert ZeroAmount();
+        // Decode token metadata from tokenData (matches Doppler DERC20 format)
+        (
+            string memory name,
+            string memory symbol,
+            uint256 yearlyMintCap,
+            uint256 vestingDuration,
+            address[] memory recipients,
+            uint256[] memory amounts,
+            string memory tokenURI
+        ) = _decodeTokenData(tokenData);
 
-        uint64 n = ++nonce[dstEid];
-        bytes memory payload = abi.encodeWithSelector(
-            bytes4(keccak256("mintERC20(address,uint256,address)")),
-            token,
-            recipient,
-            amount
+        // Deploy HolographERC20 clone with CREATE2 for deterministic address
+        token = Clones.cloneDeterministic(erc20Implementation, salt);
+
+        // Initialize the clone
+        IHolographERC20(token).initialize(
+            name, symbol, initialSupply, recipient, owner, yearlyMintCap, vestingDuration, recipients, amounts, tokenURI
         );
-        lzEndpoint.send{value: msg.value}(dstEid, payload, options);
-        emit CrossChainMint(dstEid, token, recipient, amount, n);
+
+        // Track the deployed token
+        deployedTokens[token] = true;
+
+        // Track the original creator (transaction initiator)
+        tokenCreators[token] = tx.origin;
+
+        emit TokenDeployed(token, name, symbol, initialSupply, recipient, owner, tx.origin);
     }
 
     /* -------------------------------------------------------------------------- */
-    /*                            LayerZero Receive                              */
+    /*                              Token Metadata Decoding                      */
     /* -------------------------------------------------------------------------- */
     /**
-     * @notice Handle incoming LayerZero messages for token minting
-     * @dev Decodes message and mints tokens to specified recipient; rejects calls from any address other than the configured LayerZero endpoint
-     * @param msg_ Encoded message containing mint instruction and parameters
+     * @notice Decode token metadata from tokenData bytes (matches Doppler DERC20 format)
+     * @dev Expects tokenData format: (string, string, uint256, uint256, address[], uint256[], string)
+     * @param tokenData Encoded token metadata
+     * @return name Token name
+     * @return symbol Token symbol
+     * @return yearlyMintCap Yearly mint cap
+     * @return vestingDuration Vesting duration
+     * @return recipients Vesting recipients
+     * @return amounts Vesting amounts
+     * @return tokenURI Token URI
      */
-    function lzReceive(uint32, bytes calldata msg_, address, bytes calldata) external payable override {
-        if (msg.sender != address(lzEndpoint)) revert NotEndpoint();
-        (bytes4 sel, address token, address to, uint256 amt) = abi.decode(msg_, (bytes4, address, address, uint256));
-        if (sel == bytes4(keccak256("mintERC20(address,uint256,address)"))) {
-            IMintableERC20(token).mint(to, amt);
-        }
+    function _decodeTokenData(bytes calldata tokenData)
+        internal
+        pure
+        returns (
+            string memory name,
+            string memory symbol,
+            uint256 yearlyMintCap,
+            uint256 vestingDuration,
+            address[] memory recipients,
+            uint256[] memory amounts,
+            string memory tokenURI
+        )
+    {
+        if (tokenData.length == 0) revert InvalidTokenData();
+
+        (name, symbol, yearlyMintCap, vestingDuration, recipients, amounts, tokenURI) =
+            abi.decode(tokenData, (string, string, uint256, uint256, address[], uint256[], string));
     }
 
     /* -------------------------------------------------------------------------- */
-    /*                                  Admin                                     */
+    /*                                Admin Functions                            */
     /* -------------------------------------------------------------------------- */
     /**
-     * @notice Emergency circuit breaker to halt token launches and bridging; only callable by owner
+     * @notice Authorize or deauthorize a Doppler Airlock contract
+     * @param airlock Address of the Airlock contract
+     * @param authorized Whether the Airlock is authorized to deploy tokens
      */
-    function pause() external onlyOwner {
-        _pause();
+    function setAirlockAuthorization(address airlock, bool authorized) external onlyOwner {
+        if (airlock == address(0)) revert ZeroAddress();
+        authorizedAirlocks[airlock] = authorized;
+        emit AirlockAuthorizationSet(airlock, authorized);
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /*                                View Functions                             */
+    /* -------------------------------------------------------------------------- */
+    /**
+     * @notice Check if an address is a token deployed by this factory
+     * @param token Address to check
+     * @return True if the token was deployed by this factory
+     */
+    function isDeployedToken(address token) external view returns (bool) {
+        return deployedTokens[token];
     }
 
     /**
-     * @notice Resumes normal operations after emergency pause; only callable by owner
+     * @notice Check if an Airlock is authorized to deploy tokens
+     * @param airlock Address to check
+     * @return True if the Airlock is authorized
      */
-    function unpause() external onlyOwner {
-        _unpause();
+    function isAuthorizedAirlock(address airlock) external view returns (bool) {
+        return authorizedAirlocks[airlock];
+    }
+
+    /**
+     * @notice Check if a user is the creator of a token
+     * @param token Address of the token to check
+     * @param user Address of the user to check
+     * @return True if the user is the creator of the token
+     */
+    function isTokenCreator(address token, address user) external view returns (bool) {
+        return tokenCreators[token] == user;
+    }
+
+    /**
+     * @notice Authorize contract upgrades (required by UUPS)
+     * @param newImplementation New implementation address
+     */
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+
+    /**
+     * @notice Get the current implementation version
+     * @return Version string
+     */
+    function version() external pure returns (string memory) {
+        return "1.0.0";
     }
 }

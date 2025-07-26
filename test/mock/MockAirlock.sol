@@ -24,17 +24,29 @@ contract MockAirlock is IAirlock {
 
     /**
      * @notice Mock implementation of create function
-     * @dev Returns zero addresses for testing purposes
+     * @dev Calls the tokenFactory (should be HolographFactory) to create the token
      */
-    function create(
-        CreateParams calldata params
-    )
+    function create(CreateParams calldata params)
         external
         override
         returns (address asset, address pool, address governance, address timelock, address migrationPool)
     {
-        // Mock implementation - returns zero addresses
-        return (address(0), address(0), address(0), address(0), address(0));
+        // Call the tokenFactory to create the actual token
+        asset = params.tokenFactory.create(
+            params.initialSupply,
+            msg.sender, // recipient
+            msg.sender, // owner (creator)
+            params.salt,
+            params.tokenFactoryData
+        );
+
+        // Mock addresses for other Doppler components
+        pool = address(0x1001);
+        governance = address(0x1002);
+        timelock = address(0x1003);
+        migrationPool = address(0x1004);
+
+        return (asset, pool, governance, timelock, migrationPool);
     }
 
     /**
@@ -54,7 +66,7 @@ contract MockAirlock is IAirlock {
             require(address(this).balance >= amount, "MockAirlock: Insufficient ETH");
 
             // Direct transfer; FeeRouter has a receive() fallback that accepts ETH
-            (bool ok, ) = to.call{value: amount}("");
+            (bool ok,) = to.call{value: amount}("");
             require(ok, "MockAirlock: ETH transfer failed");
         } else {
             // ERC-20 case
@@ -98,10 +110,41 @@ contract MockAirlock is IAirlock {
      */
     receive() external payable {}
 
+    // Mock implementation of new IAirlock functions
+    address private _owner = address(0x852a09C89463D236eea2f097623574f23E225769); // Default to real airlock owner
+    mapping(address => ModuleState) private _moduleStates;
+
+    function owner() external view override returns (address) {
+        return _owner;
+    }
+
+    function setModuleState(address[] calldata modules, ModuleState[] calldata states) external override {
+        require(modules.length == states.length, "Array length mismatch");
+        for (uint256 i = 0; i < modules.length; i++) {
+            _moduleStates[modules[i]] = states[i];
+        }
+    }
+
+    function getModuleState(address module) external view override returns (ModuleState) {
+        return _moduleStates[module];
+    }
+
+    function setOwner(address newOwner) external {
+        _owner = newOwner;
+    }
+
+    // Removed createTokenThroughFactory - not part of real Doppler Airlock interface
+    // Use the standard create() function with CreateParams instead
     /**
      * @notice Fund contract with tokens for testing
      */
     function fundWithToken(address token, uint256 amount) external {
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
     }
+}
+
+interface ITokenFactory {
+    function create(uint256 initialSupply, address recipient, address owner, bytes32 salt, bytes calldata tokenData)
+        external
+        returns (address token);
 }

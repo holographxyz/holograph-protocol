@@ -21,11 +21,7 @@ interface ITokenFactory {
      * @param tokenData Extra data to be used by the factory
      * @return Address of the newly deployed token
      */
-    function create(
-        uint256 initialSupply,
-        address recipient,
-        address owner,
-        bytes32 salt,
-        bytes calldata tokenData
-    ) external returns (address);
+    function create(uint256 initialSupply, address recipient, address owner, bytes32 salt, bytes calldata tokenData)
+        external
+        returns (address);
 }
