@@ -23,7 +23,7 @@ This plan outlines the implementation of a custom token factory that integrates 
 ### Existing Components
 
 - **HolographFactory**: Currently acts as a wrapper around Doppler Airlock
-- **FeeRouter**: Processes fees from Doppler integrations (1.5% protocol, 98.5% treasury)
+- **FeeRouter**: Processes fees from Doppler integrations (50% protocol, 50% treasury)
 - **StakingRewards**: Distributes HLG rewards to stakers
 - **Doppler Integration**: Uses standard DERC20 tokens via Doppler's TokenFactory
 
@@ -69,7 +69,7 @@ User → Airlock.create() → HolographFactory.create() → HolographERC20 (Laye
 
 - **File**: `src/FeeRouter.sol` (minimal changes)
 - **Role**: Act as the direct integrator receiving fees from Airlock
-- **Configuration**: Maintain existing fee processing logic (1.5%/98.5% split)
+- **Configuration**: Maintain existing fee processing logic (50%/50% split)
 
 #### 4. **HolographBridge Contract**
 

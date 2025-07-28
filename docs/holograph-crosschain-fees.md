@@ -22,7 +22,7 @@ Fees paid in ETH on Base are bridged to Ethereum via LayerZero V2, swapped to HL
 
 | Contract         | Role                                                             |
 | ---------------- | ---------------------------------------------------------------- |
-| HolographFactory | Mints Doppler token packages; forwards 1.5% ETH fee to FeeRouter |
+| HolographFactory | Mints Doppler token packages; forwards 50% ETH fee to FeeRouter |
 | FeeRouter (OApp) | Aggregates fees, calls `bridge(minGas)` → `_lzSend`              |
 
 ### 3.2 Cross-Chain
@@ -42,7 +42,7 @@ _(A separate "Buy-and-Burn Executor" is no longer needed; logic lives in FeeRout
 
 1. **Fee Collection (Base):**
    - Users interact with the HolographFactory on Base, paying fees in ETH
-   - Factory forwards 1.5% ETH fee to FeeRouter via `receiveFee()`
+   - Factory forwards 50% ETH fee to FeeRouter via `receiveFee()`
 2. **Fee Bridging (Base → Ethereum):**
    - Admin/keeper calls `bridge(minGas)` on FeeRouter(Base)
    - FeeRouter(Base) sends ETH via LayerZero `_lzSend` to peer on Ethereum
@@ -82,7 +82,7 @@ The system addresses several potential issues that could impact operations:
 ```
 [User on Base] --(ETH Fee)--> [HolographFactory (Base)]
                                      |
-                                     v (1.5% fee)
+                                     v (50% fee)
                        [FeeRouter (Base)] --(ETH via LayerZero)--> [FeeRouter (Ethereum)]
                                                                            |
                                                                            v (wrap + swap)

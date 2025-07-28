@@ -215,8 +215,8 @@ ETHEREUM_RPC_URL=https://eth-mainnet.alchemyapi.io/v2/...
 
 ### Fee Management
 
-- 1.5% protocol fee (HOLO_FEE_BPS = 150)
-- 98.5% treasury allocation
+- 50% protocol fee (HOLO_FEE_BPS = 5000)
+- 50% treasury allocation
 - Automated fee collection via keepers
 - Cross-chain fee bridging and distribution
 

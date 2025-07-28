@@ -167,8 +167,8 @@ contract FeeRouterTest is Test {
         _simulateFeeCollection(TEST_FEE_AMOUNT_ETH);
 
         // Verify ETH fee was sliced correctly (single-slice model)
-        // FeeRouter keeps 1.5% for protocol, 98.5% goes to treasury
-        uint256 expectedProtocolFee = (TEST_FEE_AMOUNT_ETH * 150) / 10_000; // 1.5%
+        // FeeRouter keeps 50% for protocol, 50% goes to treasury
+        uint256 expectedProtocolFee = (TEST_FEE_AMOUNT_ETH * 5000) / 10_000; // 50%
 
         assertEq(address(feeRouterBase).balance, expectedProtocolFee);
 
@@ -176,9 +176,9 @@ contract FeeRouterTest is Test {
 
         uint256 minGas = 200000;
 
-        // Calculate expected HLG from swapping the PROTOCOL FEE PORTION (1.5% of total)
-        // Only the protocol fee portion (1.5%) gets bridged and swapped
-        uint256 protocolFeeAmount = (TEST_FEE_AMOUNT_ETH * 150) / 10_000; // 1.5%
+        // Calculate expected HLG from swapping the PROTOCOL FEE PORTION (50% of total)
+        // Only the protocol fee portion (50%) gets bridged and swapped
+        uint256 protocolFeeAmount = (TEST_FEE_AMOUNT_ETH * 5000) / 10_000; // 50%
         uint256 expectedHlgFromSwap = protocolFeeAmount * WETH_TO_HLG_RATE;
 
         // Calculate minimum HLG for slippage protection (50% goes to stakers)
@@ -193,10 +193,10 @@ contract FeeRouterTest is Test {
         // Step 3: Verify swap and distribution on Ethereum
 
         // The mock endpoint automatically triggers lzReceive, which:
-        // 1. Wraps protocol fee ETH to WETH (0.00015 ETH → 0.00015 WETH)  [1.5% of 0.01 ETH]
-        // 2. Swaps WETH to HLG (0.00015 WETH → ~1079 HLG)
-        // 3. Burns 50% of HLG (~539.5 HLG burned)
-        // 4. Sends 50% to staking rewards (~539.5 HLG to stakers)
+        // 1. Wraps protocol fee ETH to WETH (0.005 ETH → 0.005 WETH)  [50% of 0.01 ETH]
+        // 2. Swaps WETH to HLG (0.005 WETH → ~35,971 HLG)
+        // 3. Burns 50% of HLG (~17,986 HLG burned)
+        // 4. Sends 50% to staking rewards (~17,986 HLG to stakers)
 
         uint256 expectedBurnAmountHLG = expectedHlgFromSwap / 2; // HLG tokens burned
         uint256 expectedRewardAmountHLG = expectedHlgFromSwap - expectedBurnAmountHLG; // HLG tokens to stakers
@@ -246,8 +246,8 @@ contract FeeRouterTest is Test {
         _simulateFeeCollection(TEST_FEE_AMOUNT_ETH);
 
         // Bridge ETH to Ethereum and swap to HLG
-        // Only protocol fee portion (1.5%) gets bridged: 0.00015 ETH → ~1079 HLG → ~539.5 HLG to stakers
-        uint256 protocolFeeAmount = (TEST_FEE_AMOUNT_ETH * 150) / 10_000; // 1.5%
+        // Only protocol fee portion (50%) gets bridged: 0.005 ETH → ~35,971 HLG → ~17,986 HLG to stakers
+        uint256 protocolFeeAmount = (TEST_FEE_AMOUNT_ETH * 5000) / 10_000; // 50%
         uint256 expectedHlgToStakers = (protocolFeeAmount * WETH_TO_HLG_RATE) / 2;
         vm.prank(owner);
         feeRouterBase.bridge(200000, expectedHlgToStakers);
@@ -330,7 +330,7 @@ contract FeeRouterTest is Test {
         // Try to bridge with unrealistic minHlg expectation
         // Expecting 15,000,000 HLG per ETH instead of realistic 7,194,245 HLG per ETH
         // This is about 2x the realistic rate, so it should fail
-        uint256 protocolFeeAmount = (TEST_FEE_AMOUNT_ETH * 150) / 10_000; // 1.5%
+        uint256 protocolFeeAmount = (TEST_FEE_AMOUNT_ETH * 5000) / 10_000; // 50%
         uint256 unrealisticMinHlg = protocolFeeAmount * 15000000; // Way too high expectation
 
         vm.expectRevert("Insufficient output amount");
@@ -385,8 +385,8 @@ contract FeeRouterTest is Test {
         _simulateFeeCollection(TEST_FEE_AMOUNT_ETH);
 
         uint256 minGas = 200000;
-        // Calculate minimum HLG from protocol fee: 0.00015 ETH * 7,194,245 HLG/ETH / 2 = ~539.5 HLG
-        uint256 protocolFeeAmount = (TEST_FEE_AMOUNT_ETH * 150) / 10_000; // 1.5%
+        // Calculate minimum HLG from protocol fee: 0.005 ETH * 7,194,245 HLG/ETH / 2 = ~17,986 HLG
+        uint256 protocolFeeAmount = (TEST_FEE_AMOUNT_ETH * 5000) / 10_000; // 50%
         uint256 minHlgForStakers = (protocolFeeAmount * WETH_TO_HLG_RATE) / 2;
 
         // Capture the MessageSent event to verify LayerZero V2 options format
@@ -423,8 +423,8 @@ contract FeeRouterTest is Test {
         _simulateFeeCollection(TEST_FEE_AMOUNT_ETH);
 
         // Calculate expected HLG amounts (only protocol fee portion gets swapped)
-        // Protocol fee: 0.00015 ETH → ~1079 HLG total → ~539.5 HLG to stakers
-        uint256 protocolFeeAmount = (TEST_FEE_AMOUNT_ETH * 150) / 10_000; // 1.5%
+        // Protocol fee: 0.005 ETH → ~35,971 HLG total → ~17,986 HLG to stakers
+        uint256 protocolFeeAmount = (TEST_FEE_AMOUNT_ETH * 5000) / 10_000; // 50%
         uint256 expectedHlgFromSwap = protocolFeeAmount * WETH_TO_HLG_RATE;
         uint256 expectedRewardAmountHLG = expectedHlgFromSwap / 2;
 

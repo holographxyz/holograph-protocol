@@ -17,7 +17,7 @@ Holograph Protocol enables the creation of ERC-20 tokens with deterministic addr
 ### Architecture
 
 ```
-Base/Unichain                LayerZero V2              Ethereum Chain
+Base Chain                   LayerZero V2              Ethereum Chain
 ┌─────────────────┐         ┌─────────────┐          ┌─────────────────┐
 │ Doppler Airlock │────────▶│             │          │                 │
 │       ↓         │         │   Message   │          │                 │
@@ -28,6 +28,9 @@ Base/Unichain                LayerZero V2              Ethereum Chain
 │ HolographERC20  │         │             │          │ StakingRewards  │
 └─────────────────┘         └─────────────┘          └─────────────────┘
 ```
+
+**Primary Chains**: Base (token creation) and Ethereum (fee processing/staking)  
+**Additional Support**: Unichain deployment available for expanded reach
 
 **Note**: Cross-chain token bridging is temporarily deferred. Currently, only fee bridging is supported through LayerZero V2.
 
@@ -55,12 +58,19 @@ make help
 **Dry-run mode (default - safe for testing):**
 
 ```bash
+# Primary chains
 make deploy-base        # Simulate Base deployment
 make deploy-eth         # Simulate Ethereum deployment
+
+# Additional chains
 make deploy-unichain    # Simulate Unichain deployment
+
+# Configuration
 make configure-base     # Simulate Base configuration
 make configure-eth      # Simulate Ethereum configuration
 make configure-unichain # Simulate Unichain configuration
+
+# Operations
 make keeper             # Simulate keeper operations
 ```
 
@@ -83,9 +93,11 @@ export BASESCAN_API_KEY=your_basescan_key
 export ETHERSCAN_API_KEY=your_etherscan_key
 export UNISCAN_API_KEY=your_uniscan_key
 
-# Now run actual deployments
-make deploy-base        # Deploy to Base mainnet
+# Deploy to primary chains
+make deploy-base        # Deploy to Base mainnet  
 make deploy-eth         # Deploy to Ethereum mainnet
+
+# Optionally deploy to additional chains
 make deploy-unichain    # Deploy to Unichain mainnet
 ```
 
@@ -109,8 +121,12 @@ make deploy-unichain    # Deploy to Unichain mainnet
 1. **Test everything in dry-run mode first:**
 
    ```bash
-   make deploy-base deploy-eth deploy-unichain
-   make configure-base configure-eth configure-unichain
+   # Primary chains (required)
+   make deploy-base deploy-eth
+   make configure-base configure-eth
+   
+   # Additional chains (optional)
+   make deploy-unichain configure-unichain
    ```
 
 2. **Deploy to mainnet:**
@@ -118,7 +134,12 @@ make deploy-unichain    # Deploy to Unichain mainnet
    ```bash
    export BROADCAST=true
    export DEPLOYER_PK=0x...
-   make deploy-base deploy-eth deploy-unichain
+   
+   # Primary chains
+   make deploy-base deploy-eth
+   
+   # Additional chains (optional)  
+   make deploy-unichain
    ```
 
 3. **Verify deployment consistency:**
@@ -131,7 +152,12 @@ make deploy-unichain    # Deploy to Unichain mainnet
 
    ```bash
    export OWNER_PK=0x...  # Different key for admin operations
-   make configure-base configure-eth configure-unichain
+   
+   # Primary chains
+   make configure-base configure-eth
+   
+   # Additional chains (if deployed)
+   make configure-unichain
    ```
 
 5. **Set up automation:**
@@ -227,13 +253,13 @@ function addRewards(uint256 amount) external; // FeeRouter only
 2. Airlock handles auction mechanics and initial distribution
 3. HolographFactory deploys HolographERC20 with deterministic CREATE2 address
 4. FeeRouter automatically set as integrator for trading fee collection
-5. Token address consistent across all supported chains (Base, Ethereum, Unichain)
+5. Token address consistent across supported chains (primarily Base and Ethereum)
 
 ## Fee Model
 
 - **Source**: Trading fees from Doppler auctions (collected by Airlock contracts)
-- **Protocol Split**: 1.5% of collected fees (HOLO_FEE_BPS = 150)
-- **Treasury Split**: 98.5% of collected fees forwarded to treasury address
+- **Protocol Split**: 50% of collected fees (HOLO_FEE_BPS = 5000)
+- **Treasury Split**: 50% of collected fees forwarded to treasury address
 - **HLG Distribution**: Protocol fees bridged to Ethereum, swapped WETH→HLG, 50% burned / 50% staked
 - **Security**: Trusted Airlock whitelist prevents unauthorized ETH transfers to FeeRouter
 
@@ -398,8 +424,11 @@ export BASE_RPC_URL=https://mainnet.base.org
 export ETHEREUM_RPC_URL=https://eth-mainnet.alchemyapi.io/v2/YOUR_KEY
 export UNICHAIN_RPC_URL=https://mainnet.unichain.org
 
-# Deploy to all chains
-make deploy-base deploy-eth deploy-unichain
+# Deploy to primary chains
+make deploy-base deploy-eth
+
+# Optionally add Unichain
+make deploy-unichain
 ```
 
 ### Manual Deployment (Advanced)

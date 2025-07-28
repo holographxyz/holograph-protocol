@@ -187,7 +187,7 @@ library ChainConfigs {
             treasury: address(0), // TODO: Set mainnet treasury
             stakingRewards: address(0), // TODO: Set mainnet staking rewards
             hlgToken: address(0), // TODO: Set mainnet HLG token
-            holographFeeBps: 150, // 1.5%
+            holographFeeBps: 5000, // 50%
             minBridgeAmount: 0.01 ether
         });
     }
@@ -200,7 +200,7 @@ library ChainConfigs {
             treasury: 0x0000000000000000000000000000000000001111, // Test treasury
             stakingRewards: address(0), // No staking on testnet
             hlgToken: address(0), // No HLG on testnet
-            holographFeeBps: 150, // 1.5%
+            holographFeeBps: 5000, // 50%
             minBridgeAmount: 0.001 ether
         });
     }

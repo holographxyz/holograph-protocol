@@ -7,7 +7,7 @@ pragma solidity ^0.8.24;
  * ----------------------------------------------------------------------------
  * Enhanced omnichain router that:
  *   • Implements single-slice model: ALL fees (launch ETH, Airlock pulls, manual routes)
- *     are processed with 1.5% protocol skim, 98.5% to treasury
+ *     are processed with 50% protocol skim, 50% to treasury
  *   • Supports ERC-20 token routing end-to-end (receive → slice → bridge → swap)
  *   • Uses role-based keeper automation with dust protection (MIN_BRIDGE_VALUE)
  *   • Bridges protocol skim to Ethereum via LayerZero V2
@@ -45,7 +45,7 @@ import "./interfaces/IHolographFactory.sol";
 /**
  * @title FeeRouter
  * @notice Single-slice fee routing with Doppler integration
- * @dev 1.5% protocol fee, 98.5% to treasury - all fees processed uniformly
+ * @dev 50% protocol fee, 50% to treasury - all fees processed uniformly
  * @author Holograph Protocol
  */
 contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZeroReceiver {
@@ -58,7 +58,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
     uint24 public constant POOL_FEE = 3000;
 
     /// @notice Current protocol fee in basis points (settable by owner)
-    uint16 public holographFeeBps = 150;
+    uint16 public holographFeeBps = 5000;
 
     /// @notice Minimum value required to bridge (dust protection)
     uint64 public constant MIN_BRIDGE_VALUE = 0.01 ether;
@@ -251,7 +251,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
     /* -------------------------------------------------------------------------- */
 
     /**
-     * @notice New unified fee splitter (1.5% protocol / 98.5% treasury)
+     * @notice New unified fee splitter (50% protocol / 50% treasury)
      * @param token Token address (address(0) for ETH)
      * @param amount Total amount to split
      */
@@ -674,8 +674,8 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
     /**
      * @notice Calculate fee split for a given amount
      * @param amount Input amount to calculate split for
-     * @return protocolFee Amount that goes to protocol (1.5%)
-     * @return treasuryFee Amount that goes to treasury (98.5%)
+     * @return protocolFee Amount that goes to protocol (50%)
+     * @return treasuryFee Amount that goes to treasury (50%)
      */
     function calculateFeeSplit(uint256 amount) external view returns (uint256 protocolFee, uint256 treasuryFee) {
         protocolFee = (amount * holographFeeBps) / 10_000;

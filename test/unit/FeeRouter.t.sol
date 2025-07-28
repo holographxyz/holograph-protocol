@@ -46,7 +46,7 @@ contract FeeRouterTest is Test {
 
     // Protocol constants
     uint24 constant POOL_FEE = 3000;
-    uint16 constant HOLO_FEE_BPS = 150; // 1.5%
+    uint16 constant HOLO_FEE_BPS = 5000; // 50%
     uint64 constant MIN_BRIDGE_VALUE = 0.01 ether;
 
     // Events
@@ -128,8 +128,8 @@ contract FeeRouterTest is Test {
         uint256 amount = 1 ether;
         (uint256 protocolFee, uint256 treasuryFee) = feeRouter.calculateFeeSplit(amount);
 
-        assertEq(protocolFee, (amount * HOLO_FEE_BPS) / 10_000); // 1.5%
-        assertEq(treasuryFee, amount - protocolFee); // 98.5%
+        assertEq(protocolFee, (amount * HOLO_FEE_BPS) / 10_000); // 50%
+        assertEq(treasuryFee, amount - protocolFee); // 50%
         assertEq(protocolFee + treasuryFee, amount);
     }
 
@@ -144,8 +144,8 @@ contract FeeRouterTest is Test {
         vm.deal(address(airlock), amount);
         airlock.setCollectableAmount(address(0), amount);
 
-        uint256 holoAmt = (amount * HOLO_FEE_BPS) / 10_000; // 1.5%
-        uint256 treasuryAmt = amount - holoAmt; // 98.5%
+        uint256 holoAmt = (amount * HOLO_FEE_BPS) / 10_000; // 50%
+        uint256 treasuryAmt = amount - holoAmt; // 50%
 
         vm.expectEmit(true, true, false, true);
         emit SlicePulled(keeper, address(0), holoAmt, treasuryAmt);
@@ -168,8 +168,8 @@ contract FeeRouterTest is Test {
         vm.prank(keeper);
         feeRouter.collectAirlockFees(address(airlock), address(token), amount);
 
-        // Verify treasury received 98.5%
-        uint256 expectedTreasuryFee = (amount * 9850) / 10_000;
+        // Verify treasury received 50%
+        uint256 expectedTreasuryFee = (amount * 5000) / 10_000;
         assertEq(token.balanceOf(treasury), expectedTreasuryFee);
     }
 
@@ -445,8 +445,8 @@ contract FeeRouterTest is Test {
         vm.prank(keeper);
         feeRouter.collectAirlockFees(address(airlock), address(0), feeAmount);
 
-        // Step 4: Verify fee split (1.5% protocol, 98.5% treasury)
-        uint256 expectedTreasuryFee = (feeAmount * 9850) / 10_000;
+        // Step 4: Verify fee split (50% protocol, 50% treasury)
+        uint256 expectedTreasuryFee = (feeAmount * 5000) / 10_000;
         assertEq(treasury.balance, expectedTreasuryFee);
 
         // Step 5: Bridge accumulated protocol fees if above threshold
@@ -472,7 +472,7 @@ contract FeeRouterTest is Test {
         feeRouter.collectAirlockFees(address(airlock), address(0), feeAmount);
 
         // Verify treasury received fees
-        uint256 expectedTreasuryFee = (feeAmount * 9850) / 10_000;
+        uint256 expectedTreasuryFee = (feeAmount * 5000) / 10_000;
         assertEq(treasury.balance, expectedTreasuryFee);
 
         console.log("Base fee collection and treasury distribution successful");
@@ -488,8 +488,8 @@ contract FeeRouterTest is Test {
         (uint256 protocolFee, uint256 treasuryFee) = feeRouter.calculateFeeSplit(amount);
 
         assertEq(protocolFee + treasuryFee, amount);
-        assertEq(protocolFee, (amount * 150) / 10_000);
-        assertGe(treasuryFee, (amount * 9800) / 10_000); // At least 98%
+        assertEq(protocolFee, (amount * 5000) / 10_000);
+        assertGe(treasuryFee, (amount * 4900) / 10_000); // At least 49%
     }
 
     function testFuzz_BridgeAmount(uint256 amount) public {
@@ -514,7 +514,7 @@ contract FeeRouterTest is Test {
         feeRouter.collectAirlockFees(address(airlock), address(0), amount);
 
         // Verify treasury receives the correct amount (amount - protocolFee)
-        uint256 expectedProtocolFee = (amount * 150) / 10_000; // 1.5%
+        uint256 expectedProtocolFee = (amount * 5000) / 10_000; // 50%
         uint256 expectedTreasuryFee = amount - expectedProtocolFee;
         assertEq(treasury.balance, expectedTreasuryFee);
     }
@@ -524,8 +524,8 @@ contract FeeRouterTest is Test {
     /* -------------------------------------------------------------------------- */
 
     function test_SetHolographFee() public {
-        // Initial fee should be 150 BPS (1.5%)
-        assertEq(feeRouter.holographFeeBps(), 150);
+        // Initial fee should be 5000 BPS (50%)
+        assertEq(feeRouter.holographFeeBps(), 5000);
 
         // Owner can set new fee
         vm.prank(owner);
@@ -541,7 +541,7 @@ contract FeeRouterTest is Test {
 
     function test_SetHolographFeeEvent() public {
         vm.expectEmit(true, true, true, true);
-        emit HolographFeeUpdated(150, 300);
+        emit HolographFeeUpdated(5000, 300);
 
         vm.prank(owner);
         feeRouter.setHolographFee(300);

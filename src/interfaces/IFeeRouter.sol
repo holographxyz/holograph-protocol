@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 /**
  * @title IFeeRouter
  * @notice Interface for single-slice fee routing with Doppler integration
- * @dev Minimal interface for 1.5% protocol fee, 98.5% treasury distribution
+ * @dev Minimal interface for 50% protocol fee, 50% treasury distribution
  * @author Holograph Protocol
  */
 interface IFeeRouter {

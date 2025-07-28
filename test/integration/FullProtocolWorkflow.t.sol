@@ -501,8 +501,8 @@ contract FullProtocolWorkflowTest is Test {
 
         // Verify fee split calculation works correctly
         (uint256 protocolFee, uint256 treasuryFee) = feeRouter.calculateFeeSplit(feeAmount);
-        assertEq(protocolFee, (feeAmount * 150) / 10000); // 1.5%
-        assertEq(treasuryFee, feeAmount - protocolFee); // 98.5%
+        assertEq(protocolFee, (feeAmount * 5000) / 10000); // 50%
+        assertEq(treasuryFee, feeAmount - protocolFee); // 50%
 
         // Verify the treasury configuration is correct
         address configuredTreasury = feeRouter.treasury();
@@ -510,7 +510,7 @@ contract FullProtocolWorkflowTest is Test {
 
         // Verify the protocol fee basis points is correct
         uint256 holographFeeBps = feeRouter.holographFeeBps();
-        assertEq(holographFeeBps, 150); // 1.5%
+        assertEq(holographFeeBps, 5000); // 50%
 
         console.log("Treasury fee:", treasuryFee);
         console.log("Protocol fee:", protocolFee);
