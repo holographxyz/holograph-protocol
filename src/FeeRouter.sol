@@ -1,36 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-/**
- * ----------------------------------------------------------------------------
- * @title FeeRouter (Omnichain) – Holograph 2.0 + Doppler Integration
- * ----------------------------------------------------------------------------
- * Enhanced omnichain router that:
- *   • Implements single-slice model: ALL fees (ETH primary, ERC-20 optional)
- *     are processed with configurable protocol fee, remainder to treasury
- *   • ETH-primary operation with optional ERC-20 token support
- *   • Uses role-based keeper automation with dust protection (MIN_BRIDGE_VALUE)
- *   • Bridges protocol skim to Ethereum via LayerZero V2 messaging (message-only pattern)
- *   • Wraps to WETH, swaps to HLG on Uniswap V3 (multi-tier: 0.05%, 0.3%, 1%)
- *   • Burns 50% of acquired HLG, stakes 50% to StakingRewards
- *   • Treasury is owner-configurable for admin flexibility
- *
- * Integration with Doppler:
- *   • Factory forwards full launch ETH and sets integrator = FeeRouter
- *   • Keeper pulls accumulated fees (ETH primary, ERC-20 optional) from Airlock contracts
- *   • All fee inflows processed through _splitFee() for consistency
- *
- * Security:
- *   • Role-based access (KEEPER_ROLE) for automation functions
- *   • Dust protection (MIN_BRIDGE_VALUE) to avoid failed transactions
- *   • Trusted remotes for cross-chain message validation
- *   • Emergency pause functionality
- * ----------------------------------------------------------------------------
- */
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../lib/LayerZero-v2/packages/layerzero-v2/evm/protocol/contracts/interfaces/ILayerZeroEndpointV2.sol";
@@ -40,24 +12,19 @@ import "./interfaces/IWETH9.sol";
 import "./interfaces/ISwapRouter.sol";
 import "./interfaces/IStakingRewards.sol";
 import "./interfaces/IAirlock.sol";
-import "./interfaces/IUniswapV3Factory.sol";
 
 /**
  * @title FeeRouter
- * @notice ETH-primary fee router with optional ERC-20 support
- * @dev Primary flow: ETH fees → bridge → swap → burn/stake HLG
- *      Optional: ERC-20 tokens via collectAirlockFees
+ * @notice Cross-chain fee router that accepts ETH or ERC-20, bridges via LayerZero V2, swaps WETH→HLG on a fixed 0.3% Uniswap V3 pool, then burns 50% and stakes 50%.
  * @author Holograph Protocol
  */
-contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZeroReceiver {
+contract FeeRouter is Ownable, ReentrancyGuard, ILayerZeroReceiver {
     using SafeERC20 for IERC20;
     using OptionsBuilder for bytes;
 
     /* -------------------------------------------------------------------------- */
     /*                                 Constants                                  */
     /* -------------------------------------------------------------------------- */
-    /// @notice Uniswap V3 pool fee tier (0.3%)
-    uint24 public constant POOL_FEE = 3000;
 
     /// @notice Current protocol fee in basis points (50% = 5000 bps, settable by owner)
     uint16 public holographFeeBps = 5000;
@@ -68,17 +35,11 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
     /// @notice Swap deadline buffer (configurable by owner)
     uint256 public swapDeadlineBuffer = 15 minutes;
 
-    /// @notice Role identifier for keeper automation
-    bytes32 public constant KEEPER_ROLE = keccak256("KEEPER_ROLE");
-
     /// @notice Maximum allowed gas limit for LayerZero bridging
     uint256 public constant MAX_BRIDGE_GAS_LIMIT = 2_000_000;
 
     /// @notice Default slippage protection in basis points (3%)
     uint256 public constant DEFAULT_SLIPPAGE_BPS = 300;
-
-    /// @notice Minimum liquidity required for pool validation (prevents dust pools)
-    uint128 public constant MIN_POOL_LIQUIDITY = 1000;
 
     /* -------------------------------------------------------------------------- */
     /*                                Immutables                                  */
@@ -100,9 +61,6 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
 
     /// @notice Uniswap V3 swap router for token exchanges
     ISwapRouter public immutable swapRouter;
-
-    /// @notice Cached Uniswap V3 factory (saves a call per pool probe)
-    IUniswapV3Factory private immutable _factory;
 
     /* -------------------------------------------------------------------------- */
     /*                                 Storage                                    */
@@ -126,10 +84,9 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
     error InsufficientBalance();
     error InsufficientForBridging();
     error InsufficientOutput(uint256 expected, uint256 actual);
+    error InternalCall();
     error InvalidDeadlineBuffer();
     error InvalidRemoteEid();
-    error InvalidSwapRouter();
-    error NoRoute();
     error NotEndpoint();
     error SwapRouterNotSet();
     error TreasuryTransferFailed();
@@ -171,9 +128,6 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
 
     /// @notice Emitted when dust accumulates that cannot be processed
     event Accumulated(address indexed token, uint256 amount);
-
-    /// @notice Emitted when an invalid message is received and ignored
-    event InvalidMessageIgnored(address token, uint256 amount, string reason);
 
     /// @notice Emitted when dust is recovered by the owner
     event DustRecovered(address indexed token, uint256 amount);
@@ -221,39 +175,22 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
         HLG = IERC20(_hlg);
         WETH = IWETH9(_weth);
 
-        // Cache swap router and factory only if provided (Ethereum deployments)
         swapRouter = ISwapRouter(_swapRouter);
-        if (_swapRouter != address(0)) {
-            try swapRouter.factory() returns (IUniswapV3Factory factory) {
-                _factory = factory;
-            } catch {
-                revert InvalidSwapRouter();
-            }
-        } else {
-            _factory = IUniswapV3Factory(address(0));
-        }
         treasury = _treasury;
-
-        _grantRole(DEFAULT_ADMIN_ROLE, _owner);
     }
 
     /* -------------------------------------------------------------------------- */
-    /*                           Integrator Pull (Keeper)                        */
+    /*                           Integrator Pull (Owner)                         */
     /* -------------------------------------------------------------------------- */
 
     /**
      * @notice Collect accumulated fees from a Doppler Airlock
-     * @dev Keeper-only function that pulls integrator fees from completed auctions
+     * @dev Owner-only function that pulls integrator fees from completed auctions
      * @param airlock Airlock contract address
      * @param token Token contract address
      * @param amt Amount to collect
      */
-    function collectAirlockFees(address airlock, address token, uint256 amt)
-        external
-        onlyRole(KEEPER_ROLE)
-        nonReentrant
-        whenNotPaused
-    {
+    function collectAirlockFees(address airlock, address token, uint256 amt) external onlyOwner nonReentrant {
         if (airlock == address(0)) revert ZeroAddress();
         if (amt == 0) revert ZeroAmount();
 
@@ -279,7 +216,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
         }
 
         if (received > 0) {
-            _splitFee(token, received);
+            _splitFee(airlock, token, received);
         }
     }
 
@@ -289,10 +226,11 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
 
     /**
      * @notice Unified fee splitter (configurable protocol fee / remainder to treasury)
+     * @param airlock Airlock address for event emission
      * @param token Token address (address(0) for ETH)
      * @param amount Total amount to split
      */
-    function _splitFee(address token, uint256 amount) internal {
+    function _splitFee(address airlock, address token, uint256 amount) internal {
         if (amount == 0) revert ZeroAmount();
 
         uint256 protocolFee = (amount * holographFeeBps) / 10_000;
@@ -314,14 +252,14 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
             _convertToHLG(token, protocolFee, 0);
         }
 
-        emit SlicePulled(msg.sender, token, protocolFee, treasuryFee);
+        emit SlicePulled(airlock, token, protocolFee, treasuryFee);
     }
 
     /**
-     * @notice Convert arbitrary token/ETH into HLG and distribute (burn + stake)
-     * @param token  Input token (address(0) for native ETH)
+     * @notice Convert ETH or ERC-20 to HLG and distribute (50% burn, 50% stake)
+     * @param token Input token (address(0) for ETH, HLG for direct distribution, or any ERC-20)
      * @param amount Amount of the input token
-     * @param minOut Minimum HLG expected from final swap (0 to ignore)
+     * @param minOut Minimum HLG expected from final swap
      */
     function _convertToHLG(address token, uint256 amount, uint256 minOut) internal {
         if (token == address(HLG)) {
@@ -329,33 +267,27 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
             return;
         }
 
-        // Step (a): wrap native ETH → WETH
+        // Handle three input modes: ETH, WETH, or arbitrary ERC-20
         if (token == address(0)) {
+            // ETH: wrap to WETH
             WETH.deposit{value: amount}();
             token = address(WETH);
-        }
-
-        // Step (b): swap non-WETH tokens into WETH if a pool exists, otherwise give up
-        if (token != address(WETH)) {
-            if (!_poolExists(token, address(WETH))) {
-                emit Accumulated(token, amount); // Track unswappable dust
+        } else if (token != address(WETH)) {
+            // Arbitrary ERC-20: swap to WETH first
+            try this._internalSwapTokenToWeth(token, amount, (amount * (10_000 - DEFAULT_SLIPPAGE_BPS)) / 10_000)
+            returns (uint256 wethAmount) {
+                amount = wethAmount;
+            } catch {
+                // If swap fails (no pool), accumulate as dust
+                emit Accumulated(token, amount);
                 return;
             }
-            uint256 minWethOut = _calculateMinOut(amount, DEFAULT_SLIPPAGE_BPS);
-            amount = _swapSingle(token, address(WETH), amount, minWethOut);
-            token = address(WETH);
         }
+        // If token is already WETH, no conversion needed
 
-        // Step (c): WETH → HLG (must have a pool or revert)
-        if (!_poolExists(address(WETH), address(HLG))) revert NoRoute();
-        
-        // Apply slippage protection to second hop if minOut not specified
-        uint256 finalMinOut = minOut;
-        if (minOut == 0) {
-            finalMinOut = _calculateMinOut(amount, DEFAULT_SLIPPAGE_BPS);
-        }
-        
-        amount = _swapSingle(address(WETH), address(HLG), amount, finalMinOut);
+        // Swap WETH to HLG using fixed 0.3% pool
+        uint256 finalMinOut = minOut > 0 ? minOut : (amount * (10_000 - DEFAULT_SLIPPAGE_BPS)) / 10_000;
+        amount = _swapWethToHlg(amount, finalMinOut);
 
         _distribute(amount);
     }
@@ -366,13 +298,24 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
 
     /**
      * @notice Bridge accumulated ETH to remote chain for HLG conversion
-     * @dev Keeper-only; enforces dust threshold to avoid uneconomical transactions
-     * @param minGas Minimum gas units for lzReceive execution on destination
-     * @param minHlg Minimum HLG tokens expected from swap (slippage protection)
+     * @param minGas Minimum gas units for lzReceive execution
+     * @param minHlg Minimum HLG tokens expected from swap
      */
-    function bridge(uint256 minGas, uint256 minHlg) external onlyRole(KEEPER_ROLE) nonReentrant whenNotPaused {
+    function bridge(uint256 minGas, uint256 minHlg) external onlyOwner nonReentrant {
         if (minGas > MAX_BRIDGE_GAS_LIMIT) revert GasLimitExceeded(MAX_BRIDGE_GAS_LIMIT, minGas);
         _bridge(minGas, minHlg);
+    }
+
+    /**
+     * @notice Bridge specific ERC-20 token to remote chain for HLG conversion
+     * @param token ERC-20 token address to bridge
+     * @param minGas Minimum gas units for lzReceive execution
+     * @param minHlg Minimum HLG tokens expected from swap
+     */
+    function bridgeToken(address token, uint256 minGas, uint256 minHlg) external onlyOwner nonReentrant {
+        if (minGas > MAX_BRIDGE_GAS_LIMIT) revert GasLimitExceeded(MAX_BRIDGE_GAS_LIMIT, minGas);
+        if (token == address(0)) revert ZeroAddress(); // Use bridge() for ETH
+        _bridgeToken(token, minGas, minHlg);
     }
 
     /**
@@ -381,15 +324,33 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
      * @param minHlg Minimum HLG tokens expected from swap
      */
     function _bridge(uint256 minGas, uint256 minHlg) internal {
+        _bridgeToken(address(0), minGas, minHlg);
+    }
+
+    /**
+     * @notice Bridge specific token to remote chain for HLG conversion
+     * @param token Token to bridge (address(0) for ETH)
+     * @param minGas Minimum gas units for lzReceive execution
+     * @param minHlg Minimum HLG tokens expected from swap
+     */
+    function _bridgeToken(address token, uint256 minGas, uint256 minHlg) internal {
         // Validate inputs before any processing (fail-fast)
         if (remoteEid == 0) revert InvalidRemoteEid();
         if (trustedRemotes[remoteEid] == bytes32(0)) revert TrustedRemoteNotSet();
-        
-        uint256 bal = address(this).balance;
-        if (bal < MIN_BRIDGE_VALUE) revert InsufficientBalance();
 
-        // Send both the ETH amount and minimum HLG expected for slippage protection
-        bytes memory payload = abi.encode(address(0), bal, minHlg);
+        uint256 amount;
+        if (token == address(0)) {
+            // ETH bridging
+            amount = address(this).balance;
+            if (amount < MIN_BRIDGE_VALUE) revert InsufficientBalance();
+        } else {
+            // ERC-20 bridging
+            amount = IERC20(token).balanceOf(address(this));
+            if (amount == 0) revert InsufficientBalance();
+        }
+
+        // Prepare message payload
+        bytes memory payload = abi.encode(token, amount, minHlg);
         bytes memory options = _buildLzReceiveOption(minGas);
 
         // Build LayerZero V2 messaging parameters
@@ -401,30 +362,35 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
             payInLzToken: false
         });
 
-        // Calculate LayerZero messaging fee (small amount for cross-chain message)
+        // Calculate LayerZero messaging fee (paid in ETH)
         MessagingFee memory fee = lzEndpoint.quote(msgParams, payable(msg.sender));
         uint256 lzFee = fee.nativeFee;
-        
-        // Ensure we have enough balance to cover both LZ fee and bridged amount
-        if (bal <= lzFee) revert InsufficientForBridging();
-        
-        uint256 bridgedAmount = bal - lzFee;
-        
-        // Update payload with actual bridged amount (excluding LZ fee)
-        payload = abi.encode(address(0), bridgedAmount, minHlg);
-        msgParams.message = payload;
 
-        // Send LayerZero message with only messaging fee (not bridged ETH)
+        uint256 bridgedAmount;
+        if (token == address(0)) {
+            // For ETH, deduct LZ fee from bridged amount
+            if (amount <= lzFee) revert InsufficientForBridging();
+            bridgedAmount = amount - lzFee;
+
+            // Update payload with actual bridged amount
+            payload = abi.encode(token, bridgedAmount, minHlg);
+            msgParams.message = payload;
+        } else {
+            // For ERC-20, bridge full amount (LZ fee paid separately in ETH)
+            if (address(this).balance < lzFee) revert InsufficientForBridging();
+            bridgedAmount = amount;
+        }
+
+        // Send LayerZero message (LZ fee always paid in ETH)
         MessagingReceipt memory receipt = lzEndpoint.send{value: lzFee}(msgParams, payable(msg.sender));
-        emit TokenBridged(address(0), bridgedAmount, receipt.nonce);
+        emit TokenBridged(token, bridgedAmount, receipt.nonce);
     }
 
     /**
-     * @notice Process accumulated dust in batch when balance reaches threshold
-     * @param minGas Minimum gas units for lzReceive execution on destination
-     * @dev Keeper-only function for periodic dust processing
+     * @notice Process accumulated ETH dust; ERC-20 dust is bridged via bridgeToken
+     * @param minGas Minimum gas units for lzReceive execution
      */
-    function processDustBatch(uint256 minGas) external onlyRole(KEEPER_ROLE) nonReentrant whenNotPaused {
+    function processDustBatch(uint256 minGas) external onlyOwner nonReentrant {
         if (minGas > MAX_BRIDGE_GAS_LIMIT) revert GasLimitExceeded(MAX_BRIDGE_GAS_LIMIT, minGas);
         uint256 balance = address(this).balance;
         if (balance >= MIN_BRIDGE_VALUE) {
@@ -433,46 +399,47 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
         }
     }
 
-
     /* -------------------------------------------------------------------------- */
     /*                            LayerZero Receive                              */
     /* -------------------------------------------------------------------------- */
 
     /**
-     * @notice Handle incoming protocol fees from Base chain
-     * @dev Processes bridged tokens through local HLG swap/burn/stake and verifies the caller is a trusted remote
+     * @notice Handle incoming protocol fees from remote chain
      * @param _origin Message origin information
-     * @param _guid Unique message identifier
      * @param _message Encoded token, amount, and slippage protection data
-     * @param _executor Executor address
-     * @param _extraData Additional data
      */
     function lzReceive(
         Origin calldata _origin,
-        bytes32 _guid,
+        bytes32, // _guid
         bytes calldata _message,
-        address _executor,
-        bytes calldata _extraData
+        address, // _executor
+        bytes calldata // _extraData
     ) external payable override nonReentrant {
         _enforceEndpointAndRemote(_origin.srcEid);
 
-        // Decode the message payload (token, amount, minHlg)
+        // Decode the message payload (3-field format only)
         (address token, uint256 amount, uint256 minHlg) = abi.decode(_message, (address, uint256, uint256));
-        
-        // Only process ETH (address(0)) - ERC-20 bridging removed
-        if (token != address(0)) {
-            emit InvalidMessageIgnored(token, amount, "Only ETH bridging supported");
-            return;
+
+        // Process both ETH and ERC-20 tokens
+        uint256 localBalance;
+        if (token == address(0)) {
+            // ETH case - use contract's ETH balance
+            localBalance = address(this).balance;
+        } else {
+            // ERC-20 case - check token balance
+            localBalance = IERC20(token).balanceOf(address(this));
         }
-        
-        // Use local ETH balance, not msg.value (which is just executor fee)
-        uint256 localBalance = address(this).balance;
+
         if (localBalance >= amount) {
             _convertToHLG(token, amount, minHlg);
         } else {
-            // Emit events for insufficient local reserves
+            // Insufficient balance - emit events and process available amount
             emit LowReserves(localBalance, amount);
             emit Accumulated(token, amount - localBalance);
+
+            if (localBalance > 0) {
+                _convertToHLG(token, localBalance, minHlg);
+            }
         }
     }
 
@@ -492,52 +459,80 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
         return lzEndpoint.inboundNonce(address(this), _eid, _sender) + 1;
     }
 
-
     /* -------------------------------------------------------------------------- */
     /*                              Token Swapping                               */
     /* -------------------------------------------------------------------------- */
 
-
     /**
-     * @notice Execute single-hop swap via Uniswap V3
-     * @dev Direct token-to-token swap through single pool
-     * @param tokenIn Input token address
-     * @param tokenOut Output token address
+     * @notice Swap any ERC-20 token to WETH using fixed 0.3% fee tier
+     * @param tokenIn Input ERC-20 token address
      * @param amtIn Input token amount
-     * @param minOut Minimum output tokens expected
-     * @return actualOut Actual tokens received from swap
+     * @param minOut Minimum WETH expected
+     * @return amountOut WETH received from swap
      */
-    function _swapSingle(address tokenIn, address tokenOut, uint256 amtIn, uint256 minOut) internal returns (uint256) {
-        // Validate router before any processing
-        ISwapRouter router = swapRouter;
-        if (address(router) == address(0)) revert SwapRouterNotSet();
-        
-        IERC20(tokenIn).forceApprove(address(router), amtIn);
+    function _swapTokenToWeth(address tokenIn, uint256 amtIn, uint256 minOut) internal returns (uint256) {
+        if (address(swapRouter) == address(0)) revert SwapRouterNotSet();
 
-        // Find the best available fee tier
-        uint24 feeTier = _getBestFeeTier(tokenIn, tokenOut);
-
-        // Calculate deadline
-        uint256 deadline = block.timestamp + swapDeadlineBuffer;
+        IERC20(tokenIn).forceApprove(address(swapRouter), amtIn);
 
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
             tokenIn: tokenIn,
-            tokenOut: tokenOut,
-            fee: feeTier,
+            tokenOut: address(WETH),
+            fee: 3000, // Fixed 0.3% fee tier
             recipient: address(this),
-            deadline: deadline,
+            deadline: block.timestamp + swapDeadlineBuffer,
             amountIn: amtIn,
             amountOutMinimum: minOut,
             sqrtPriceLimitX96: 0
         });
 
-        uint256 amountOut = router.exactInputSingle(params);
+        uint256 amountOut = swapRouter.exactInputSingle(params);
         if (amountOut < minOut) revert InsufficientOutput(minOut, amountOut);
-        
-        emit Swapped(tokenIn, tokenOut, amtIn, amountOut);
+
+        emit Swapped(tokenIn, address(WETH), amtIn, amountOut);
         return amountOut;
     }
 
+    /**
+     * @notice External wrapper for _swapTokenToWeth (used with try/catch)
+     * @param tokenIn Input ERC-20 token address
+     * @param amtIn Input token amount
+     * @param minOut Minimum WETH expected
+     * @return amountOut WETH received from swap
+     */
+    function _internalSwapTokenToWeth(address tokenIn, uint256 amtIn, uint256 minOut) external returns (uint256) {
+        if (msg.sender != address(this)) revert InternalCall();
+        return _swapTokenToWeth(tokenIn, amtIn, minOut);
+    }
+
+    /**
+     * @notice Swap WETH to HLG using fixed 0.3% fee tier
+     * @param amtIn WETH amount to swap
+     * @param minOut Minimum HLG expected
+     * @return amountOut HLG received from swap
+     */
+    function _swapWethToHlg(uint256 amtIn, uint256 minOut) internal returns (uint256) {
+        if (address(swapRouter) == address(0)) revert SwapRouterNotSet();
+
+        IERC20(address(WETH)).forceApprove(address(swapRouter), amtIn);
+
+        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
+            tokenIn: address(WETH),
+            tokenOut: address(HLG),
+            fee: 3000, // Fixed 0.3% fee tier for HLG/WETH pool
+            recipient: address(this),
+            deadline: block.timestamp + swapDeadlineBuffer,
+            amountIn: amtIn,
+            amountOutMinimum: minOut,
+            sqrtPriceLimitX96: 0
+        });
+
+        uint256 amountOut = swapRouter.exactInputSingle(params);
+        if (amountOut < minOut) revert InsufficientOutput(minOut, amountOut);
+
+        emit Swapped(address(WETH), address(HLG), amtIn, amountOut);
+        return amountOut;
+    }
 
     /* -------------------------------------------------------------------------- */
     /*                              Burn & Stake                                 */
@@ -579,72 +574,6 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
     /* -------------------------------------------------------------------------- */
 
     /**
-     * @notice Check if Uniswap V3 pool exists for token pair across multiple fee tiers with sufficient liquidity
-     * @param tokenA First token address
-     * @param tokenB Second token address
-     * @return exists True if pool exists with sufficient liquidity
-     */
-    function _poolExists(address tokenA, address tokenB) internal view returns (bool) {
-        if (address(_factory) == address(0)) return false;
-        
-        // Check multiple fee tiers in order of preference
-        uint24[3] memory feeTiers = [uint24(500), uint24(3000), uint24(10000)];
-        for (uint256 i = 0; i < feeTiers.length; i++) {
-            address pool = _factory.getPool(tokenA, tokenB, feeTiers[i]);
-            if (pool != address(0)) {
-                // Check if pool has sufficient liquidity
-                try IUniswapV3Pool(pool).liquidity() returns (uint128 liquidity) {
-                    if (liquidity >= MIN_POOL_LIQUIDITY) {
-                        return true;
-                    }
-                } catch {
-                    // Pool exists but liquidity call failed - skip this pool
-                    continue;
-                }
-            }
-        }
-        return false;
-    }
-
-    /**
-     * @notice Get the best available fee tier for a token pair with sufficient liquidity
-     * @param tokenA First token address
-     * @param tokenB Second token address
-     * @return feeTier The fee tier of the first available pool with sufficient liquidity
-     */
-    function _getBestFeeTier(address tokenA, address tokenB) internal view returns (uint24) {
-        if (address(_factory) == address(0)) return 3000; // Default fallback
-        
-        // Check multiple fee tiers in order of preference (lowest fees first)
-        uint24[3] memory feeTiers = [uint24(500), uint24(3000), uint24(10000)];
-        for (uint256 i = 0; i < feeTiers.length; i++) {
-            address pool = _factory.getPool(tokenA, tokenB, feeTiers[i]);
-            if (pool != address(0)) {
-                // Check if pool has sufficient liquidity
-                try IUniswapV3Pool(pool).liquidity() returns (uint128 liquidity) {
-                    if (liquidity >= MIN_POOL_LIQUIDITY) {
-                        return feeTiers[i];
-                    }
-                } catch {
-                    // Pool exists but liquidity call failed - skip this pool
-                    continue;
-                }
-            }
-        }
-        return 3000; // Default fallback
-    }
-
-    /**
-     * @notice Calculate minimum output amount with slippage protection
-     * @param amountIn Input amount
-     * @param slippageBps Slippage in basis points
-     * @return minOut Minimum output amount after slippage
-     */
-    function _calculateMinOut(uint256 amountIn, uint256 slippageBps) internal pure returns (uint256) {
-        return (amountIn * (10_000 - slippageBps)) / 10_000;
-    }
-
-    /**
      * @notice Build LayerZero receive options with gas limit
      * @param gasLimit Gas units to allocate for lzReceive
      * @return Encoded options for LayerZero message
@@ -680,22 +609,6 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
     }
 
     /**
-     * @notice Pause the contract
-     * @dev Emergency circuit breaker to halt operations; only callable by owner
-     */
-    function pause() external onlyOwner {
-        _pause();
-    }
-
-    /**
-     * @notice Unpause the contract
-     * @dev Resume normal operations after emergency pause; only callable by owner
-     */
-    function unpause() external onlyOwner {
-        _unpause();
-    }
-
-    /**
      * @notice Whitelist or remove a Doppler Airlock that is allowed to push ETH
      * @param airlock Airlock contract address
      * @param trusted Boolean indicating whether the Airlock is trusted
@@ -723,9 +636,9 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
      * @param amount Amount to recover
      * @dev Only callable by owner for emergency recovery
      */
-    function rescueDust(address token, uint256 amount) external onlyOwner nonReentrant whenNotPaused {
+    function rescueDust(address token, uint256 amount) external onlyOwner nonReentrant {
         if (amount == 0) revert ZeroAmount();
-        
+
         if (token == address(0)) {
             // Recover ETH using call pattern to avoid 2300 gas limit
             (bool success,) = payable(owner()).call{value: amount}("");
@@ -734,7 +647,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
             // Recover ERC20 tokens
             IERC20(token).safeTransfer(owner(), amount);
         }
-        
+
         emit DustRecovered(token, amount);
     }
 
@@ -786,7 +699,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
     function quoteBridgeFee(uint256 minGas) external view returns (uint256 nativeFee) {
         bytes memory payload = abi.encode(address(0), 0, 0); // Dummy payload for quote
         bytes memory options = _buildLzReceiveOption(minGas);
-        
+
         MessagingParams memory msgParams = MessagingParams({
             dstEid: remoteEid,
             receiver: trustedRemotes[remoteEid],
@@ -794,7 +707,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
             options: options,
             payInLzToken: false
         });
-        
+
         MessagingFee memory fee = lzEndpoint.quote(msgParams, payable(msg.sender));
         return fee.nativeFee;
     }
@@ -812,7 +725,7 @@ contract FeeRouter is Ownable, AccessControl, ReentrancyGuard, Pausable, ILayerZ
     /* -------------------------------------------------------------------------- */
 
     /// @notice Accept ETH only from trusted Airlock contracts
-    receive() external payable nonReentrant {
+    receive() external payable {
         // Only trusted Airlocks can send ETH (msg.data is always empty for receive())
         if (!trustedAirlocks[msg.sender]) revert UntrustedSender();
     }

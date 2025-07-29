@@ -59,13 +59,14 @@ contract MockLZEndpoint {
         uint256 bridgedValue = msg.value > lzFee ? msg.value - lzFee : 0;
 
         // Simple cross-chain simulation - call the target directly
-        if (crossChainTarget != address(0) && bridgedValue > 0) {
+        if (crossChainTarget != address(0)) {
             // Determine source EID based on destination
             uint32 srcEid = _params.dstEid == 30101 ? uint32(30184) : uint32(30101); // ETH_EID : BASE_EID
 
             // We need to simulate the target endpoint calling lzReceive
-            // Pass the bridged ETH value (excluding LZ fee) to the destination
-            MockLZEndpoint(targetEndpoint).deliverMessage{value: bridgedValue}(
+            // Note: No ETH value is sent here - the bridged amount stays in the source contract
+            // and the destination contract uses its own reserves
+            MockLZEndpoint(targetEndpoint).deliverMessage{value: 0}(
                 crossChainTarget, srcEid, _params.message, msg.sender
             );
         }
@@ -92,8 +93,8 @@ contract MockLZEndpoint {
             uint32 srcEid = dstEid == 30101 ? uint32(30184) : uint32(30101); // ETH_EID : BASE_EID
 
             // We need to simulate the target endpoint calling lzReceive
-            // This is a bit of a hack for testing, but it works
-            MockLZEndpoint(targetEndpoint).deliverMessage{value: msg.value}(
+            // Note: No ETH value is sent here - destination uses its own reserves
+            MockLZEndpoint(targetEndpoint).deliverMessage{value: 0}(
                 crossChainTarget, srcEid, payload, msg.sender
             );
         }

@@ -74,12 +74,8 @@ contract Configure is Script {
         console.log("Trusted remote set (eid -> addr):", remoteEid, remoteRouter);
 
         /* ---------------------------- KEEPER ------------------------------- */
-        bytes32 keeperRole = router.KEEPER_ROLE();
-        try router.grantRole(keeperRole, keeper) {
-            console.log("Granted KEEPER_ROLE to", keeper);
-        } catch {
-            console.log("[WARN] grantRole failed - maybe already set");
-        }
+        // Note: KEEPER_ROLE removed - all functions are now owner-only
+        console.log("FeeRouter functions are owner-only, no keeper role needed");
 
         /* ------------------------- Trusted Airlocks ------------------------ */
         try router.setTrustedAirlock(dopplerAirlock, true) {

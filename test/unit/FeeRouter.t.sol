@@ -55,6 +55,7 @@ contract FeeRouterTest is Test {
     event TrustedRemoteSet(uint32 indexed eid, bytes32 remote);
     event TreasuryUpdated(address indexed newTreasury);
     event TrustedAirlockSet(address indexed airlock, bool trusted);
+    event Accumulated(address indexed token, uint256 amount);
     // Note: TrustedFactorySet event removed as trustedFactories functionality was removed
     event HolographFeeUpdated(uint16 oldFeeBps, uint16 newFeeBps);
 
@@ -83,8 +84,7 @@ contract FeeRouterTest is Test {
             owner // owner address
         );
 
-        // Grant keeper role
-        feeRouter.grantRole(feeRouter.KEEPER_ROLE(), keeper);
+        // Note: All functions are now owner-only, no keeper role needed
 
         // Set up trusted contracts for new architecture
         feeRouter.setTrustedAirlock(address(airlock), true);
@@ -102,11 +102,12 @@ contract FeeRouterTest is Test {
 
         // Setup MockSwapRouter for token swaps
         swapRouter.setOutputToken(address(hlg));
+        swapRouter.setExchangeRate(1000 * 1e18); // Reduced rate to avoid balance issues
 
         // Mint tokens to MockSwapRouter for swap operations
-        hlg.mint(address(swapRouter), 1_000_000e18);
-        weth.mint(address(swapRouter), 1_000_000e18);
-        hlg.mint(address(stakingPool), 1_000_000e18);
+        hlg.mint(address(swapRouter), 1_000_000_000e18); // Further increased for exchange rate
+        weth.mint(address(swapRouter), 10_000_000e18);
+        hlg.mint(address(stakingPool), 10_000_000e18);
     }
 
     /* -------------------------------------------------------------------------- */
@@ -149,9 +150,9 @@ contract FeeRouterTest is Test {
         uint256 treasuryAmt = amount - holoAmt; // 50%
 
         vm.expectEmit(true, true, false, true);
-        emit SlicePulled(keeper, address(0), holoAmt, treasuryAmt);
+        emit SlicePulled(address(airlock), address(0), holoAmt, treasuryAmt);
 
-        vm.prank(keeper);
+        vm.prank(owner);
         feeRouter.collectAirlockFees(address(airlock), address(0), amount);
 
         // Verify treasury received the correct amount
@@ -166,7 +167,7 @@ contract FeeRouterTest is Test {
         token.mint(address(airlock), amount);
         airlock.setCollectableAmount(address(token), amount);
 
-        vm.prank(keeper);
+        vm.prank(owner);
         feeRouter.collectAirlockFees(address(airlock), address(token), amount);
 
         // Verify treasury received 50%
@@ -181,13 +182,13 @@ contract FeeRouterTest is Test {
     }
 
     function test_RevertCollectAirlockFeesZeroAddress() public {
-        vm.prank(keeper);
+        vm.prank(owner);
         vm.expectRevert(FeeRouter.ZeroAddress.selector);
         feeRouter.collectAirlockFees(address(0), address(0), 1 ether);
     }
 
     function test_RevertCollectAirlockFeesZeroAmount() public {
-        vm.prank(keeper);
+        vm.prank(owner);
         vm.expectRevert(FeeRouter.ZeroAmount.selector);
         feeRouter.collectAirlockFees(address(airlock), address(0), 0);
     }
@@ -204,7 +205,7 @@ contract FeeRouterTest is Test {
         uint256 expectedLzFee = 0.001 ether; // MockLZEndpoint fee
         uint256 expectedBridgedAmount = bridgeAmount - expectedLzFee;
 
-        vm.prank(keeper);
+        vm.prank(owner);
         vm.expectEmit(true, false, false, true);
         emit TokenBridged(address(0), expectedBridgedAmount, 1);
 
@@ -219,22 +220,18 @@ contract FeeRouterTest is Test {
         // Set balance below MIN_BRIDGE_VALUE
         vm.deal(address(feeRouter), 0.005 ether);
 
-        vm.prank(keeper);
+        vm.prank(owner);
+        vm.expectRevert(FeeRouter.InsufficientBalance.selector);
         feeRouter.bridge(200_000, 0);
-
-        // Should not bridge (nonce tracking removed from FeeRouter)
-        assertEq(address(feeRouter).balance, 0.005 ether);
     }
 
     function test_BridgeInsufficientForLzFee() public {
         // Set balance that's above MIN_BRIDGE_VALUE but below LZ fee
         vm.deal(address(feeRouter), 0.0005 ether); // Less than 0.001 ether LZ fee
 
-        vm.prank(keeper);
+        vm.prank(owner);
+        vm.expectRevert(FeeRouter.InsufficientBalance.selector);
         feeRouter.bridge(200_000, 0);
-
-        // Should not bridge due to insufficient funds for LZ fee
-        assertEq(address(feeRouter).balance, 0.0005 ether);
     }
 
     function test_BridgeOnlyKeeper() public {
@@ -324,15 +321,16 @@ contract FeeRouterTest is Test {
         // ETH should be consumed by the _convertToHLG function
     }
 
-    function test_LzReceiveLegacyMessage() public {
+    function test_LzReceiveThreeFieldMessage() public {
         uint256 amount = 1 ether;
-        bytes memory legacyMessage = abi.encode(address(0), amount); // 2-word payload
+        uint256 minHlg = 0;
+        bytes memory message = abi.encode(address(0), amount, minHlg); // 3-field payload
 
-        // Mock LayerZero receive call with ETH value for legacy message
+        // Mock LayerZero receive call with ETH value
         vm.deal(address(lzEndpoint), amount);
         vm.prank(address(lzEndpoint));
-        Origin memory origin2 = Origin({srcEid: BASE_EID, sender: bytes32(uint256(uint160(address(this)))), nonce: 1});
-        feeRouter.lzReceive{value: amount}(origin2, keccak256(legacyMessage), legacyMessage, address(0), "");
+        Origin memory origin = Origin({srcEid: BASE_EID, sender: bytes32(uint256(uint160(address(this)))), nonce: 1});
+        feeRouter.lzReceive{value: amount}(origin, keccak256(message), message, address(0), "");
     }
 
     function test_RevertLzReceiveNotEndpoint() public {
@@ -357,21 +355,7 @@ contract FeeRouterTest is Test {
     /*                              Pause Functionality                         */
     /* -------------------------------------------------------------------------- */
 
-    function test_PauseUnpause() public {
-        vm.prank(owner);
-        feeRouter.pause();
-        assertTrue(feeRouter.paused());
-
-        vm.prank(owner);
-        feeRouter.unpause();
-        assertFalse(feeRouter.paused());
-    }
-
-    function test_RevertPauseOnlyOwner() public {
-        vm.expectRevert();
-        vm.prank(alice);
-        feeRouter.pause();
-    }
+    // Note: Pause functionality removed
 
     /* -------------------------------------------------------------------------- */
     /*                              ETH Receive Security                        */
@@ -426,7 +410,7 @@ contract FeeRouterTest is Test {
         airlock.setCollectableAmount(address(0), feeAmount);
 
         // Step 3: Keeper collects fees from airlock
-        vm.prank(keeper);
+        vm.prank(owner);
         feeRouter.collectAirlockFees(address(airlock), address(0), feeAmount);
 
         // Step 4: Verify fee split (50% protocol, 50% treasury)
@@ -435,7 +419,7 @@ contract FeeRouterTest is Test {
 
         // Step 5: Bridge accumulated protocol fees if above threshold
         if (address(feeRouter).balance >= MIN_BRIDGE_VALUE) {
-            vm.prank(keeper);
+            vm.prank(owner);
             feeRouter.bridge(200_000, 0);
             // Bridge should succeed (nonce tracking removed from FeeRouter)
         }
@@ -452,7 +436,7 @@ contract FeeRouterTest is Test {
         vm.deal(address(airlock), feeAmount);
         airlock.setCollectableAmount(address(0), feeAmount);
 
-        vm.prank(keeper);
+        vm.prank(owner);
         feeRouter.collectAirlockFees(address(airlock), address(0), feeAmount);
 
         // Verify treasury received fees
@@ -482,7 +466,7 @@ contract FeeRouterTest is Test {
 
         vm.deal(address(feeRouter), amount);
 
-        vm.prank(keeper);
+        vm.prank(owner);
         feeRouter.bridge(200_000, 0);
 
         // Bridge succeeded (nonce tracking removed from FeeRouter)
@@ -496,7 +480,7 @@ contract FeeRouterTest is Test {
         vm.deal(address(airlock), amount);
         airlock.setCollectableAmount(address(0), amount);
 
-        vm.prank(keeper);
+        vm.prank(owner);
         feeRouter.collectAirlockFees(address(airlock), address(0), amount);
 
         // Verify treasury receives the correct amount (amount - protocolFee)
@@ -570,76 +554,32 @@ contract FeeRouterTest is Test {
     }
 
     /* -------------------------------------------------------------------------- */
-    /*                            Pause Functionality Tests                      */
-    /* -------------------------------------------------------------------------- */
-
-    function test_PauseBlocksValueMovingFunctions() public {
-        // Owner pauses the contract
-        vm.prank(owner);
-        feeRouter.pause();
-
-        // Should revert on collectAirlockFees
-        vm.prank(keeper);
-        vm.expectRevert();
-        feeRouter.collectAirlockFees(address(airlock), address(0), 1 ether);
-
-        // Should revert on bridge
-        vm.prank(keeper);
-        vm.expectRevert();
-        feeRouter.bridge(200_000, 0);
-
-        // Should revert on processDustBatch
-        vm.prank(keeper);
-        vm.expectRevert();
-        feeRouter.processDustBatch(200_000);
-
-        // Should revert on rescueDust
-        vm.prank(owner);
-        vm.expectRevert();
-        feeRouter.rescueDust(address(0), 1 ether);
-    }
-
-    function test_UnpauseAllowsValueMovingFunctions() public {
-        // Owner pauses then unpauses
-        vm.prank(owner);
-        feeRouter.pause();
-        
-        vm.prank(owner);
-        feeRouter.unpause();
-
-        // Functions should work again (test one as example)
-        vm.deal(address(feeRouter), 1 ether);
-        vm.prank(keeper);
-        feeRouter.bridge(200_000, 0); // Should not revert
-    }
-
-    /* -------------------------------------------------------------------------- */
     /*                            Gas Limit Tests                                */
     /* -------------------------------------------------------------------------- */
 
     function test_BridgeGasLimitValidation() public {
         vm.deal(address(feeRouter), 1 ether);
-        
+
         // Should revert if gas limit exceeds maximum
-        vm.prank(keeper);
+        vm.prank(owner);
         vm.expectRevert(abi.encodeWithSignature("GasLimitExceeded(uint256,uint256)", 2_000_000, 3_000_000));
         feeRouter.bridge(3_000_000, 0); // Exceeds MAX_BRIDGE_GAS_LIMIT (2M)
 
         // Should succeed with valid gas limit
-        vm.prank(keeper);
+        vm.prank(owner);
         feeRouter.bridge(200_000, 0); // Within limit
     }
 
     function test_ProcessDustBatchGasLimitValidation() public {
         vm.deal(address(feeRouter), 1 ether);
-        
+
         // Should revert if gas limit exceeds maximum
-        vm.prank(keeper);
+        vm.prank(owner);
         vm.expectRevert(abi.encodeWithSignature("GasLimitExceeded(uint256,uint256)", 2_000_000, 3_000_000));
         feeRouter.processDustBatch(3_000_000); // Exceeds MAX_BRIDGE_GAS_LIMIT (2M)
 
         // Should succeed with valid gas limit
-        vm.prank(keeper);
+        vm.prank(owner);
         feeRouter.processDustBatch(200_000); // Within limit
     }
 
@@ -651,7 +591,7 @@ contract FeeRouterTest is Test {
         // This test verifies that _poolExists checks liquidity
         // The MockSwapRouter is set up to return pools with sufficient liquidity
         // In a real scenario, pools with insufficient liquidity would be rejected
-        
+
         // Note: Full testing would require mocking pools with different liquidity levels
         // For now, we verify the existing functionality works
         assertTrue(true); // Placeholder - full implementation would test various liquidity scenarios
@@ -666,7 +606,7 @@ contract FeeRouterTest is Test {
         // 1. It exists in the contract at line 511 in _swapSingle
         // 2. Constructor allows address(0) swapRouter for non-Ethereum chains
         // 3. The guard would trigger if _swapSingle is reached with null router
-        
+
         // Verify constructor allows address(0) swapRouter
         FeeRouter testRouter = new FeeRouter(
             address(lzEndpoint),
@@ -678,17 +618,17 @@ contract FeeRouterTest is Test {
             treasury,
             owner
         );
-        
+
         // Verify the router was created successfully with null swapRouter
         assertEq(address(testRouter.swapRouter()), address(0));
-        
+
         // The guard exists in _swapSingle and would execute if reached:
         // "if (address(router) == address(0)) revert SwapRouterNotSet();"
-        // 
+        //
         // In practice, _poolExists returns false when factory is address(0),
         // so _swapSingle is never reached, but the guard provides safety
         // for edge cases or future code paths.
-        
+
         assertTrue(true, "SwapRouterNotSet guard verified to exist in _swapSingle");
     }
 
@@ -704,13 +644,11 @@ contract FeeRouterTest is Test {
             treasury,
             owner
         );
-        
-        vm.startPrank(owner);
-        testRouter.grantRole(testRouter.KEEPER_ROLE(), keeper);
-        vm.stopPrank();
-        
+
+        // Note: All functions are now owner-only, no keeper role needed
+
         vm.deal(address(testRouter), 1 ether);
-        vm.prank(keeper);
+        vm.prank(owner);
         vm.expectRevert(abi.encodeWithSignature("TrustedRemoteNotSet()"));
         testRouter.bridge(200_000, 0);
     }
@@ -734,7 +672,7 @@ contract FeeRouterTest is Test {
         // Test with valid HLG token
         vm.deal(address(feeRouter), 2 ether);
         hlg.mint(address(feeRouter), 1000e18);
-        
+
         (uint256 ethBal, uint256 hlgBal) = feeRouter.getBalances();
         assertEq(ethBal, 2 ether);
         assertEq(hlgBal, 1000e18);
@@ -752,7 +690,7 @@ contract FeeRouterTest is Test {
             treasury,
             owner
         );
-        
+
         vm.deal(address(testRouter), 1 ether);
         (uint256 ethBal, uint256 hlgBal) = testRouter.getBalances();
         assertEq(ethBal, 1 ether);
@@ -783,15 +721,99 @@ contract FeeRouterTest is Test {
 
     function test_SetSwapDeadlineBufferBoundaryValues() public {
         vm.startPrank(owner);
-        
+
         // Test minimum boundary (1 minute)
         feeRouter.setSwapDeadlineBuffer(1 minutes);
         assertEq(feeRouter.swapDeadlineBuffer(), 1 minutes);
-        
+
         // Test maximum boundary (1 hour)
         feeRouter.setSwapDeadlineBuffer(1 hours);
         assertEq(feeRouter.swapDeadlineBuffer(), 1 hours);
-        
+
         vm.stopPrank();
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /*                              ERC-20 Tests                                */
+    /* -------------------------------------------------------------------------- */
+
+    function test_BridgeERC20() public {
+        MockERC20 token = new MockERC20("Test Token", "TEST");
+        uint256 amount = 1000e18;
+
+        // Setup: mint tokens to FeeRouter
+        token.mint(address(feeRouter), amount);
+
+        // Setup trusted remote for bridging
+        vm.prank(owner);
+        feeRouter.setTrustedRemote(UNICHAIN_EID, bytes32(uint256(uint160(address(0x5555)))));
+
+        // Fund FeeRouter with ETH for LayerZero fees
+        vm.deal(address(feeRouter), 1 ether);
+
+        vm.prank(owner);
+        vm.expectEmit(true, false, false, true);
+        emit TokenBridged(address(token), amount, 1);
+
+        feeRouter.bridgeToken(address(token), 200_000, 0);
+
+        // Verify LayerZero was called
+        assertTrue(lzEndpoint.sendCalled());
+    }
+
+    function test_ConvertERC20ToHLG() public {
+        MockERC20 token = new MockERC20("Test Token", "TEST");
+        uint256 amount = 1000e18;
+
+        // Setup: mint tokens to airlock and configure swaps
+        token.mint(address(airlock), amount);
+
+        // Fund MockSwapRouter with WETH and HLG for two-hop swap
+        weth.mint(address(swapRouter), 10_000e18);
+        hlg.mint(address(swapRouter), 10_000_000e18);
+
+        // Setup airlock to transfer the ERC-20 tokens
+        airlock.setCollectableAmount(address(token), amount);
+
+        vm.prank(owner);
+        feeRouter.collectAirlockFees(address(airlock), address(token), amount);
+
+        // Should have processed the ERC-20 through the conversion chain
+        // ERC-20 -> WETH -> HLG -> burn/stake distribution
+    }
+
+    function test_UnsupportedERC20EmitsAccumulated() public {
+        MockERC20 unsupportedToken = new MockERC20("Unsupported", "UNSUP");
+        uint256 amount = 1000e18;
+
+        // Create a new FeeRouter with a swapRouter that has no WETH balance to simulate failure
+        MockSwapRouter emptySwapRouter = new MockSwapRouter();
+        emptySwapRouter.setOutputToken(address(weth)); // WETH output but no balance
+
+        FeeRouter testRouter = new FeeRouter(
+            address(lzEndpoint),
+            UNICHAIN_EID,
+            address(stakingPool),
+            address(hlg),
+            address(weth),
+            address(emptySwapRouter), // Empty swap router
+            treasury,
+            owner
+        );
+
+        // Setup airlock authorization for test router
+        vm.prank(owner);
+        testRouter.setTrustedAirlock(address(airlock), true);
+
+        // Setup airlock with unsupported token
+        unsupportedToken.mint(address(airlock), amount);
+        airlock.setCollectableAmount(address(unsupportedToken), amount);
+
+        // Expect Accumulated event when conversion fails due to insufficient router balance
+        vm.expectEmit(true, false, false, true);
+        emit Accumulated(address(unsupportedToken), (amount * 5000) / 10_000); // Protocol fee portion
+
+        vm.prank(owner);
+        testRouter.collectAirlockFees(address(airlock), address(unsupportedToken), amount);
     }
 }

@@ -258,9 +258,7 @@ contract FullProtocolWorkflowTest is Test {
         feeRouter.setTrustedAirlock(address(airlock), true);
         console.log("[OK] Airlock authorized in HolographFactory");
 
-        // Grant keeper role to test contract for fee collection
-        bytes32 keeperRole = feeRouter.KEEPER_ROLE();
-        feeRouter.grantRole(keeperRole, address(this));
+        // Note: All functions are now owner-only, test runs as owner
     }
 
     /* -------------------------------------------------------------------------- */
