@@ -254,7 +254,7 @@ contract FullProtocolWorkflowTest is Test {
 
         // Authorize the Airlock in our factory
         factory.setAirlockAuthorization(address(airlock), true);
-        feeRouter.setTrustedFactory(address(factory), true);
+        // Note: trustedFactories functionality removed from FeeRouter
         feeRouter.setTrustedAirlock(address(airlock), true);
         console.log("[OK] Airlock authorized in HolographFactory");
 
@@ -493,8 +493,7 @@ contract FullProtocolWorkflowTest is Test {
     }
 
     function test_FeeRouter() public {
-        // Verify factory is trusted
-        assertTrue(feeRouter.trustedFactories(address(factory)));
+        // Note: trustedFactories mapping was removed from FeeRouter as part of cleanup
 
         // Test fee calculation and configuration
         uint256 feeAmount = 2 ether;

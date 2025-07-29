@@ -71,6 +71,8 @@ The system addresses several potential issues that could impact operations:
 
 **Bridge Security:** The LayerZero integration uses trusted remote addresses to ensure only authorized contracts can send messages between chains. The receive function is protected against reentrancy attacks to prevent malicious actors from draining funds during the bridging process.
 
+**LayerZero Fee Handling:** LayerZero V2 requires a small messaging fee (typically 0.001-0.1 ETH) for cross-chain communication. This fee is separate from the bridged assets and is calculated using the `quote()` function. The FeeRouter properly accounts for LayerZero fees by deducting them from the total balance before calculating bridged amounts, ensuring the correct asset amounts reach the destination chain.
+
 **Price Impact Protection:** When swapping ETH for HLG tokens, we pass a minimum output parameter to the Uniswap router. This prevents the transaction from completing if slippage is too high, protecting against sandwich attacks and sudden price movements. The swap path can be upgraded if needed to handle different market conditions.
 
 **Token Burning:** We follow the standard ERC-20 burn pattern by transferring tokens to the zero address. This permanently removes them from circulation and is recognized by most analytics tools and block explorers.

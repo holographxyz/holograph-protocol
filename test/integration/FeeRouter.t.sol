@@ -176,10 +176,12 @@ contract FeeRouterTest is Test {
 
         uint256 minGas = 200000;
 
-        // Calculate expected HLG from swapping the PROTOCOL FEE PORTION (50% of total)
-        // Only the protocol fee portion (50%) gets bridged and swapped
+        // Calculate expected HLG from swapping the PROTOCOL FEE PORTION (50% of total) after LayerZero fees
+        // Only the protocol fee portion (50%) gets bridged and swapped, minus LayerZero messaging fee
         uint256 protocolFeeAmount = (TEST_FEE_AMOUNT_ETH * 5000) / 10_000; // 50%
-        uint256 expectedHlgFromSwap = protocolFeeAmount * WETH_TO_HLG_RATE;
+        uint256 lzFee = 0.001 ether; // MockLZEndpoint fee
+        uint256 bridgedAmount = protocolFeeAmount - lzFee; // Amount after LZ fee deduction
+        uint256 expectedHlgFromSwap = bridgedAmount * WETH_TO_HLG_RATE;
 
         // Calculate minimum HLG for slippage protection (50% goes to stakers)
         uint256 minHlgForStakers = expectedHlgFromSwap / 2;
@@ -385,15 +387,17 @@ contract FeeRouterTest is Test {
         _simulateFeeCollection(TEST_FEE_AMOUNT_ETH);
 
         uint256 minGas = 200000;
-        // Calculate minimum HLG from protocol fee: 0.005 ETH * 7,194,245 HLG/ETH / 2 = ~17,986 HLG
+        // Calculate minimum HLG from protocol fee after LayerZero fee deduction
         uint256 protocolFeeAmount = (TEST_FEE_AMOUNT_ETH * 5000) / 10_000; // 50%
-        uint256 minHlgForStakers = (protocolFeeAmount * WETH_TO_HLG_RATE) / 2;
+        uint256 lzFee = 0.001 ether; // MockLZEndpoint fee
+        uint256 bridgedAmount = protocolFeeAmount - lzFee; // Amount after LZ fee
+        uint256 minHlgForStakers = (bridgedAmount * WETH_TO_HLG_RATE) / 2;
 
         // Capture the MessageSent event to verify LayerZero V2 options format
         vm.expectEmit(true, true, true, true);
         emit MockLZEndpoint.MessageSent(
             ETH_EID,
-            abi.encode(address(0), protocolFeeAmount, minHlgForStakers), // token, amount, minHlg
+            abi.encode(address(0), bridgedAmount, minHlgForStakers), // token, bridged amount, minHlg
             abi.encodePacked(uint16(1), minGas) // LayerZero V2 options with gas limit
         );
 
@@ -422,10 +426,12 @@ contract FeeRouterTest is Test {
         // Send ETH fees and bridge to Ethereum
         _simulateFeeCollection(TEST_FEE_AMOUNT_ETH);
 
-        // Calculate expected HLG amounts (only protocol fee portion gets swapped)
-        // Protocol fee: 0.005 ETH → ~35,971 HLG total → ~17,986 HLG to stakers
+        // Calculate expected HLG amounts (only protocol fee portion gets swapped, minus LayerZero fees)
+        // Protocol fee: 0.005 ETH - 0.001 ETH (LZ fee) = 0.004 ETH → ~28,777 HLG total → ~14,388 HLG to stakers
         uint256 protocolFeeAmount = (TEST_FEE_AMOUNT_ETH * 5000) / 10_000; // 50%
-        uint256 expectedHlgFromSwap = protocolFeeAmount * WETH_TO_HLG_RATE;
+        uint256 lzFee = 0.001 ether; // MockLZEndpoint fee
+        uint256 bridgedAmount = protocolFeeAmount - lzFee; // Amount after LZ fee deduction
+        uint256 expectedHlgFromSwap = bridgedAmount * WETH_TO_HLG_RATE;
         uint256 expectedRewardAmountHLG = expectedHlgFromSwap / 2;
 
         vm.prank(owner);

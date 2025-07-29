@@ -95,11 +95,7 @@ contract Configure is Script {
             console.log("[WARN] setAirlockAuthorization failed - perhaps already authorized");
         }
 
-        try router.setTrustedFactory(factoryAddr, true) {
-            console.log("Trusted HolographFactory in FeeRouter", factoryAddr);
-        } catch {
-            console.log("[WARN] setTrustedFactory failed - perhaps already trusted");
-        }
+        // Note: trustedFactories functionality removed as part of FeeRouter cleanup
 
         vm.stopBroadcast();
     }

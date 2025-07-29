@@ -208,10 +208,12 @@ ETHEREUM_RPC_URL=https://eth-mainnet.alchemyapi.io/v2/...
 
 ### Cross-Chain Operations
 
-- LayerZero V2 for cross-chain messaging
-- Trusted remote configuration
+- LayerZero V2 for cross-chain messaging (not direct asset bridging)
+- LayerZero fees calculated using `quote()` function and deducted from bridged amounts
+- Trusted remote configuration for security
 - Nonce management for message ordering
 - Gas estimation for cross-chain calls
+- ETH value passed via `msg.value` to destination chain for asset bridging
 
 ### Fee Management
 
