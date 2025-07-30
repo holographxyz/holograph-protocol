@@ -30,7 +30,7 @@ print-step    = @echo "$(YELLOW)$1$(NC)"
 # ---------------------------------------------------------------------------- #
 #                                   Targets                                   #
 # ---------------------------------------------------------------------------- #
-.PHONY: all help fmt build clean test deploy-base deploy-base-sepolia deploy-eth deploy-eth-sepolia deploy-unichain deploy-unichain-sepolia configure-base configure-eth configure-unichain keeper abi verify-addresses
+.PHONY: all help fmt build clean test deploy-base deploy-base-sepolia deploy-eth deploy-eth-sepolia deploy-unichain deploy-unichain-sepolia configure-base configure-eth configure-unichain configure-dvn-base configure-dvn-eth keeper abi verify-addresses
 
 ## all: Build and test (default target)
 all: build test
@@ -131,6 +131,30 @@ configure-unichain:
 	$(call print-step,Configuring Unichain Factory + Bridge…)
 	forge script script/Configure.s.sol --rpc-url $(UNICHAIN_RPC_URL) $(FORGE_FLAGS)
 	$(call print-success,Unichain config)
+
+## configure-dvn-base: Configure LayerZero V2 DVN security stack on Base.
+configure-dvn-base:
+	@if [ -z "$(BASE_RPC_URL)" ]; then echo "$(RED)BASE_RPC_URL not set$(NC)"; exit 1; fi
+	@if [ ! -f "deployments/base/FeeRouter.txt" ]; then echo "$(RED)Base FeeRouter not deployed (run deploy-base first)$(NC)"; exit 1; fi
+	$(call print-step,Configuring Base DVN security stack…)
+	@echo "$(YELLOW)Using FeeRouter: $$(cat deployments/base/FeeRouter.txt)$(NC)"
+	FEE_ROUTER=$$(cat deployments/base/FeeRouter.txt) \
+	LZ_ENDPOINT=$(BASE_LZ_ENDPOINT) \
+	REMOTE_EID=$(ETH_EID) \
+	forge script script/ConfigureDVN.s.sol --rpc-url $(BASE_RPC_URL) $(FORGE_FLAGS)
+	$(call print-success,Base DVN config)
+
+## configure-dvn-eth: Configure LayerZero V2 DVN security stack on Ethereum.
+configure-dvn-eth:
+	@if [ -z "$(ETHEREUM_RPC_URL)" ]; then echo "$(RED)ETHEREUM_RPC_URL not set$(NC)"; exit 1; fi
+	@if [ ! -f "deployments/ethereum/FeeRouter.txt" ]; then echo "$(RED)Ethereum FeeRouter not deployed (run deploy-eth first)$(NC)"; exit 1; fi
+	$(call print-step,Configuring Ethereum DVN security stack…)
+	@echo "$(YELLOW)Using FeeRouter: $$(cat deployments/ethereum/FeeRouter.txt)$(NC)"
+	FEE_ROUTER=$$(cat deployments/ethereum/FeeRouter.txt) \
+	LZ_ENDPOINT=$(ETH_LZ_ENDPOINT) \
+	REMOTE_EID=$(BASE_EID) \
+	forge script script/ConfigureDVN.s.sol --rpc-url $(ETHEREUM_RPC_URL) $(FORGE_FLAGS)
+	$(call print-success,Ethereum DVN config)
 
 ## keeper: Execute KeeperPullAndBridge on Base.
 keeper:

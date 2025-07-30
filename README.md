@@ -160,7 +160,14 @@ make deploy-unichain    # Deploy to Unichain mainnet
    make configure-unichain
    ```
 
-5. **Set up automation:**
+5. **Configure LayerZero V2 DVN security:**
+
+   ```bash
+   # Required for cross-chain fee bridging
+   make configure-dvn-base configure-dvn-eth
+   ```
+
+6. **Set up automation:**
    ```bash
    export KEEPER_PK=0x...
    make keeper  # Test keeper operations
@@ -569,6 +576,15 @@ cast send $FEE_ROUTER "grantRole(bytes32,address)" $(cast keccak "KEEPER_ROLE") 
 - **"AccessControl" Error**: Address missing KEEPER_ROLE or owner permissions
 - **Bridge Failures**: Check LayerZero trusted remotes configuration
 - **Low HLG Output**: Adjust slippage protection or check Uniswap liquidity
+
+## Documentation
+
+Additional technical documentation is available in the [`docs/`](docs/) directory:
+
+- **[Token Creation](docs/CREATE_TOKEN.md)** - TypeScript utility for creating tokens
+- **[DVN Configuration](docs/DVN_CONFIGURATION.md)** - LayerZero V2 security setup  
+- **[Operations Guide](docs/OPERATIONS.md)** - System monitoring and management
+- **[Upgrade Guide](docs/UPGRADE_GUIDE.md)** - Contract upgrade procedures
 
 ## License
 
