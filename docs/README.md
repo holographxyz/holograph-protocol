@@ -11,7 +11,6 @@ Technical documentation for the Holograph omnichain token protocol.
 | **[DVN_CONFIGURATION.md](DVN_CONFIGURATION.md)** | LayerZero V2 DVN setup | DevOps, deployers |
 | **[OPERATIONS.md](OPERATIONS.md)** | System monitoring and management | Operations teams |
 | **[UPGRADE_GUIDE.md](UPGRADE_GUIDE.md)** | Contract upgrade procedures | Protocol maintainers |
-| **[fee-collection-admin-guide.md](fee-collection-admin-guide.md)** | Doppler fee integration details | Treasury, operations |
 
 ## Quick Start
 

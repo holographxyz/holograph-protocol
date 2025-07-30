@@ -190,7 +190,7 @@ contract FullProtocolWorkflowTest is Test {
         address indexed owner,
         address creator
     );
-    event SlicePulled(address indexed airlock, address indexed token, uint256 holoAmt, uint256 treasuryAmt);
+    event FeesCollected(address indexed airlock, address indexed token, uint256 protocolAmount, uint256 treasuryAmount);
 
     function setUp() public {
         // Create fork of Base Sepolia for real Doppler integration testing

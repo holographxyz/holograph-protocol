@@ -171,7 +171,7 @@ contract FeeRouterTest is Test {
         // User pays protocol fee in ETH on Base network (using Airlock simulation)
         _simulateFeeCollection(TEST_FEE_AMOUNT_ETH);
 
-        // Verify ETH fee was sliced correctly (single-slice model)
+        // Verify ETH fee was distributed correctly
         // FeeRouter keeps 50% for protocol, 50% goes to treasury
         uint256 expectedProtocolFee = (TEST_FEE_AMOUNT_ETH * 5000) / 10_000; // 50%
 

@@ -15,7 +15,9 @@ import "./interfaces/IAirlock.sol";
 
 /**
  * @title FeeRouter
- * @notice Cross-chain fee router that accepts ETH or ERC-20, bridges via LayerZero V2, swaps WETH→HLG on a fixed 0.3% Uniswap V3 pool, then burns 50% and stakes 50%.
+ * @notice Collects trading fees from Doppler Airlock contracts, distributes between protocol and treasury,
+ *         bridges protocol portion cross-chain via LayerZero V2, and converts to HLG for burn/stake operations.
+ * @dev Handles both ETH and ERC20 tokens with configurable fee split (default 50% protocol, 50% treasury)
  * @author Holograph Protocol
  */
 contract FeeRouter is Ownable, ReentrancyGuard, ILayerZeroReceiver {
@@ -26,10 +28,12 @@ contract FeeRouter is Ownable, ReentrancyGuard, ILayerZeroReceiver {
     /*                                 Constants                                  */
     /* -------------------------------------------------------------------------- */
 
-    /// @notice Current protocol fee in basis points (50% = 5000 bps, settable by owner)
+    /// @notice Protocol's share of collected fees in basis points (50% = 5000 bps)
+    /// @dev Remainder goes to treasury. Owner can adjust between 0-10000 (0-100%)
     uint16 public holographFeeBps = 5000;
 
-    /// @notice Minimum value required to bridge (dust protection)
+    /// @notice Minimum amount required for bridging operations
+    /// @dev Prevents wasting gas on dust amounts that would be consumed by fees
     uint256 public constant MIN_BRIDGE_VALUE = 0.01 ether;
 
     /// @notice Swap deadline buffer (configurable by owner)
@@ -69,7 +73,8 @@ contract FeeRouter is Ownable, ReentrancyGuard, ILayerZeroReceiver {
     /// @notice Trusted remote addresses for LayerZero security
     mapping(uint32 => bytes32) public trustedRemotes;
 
-    /// @notice Treasury address receiving remainder of fees after protocol take
+    /// @notice Treasury address receiving non-protocol portion of fees
+    /// @dev Gets paid immediately when fees are collected (no bridging required)
     address public treasury;
 
     /// @notice Trusted Airlock addresses allowed to push ETH
@@ -92,15 +97,15 @@ contract FeeRouter is Ownable, ReentrancyGuard, ILayerZeroReceiver {
     error TreasuryTransferFailed();
     error TrustedRemoteNotSet();
     error UntrustedRemote();
-    error UntrustedSender();
+    error UnauthorizedAirlock();
     error ZeroAddress();
     error ZeroAmount();
 
     /* -------------------------------------------------------------------------- */
     /*                                  Events                                    */
     /* -------------------------------------------------------------------------- */
-    /// @notice Emitted when fees are processed through the slicing mechanism
-    event SlicePulled(address indexed airlock, address indexed token, uint256 holoAmt, uint256 treasuryAmt);
+    /// @notice Emitted when fees are collected from an Airlock and distributed
+    event FeesCollected(address indexed airlock, address indexed token, uint256 protocolAmount, uint256 treasuryAmount);
 
     /// @notice Emitted when tokens are bridged to remote chain
     event TokenBridged(address indexed token, uint256 amount, uint64 nonce);
@@ -180,20 +185,23 @@ contract FeeRouter is Ownable, ReentrancyGuard, ILayerZeroReceiver {
     }
 
     /* -------------------------------------------------------------------------- */
-    /*                           Integrator Pull (Owner)                         */
+    /*                           Fee Collection (Owner)                          */
     /* -------------------------------------------------------------------------- */
 
     /**
      * @notice Collect accumulated fees from a Doppler Airlock
-     * @dev Owner-only function that pulls integrator fees from completed auctions
-     * @param airlock Airlock contract address
-     * @param token Token contract address
-     * @param amt Amount to collect
+     * @dev Retrieves integrator fees from completed auctions and distributes them.
+     *      Measures balance change to handle both direct transfers and approval patterns.
+     * @param airlock Airlock contract holding the fees
+     * @param token Token to collect (address(0) for ETH)
+     * @param amt Amount to collect from the Airlock
      */
     function collectAirlockFees(address airlock, address token, uint256 amt) external onlyOwner nonReentrant {
         if (airlock == address(0)) revert ZeroAddress();
         if (amt == 0) revert ZeroAmount();
 
+        // Capture balance before collection to measure actual received amount
+        // Airlocks may send slightly different amounts than requested
         uint256 balanceBefore;
         if (token == address(0)) {
             balanceBefore = address(this).balance;
@@ -201,9 +209,10 @@ contract FeeRouter is Ownable, ReentrancyGuard, ILayerZeroReceiver {
             balanceBefore = IERC20(token).balanceOf(address(this));
         }
 
+        // Call Airlock to transfer fees to this contract
         IAirlock(airlock).collectIntegratorFees(address(this), token, amt);
 
-        // Process both ETH and ERC20 tokens through _splitFee
+        // Calculate actual amount received (handles fee-on-transfer tokens)
         uint256 balanceAfter;
         uint256 received;
 
@@ -215,80 +224,95 @@ contract FeeRouter is Ownable, ReentrancyGuard, ILayerZeroReceiver {
             received = balanceAfter - balanceBefore;
         }
 
+        // Only process if we actually received funds
         if (received > 0) {
-            _splitFee(airlock, token, received);
+            _distributeFees(airlock, token, received);
         }
     }
 
     /* -------------------------------------------------------------------------- */
-    /*                               Core Slicing                                 */
+    /*                           Fee Distribution                                 */
     /* -------------------------------------------------------------------------- */
 
     /**
-     * @notice Unified fee splitter (configurable protocol fee / remainder to treasury)
-     * @param airlock Airlock address for event emission
-     * @param token Token address (address(0) for ETH)
-     * @param amount Total amount to split
+     * @notice Distribute collected fees between protocol and treasury
+     * @dev Treasury gets paid immediately, protocol portion is accumulated for bridging.
+     *      Uses low-level call for ETH to support contract wallets with custom receive logic.
+     * @param airlock Source Airlock for event tracking
+     * @param token Token being distributed (address(0) for ETH)
+     * @param amount Total amount to distribute
      */
-    function _splitFee(address airlock, address token, uint256 amount) internal {
+    function _distributeFees(address airlock, address token, uint256 amount) internal {
         if (amount == 0) revert ZeroAmount();
 
+        // Calculate protocol's share based on configured basis points
         uint256 protocolFee = (amount * holographFeeBps) / 10_000;
         uint256 treasuryFee = amount - protocolFee;
 
-        // Forward treasury share immediately
+        // Treasury gets paid first to ensure operational funding
+        // Protocol fees are retained for cross-chain bridging and HLG operations
         if (treasuryFee > 0) {
             if (token == address(0)) {
-                // Use call pattern to avoid 2300 gas limit for contract treasuries
+                // Use low-level call for ETH to support smart contract treasuries
+                // that may have complex receive() logic exceeding 2300 gas stipend
                 (bool success,) = payable(treasury).call{value: treasuryFee}("");
                 if (!success) revert TreasuryTransferFailed();
             } else {
+                // SafeERC20 handles tokens that don't return bool on transfer
                 IERC20(token).safeTransfer(treasury, treasuryFee);
             }
         }
 
-        // Convert protocol share to HLG on Ethereum – accumulate on other chains
+        // On Ethereum: Convert protocol fees to HLG immediately
+        // On other chains: Accumulate for later bridging
         if (protocolFee > 0 && address(HLG) != address(0)) {
             _convertToHLG(token, protocolFee, 0);
         }
 
-        emit SlicePulled(airlock, token, protocolFee, treasuryFee);
+        emit FeesCollected(airlock, token, protocolFee, treasuryFee);
     }
 
     /**
-     * @notice Convert ETH or ERC-20 to HLG and distribute (50% burn, 50% stake)
-     * @param token Input token (address(0) for ETH, HLG for direct distribution, or any ERC-20)
-     * @param amount Amount of the input token
-     * @param minOut Minimum HLG expected from final swap
+     * @notice Convert collected fees to HLG and distribute (50% burn, 50% stake)
+     * @dev Handles three token types: ETH (wraps to WETH), WETH (direct swap), 
+     *      and other ERC20s (two-hop swap through WETH). Falls back gracefully
+     *      if no liquidity exists for exotic tokens.
+     * @param token Input token (address(0) for ETH, or ERC20 address)
+     * @param amount Amount to convert
+     * @param minOut Minimum HLG required (reverts if not met)
      */
     function _convertToHLG(address token, uint256 amount, uint256 minOut) internal {
+        // Skip conversion if already HLG
         if (token == address(HLG)) {
             _distribute(amount);
             return;
         }
 
-        // Handle three input modes: ETH, WETH, or arbitrary ERC-20
+        // Convert to WETH as intermediate step (all swaps go through WETH)
         if (token == address(0)) {
-            // ETH: wrap to WETH
+            // ETH path: Wrap directly to WETH
             WETH.deposit{value: amount}();
             token = address(WETH);
         } else if (token != address(WETH)) {
-            // Arbitrary ERC-20: swap to WETH first
+            // ERC20 path: Attempt swap to WETH via 0.3% pool
+            // Calculate slippage protection (default 3%)
             try this._internalSwapTokenToWeth(token, amount, (amount * (10_000 - DEFAULT_SLIPPAGE_BPS)) / 10_000)
             returns (uint256 wethAmount) {
                 amount = wethAmount;
             } catch {
-                // If swap fails (no pool), accumulate as dust
+                // No liquidity pool exists - accumulate for manual handling
                 emit Accumulated(token, amount);
                 return;
             }
         }
-        // If token is already WETH, no conversion needed
+        // WETH path: Already in correct format, proceed to HLG swap
 
-        // Swap WETH to HLG using fixed 0.3% pool
+        // Final swap: WETH → HLG via established 0.3% Uniswap V3 pool
+        // Apply slippage protection to prevent sandwich attacks
         uint256 finalMinOut = minOut > 0 ? minOut : (amount * (10_000 - DEFAULT_SLIPPAGE_BPS)) / 10_000;
         amount = _swapWethToHlg(amount, finalMinOut);
 
+        // Execute tokenomics: 50% burn (deflationary), 50% stake (rewards)
         _distribute(amount);
     }
 
@@ -298,8 +322,9 @@ contract FeeRouter is Ownable, ReentrancyGuard, ILayerZeroReceiver {
 
     /**
      * @notice Bridge accumulated ETH to remote chain for HLG conversion
-     * @param minGas Minimum gas units for lzReceive execution
-     * @param minHlg Minimum HLG tokens expected from swap
+     * @dev Validates gas limit to prevent griefing with excessive gas consumption
+     * @param minGas Gas units for destination chain execution (max 2M)
+     * @param minHlg Minimum HLG output after swaps (slippage protection)
      */
     function bridge(uint256 minGas, uint256 minHlg) external onlyOwner nonReentrant {
         if (minGas > MAX_BRIDGE_GAS_LIMIT) revert GasLimitExceeded(MAX_BRIDGE_GAS_LIMIT, minGas);
@@ -307,10 +332,11 @@ contract FeeRouter is Ownable, ReentrancyGuard, ILayerZeroReceiver {
     }
 
     /**
-     * @notice Bridge specific ERC-20 token to remote chain for HLG conversion
-     * @param token ERC-20 token address to bridge
-     * @param minGas Minimum gas units for lzReceive execution
-     * @param minHlg Minimum HLG tokens expected from swap
+     * @notice Bridge specific ERC20 token to remote chain for HLG conversion
+     * @dev ETH for LayerZero fees must be available in contract balance
+     * @param token ERC20 token to bridge (use bridge() for ETH)
+     * @param minGas Gas units for destination chain execution (max 2M)
+     * @param minHlg Minimum HLG output after swaps (slippage protection)
      */
     function bridgeToken(address token, uint256 minGas, uint256 minHlg) external onlyOwner nonReentrant {
         if (minGas > MAX_BRIDGE_GAS_LIMIT) revert GasLimitExceeded(MAX_BRIDGE_GAS_LIMIT, minGas);
@@ -328,28 +354,68 @@ contract FeeRouter is Ownable, ReentrancyGuard, ILayerZeroReceiver {
     }
 
     /**
-     * @notice Bridge specific token to remote chain for HLG conversion
+     * @notice Internal logic for bridging tokens cross-chain
+     * @dev Handles fee calculations differently for ETH vs ERC20:
+     *      - ETH: LayerZero fee deducted from bridged amount
+     *      - ERC20: Full amount bridged, LZ fee paid from contract's ETH balance
      * @param token Token to bridge (address(0) for ETH)
-     * @param minGas Minimum gas units for lzReceive execution
-     * @param minHlg Minimum HLG tokens expected from swap
+     * @param minGas Gas for destination execution
+     * @param minHlg Minimum HLG output requirement
      */
     function _bridgeToken(address token, uint256 minGas, uint256 minHlg) internal {
-        // Validate inputs before any processing (fail-fast)
+        // Validate cross-chain configuration
+        _validateBridgeConfig();
+
+        // Get available balance for bridging
+        uint256 amount = _getBridgeableBalance(token);
+
+        // Prepare and send cross-chain message
+        (uint256 bridgedAmount, uint64 nonce) = _executeBridge(token, amount, minGas, minHlg);
+        
+        emit TokenBridged(token, bridgedAmount, nonce);
+    }
+
+    /**
+     * @notice Validate cross-chain bridge configuration
+     * @dev Ensures remote endpoint and trusted remote are properly configured
+     */
+    function _validateBridgeConfig() internal view {
         if (remoteEid == 0) revert InvalidRemoteEid();
         if (trustedRemotes[remoteEid] == bytes32(0)) revert TrustedRemoteNotSet();
+    }
 
-        uint256 amount;
+    /**
+     * @notice Get the available balance for bridging
+     * @dev Applies minimum threshold for ETH, any non-zero amount for tokens
+     * @param token Token to check (address(0) for ETH)
+     * @return Available balance for bridging
+     */
+    function _getBridgeableBalance(address token) internal view returns (uint256) {
         if (token == address(0)) {
-            // ETH bridging
-            amount = address(this).balance;
-            if (amount < MIN_BRIDGE_VALUE) revert InsufficientBalance();
+            // ETH: Check contract balance meets minimum threshold
+            uint256 balance = address(this).balance;
+            if (balance < MIN_BRIDGE_VALUE) revert InsufficientBalance();
+            return balance;
         } else {
-            // ERC-20 bridging
-            amount = IERC20(token).balanceOf(address(this));
-            if (amount == 0) revert InsufficientBalance();
+            // ERC20: Any non-zero amount is valid (no minimum for tokens)
+            uint256 balance = IERC20(token).balanceOf(address(this));
+            if (balance == 0) revert InsufficientBalance();
+            return balance;
         }
+    }
 
-        // Prepare message payload
+    /**
+     * @notice Execute the bridge operation with LayerZero
+     * @dev Handles ETH vs ERC20 fee payment differently
+     * @param token Token to bridge
+     * @param amount Amount available for bridging
+     * @param minGas Gas for destination execution
+     * @param minHlg Minimum HLG output requirement
+     * @return bridgedAmount The actual amount bridged after fees
+     * @return nonce The LayerZero message nonce
+     */
+    function _executeBridge(address token, uint256 amount, uint256 minGas, uint256 minHlg) internal returns (uint256 bridgedAmount, uint64 nonce) {
+        // Prepare initial message payload
         bytes memory payload = abi.encode(token, amount, minHlg);
         bytes memory options = _buildLzReceiveOption(minGas);
 
@@ -362,28 +428,29 @@ contract FeeRouter is Ownable, ReentrancyGuard, ILayerZeroReceiver {
             payInLzToken: false
         });
 
-        // Calculate LayerZero messaging fee (paid in ETH)
+        // Get LayerZero fee quote (always paid in ETH)
         MessagingFee memory fee = lzEndpoint.quote(msgParams, payable(msg.sender));
         uint256 lzFee = fee.nativeFee;
 
-        uint256 bridgedAmount;
         if (token == address(0)) {
-            // For ETH, deduct LZ fee from bridged amount
+            // ETH bridging: LZ fee comes out of the bridged amount
+            // User receives: (total ETH - LZ fee) on destination
             if (amount <= lzFee) revert InsufficientForBridging();
             bridgedAmount = amount - lzFee;
 
-            // Update payload with actual bridged amount
+            // Update message with reduced amount
             payload = abi.encode(token, bridgedAmount, minHlg);
             msgParams.message = payload;
         } else {
-            // For ERC-20, bridge full amount (LZ fee paid separately in ETH)
+            // ERC20 bridging: Full token amount bridges, LZ fee paid separately
+            // Requires contract to have ETH balance for fees
             if (address(this).balance < lzFee) revert InsufficientForBridging();
             bridgedAmount = amount;
         }
 
         // Send LayerZero message (LZ fee always paid in ETH)
         MessagingReceipt memory receipt = lzEndpoint.send{value: lzFee}(msgParams, payable(msg.sender));
-        emit TokenBridged(token, bridgedAmount, receipt.nonce);
+        nonce = receipt.nonce;
     }
 
     /**
@@ -405,8 +472,10 @@ contract FeeRouter is Ownable, ReentrancyGuard, ILayerZeroReceiver {
 
     /**
      * @notice Handle incoming protocol fees from remote chain
-     * @param _origin Message origin information
-     * @param _message Encoded token, amount, and slippage protection data
+     * @dev Called by LayerZero endpoint when receiving bridged funds.
+     *      Processes available balance even if less than expected (partial fills).
+     * @param _origin Contains source chain ID and sender address
+     * @param _message Encoded (token, amount, minHlg) tuple
      */
     function lzReceive(
         Origin calldata _origin,
@@ -420,24 +489,25 @@ contract FeeRouter is Ownable, ReentrancyGuard, ILayerZeroReceiver {
         // Decode the message payload (3-field format only)
         (address token, uint256 amount, uint256 minHlg) = abi.decode(_message, (address, uint256, uint256));
 
-        // Process both ETH and ERC-20 tokens
+        // Check actual balance on this chain (may differ from bridged amount)
         uint256 localBalance;
         if (token == address(0)) {
-            // ETH case - use contract's ETH balance
             localBalance = address(this).balance;
         } else {
-            // ERC-20 case - check token balance
             localBalance = IERC20(token).balanceOf(address(this));
         }
 
         if (localBalance >= amount) {
+            // Full amount available - process normally
             _convertToHLG(token, amount, minHlg);
         } else {
-            // Insufficient balance - emit events and process available amount
+            // Partial amount available - process what we have
+            // This handles race conditions where balance was used elsewhere
             emit LowReserves(localBalance, amount);
             emit Accumulated(token, amount - localBalance);
 
             if (localBalance > 0) {
+                // Process available balance with same slippage protection
                 _convertToHLG(token, localBalance, minHlg);
             }
         }
@@ -539,30 +609,35 @@ contract FeeRouter is Ownable, ReentrancyGuard, ILayerZeroReceiver {
     /* -------------------------------------------------------------------------- */
 
     /**
-     * @notice Distribute HLG tokens: 50% burn, 50% stake
-     * @dev Implements tokenomics by burning half and staking half for rewards
-     * @param hlgAmt Total HLG amount to distribute
+     * @notice Execute HLG tokenomics: 50% burn (deflationary), 50% stake (rewards)
+     * @dev Uses unchecked math for gas efficiency (no overflow risk with division).
+     *      Burn happens first to ensure deflationary pressure even if staking fails.
+     * @param hlgAmt Total HLG to distribute
      */
     function _distribute(uint256 hlgAmt) internal {
         if (hlgAmt == 0) return;
 
-        // Cache HLG and staking pool to reduce SLOADs
+        // Cache storage reads to save gas
         IERC20 hlg = HLG;
         IStakingRewards stakingPoolAddr = stakingPool;
 
         uint256 stakeAmt;
         uint256 burnAmt;
         unchecked {
+            // Integer division ensures stakeAmt <= hlgAmt/2
             stakeAmt = hlgAmt / 2;
-            burnAmt = hlgAmt - stakeAmt;
+            burnAmt = hlgAmt - stakeAmt; // Handles odd amounts
         }
 
         if (burnAmt > 0) {
+            // Burn by sending to zero address (permanent removal from circulation)
             hlg.safeTransfer(address(0), burnAmt);
             emit Burned(burnAmt);
         }
 
         if (stakeAmt > 0) {
+            // Add to staking rewards pool for distribution to stakers
+            // forceApprove handles tokens that don't follow approval spec
             hlg.forceApprove(address(stakingPoolAddr), stakeAmt);
             stakingPoolAddr.addRewards(stakeAmt);
             emit RewardsSent(stakeAmt);
@@ -726,8 +801,9 @@ contract FeeRouter is Ownable, ReentrancyGuard, ILayerZeroReceiver {
 
     /// @notice Accept ETH only from trusted Airlock contracts
     receive() external payable {
-        // Only trusted Airlocks can send ETH (msg.data is always empty for receive())
-        if (!trustedAirlocks[msg.sender]) revert UntrustedSender();
+        // Restrict ETH deposits to whitelisted Airlocks only
+        // Prevents accidental ETH loss and unauthorized fee injection
+        if (!trustedAirlocks[msg.sender]) revert UnauthorizedAirlock();
     }
 
     /// @notice Reject all function calls with data (security measure)

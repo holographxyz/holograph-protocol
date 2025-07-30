@@ -19,7 +19,7 @@ import {Origin} from
  * @title FeeRouterTest
  * @notice Comprehensive test suite for FeeRouter contract
  * @dev Tests fee collection, splitting, bridging, HLG distribution, and new architecture integration
- * @dev Consolidates tests from FeeRouterSlice.t.sol with new architecture features
+ * @dev Consolidates tests from previous architecture with new features
  */
 contract FeeRouterTest is Test {
     // Core contracts
@@ -50,7 +50,7 @@ contract FeeRouterTest is Test {
     uint64 constant MIN_BRIDGE_VALUE = 0.01 ether;
 
     // Events
-    event SlicePulled(address indexed airlock, address indexed token, uint256 holoAmt, uint256 treasuryAmt);
+    event FeesCollected(address indexed airlock, address indexed token, uint256 protocolAmount, uint256 treasuryAmount);
     event TokenBridged(address indexed token, uint256 amount, uint64 nonce);
     event TrustedRemoteSet(uint32 indexed eid, bytes32 remote);
     event TreasuryUpdated(address indexed newTreasury);
@@ -150,7 +150,7 @@ contract FeeRouterTest is Test {
         uint256 treasuryAmt = amount - holoAmt; // 50%
 
         vm.expectEmit(true, true, false, true);
-        emit SlicePulled(address(airlock), address(0), holoAmt, treasuryAmt);
+        emit FeesCollected(address(airlock), address(0), holoAmt, treasuryAmt);
 
         vm.prank(owner);
         feeRouter.collectAirlockFees(address(airlock), address(0), amount);
@@ -373,7 +373,7 @@ contract FeeRouterTest is Test {
     }
 
     function test_RevertReceiveETHFromUntrusted() public {
-        vm.expectRevert(FeeRouter.UntrustedSender.selector);
+        vm.expectRevert(FeeRouter.UnauthorizedAirlock.selector);
         vm.prank(alice);
         payable(address(feeRouter)).transfer(0.1 ether);
     }

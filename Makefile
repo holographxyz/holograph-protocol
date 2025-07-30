@@ -30,7 +30,7 @@ print-step    = @echo "$(YELLOW)$1$(NC)"
 # ---------------------------------------------------------------------------- #
 #                                   Targets                                   #
 # ---------------------------------------------------------------------------- #
-.PHONY: all help fmt build clean test deploy-base deploy-base-sepolia deploy-eth deploy-eth-sepolia deploy-unichain deploy-unichain-sepolia configure-base configure-eth configure-unichain configure-dvn-base configure-dvn-eth keeper abi verify-addresses
+.PHONY: all help fmt build clean test deploy-base deploy-base-sepolia deploy-eth deploy-eth-sepolia deploy-unichain deploy-unichain-sepolia configure-base configure-eth configure-unichain configure-dvn-base configure-dvn-eth fee-ops abi verify-addresses
 
 ## all: Build and test (default target)
 all: build test
@@ -156,12 +156,39 @@ configure-dvn-eth:
 	forge script script/ConfigureDVN.s.sol --rpc-url $(ETHEREUM_RPC_URL) $(FORGE_FLAGS)
 	$(call print-success,Ethereum DVN config)
 
-## keeper: Execute KeeperPullAndBridge on Base.
-keeper:
+## fee-ops: Execute fee collection and bridging operations on Base.
+fee-ops:
 	@if [ -z "$(BASE_RPC_URL)" ]; then echo "$(RED)BASE_RPC_URL not set$(NC)"; exit 1; fi
-	$(call print-step,Running keeper…)
-	forge script script/KeeperPullAndBridge.s.sol --rpc-url $(BASE_RPC_URL) $(FORGE_FLAGS)
-	$(call print-success,Keeper run)
+	$(call print-step,Running fee operations…)
+	forge script script/FeeOperations.s.sol --sig "fullFeeProcessing()" --rpc-url $(BASE_RPC_URL) $(FORGE_FLAGS)
+	$(call print-success,Fee operations completed)
+
+## fee-collect: Collect fees from Doppler Airlocks.
+fee-collect:
+	@if [ -z "$(BASE_RPC_URL)" ]; then echo "$(RED)BASE_RPC_URL not set$(NC)"; exit 1; fi
+	$(call print-step,Collecting fees from Airlocks…)
+	forge script script/FeeOperations.s.sol --sig "collectFees()" --rpc-url $(BASE_RPC_URL) $(FORGE_FLAGS)
+	$(call print-success,Fee collection completed)
+
+## fee-bridge: Bridge accumulated fees to Ethereum.
+fee-bridge:
+	@if [ -z "$(BASE_RPC_URL)" ]; then echo "$(RED)BASE_RPC_URL not set$(NC)"; exit 1; fi
+	$(call print-step,Bridging fees to Ethereum…)
+	forge script script/FeeOperations.s.sol --sig "bridgeToEthereum()" --rpc-url $(BASE_RPC_URL) $(FORGE_FLAGS)
+	$(call print-success,Fee bridging completed)
+
+## fee-status: Check FeeRouter system status and balances.
+fee-status:
+	@if [ -z "$(BASE_RPC_URL)" ]; then echo "$(RED)BASE_RPC_URL not set$(NC)"; exit 1; fi
+	$(call print-step,Checking FeeRouter status…)
+	forge script script/FeeOperations.s.sol --sig "checkSystemStatus()" --rpc-url $(BASE_RPC_URL)
+
+## fee-setup: Setup trusted Airlocks (run once after deployment).
+fee-setup:
+	@if [ -z "$(BASE_RPC_URL)" ]; then echo "$(RED)BASE_RPC_URL not set$(NC)"; exit 1; fi
+	$(call print-step,Setting up trusted Airlocks…)
+	forge script script/FeeOperations.s.sol --sig "setupTrustedAirlocks()" --rpc-url $(BASE_RPC_URL) $(FORGE_FLAGS)
+	$(call print-success,Airlock setup completed)
 
 ## verify-addresses: Verify deployed contract addresses are consistent across chains.
 verify-addresses:
@@ -172,5 +199,5 @@ verify-addresses:
 ## abi: Generate ABI JSON files from build artifacts.
 abi: build
 	$(call print-step,Generating ABIs…)
-	bash script/generate_abis.sh
+	bash script/_generate_abis.sh
 	$(call print-success,ABI generation) 

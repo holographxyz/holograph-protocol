@@ -71,7 +71,7 @@ make configure-eth      # Simulate Ethereum configuration
 make configure-unichain # Simulate Unichain configuration
 
 # Operations
-make keeper             # Simulate keeper operations
+make fee-ops            # Simulate fee operations
 ```
 
 **Live deployment mode:**
@@ -81,7 +81,7 @@ make keeper             # Simulate keeper operations
 export BROADCAST=true
 export DEPLOYER_PK=0x...  # For deploy-* commands
 export OWNER_PK=0x...     # For configure-* commands
-export KEEPER_PK=0x...    # For keeper operations
+export OWNER_PK=0x...      # For fee operations (owner-only)
 
 # Required RPC URLs
 export BASE_RPC_URL=https://mainnet.base.org
@@ -108,7 +108,7 @@ make deploy-unichain    # Deploy to Unichain mainnet
 | `BROADCAST`         | Live deployments       | Set to `true` to send real transactions     |
 | `DEPLOYER_PK`       | `deploy-*` commands    | Private key for contract deployment         |
 | `OWNER_PK`          | `configure-*` commands | Private key for contract administration     |
-| `KEEPER_PK`         | `keeper` command       | Private key for automated operations        |
+| `OWNER_PK`          | `fee-*` commands       | Private key for fee operations (owner-only) |
 | `BASE_RPC_URL`      | Base operations        | RPC endpoint for Base network               |
 | `ETHEREUM_RPC_URL`  | Ethereum operations    | RPC endpoint for Ethereum network           |
 | `UNICHAIN_RPC_URL`  | Unichain operations    | RPC endpoint for Unichain network           |
@@ -169,8 +169,8 @@ make deploy-unichain    # Deploy to Unichain mainnet
 
 6. **Set up automation:**
    ```bash
-   export KEEPER_PK=0x...
-   make keeper  # Test keeper operations
+   export OWNER_PK=0x...
+   make fee-ops  # Test fee operations
    ```
 
 #### Contract Verification
@@ -476,19 +476,14 @@ forge script script/DeployUnichain.s.sol \
 
 ### Initial Setup
 
-After deployment, configure the system using the keeper script:
+After deployment, configure the system using the fee operations script:
 
 ```bash
-# 1. Update script/KeeperPullAndBridge.s.sol with actual addresses
+# 1. Update script/FeeOperations.s.sol with actual Airlock addresses
 # 2. Whitelist Airlock contracts (Owner only)
-forge script script/KeeperPullAndBridge.s.sol \
-  --sig "setupTrustedAirlocks()" \
-  --rpc-url $BASE_RPC --broadcast --private-key $OWNER_PK
+make fee-setup BROADCAST=true
 
-# 3. Grant keeper role to automation address
-cast send $FEE_ROUTER "grantRole(bytes32,address)" \
-  $(cast keccak "KEEPER_ROLE") $KEEPER_ADDRESS \
-  --rpc-url $BASE_RPC --private-key $OWNER_PK
+# Note: All operations are owner-only (no keeper role needed)
 
 # 4. Configure LayerZero trusted remotes
 cast send $FEE_ROUTER "setTrustedRemote(uint32,bytes32)" \
@@ -504,23 +499,21 @@ cast send $FEE_ROUTER "setTrustedRemote(uint32,bytes32)" \
 
 ```bash
 # Monitor system status
-forge script script/KeeperPullAndBridge.s.sol \
-  --sig "checkBalances()" --rpc-url $BASE_RPC
+make fee-status
 
 # Run fee collection and bridging (automated/cron)
-forge script script/KeeperPullAndBridge.s.sol \
-  --rpc-url $BASE_RPC --broadcast --private-key $KEEPER_PK
+make fee-ops BROADCAST=true
 
 # Set up automated execution (example cron)
-echo "*/10 * * * * cd /path/to/holograph && forge script script/KeeperPullAndBridge.s.sol --rpc-url \$BASE_RPC --broadcast --private-key \$KEEPER_PK" | crontab -
+echo "*/10 * * * * cd /path/to/holograph && make fee-ops BROADCAST=true" | crontab -
 ```
 
 ### Emergency Controls
 
 ```bash
-# Pause operations (Owner only)
-forge script script/KeeperPullAndBridge.s.sol \
-  --sig "emergencyPause()" \
+# Emergency treasury redirection (Owner only)
+forge script script/FeeOperations.s.sol \
+  --sig "emergencyRedirect(address)" $EMERGENCY_TREASURY \
   --rpc-url $BASE_RPC --broadcast --private-key $OWNER_PK
 
 # Unpause operations (Owner only)
@@ -545,13 +538,13 @@ cast send $FEE_ROUTER "setTreasury(address)" $NEW_TREASURY \
 
 ```bash
 # Check system status
-forge script script/KeeperPullAndBridge.s.sol --sig "checkBalances()" --rpc-url $BASE_RPC
+make fee-status
 
 # Manual fee collection
-forge script script/KeeperPullAndBridge.s.sol --rpc-url $BASE_RPC --broadcast --private-key $KEEPER_PK
+make fee-collect BROADCAST=true
 
-# Emergency pause
-forge script script/KeeperPullAndBridge.s.sol --sig "emergencyPause()" --rpc-url $BASE_RPC --broadcast --private-key $OWNER_PK
+# Emergency treasury redirect
+forge script script/FeeOperations.s.sol --sig "emergencyRedirect(address)" $EMERGENCY_TREASURY --rpc-url $BASE_RPC --broadcast --private-key $OWNER_PK
 
 # Check FeeRouter ETH balance
 cast balance $FEE_ROUTER --rpc-url $BASE_RPC
@@ -559,13 +552,13 @@ cast balance $FEE_ROUTER --rpc-url $BASE_RPC
 # Check if Airlock is whitelisted
 cast call $FEE_ROUTER "trustedAirlocks(address)" $AIRLOCK_ADDRESS --rpc-url $BASE_RPC
 
-# Grant keeper role
-cast send $FEE_ROUTER "grantRole(bytes32,address)" $(cast keccak "KEEPER_ROLE") $KEEPER_ADDRESS --rpc-url $BASE_RPC --private-key $OWNER_PK
+# Setup trusted Airlocks
+make fee-setup BROADCAST=true
 ```
 
 ### Monitoring
 
-- **FeeRouter Balance**: Should accumulate fees between keeper runs
+- **FeeRouter Balance**: Should accumulate fees between fee operations
 - **Trusted Airlocks**: Must be whitelisted before fee collection
 - **LayerZero Messages**: Monitor cross-chain message delivery
 - **HLG Distribution**: Verify burn/stake operations on Ethereum

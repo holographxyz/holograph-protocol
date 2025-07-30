@@ -27,7 +27,7 @@ holograph-2.0/
 ├── script/                  # Deployment & automation scripts
 │   ├── DeployBase.s.sol    # Base chain deployment
 │   ├── DeployEthereum.s.sol # Ethereum deployment
-│   └── KeeperPullAndBridge.s.sol # Keeper automation
+│   └── FeeOperations.s.sol      # Owner fee operations
 ├── lib/                     # Git submodules
 │   ├── forge-std/          # Foundry standard library
 │   ├── openzeppelin-contracts/

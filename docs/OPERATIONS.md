@@ -17,8 +17,20 @@ Base Chain                  LayerZero V2               Ethereum Chain
 
 **Fee Flow**: Doppler → Airlock → FeeRouter (50% protocol, 50% treasury) → LayerZero → Ethereum → WETH/HLG swap → 50% burn, 50% stake
 
-## Fee Collection (Automated)
+## Fee Collection (Owner Operations)
 
+### Automated Operations (Recommended)
+```bash
+# Complete fee processing workflow (collect + bridge)
+make fee-ops BROADCAST=true
+
+# Individual operations
+make fee-collect BROADCAST=true    # Collect from all Airlocks
+make fee-bridge BROADCAST=true     # Bridge to Ethereum
+make fee-status                    # Check system status
+```
+
+### Manual Operations
 ```bash
 # Monitor airlock balances
 cast call $AIRLOCK "getIntegratorFees(address,address)" $FEE_ROUTER $TOKEN
@@ -27,7 +39,7 @@ cast call $AIRLOCK "getIntegratorFees(address,address)" $FEE_ROUTER $TOKEN
 cast send $FEE_ROUTER "collectAirlockFees(address,address,uint256)" \
   $AIRLOCK $TOKEN $AMOUNT --private-key $OWNER_PK
 
-# Bridge to Ethereum (owner-only)
+# Bridge to Ethereum (owner-only) 
 cast send $FEE_ROUTER "bridge(uint256,uint256)" 200000 0 \
   --private-key $OWNER_PK --rpc-url $BASE_RPC
 ```
