@@ -27,7 +27,7 @@ holograph-2.0/
 ├── script/                  # Deployment & automation scripts
 │   ├── DeployBase.s.sol    # Base chain deployment
 │   ├── DeployEthereum.s.sol # Ethereum deployment
-│   └── KeeperPullAndBridge.s.sol # Keeper automation
+│   └── FeeOperations.s.sol      # Owner fee operations
 ├── lib/                     # Git submodules
 │   ├── forge-std/          # Foundry standard library
 │   ├── openzeppelin-contracts/
@@ -208,15 +208,17 @@ ETHEREUM_RPC_URL=https://eth-mainnet.alchemyapi.io/v2/...
 
 ### Cross-Chain Operations
 
-- LayerZero V2 for cross-chain messaging
-- Trusted remote configuration
+- LayerZero V2 for cross-chain messaging (not direct asset bridging)
+- LayerZero fees calculated using `quote()` function and deducted from bridged amounts
+- Trusted remote configuration for security
 - Nonce management for message ordering
 - Gas estimation for cross-chain calls
+- ETH value passed via `msg.value` to destination chain for asset bridging
 
 ### Fee Management
 
-- 1.5% protocol fee (HOLO_FEE_BPS = 150)
-- 98.5% treasury allocation
+- 50% protocol fee (HOLO_FEE_BPS = 5000)
+- 50% treasury allocation
 - Automated fee collection via keepers
 - Cross-chain fee bridging and distribution
 

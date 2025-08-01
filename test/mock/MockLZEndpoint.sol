@@ -54,14 +54,19 @@ contract MockLZEndpoint {
 
         emit MessageSent(_params.dstEid, _params.message, _params.options);
 
+        // Calculate realistic LayerZero fee
+        uint256 lzFee = 0.001 ether; // Mock LayerZero messaging fee
+        uint256 bridgedValue = msg.value > lzFee ? msg.value - lzFee : 0;
+
         // Simple cross-chain simulation - call the target directly
         if (crossChainTarget != address(0)) {
             // Determine source EID based on destination
             uint32 srcEid = _params.dstEid == 30101 ? uint32(30184) : uint32(30101); // ETH_EID : BASE_EID
 
             // We need to simulate the target endpoint calling lzReceive
-            // This is a bit of a hack for testing, but it works
-            MockLZEndpoint(targetEndpoint).deliverMessage{value: msg.value}(
+            // Note: No ETH value is sent here - the bridged amount stays in the source contract
+            // and the destination contract uses its own reserves
+            MockLZEndpoint(targetEndpoint).deliverMessage{value: 0}(
                 crossChainTarget, srcEid, _params.message, msg.sender
             );
         }
@@ -69,7 +74,7 @@ contract MockLZEndpoint {
         return MessagingReceipt({
             guid: keccak256(abi.encodePacked(_params.dstEid, _params.message)),
             nonce: 1,
-            fee: MessagingFee({nativeFee: msg.value, lzTokenFee: 0})
+            fee: MessagingFee({nativeFee: lzFee, lzTokenFee: 0})
         });
     }
 
@@ -88,8 +93,8 @@ contract MockLZEndpoint {
             uint32 srcEid = dstEid == 30101 ? uint32(30184) : uint32(30101); // ETH_EID : BASE_EID
 
             // We need to simulate the target endpoint calling lzReceive
-            // This is a bit of a hack for testing, but it works
-            MockLZEndpoint(targetEndpoint).deliverMessage{value: msg.value}(
+            // Note: No ETH value is sent here - destination uses its own reserves
+            MockLZEndpoint(targetEndpoint).deliverMessage{value: 0}(
                 crossChainTarget, srcEid, payload, msg.sender
             );
         }

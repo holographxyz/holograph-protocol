@@ -87,8 +87,24 @@ contract MockSwapRouter is ISwapRouter {
  * @notice Mock Uniswap V3 Factory for testing
  */
 contract MockFactory is IUniswapV3Factory {
-    function getPool(address tokenA, address tokenB, uint24 fee) external pure override returns (address pool) {
-        // Return a non-zero address to indicate pool exists for any pair
-        return address(0x1234567890123456789012345678901234567890);
+    MockPool private immutable mockPool;
+    
+    constructor() {
+        mockPool = new MockPool();
+    }
+    
+    function getPool(address tokenA, address tokenB, uint24 fee) external view override returns (address pool) {
+        // Return the mock pool address to indicate pool exists for any pair
+        return address(mockPool);
+    }
+}
+
+/**
+ * @title MockPool
+ * @notice Mock Uniswap V3 Pool for testing
+ */
+contract MockPool {
+    function liquidity() external pure returns (uint128) {
+        return 1000000; // Return sufficient liquidity for testing
     }
 }

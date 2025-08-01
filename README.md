@@ -17,7 +17,7 @@ Holograph Protocol enables the creation of ERC-20 tokens with deterministic addr
 ### Architecture
 
 ```
-Base/Unichain                LayerZero V2              Ethereum Chain
+Base Chain                   LayerZero V2              Ethereum Chain
 ┌─────────────────┐         ┌─────────────┐          ┌─────────────────┐
 │ Doppler Airlock │────────▶│             │          │                 │
 │       ↓         │         │   Message   │          │                 │
@@ -28,6 +28,9 @@ Base/Unichain                LayerZero V2              Ethereum Chain
 │ HolographERC20  │         │             │          │ StakingRewards  │
 └─────────────────┘         └─────────────┘          └─────────────────┘
 ```
+
+**Primary Chains**: Base (token creation) and Ethereum (fee processing/staking)  
+**Additional Support**: Unichain deployment available for expanded reach
 
 **Note**: Cross-chain token bridging is temporarily deferred. Currently, only fee bridging is supported through LayerZero V2.
 
@@ -55,13 +58,20 @@ make help
 **Dry-run mode (default - safe for testing):**
 
 ```bash
+# Primary chains
 make deploy-base        # Simulate Base deployment
 make deploy-eth         # Simulate Ethereum deployment
+
+# Additional chains
 make deploy-unichain    # Simulate Unichain deployment
+
+# Configuration
 make configure-base     # Simulate Base configuration
 make configure-eth      # Simulate Ethereum configuration
 make configure-unichain # Simulate Unichain configuration
-make keeper             # Simulate keeper operations
+
+# Operations
+make fee-ops            # Simulate fee operations
 ```
 
 **Live deployment mode:**
@@ -71,7 +81,7 @@ make keeper             # Simulate keeper operations
 export BROADCAST=true
 export DEPLOYER_PK=0x...  # For deploy-* commands
 export OWNER_PK=0x...     # For configure-* commands
-export KEEPER_PK=0x...    # For keeper operations
+export OWNER_PK=0x...      # For fee operations (owner-only)
 
 # Required RPC URLs
 export BASE_RPC_URL=https://mainnet.base.org
@@ -83,9 +93,11 @@ export BASESCAN_API_KEY=your_basescan_key
 export ETHERSCAN_API_KEY=your_etherscan_key
 export UNISCAN_API_KEY=your_uniscan_key
 
-# Now run actual deployments
-make deploy-base        # Deploy to Base mainnet
+# Deploy to primary chains
+make deploy-base        # Deploy to Base mainnet  
 make deploy-eth         # Deploy to Ethereum mainnet
+
+# Optionally deploy to additional chains
 make deploy-unichain    # Deploy to Unichain mainnet
 ```
 
@@ -96,7 +108,7 @@ make deploy-unichain    # Deploy to Unichain mainnet
 | `BROADCAST`         | Live deployments       | Set to `true` to send real transactions     |
 | `DEPLOYER_PK`       | `deploy-*` commands    | Private key for contract deployment         |
 | `OWNER_PK`          | `configure-*` commands | Private key for contract administration     |
-| `KEEPER_PK`         | `keeper` command       | Private key for automated operations        |
+| `OWNER_PK`          | `fee-*` commands       | Private key for fee operations (owner-only) |
 | `BASE_RPC_URL`      | Base operations        | RPC endpoint for Base network               |
 | `ETHEREUM_RPC_URL`  | Ethereum operations    | RPC endpoint for Ethereum network           |
 | `UNICHAIN_RPC_URL`  | Unichain operations    | RPC endpoint for Unichain network           |
@@ -109,8 +121,12 @@ make deploy-unichain    # Deploy to Unichain mainnet
 1. **Test everything in dry-run mode first:**
 
    ```bash
-   make deploy-base deploy-eth deploy-unichain
-   make configure-base configure-eth configure-unichain
+   # Primary chains (required)
+   make deploy-base deploy-eth
+   make configure-base configure-eth
+   
+   # Additional chains (optional)
+   make deploy-unichain configure-unichain
    ```
 
 2. **Deploy to mainnet:**
@@ -118,7 +134,12 @@ make deploy-unichain    # Deploy to Unichain mainnet
    ```bash
    export BROADCAST=true
    export DEPLOYER_PK=0x...
-   make deploy-base deploy-eth deploy-unichain
+   
+   # Primary chains
+   make deploy-base deploy-eth
+   
+   # Additional chains (optional)  
+   make deploy-unichain
    ```
 
 3. **Verify deployment consistency:**
@@ -131,13 +152,25 @@ make deploy-unichain    # Deploy to Unichain mainnet
 
    ```bash
    export OWNER_PK=0x...  # Different key for admin operations
-   make configure-base configure-eth configure-unichain
+   
+   # Primary chains
+   make configure-base configure-eth
+   
+   # Additional chains (if deployed)
+   make configure-unichain
    ```
 
-5. **Set up automation:**
+5. **Configure LayerZero V2 DVN security:**
+
    ```bash
-   export KEEPER_PK=0x...
-   make keeper  # Test keeper operations
+   # Required for cross-chain fee bridging
+   make configure-dvn-base configure-dvn-eth
+   ```
+
+6. **Set up automation:**
+   ```bash
+   export OWNER_PK=0x...
+   make fee-ops  # Test fee operations
    ```
 
 #### Contract Verification
@@ -205,8 +238,8 @@ function isTokenCreator(address token, address user) external view returns (bool
 Handles fee collection from Doppler Airlock contracts and cross-chain fee distribution.
 
 ```solidity
-function collectAirlockFees(address airlock, address token, uint256 amt) external; // KEEPER_ROLE
-function bridge(uint256 minGas, uint256 minHlg) external; // KEEPER_ROLE
+function collectAirlockFees(address airlock, address token, uint256 amt) external; // Owner only
+function bridge(uint256 minGas, uint256 minHlg) external; // Owner only
 function setTrustedAirlock(address airlock, bool trusted) external; // Owner only
 ```
 
@@ -227,13 +260,13 @@ function addRewards(uint256 amount) external; // FeeRouter only
 2. Airlock handles auction mechanics and initial distribution
 3. HolographFactory deploys HolographERC20 with deterministic CREATE2 address
 4. FeeRouter automatically set as integrator for trading fee collection
-5. Token address consistent across all supported chains (Base, Ethereum, Unichain)
+5. Token address consistent across supported chains (primarily Base and Ethereum)
 
 ## Fee Model
 
 - **Source**: Trading fees from Doppler auctions (collected by Airlock contracts)
-- **Protocol Split**: 1.5% of collected fees (HOLO_FEE_BPS = 150)
-- **Treasury Split**: 98.5% of collected fees forwarded to treasury address
+- **Protocol Split**: 50% of collected fees (HOLO_FEE_BPS = 5000)
+- **Treasury Split**: 50% of collected fees forwarded to treasury address
 - **HLG Distribution**: Protocol fees bridged to Ethereum, swapped WETH→HLG, 50% burned / 50% staked
 - **Security**: Trusted Airlock whitelist prevents unauthorized ETH transfers to FeeRouter
 
@@ -241,10 +274,21 @@ function addRewards(uint256 amount) external; // FeeRouter only
 
 ### Token Launch via TypeScript
 
-Use the provided TypeScript utility to create tokens through Doppler:
+Use the provided TypeScript utility in the `script/` directory to create tokens through Doppler:
+
+```bash
+# Set environment variables
+export PRIVATE_KEY=0x...
+export BASESCAN_API_KEY=your_api_key
+
+# Create a token
+npm run create-token
+```
+
+Or programmatically:
 
 ```typescript
-import { createToken, TokenConfig } from './create-token.js'
+import { createToken, TokenConfig } from './script/create-token.js'
 import { parseEther } from 'viem'
 
 const config: TokenConfig = {
@@ -284,13 +328,13 @@ address token = holographFactory.create(
 );
 ```
 
-### Keeper Operations
+### Owner Operations
 
 ```solidity
-// Collect fees from Doppler Airlock
+// Collect fees from Doppler Airlock (Owner only)
 feeRouter.collectAirlockFees(airlockAddress, tokenAddress, amount);
 
-// Bridge accumulated fees
+// Bridge accumulated fees (Owner only)
 feeRouter.bridge(minGas, minHlgOut);
 ```
 
@@ -299,7 +343,7 @@ feeRouter.bridge(minGas, minHlgOut);
 ### Access Control
 
 - **Owner**: Contract administration, trusted remote management, treasury updates
-- **KEEPER_ROLE**: Automated fee collection (`collectAirlockFees`) and cross-chain bridging
+- **Owner-Only Operations**: All fee operations now require owner permissions (no keeper role)
 - **FeeRouter Authorization**: Only designated FeeRouter can add rewards to StakingRewards
 - **Airlock Authorization**: Only whitelisted Doppler Airlock contracts can create tokens
 
@@ -398,8 +442,11 @@ export BASE_RPC_URL=https://mainnet.base.org
 export ETHEREUM_RPC_URL=https://eth-mainnet.alchemyapi.io/v2/YOUR_KEY
 export UNICHAIN_RPC_URL=https://mainnet.unichain.org
 
-# Deploy to all chains
-make deploy-base deploy-eth deploy-unichain
+# Deploy to primary chains
+make deploy-base deploy-eth
+
+# Optionally add Unichain
+make deploy-unichain
 ```
 
 ### Manual Deployment (Advanced)
@@ -440,19 +487,14 @@ forge script script/DeployUnichain.s.sol \
 
 ### Initial Setup
 
-After deployment, configure the system using the keeper script:
+After deployment, configure the system using the fee operations script:
 
 ```bash
-# 1. Update script/KeeperPullAndBridge.s.sol with actual addresses
+# 1. Update script/FeeOperations.s.sol with actual Airlock addresses
 # 2. Whitelist Airlock contracts (Owner only)
-forge script script/KeeperPullAndBridge.s.sol \
-  --sig "setupTrustedAirlocks()" \
-  --rpc-url $BASE_RPC --broadcast --private-key $OWNER_PK
+make fee-setup BROADCAST=true
 
-# 3. Grant keeper role to automation address
-cast send $FEE_ROUTER "grantRole(bytes32,address)" \
-  $(cast keccak "KEEPER_ROLE") $KEEPER_ADDRESS \
-  --rpc-url $BASE_RPC --private-key $OWNER_PK
+# Note: All operations are owner-only (no keeper role needed)
 
 # 4. Configure LayerZero trusted remotes
 cast send $FEE_ROUTER "setTrustedRemote(uint32,bytes32)" \
@@ -468,23 +510,21 @@ cast send $FEE_ROUTER "setTrustedRemote(uint32,bytes32)" \
 
 ```bash
 # Monitor system status
-forge script script/KeeperPullAndBridge.s.sol \
-  --sig "checkBalances()" --rpc-url $BASE_RPC
+make fee-status
 
 # Run fee collection and bridging (automated/cron)
-forge script script/KeeperPullAndBridge.s.sol \
-  --rpc-url $BASE_RPC --broadcast --private-key $KEEPER_PK
+make fee-ops BROADCAST=true
 
 # Set up automated execution (example cron)
-echo "*/10 * * * * cd /path/to/holograph && forge script script/KeeperPullAndBridge.s.sol --rpc-url \$BASE_RPC --broadcast --private-key \$KEEPER_PK" | crontab -
+echo "*/10 * * * * cd /path/to/holograph && make fee-ops BROADCAST=true" | crontab -
 ```
 
 ### Emergency Controls
 
 ```bash
-# Pause operations (Owner only)
-forge script script/KeeperPullAndBridge.s.sol \
-  --sig "emergencyPause()" \
+# Emergency treasury redirection (Owner only)
+forge script script/FeeOperations.s.sol \
+  --sig "emergencyRedirect(address)" $EMERGENCY_TREASURY \
   --rpc-url $BASE_RPC --broadcast --private-key $OWNER_PK
 
 # Unpause operations (Owner only)
@@ -509,13 +549,13 @@ cast send $FEE_ROUTER "setTreasury(address)" $NEW_TREASURY \
 
 ```bash
 # Check system status
-forge script script/KeeperPullAndBridge.s.sol --sig "checkBalances()" --rpc-url $BASE_RPC
+make fee-status
 
 # Manual fee collection
-forge script script/KeeperPullAndBridge.s.sol --rpc-url $BASE_RPC --broadcast --private-key $KEEPER_PK
+make fee-collect BROADCAST=true
 
-# Emergency pause
-forge script script/KeeperPullAndBridge.s.sol --sig "emergencyPause()" --rpc-url $BASE_RPC --broadcast --private-key $OWNER_PK
+# Emergency treasury redirect
+forge script script/FeeOperations.s.sol --sig "emergencyRedirect(address)" $EMERGENCY_TREASURY --rpc-url $BASE_RPC --broadcast --private-key $OWNER_PK
 
 # Check FeeRouter ETH balance
 cast balance $FEE_ROUTER --rpc-url $BASE_RPC
@@ -523,13 +563,13 @@ cast balance $FEE_ROUTER --rpc-url $BASE_RPC
 # Check if Airlock is whitelisted
 cast call $FEE_ROUTER "trustedAirlocks(address)" $AIRLOCK_ADDRESS --rpc-url $BASE_RPC
 
-# Grant keeper role
-cast send $FEE_ROUTER "grantRole(bytes32,address)" $(cast keccak "KEEPER_ROLE") $KEEPER_ADDRESS --rpc-url $BASE_RPC --private-key $OWNER_PK
+# Setup trusted Airlocks
+make fee-setup BROADCAST=true
 ```
 
 ### Monitoring
 
-- **FeeRouter Balance**: Should accumulate fees between keeper runs
+- **FeeRouter Balance**: Should accumulate fees between fee operations
 - **Trusted Airlocks**: Must be whitelisted before fee collection
 - **LayerZero Messages**: Monitor cross-chain message delivery
 - **HLG Distribution**: Verify burn/stake operations on Ethereum
@@ -537,9 +577,19 @@ cast send $FEE_ROUTER "grantRole(bytes32,address)" $(cast keccak "KEEPER_ROLE") 
 ### Troubleshooting
 
 - **"UntrustedSender" Error**: Airlock not whitelisted - run `setupTrustedAirlocks()`
-- **"AccessControl" Error**: Address missing KEEPER_ROLE or owner permissions
+- **"AccessControl" Error**: Address missing owner permissions (all operations are owner-only)
 - **Bridge Failures**: Check LayerZero trusted remotes configuration
 - **Low HLG Output**: Adjust slippage protection or check Uniswap liquidity
+
+## Documentation
+
+Additional technical documentation is available in the [`docs/`](docs/) directory:
+
+- **[Scripts Overview](docs/SCRIPTS_OVERVIEW.md)** - Deployment and operational scripts guide
+- **[Token Creation](docs/CREATE_TOKEN.md)** - TypeScript utility for creating tokens
+- **[DVN Configuration](docs/DVN_CONFIGURATION.md)** - LayerZero V2 security setup  
+- **[Operations Guide](docs/OPERATIONS.md)** - System monitoring and management
+- **[Upgrade Guide](docs/UPGRADE_GUIDE.md)** - Contract upgrade procedures
 
 ## License
 

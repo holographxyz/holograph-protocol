@@ -190,7 +190,7 @@ contract FullProtocolWorkflowTest is Test {
         address indexed owner,
         address creator
     );
-    event SlicePulled(address indexed airlock, address indexed token, uint256 holoAmt, uint256 treasuryAmt);
+    event FeesCollected(address indexed airlock, address indexed token, uint256 protocolAmount, uint256 treasuryAmount);
 
     function setUp() public {
         // Create fork of Base Sepolia for real Doppler integration testing
@@ -254,13 +254,11 @@ contract FullProtocolWorkflowTest is Test {
 
         // Authorize the Airlock in our factory
         factory.setAirlockAuthorization(address(airlock), true);
-        feeRouter.setTrustedFactory(address(factory), true);
+        // Note: trustedFactories functionality removed from FeeRouter
         feeRouter.setTrustedAirlock(address(airlock), true);
         console.log("[OK] Airlock authorized in HolographFactory");
 
-        // Grant keeper role to test contract for fee collection
-        bytes32 keeperRole = feeRouter.KEEPER_ROLE();
-        feeRouter.grantRole(keeperRole, address(this));
+        // Note: All functions are now owner-only, test runs as owner
     }
 
     /* -------------------------------------------------------------------------- */
@@ -493,16 +491,15 @@ contract FullProtocolWorkflowTest is Test {
     }
 
     function test_FeeRouter() public {
-        // Verify factory is trusted
-        assertTrue(feeRouter.trustedFactories(address(factory)));
+        // Note: trustedFactories mapping was removed from FeeRouter as part of cleanup
 
         // Test fee calculation and configuration
         uint256 feeAmount = 2 ether;
 
         // Verify fee split calculation works correctly
         (uint256 protocolFee, uint256 treasuryFee) = feeRouter.calculateFeeSplit(feeAmount);
-        assertEq(protocolFee, (feeAmount * 150) / 10000); // 1.5%
-        assertEq(treasuryFee, feeAmount - protocolFee); // 98.5%
+        assertEq(protocolFee, (feeAmount * 5000) / 10000); // 50%
+        assertEq(treasuryFee, feeAmount - protocolFee); // 50%
 
         // Verify the treasury configuration is correct
         address configuredTreasury = feeRouter.treasury();
@@ -510,7 +507,7 @@ contract FullProtocolWorkflowTest is Test {
 
         // Verify the protocol fee basis points is correct
         uint256 holographFeeBps = feeRouter.holographFeeBps();
-        assertEq(holographFeeBps, 150); // 1.5%
+        assertEq(holographFeeBps, 5000); // 50%
 
         console.log("Treasury fee:", treasuryFee);
         console.log("Protocol fee:", protocolFee);

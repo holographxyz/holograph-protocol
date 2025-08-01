@@ -28,6 +28,7 @@ pragma solidity ^0.8.24;
 import "forge-std/Script.sol";
 import "../src/FeeRouter.sol";
 import "../src/HolographFactory.sol";
+import "./DeploymentConfig.sol";
 import "forge-std/console.sol";
 
 contract Configure is Script {
@@ -74,12 +75,8 @@ contract Configure is Script {
         console.log("Trusted remote set (eid -> addr):", remoteEid, remoteRouter);
 
         /* ---------------------------- KEEPER ------------------------------- */
-        bytes32 keeperRole = router.KEEPER_ROLE();
-        try router.grantRole(keeperRole, keeper) {
-            console.log("Granted KEEPER_ROLE to", keeper);
-        } catch {
-            console.log("[WARN] grantRole failed - maybe already set");
-        }
+        // Note: KEEPER_ROLE removed - all functions are now owner-only
+        console.log("FeeRouter functions are owner-only, no keeper role needed");
 
         /* ------------------------- Trusted Airlocks ------------------------ */
         try router.setTrustedAirlock(dopplerAirlock, true) {
@@ -95,12 +92,36 @@ contract Configure is Script {
             console.log("[WARN] setAirlockAuthorization failed - perhaps already authorized");
         }
 
-        try router.setTrustedFactory(factoryAddr, true) {
-            console.log("Trusted HolographFactory in FeeRouter", factoryAddr);
-        } catch {
-            console.log("[WARN] setTrustedFactory failed - perhaps already trusted");
-        }
+        /* -------------------- LayerZero Gas Configuration ------------------- */
+        configureLayerZeroGas(router, remoteEid);
 
         vm.stopBroadcast();
+    }
+
+    /**
+     * @notice Configure LayerZero gas settings for reliable cross-chain execution
+     * @param router FeeRouter instance
+     * @param remoteEid Remote endpoint ID
+     */
+    function configureLayerZeroGas(FeeRouter router, uint32 remoteEid) internal {
+        console.log("\nConfiguring LayerZero gas settings...");
+        
+        // Get recommended gas limit for the current chain
+        uint256 gasLimit = DeploymentConfig.getLzReceiveGasLimit(block.chainid);
+        
+        console.log("Recommended gas limit for lzReceive:", gasLimit);
+        console.log("Remote endpoint ID:", remoteEid);
+        
+        // Note: Enforced options should be configured via LayerZero endpoint
+        // This is typically done in a separate DVN configuration step
+        console.log("To set enforced options, use the ConfigureDVN script:");
+        console.log("  forge script script/ConfigureDVN.s.sol --broadcast");
+        
+        // Log current bridge settings for verification
+        try router.quoteBridgeFee(gasLimit) returns (uint256 fee) {
+            console.log("Current bridge fee estimate:", fee, "wei");
+        } catch {
+            console.log("[INFO] Bridge fee quote not available (remote not configured)");
+        }
     }
 }
