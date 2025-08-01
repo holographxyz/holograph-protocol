@@ -28,7 +28,7 @@ pragma solidity ^0.8.24;
 import "forge-std/Script.sol";
 import "../src/FeeRouter.sol";
 import "../src/HolographFactory.sol";
-import "./config/DeploymentConstants.sol";
+import "./DeploymentConfig.sol";
 import "forge-std/console.sol";
 
 contract Configure is Script {
@@ -107,7 +107,7 @@ contract Configure is Script {
         console.log("\nConfiguring LayerZero gas settings...");
         
         // Get recommended gas limit for the current chain
-        uint256 gasLimit = DeploymentConstants.getLzReceiveGasLimit(block.chainid);
+        uint256 gasLimit = DeploymentConfig.getLzReceiveGasLimit(block.chainid);
         
         console.log("Recommended gas limit for lzReceive:", gasLimit);
         console.log("Remote endpoint ID:", remoteEid);

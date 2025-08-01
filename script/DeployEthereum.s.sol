@@ -17,31 +17,30 @@ pragma solidity ^0.8.26;
  */
 import "../src/FeeRouter.sol";
 import "../src/StakingRewards.sol";
-import "./base/DeploymentBase.sol";
-import "./config/DeploymentConstants.sol";
+import "./DeploymentBase.sol";
+import "./DeploymentConfig.sol";
 
 contract DeployEthereum is DeploymentBase {
     /* -------------------------------------------------------------------------- */
     /*                              Ethereum chainIds                             */
     /* -------------------------------------------------------------------------- */
-    uint256 internal constant ETH_MAINNET = 1;
-    uint256 internal constant ETH_SEPOLIA = 11155111;
+    // Chain IDs moved to DeploymentConfig
 
     function run() external {
         /* ----------------------------- Chain guard ---------------------------- */
-        if (block.chainid != ETH_MAINNET && block.chainid != ETH_SEPOLIA) {
+        if (block.chainid != DeploymentConfig.ETHEREUM_MAINNET && block.chainid != DeploymentConfig.ETHEREUM_SEPOLIA) {
             console.log("[WARNING] Deploying to non-Ethereum chainId", block.chainid);
         }
 
         // Mainnet safety check
-        if (DeploymentConstants.isMainnet(block.chainid)) {
+        if (DeploymentConfig.isMainnet(block.chainid)) {
             console.log("WARNING: You are about to deploy to MAINNET!");
             console.log("Chain ID:", block.chainid);
             require(vm.envOr("MAINNET", false), "Set MAINNET=true to deploy to mainnet");
         }
 
         // Initialize deployment configuration
-        DeploymentConfig memory config = initializeDeployment();
+        BaseDeploymentConfig memory config = initializeDeployment();
 
         // Environment variables
         address lzEndpoint = vm.envAddress("LZ_ENDPOINT");
@@ -53,21 +52,23 @@ contract DeployEthereum is DeploymentBase {
         address treasury = vm.envAddress("TREASURY");
 
         // Validate env variables
-        DeploymentConstants.validateNonZeroAddress(lzEndpoint, "LZ_ENDPOINT");
+        DeploymentConfig.validateNonZeroAddress(lzEndpoint, "LZ_ENDPOINT");
         require(baseEid != 0, "BASE_EID not set");
-        DeploymentConstants.validateNonZeroAddress(hlg, "HLG");
-        DeploymentConstants.validateNonZeroAddress(weth, "WETH");
-        DeploymentConstants.validateNonZeroAddress(swapRouter, "SWAP_ROUTER");
-        DeploymentConstants.validateNonZeroAddress(treasury, "TREASURY");
+        DeploymentConfig.validateNonZeroAddress(hlg, "HLG");
+        DeploymentConfig.validateNonZeroAddress(weth, "WETH");
+        DeploymentConfig.validateNonZeroAddress(swapRouter, "SWAP_ROUTER");
+        DeploymentConfig.validateNonZeroAddress(treasury, "TREASURY");
 
         // Validate deployment account has sufficient gas
-        require(gasleft() >= DeploymentConstants.MIN_DEPLOYMENT_GAS, "Insufficient gas for deployment");
+        require(gasleft() >= DeploymentConfig.MIN_DEPLOYMENT_GAS, "Insufficient gas for deployment");
 
         // Deploy HolographDeployer using base functionality
         HolographDeployer holographDeployer = deployHolographDeployer();
 
         // Get deployment salts - use EOA address as msg.sender for HolographDeployer
-        ChainConfigs.DeploymentSalts memory salts = getDeploymentSalts(config.deployer);
+        // Generate deployment salts
+        bytes32 stakingSalt = DeploymentConfig.generateSalt(config.deployer, 6);
+        bytes32 feeRouterSalt = DeploymentConfig.generateSalt(config.deployer, 4);
 
         // Initialize addresses struct
         ContractAddresses memory addresses;
@@ -79,8 +80,6 @@ contract DeployEthereum is DeploymentBase {
         // Deploy with temporary feeRouter = deployer
         bytes memory stakingBytecode =
             abi.encodePacked(type(StakingRewards).creationCode, abi.encode(hlg, config.deployer));
-        // Use a unique salt for StakingRewards
-        bytes32 stakingSalt = bytes32(uint256(uint160(config.deployer)) << 96) | bytes32(uint256(6));
         address stakingRewards = holographDeployer.deploy(stakingBytecode, stakingSalt);
         uint256 gasStaking = gasStart - gasleft();
         console.log("StakingRewards deployed at:", stakingRewards);
@@ -102,7 +101,7 @@ contract DeployEthereum is DeploymentBase {
                 config.deployer // Set deployer as owner
             )
         );
-        address feeRouter = holographDeployer.deploy(feeRouterBytecode, salts.feeRouter);
+        address feeRouter = holographDeployer.deploy(feeRouterBytecode, feeRouterSalt);
         uint256 gasFeeRouter = gasStart - gasleft();
         console.log("FeeRouter deployed at:", feeRouter);
         console.log("Gas used:", gasFeeRouter);

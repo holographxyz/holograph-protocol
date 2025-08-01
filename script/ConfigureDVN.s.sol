@@ -8,9 +8,8 @@ pragma solidity ^0.8.26;
  *
  * This script sets up the LayerZero V2 security infrastructure by:
  *   • Configuring send and receive message libraries
- *   • Setting up required DVNs (LayerZero Labs + secondary DVN)
+ *   • Setting up single required DVN (LayerZero Labs)
  *   • Configuring block confirmation requirements
- *   • Setting up executor configurations
  *
  * Usage:
  *   forge script script/ConfigureDVN.s.sol \
@@ -28,12 +27,11 @@ pragma solidity ^0.8.26;
  * Optional ENV variables:
  *   SEND_LIBRARY        – Custom send library address (uses default if not set)
  *   RECEIVE_LIBRARY     – Custom receive library address (uses default if not set)
- *   USE_SINGLE_DVN      – Set to true to use only LayerZero Labs DVN (default: false)
  */
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 import "../src/FeeRouter.sol";
-import "./config/DeploymentConstants.sol";
+import "./DeploymentConfig.sol";
 
 // Import LayerZero V2 endpoint interface
 import "../lib/LayerZero-v2/packages/layerzero-v2/evm/protocol/contracts/interfaces/ILayerZeroEndpointV2.sol";
@@ -73,7 +71,6 @@ interface IMessageLib {
 }
 
 contract ConfigureDVN is Script {
-    using DeploymentConstants for uint256;
 
     /* -------------------------------------------------------------------------- */
     /*                                Constants                                   */
@@ -97,7 +94,6 @@ contract ConfigureDVN is Script {
         address feeRouter;
         address sendLibrary;
         address receiveLibrary;
-        bool useSingleDVN;
     }
 
     /* -------------------------------------------------------------------------- */
@@ -145,7 +141,6 @@ contract ConfigureDVN is Script {
         config.endpoint = vm.envAddress("LZ_ENDPOINT");
         config.feeRouter = vm.envAddress("FEE_ROUTER");
         config.remoteEid = uint32(vm.envUint("REMOTE_EID"));
-        config.useSingleDVN = vm.envOr("USE_SINGLE_DVN", false);
         
         // Use default libraries if not specified
         config.sendLibrary = vm.envOr("SEND_LIBRARY", address(0));
@@ -155,20 +150,19 @@ contract ConfigureDVN is Script {
         console.log("FeeRouter address:", config.feeRouter);
         console.log("LayerZero endpoint:", config.endpoint);
         console.log("Remote endpoint ID:", config.remoteEid);
-        console.log("Use single DVN:", config.useSingleDVN);
     }
 
     function validateConfiguration(DVNConfiguration memory config) internal pure {
-        DeploymentConstants.validateNonZeroAddress(config.endpoint, "LZ_ENDPOINT");
-        DeploymentConstants.validateNonZeroAddress(config.feeRouter, "FEE_ROUTER");
+        DeploymentConfig.validateNonZeroAddress(config.endpoint, "LZ_ENDPOINT");
+        DeploymentConfig.validateNonZeroAddress(config.feeRouter, "FEE_ROUTER");
         require(config.remoteEid != 0, "REMOTE_EID not set");
         
         // Validate chain is supported
         require(
-            config.chainId == DeploymentConstants.ETHEREUM_MAINNET ||
-            config.chainId == DeploymentConstants.ETHEREUM_SEPOLIA ||
-            config.chainId == DeploymentConstants.BASE_MAINNET ||
-            config.chainId == DeploymentConstants.BASE_SEPOLIA,
+            config.chainId == DeploymentConfig.ETHEREUM_MAINNET ||
+            config.chainId == DeploymentConfig.ETHEREUM_SEPOLIA ||
+            config.chainId == DeploymentConfig.BASE_MAINNET ||
+            config.chainId == DeploymentConfig.BASE_SEPOLIA,
             "Unsupported chain for DVN configuration"
         );
     }
@@ -210,16 +204,16 @@ contract ConfigureDVN is Script {
         console.log("Using send library:", sendLib);
         console.log("Using receive library:", receiveLib);
         
-        // Build DVN configuration
+        // Build DVN configuration - single required DVN only
         address[] memory requiredDVNs = buildRequiredDVNs(config);
-        address[] memory optionalDVNs = config.useSingleDVN ? new address[](0) : buildOptionalDVNs(config);
+        address[] memory optionalDVNs = new address[](0); // No optional DVNs
         
         // Create ULN config
         bytes memory ulnConfig = abi.encode(
-            DeploymentConstants.getBlockConfirmations(config.chainId), // confirmations
-            uint8(requiredDVNs.length), // requiredDVNCount
-            uint8(optionalDVNs.length), // optionalDVNCount
-            uint8(optionalDVNs.length > 0 ? 1 : 0), // optionalDVNThreshold (1 of N optional)
+            DeploymentConfig.getBlockConfirmations(config.chainId), // confirmations
+            uint8(requiredDVNs.length), // requiredDVNCount (1)
+            uint8(0), // optionalDVNCount (0)
+            uint8(0), // optionalDVNThreshold (0)
             requiredDVNs,
             optionalDVNs
         );
@@ -241,43 +235,16 @@ contract ConfigureDVN is Script {
         console.log("ULN configuration applied to receive library");
         
         // Log DVN configuration
-        logDVNConfiguration(requiredDVNs, optionalDVNs, config.chainId);
+        logDVNConfiguration(requiredDVNs, config.chainId);
     }
 
     function buildRequiredDVNs(DVNConfiguration memory config) internal pure returns (address[] memory) {
         address[] memory requiredDVNs = new address[](1);
         
-        // Check if LayerZero Labs DVN is available for this chain
-        address lzLabsDVN = getLayerZeroLabsDVNSafe(config.chainId);
-        if (lzLabsDVN != address(0)) {
-            requiredDVNs[0] = lzLabsDVN;
-        } else {
-            // Fallback to Polyhedra if LayerZero Labs not available
-            requiredDVNs[0] = DeploymentConstants.getPolyhedraDVN(config.chainId);
-        }
+        // Use LayerZero Labs DVN (or Dead DVN for Base mainnet as temporary fallback)
+        requiredDVNs[0] = DeploymentConfig.getLayerZeroLabsDVN(config.chainId);
         
         return requiredDVNs;
-    }
-
-    function getLayerZeroLabsDVNSafe(uint256 chainId) internal pure returns (address) {
-        if (chainId == DeploymentConstants.ETHEREUM_MAINNET) return DeploymentConstants.LAYERZERO_LABS_DVN_ETHEREUM_MAINNET;
-        if (chainId == DeploymentConstants.ETHEREUM_SEPOLIA) return DeploymentConstants.LAYERZERO_LABS_DVN_ETHEREUM_SEPOLIA;
-        if (chainId == DeploymentConstants.BASE_MAINNET) return DeploymentConstants.LAYERZERO_LABS_DVN_BASE_MAINNET;
-        if (chainId == DeploymentConstants.BASE_SEPOLIA) return DeploymentConstants.LAYERZERO_LABS_DVN_BASE_SEPOLIA;
-        return address(0); // Not configured for this chain
-    }
-
-    function buildOptionalDVNs(DVNConfiguration memory config) internal pure returns (address[] memory) {
-        if (config.useSingleDVN) {
-            return new address[](0);
-        }
-        
-        address[] memory optionalDVNs = new address[](1);
-        
-        // Use Polyhedra as secondary DVN for additional security
-        optionalDVNs[0] = DeploymentConstants.getPolyhedraDVN(config.chainId);
-        
-        return optionalDVNs;
     }
 
     /* -------------------------------------------------------------------------- */
@@ -288,7 +255,7 @@ contract ConfigureDVN is Script {
         console.log("\nConfiguring enforced options...");
         
         // Get appropriate gas limit for destination chain
-        uint256 gasLimit = DeploymentConstants.getLzReceiveGasLimit(config.chainId);
+        uint256 gasLimit = DeploymentConfig.getLzReceiveGasLimit(config.chainId);
         
         console.log("Setting enforced options with gas limit:", gasLimit);
         
@@ -323,20 +290,19 @@ contract ConfigureDVN is Script {
     /* -------------------------------------------------------------------------- */
 
     function logDVNConfiguration(
-        address[] memory requiredDVNs, 
-        address[] memory optionalDVNs,
+        address[] memory requiredDVNs,
         uint256 chainId
     ) internal pure {
         console.log("\nDVN Configuration Summary:");
-        console.log("Block confirmations:", DeploymentConstants.getBlockConfirmations(chainId));
+        console.log("Block confirmations:", DeploymentConfig.getBlockConfirmations(chainId));
         console.log("Required DVNs:", requiredDVNs.length);
         for (uint256 i = 0; i < requiredDVNs.length; i++) {
-            console.log("  Required DVN", i, ":", requiredDVNs[i]);
+            console.log("  DVN:", requiredDVNs[i]);
         }
         
-        console.log("Optional DVNs:", optionalDVNs.length);
-        for (uint256 i = 0; i < optionalDVNs.length; i++) {
-            console.log("  Optional DVN", i, ":", optionalDVNs[i]);
+        // Note about Base mainnet
+        if (chainId == DeploymentConfig.BASE_MAINNET) {
+            console.log("  Note: Using Dead DVN for Base mainnet until official DVN is available");
         }
     }
 }

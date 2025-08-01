@@ -38,6 +38,8 @@ import { baseSepolia } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import { readFileSync } from "fs";
 import { spawn } from "child_process";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
 
 // Constants - Updated with current deployment addresses
 const FEE_ROUTER = "0x2addbd495582389b96C7B06C4D877e6C1B522bD4" as const;
@@ -166,14 +168,22 @@ const AIRLOCK_ABI = [
   },
 ] as const;
 
+// Get the project root directory
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+// When compiled, we'll be in dist/script/, so we need to go up 2 levels to get to project root
+// When running directly with tsx, we'll be in script/, so we need to go up 1 level
+const isCompiled = __dirname.includes('/dist/');
+const PROJECT_ROOT = isCompiled ? dirname(dirname(__dirname)) : dirname(__dirname);
+
 // Utility functions
 function loadContractBytecode(contractName: string): `0x${string}` {
   try {
     let artifactPath: string;
     if (contractName === "HolographERC20") {
-      artifactPath = `out/${contractName}.sol/${contractName}.json`;
+      artifactPath = join(PROJECT_ROOT, "out", `${contractName}.sol`, `${contractName}.json`);
     } else {
-      artifactPath = `artifacts/doppler/${contractName}.json`;
+      artifactPath = join(PROJECT_ROOT, "artifacts", "doppler", `${contractName}.json`);
     }
 
     const artifactContent = readFileSync(artifactPath, "utf8");
@@ -297,7 +307,7 @@ async function verifyContract(
 
     const childProcess = spawn("forge", args, {
       stdio: ["pipe", "pipe", "pipe"],
-      cwd: process.cwd(),
+      cwd: PROJECT_ROOT,
       env,
     });
 
@@ -413,7 +423,7 @@ async function mineValidSalt(
     isToken0,
     numPDSlugs,
     lpFee,
-    tickSpacing,
+    // tickSpacing - unused but needed for destructuring
   ] = decodeAbiParameters(
     parseAbiParameters(
       "uint256, uint256, uint256, uint256, int24, int24, uint256, int24, bool, uint256, uint24, int24",
@@ -446,6 +456,11 @@ async function mineValidSalt(
 
   // Note: Token constructor args not needed for ERC1167 minimal proxy CREATE2 calculation
   // Tokens are deployed as clones of the implementation, not full contracts
+  
+  // These variables are extracted from poolInitializerData but not all are used in salt mining
+  // They're kept for completeness and to match the expected parameter structure
+  void tokenFactoryData; // Suppress unused variable warning
+  void initialSupply; // Suppress unused variable warning
 
   // Calculate init code hashes
   const dopplerBytecode = loadContractBytecode("Doppler");

@@ -31,17 +31,17 @@ forge script script/ConfigureDVN.s.sol --rpc-url $ETH_RPC --broadcast
 
 ## DVN Addresses
 
-LayerZero Labs DVN (primary):
+LayerZero Labs DVN (single required DVN):
 - Ethereum: `0xF4DA94b4EE9D8e209e3bf9f469221CE2731A7112`
 - Ethereum Sepolia: `0x53f488E93b4f1b60E8E83aa374dBe1780A1EE8a8`
-- Base: **Update needed** - Get from [LayerZero docs](https://docs.layerzero.network/v2/deployments/dvn-addresses)
+- Base: `0x6498b0632f3834D7647367334838111c8C889703` (Dead DVN - temporary until official DVN available)
+- Base Sepolia: `0x53f488E93b4f1b60E8E83aa374dBe1780A1EE8a8`
 
-Polyhedra zkBridge DVN (secondary):
-- All chains: `0x8ddF05F9A5c488b4973897E278B58895bF87Cb24`
+Check for updates: [LayerZero DVN Addresses](https://docs.layerzero.network/v2/deployments/dvn-addresses)
 
 ## Configuration Details
 
-**Security Model**: 1 required DVN (LayerZero Labs) + 1 optional DVN (Polyhedra)  
+**Security Model**: Single required DVN (LayerZero Labs)  
 **Block Confirmations**: 15 blocks on both chains  
 **Gas Limits**: 250k (Ethereum), 150k (Base)
 
@@ -57,10 +57,10 @@ BROADCAST=true        # Execute transactions
 
 ## Verification
 
-Check configuration at [LayerZero Scan](https://layerzeroscan.com) by searching for your FeeRouter address. DVN settings should show "LayerZero Labs + Polyhedra" under Security Stack.
+Check configuration at [LayerZero Scan](https://layerzeroscan.com) by searching for your FeeRouter address. DVN settings should show the configured DVN under Security Stack.
 
 ## Troubleshooting
 
-**Messages not delivered**: DVNs not configured  
-**"DVN not configured for this chain"**: Update Base DVN addresses in `script/config/DeploymentConstants.sol`  
-**Bridge failures**: Check trusted remotes are set via `make configure-*`
+**Messages not delivered**: DVN not configured  
+**Bridge failures**: Check trusted remotes are set via `make configure-*`  
+**Base mainnet**: Currently using Dead DVN - monitor LayerZero docs for official DVN release

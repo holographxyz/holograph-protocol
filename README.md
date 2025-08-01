@@ -238,8 +238,8 @@ function isTokenCreator(address token, address user) external view returns (bool
 Handles fee collection from Doppler Airlock contracts and cross-chain fee distribution.
 
 ```solidity
-function collectAirlockFees(address airlock, address token, uint256 amt) external; // KEEPER_ROLE
-function bridge(uint256 minGas, uint256 minHlg) external; // KEEPER_ROLE
+function collectAirlockFees(address airlock, address token, uint256 amt) external; // Owner only
+function bridge(uint256 minGas, uint256 minHlg) external; // Owner only
 function setTrustedAirlock(address airlock, bool trusted) external; // Owner only
 ```
 
@@ -274,10 +274,21 @@ function addRewards(uint256 amount) external; // FeeRouter only
 
 ### Token Launch via TypeScript
 
-Use the provided TypeScript utility to create tokens through Doppler:
+Use the provided TypeScript utility in the `script/` directory to create tokens through Doppler:
+
+```bash
+# Set environment variables
+export PRIVATE_KEY=0x...
+export BASESCAN_API_KEY=your_api_key
+
+# Create a token
+npm run create-token
+```
+
+Or programmatically:
 
 ```typescript
-import { createToken, TokenConfig } from './create-token.js'
+import { createToken, TokenConfig } from './script/create-token.js'
 import { parseEther } from 'viem'
 
 const config: TokenConfig = {
@@ -317,13 +328,13 @@ address token = holographFactory.create(
 );
 ```
 
-### Keeper Operations
+### Owner Operations
 
 ```solidity
-// Collect fees from Doppler Airlock
+// Collect fees from Doppler Airlock (Owner only)
 feeRouter.collectAirlockFees(airlockAddress, tokenAddress, amount);
 
-// Bridge accumulated fees
+// Bridge accumulated fees (Owner only)
 feeRouter.bridge(minGas, minHlgOut);
 ```
 
@@ -332,7 +343,7 @@ feeRouter.bridge(minGas, minHlgOut);
 ### Access Control
 
 - **Owner**: Contract administration, trusted remote management, treasury updates
-- **KEEPER_ROLE**: Automated fee collection (`collectAirlockFees`) and cross-chain bridging
+- **Owner-Only Operations**: All fee operations now require owner permissions (no keeper role)
 - **FeeRouter Authorization**: Only designated FeeRouter can add rewards to StakingRewards
 - **Airlock Authorization**: Only whitelisted Doppler Airlock contracts can create tokens
 
@@ -566,7 +577,7 @@ make fee-setup BROADCAST=true
 ### Troubleshooting
 
 - **"UntrustedSender" Error**: Airlock not whitelisted - run `setupTrustedAirlocks()`
-- **"AccessControl" Error**: Address missing KEEPER_ROLE or owner permissions
+- **"AccessControl" Error**: Address missing owner permissions (all operations are owner-only)
 - **Bridge Failures**: Check LayerZero trusted remotes configuration
 - **Low HLG Output**: Adjust slippage protection or check Uniswap liquidity
 
@@ -574,6 +585,7 @@ make fee-setup BROADCAST=true
 
 Additional technical documentation is available in the [`docs/`](docs/) directory:
 
+- **[Scripts Overview](docs/SCRIPTS_OVERVIEW.md)** - Deployment and operational scripts guide
 - **[Token Creation](docs/CREATE_TOKEN.md)** - TypeScript utility for creating tokens
 - **[DVN Configuration](docs/DVN_CONFIGURATION.md)** - LayerZero V2 security setup  
 - **[Operations Guide](docs/OPERATIONS.md)** - System monitoring and management

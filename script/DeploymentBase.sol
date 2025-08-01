@@ -3,8 +3,8 @@ pragma solidity ^0.8.26;
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
-import "../../src/deployment/HolographDeployer.sol";
-import "../config/ChainConfigs.sol";
+import "../src/deployment/HolographDeployer.sol";
+import "./DeploymentConfig.sol";
 
 /**
  * @title DeploymentBase
@@ -37,7 +37,7 @@ abstract contract DeploymentBase is Script {
     /*                                Structs                                     */
     /* -------------------------------------------------------------------------- */
 
-    struct DeploymentConfig {
+    struct BaseDeploymentConfig {
         bool shouldBroadcast;
         uint256 deployerPk;
         address deployer;
@@ -61,12 +61,12 @@ abstract contract DeploymentBase is Script {
     /**
      * @notice Initialize deployment configuration from environment
      */
-    function initializeDeployment() internal returns (DeploymentConfig memory config) {
+    function initializeDeployment() internal returns (BaseDeploymentConfig memory config) {
         config.shouldBroadcast = vm.envOr("BROADCAST", false);
         config.deployerPk = config.shouldBroadcast ? vm.envUint("DEPLOYER_PK") : uint256(0);
         config.deployer = vm.addr(config.deployerPk != 0 ? config.deployerPk : 1);
         config.chainId = block.chainid;
-        config.chainName = getChainName(config.chainId);
+        config.chainName = DeploymentConfig.getChainName(config.chainId);
 
         console.log("Deploying to", config.chainName, "- Chain ID:", config.chainId);
 
@@ -129,7 +129,7 @@ abstract contract DeploymentBase is Script {
      * @param config Deployment configuration
      * @param addresses Contract addresses
      */
-    function saveDeployment(DeploymentConfig memory config, ContractAddresses memory addresses) internal {
+    function saveDeployment(BaseDeploymentConfig memory config, ContractAddresses memory addresses) internal {
         string memory dir = getDeploymentDir(config.chainId);
         vm.createDir(dir, true);
 
@@ -250,16 +250,5 @@ abstract contract DeploymentBase is Script {
         console.log("========================================");
     }
 
-    /**
-     * @notice Get deployment salts for consistent addresses
-     * @dev Generates deterministic salts where:
-     *      - First 20 bytes: deployer address (required by HolographDeployer)
-     *      - Last 12 bytes: contract-specific identifier
-     *      This ensures each contract type has a unique but predictable address
-     * @param deployer The address that will deploy the contracts
-     * @return DeploymentSalts struct containing salts for each contract type
-     */
-    function getDeploymentSalts(address deployer) internal pure returns (ChainConfigs.DeploymentSalts memory) {
-        return ChainConfigs.getDeploymentSalts(deployer);
-    }
+    // Salt generation moved to DeploymentConfig.generateSalt()
 }
