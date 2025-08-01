@@ -249,6 +249,4 @@ abstract contract DeploymentBase is Script {
 
         console.log("========================================");
     }
-
-    // Salt generation moved to DeploymentConfig.generateSalt()
 }
