@@ -26,6 +26,6 @@ Technical documentation for the Holograph omnichain token protocol.
 
 **Primary Chains**: Base (token deployment) ↔ Ethereum (fee processing)  
 **Cross-chain**: LayerZero V2 messaging  
-**Fee Model**: 50% protocol (HLG burn/stake), 50% treasury
+**Fee Model**: 50% protocol (HLG configurable burn/stake split), 50% treasury
 
 For detailed architecture and deployment instructions, see the [main README](../README.md).

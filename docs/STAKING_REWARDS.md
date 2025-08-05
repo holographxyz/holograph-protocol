@@ -2,15 +2,15 @@
 
 ## Overview
 
-The StakingRewards contract is the core component of Holograph's HLG tokenomics, implementing an auto-compounding staking mechanism that burns 50% of incoming rewards and distributes the remaining 50% to stakers. Unlike traditional staking contracts where users must claim rewards separately, this contract automatically compounds rewards into user balances.
+The StakingRewards contract is the core component of Holograph's HLG tokenomics, implementing an auto-compounding staking mechanism with configurable burn/reward distribution (default 50% burn, 50% rewards). Unlike traditional staking contracts where users must claim rewards separately, this contract automatically compounds rewards into user balances.
 
-The contract implements a deterministic 50/50 split: when HLG tokens are received, half are permanently burned (sent to address(0)) and half are distributed proportionally to current stakers. Built on the proven MasterChef V2 algorithm, it provides O(1) gas efficiency regardless of the number of users.
+The contract implements a configurable burn/reward split: when HLG tokens are received, a percentage is permanently burned (sent to address(0)) and the remainder is distributed proportionally to current stakers. The burn percentage is configurable by the contract owner (default 50%). Built on the proven MasterChef V2 algorithm, it provides O(1) gas efficiency regardless of the number of users.
 
 **Key Features:**
 
 - **Auto-Compounding**: Rewards automatically increase stake balances without claiming
 - **O(1) Gas Efficiency**: Constant gas costs regardless of user count
-- **50/50 Tokenomics**: Every HLG token is split between burning (deflationary) and rewards
+- **Configurable Tokenomics**: Every HLG token is split between burning (deflationary) and rewards based on owner-configurable percentage
 - **Genesis Bonus System**: First stakers receive accumulated rewards from zero-staker periods
 - **Dual Operational Flows**: Supports both bootstrap manual operations and automated integration
 - **Security Features**: Reentrancy protection, emergency functions, and access controls
@@ -35,19 +35,42 @@ The contract implements a deterministic 50/50 split: when HLG tokens are receive
 
 ## Economic Model
 
-### 50/50 Burn/Reward Tokenomics
+### Configurable Burn/Reward Tokenomics
 
-Every HLG token that enters the StakingRewards contract follows a deterministic split:
+Every HLG token that enters the StakingRewards contract follows a configurable split:
 
 ```
-Incoming HLG → [50% Burn] → address(0) (permanently removed)
-            → [50% Rewards] → Auto-compound to stakers
+Incoming HLG → [X% Burn] → address(0) (permanently removed)
+            → [(100-X)% Rewards] → Auto-compound to stakers
 ```
+
+Where X is the `burnPercentage` (default 50%, configurable by owner).
 
 This creates two economic forces:
 
 - **Deflationary**: Continuous token burning reduces total supply
 - **Incentive Alignment**: Stakers are rewarded for long-term commitment
+
+### Burn Percentage Configuration
+
+The burn percentage is configurable by the contract owner, providing flexibility to adjust tokenomics based on market conditions and protocol needs:
+
+```solidity
+function setBurnPercentage(uint256 _burnPercentage) external onlyOwner {
+    // _burnPercentage in basis points (0-10000, where 10000 = 100%)
+}
+```
+
+**Examples:**
+- `burnPercentage = 5000` → 50% burn, 50% rewards (default)
+- `burnPercentage = 3000` → 30% burn, 70% rewards (more rewards to stakers)
+- `burnPercentage = 7000` → 70% burn, 30% rewards (more deflationary pressure)
+- `burnPercentage = 0` → 0% burn, 100% rewards (all rewards to stakers)
+
+**Important Notes:**
+- Changes only affect future reward distributions, not existing balances
+- Only the contract owner can modify the burn percentage
+- All changes emit `BurnPercentageUpdated` events for transparency
 
 ### Auto-Compounding vs Traditional Staking
 
@@ -121,7 +144,7 @@ Manual operations for initial launch:
 ```solidity
 function depositAndDistribute(uint256 hlgAmount) external onlyOwner {
     // Owner manually deposits HLG from weekly operations
-    // 50% burned, 50% distributed to stakers
+    // Split according to burnPercentage (default 50% burned, 50% distributed)
 }
 ```
 
@@ -240,7 +263,7 @@ function stake(uint256 amount) external {
 2. **Rewards come in (say 100 HLG total)**
 
    ```solidity
-   addRewards(100 ether);  // 100 HLG tokens: 50 burned, 50 distributed
+   addRewards(100 ether);  // 100 HLG tokens: split according to burnPercentage
    // globalRewardIndex increases
    // User now has pending rewards but balance unchanged
    ```
@@ -388,7 +411,7 @@ The FeeRouter is our automated reward source. It handles cross-chain fee collect
 ```solidity
 function addRewards(uint256 amount) external {
     require(msg.sender == feeRouter);
-    // Split 50/50 and distribute
+    // Split according to burnPercentage and distribute
 }
 ```
 
@@ -411,6 +434,10 @@ function setFeeRouter(address router) external onlyOwner {
     // Point to the FeeRouter contract
 }
 
+function setBurnPercentage(uint256 _burnPercentage) external onlyOwner {
+    // Configure burn/reward split (0-10000 basis points)
+}
+
 function pause() / unpause() external onlyOwner {
     // Emergency controls
 }
@@ -427,7 +454,7 @@ function pause() / unpause() external onlyOwner {
 stake(100 ether);  // 100 HLG (ether = 10^18, same as HLG decimals)
 // balanceOf[user] = 100, totalStaked = 100
 
-// 100 HLG tokens arrive as rewards (50 burned, 50 distributed)
+// 100 HLG tokens arrive as rewards (split according to burnPercentage)
 addRewards(100 ether);  // 100 HLG tokens
 // globalRewardIndex increases by (50 * 1e12) / 100
 
@@ -455,8 +482,8 @@ addRewards(120 ether);  // 120 HLG tokens
 
 ```solidity
 // HLG rewards arrive with no stakers
-addRewards(100 ether);  // 100 HLG: 50 burned, 50 buffered
-addRewards(100 ether);  // 100 HLG: 50 burned, 50 buffered
+addRewards(100 ether);  // 100 HLG: X% burned, (100-X)% buffered
+addRewards(100 ether);  // 100 HLG: X% burned, (100-X)% buffered
 // unallocatedBuffer = 100 HLG tokens
 
 // First person stakes
@@ -590,7 +617,7 @@ While StakingRewards builds on the proven MasterChef V2 algorithm, several key d
 | **Asset Custody**        | Multiple LP tokens         | Single HLG token only               |
 | **User Experience**      | Manual harvest required    | Auto-compounding rewards            |
 | **Zero-Staker Handling** | Rewards wasted/delayed     | Genesis bonus buffer system         |
-| **Burn Mechanism**       | No burning                 | 50% of rewards burned               |
+| **Burn Mechanism**       | No burning                 | Configurable % of rewards burned   |
 | **Security Additions**   | Basic protections          | Enhanced with emergency exits       |
 | **Precision/Arithmetic** | Standard 1e12              | Optimized 1e12 with gas savings     |
 | **Pool Design**          | Multiple pools/farms       | Single unified pool                 |
@@ -602,7 +629,7 @@ The core mathematical algorithm remains identical, keeping the proven reliabilit
 
 ## Conclusion
 
-The StakingRewards contract provides a robust foundation for Holograph's tokenomics through auto-compounding staking with 50/50 burn/reward distribution. By building on the proven MasterChef V2 algorithm and adding innovative features like zero-staker buffers, it balances simplicity with sophistication.
+The StakingRewards contract provides a robust foundation for Holograph's tokenomics through auto-compounding staking with configurable burn/reward distribution (default 50/50). By building on the proven MasterChef V2 algorithm and adding innovative features like zero-staker buffers, it balances simplicity with sophistication.
 
 **Key Strengths:**
 
@@ -610,7 +637,7 @@ The StakingRewards contract provides a robust foundation for Holograph's tokenom
 - **Auto-Compounding**: Maximizes user rewards without gas overhead
 - **Dual Operation Support**: Seamless transition from bootstrap to full automation
 - **Solid Security**: Protection against the usual smart contract attacks
-- **Economic Alignment**: 50/50 burn/reward model creates sustainable tokenomics
+- **Economic Alignment**: Configurable burn/reward model creates sustainable tokenomics
 
 ---
 

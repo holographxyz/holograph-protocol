@@ -188,8 +188,9 @@ contract FeeRouterTest is Test {
         uint256 bridgedAmount = protocolFeeAmount - lzFee; // Amount after LZ fee deduction
         uint256 expectedHlgFromSwap = bridgedAmount * 1000; // Using simplified 1000:1 rate
 
-        // Calculate minimum HLG for slippage protection (50% goes to stakers)
-        uint256 minHlgForStakers = expectedHlgFromSwap / 2;
+        // Calculate minimum HLG for slippage protection (reward percentage goes to stakers)
+        uint256 burnPercentage = stakingRewards.burnPercentage();
+        uint256 minHlgForStakers = (expectedHlgFromSwap * (10000 - burnPercentage)) / 10000;
 
         vm.prank(owner);
         feeRouterBase.bridge(minGas, minHlgForStakers);
@@ -207,7 +208,7 @@ contract FeeRouterTest is Test {
         // 3. Burns 50% of HLG (~17,986 HLG burned)
         // 4. Sends 50% to staking rewards (~17,986 HLG to stakers)
 
-        uint256 expectedBurnAmountHLG = expectedHlgFromSwap / 2; // HLG tokens burned
+        uint256 expectedBurnAmountHLG = (expectedHlgFromSwap * burnPercentage) / 10000; // HLG tokens burned
         uint256 expectedRewardAmountHLG = expectedHlgFromSwap - expectedBurnAmountHLG; // HLG tokens to stakers
 
         // Check that HLG was burned (using totalBurned instead of balanceOf(address(0)))
@@ -258,7 +259,7 @@ contract FeeRouterTest is Test {
         // Bridge ETH to Ethereum and swap to HLG
         // Only protocol fee portion (50%) gets bridged: 0.005 ETH → ~35,971 HLG → ~17,986 HLG to stakers
         uint256 protocolFeeAmount = (TEST_FEE_AMOUNT_ETH * 5000) / 10_000; // 50%
-        uint256 expectedHlgToStakers = (protocolFeeAmount * WETH_TO_HLG_RATE) / 2;
+        uint256 expectedHlgToStakers = (protocolFeeAmount * WETH_TO_HLG_RATE * (10000 - stakingRewards.burnPercentage())) / 10000;
         vm.prank(owner);
         feeRouterBase.bridge(200000, expectedHlgToStakers);
 
@@ -367,7 +368,7 @@ contract FeeRouterTest is Test {
         stakingRewards.addRewards(rewardAmount);
 
         // Check pending rewards (50% of what StakingRewards receives, 50% burned)
-        uint256 expectedRewards = rewardAmount / 2;
+        uint256 expectedRewards = (rewardAmount * (10000 - stakingRewards.burnPercentage())) / 10000;
         assertApproxEqAbs(stakingRewards.earned(staker1), expectedRewards, 1);
 
         // Trigger auto-compounding
@@ -397,7 +398,7 @@ contract FeeRouterTest is Test {
         uint256 protocolFeeAmount = (TEST_FEE_AMOUNT_ETH * 5000) / 10_000; // 50%
         uint256 lzFee = 0.001 ether; // MockLZEndpoint fee
         uint256 bridgedAmount = protocolFeeAmount - lzFee; // Amount after LZ fee
-        uint256 minHlgForStakers = (bridgedAmount * WETH_TO_HLG_RATE) / 2;
+        uint256 minHlgForStakers = (bridgedAmount * WETH_TO_HLG_RATE * (10000 - stakingRewards.burnPercentage())) / 10000;
 
         // Capture the MessageSent event to verify LayerZero V2 options format
         vm.expectEmit(true, true, true, true);
@@ -438,7 +439,7 @@ contract FeeRouterTest is Test {
         uint256 lzFee = 0.001 ether; // MockLZEndpoint fee
         uint256 bridgedAmount = protocolFeeAmount - lzFee; // Amount after LZ fee deduction
         uint256 expectedHlgFromSwap = bridgedAmount * WETH_TO_HLG_RATE;
-        uint256 expectedRewardAmountHLG = expectedHlgFromSwap / 2;
+        uint256 expectedRewardAmountHLG = (expectedHlgFromSwap * (10000 - stakingRewards.burnPercentage())) / 10000;
 
         vm.prank(owner);
         feeRouterBase.bridge(200000, expectedRewardAmountHLG);

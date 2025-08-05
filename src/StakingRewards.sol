@@ -10,7 +10,7 @@ pragma solidity ^0.8.24;
  * - Stake HLG tokens to earn proportional rewards
  * - Rewards automatically compound (increase your stake balance)
  * - No separate claiming - must fully unstake to access rewards
- * - ALL incoming tokens are split: 50% burn, 50% rewards
+ * - ALL incoming tokens are split according to configurable burn percentage (default 50% burn, 50% rewards)
  * - Works for both bootstrap (depositAndDistribute) and automated (addRewards) flows
  *
  * MASTERCHEF ALGORITHM:
@@ -43,6 +43,7 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
     error FeeOnTransferNotSupported();
     error InsufficientToken();
     error EthTransferFailed();
+    error InvalidBurnPercentage();
 
     /* -------------------------------------------------------------------------- */
     /*                                Constants                                    */
@@ -50,6 +51,9 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
 
     /// @notice Precision multiplier for reward calculations (MasterChef standard)
     uint256 private constant INDEX_PRECISION = 1e12;
+
+    /// @notice Maximum percentage value in basis points (100%)
+    uint256 public constant MAX_PERCENTAGE = 10000;
 
     /* -------------------------------------------------------------------------- */
     /*                                 Storage                                    */
@@ -68,6 +72,10 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
 
     /// @notice FeeRouter address (future automated rewards source)
     address public feeRouter;
+
+    /// @notice Percentage of rewards that get burned (in basis points, 10000 = 100%)
+    /// @dev Default is 5000 (50%), can be changed by owner
+    uint256 public burnPercentage;
 
     /* -------------------------------------------------------------------------- */
     /*                        Auto-Compounding MasterChef State                   */
@@ -96,6 +104,7 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
     event RewardsCompounded(address indexed user, uint256 rewardAmount);
     event RewardsDistributed(uint256 totalAmount, uint256 burnAmount, uint256 rewardAmount);
     event FeeRouterUpdated(address indexed newFeeRouter);
+    event BurnPercentageUpdated(uint256 oldPercentage, uint256 newPercentage);
     event TokensRecovered(address indexed token, uint256 amount, address indexed to);
     event EthSwept(uint256 amount, address indexed to);
 
@@ -105,6 +114,7 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
     constructor(address _hlg, address _owner) Ownable(_owner) {
         if (_hlg == address(0)) revert ZeroAddress();
         HLG = IERC20(_hlg);
+        burnPercentage = 5000; // Default to 50% burn, 50% rewards
         _pause(); // Start paused until ready
     }
 
@@ -203,9 +213,9 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
     /* -------------------------------------------------------------------------- */
 
     /**
-     * @notice Deposit HLG and distribute: 50% burn, 50% auto-compounding rewards
+     * @notice Deposit HLG and distribute according to burn/reward percentage split
      * @dev Used for manual bootstrap operations before FeeRouter integration
-     * @param hlgAmount Total HLG to process (will be split 50/50)
+     * @param hlgAmount Total HLG to process (will be split according to burnPercentage)
      */
     function depositAndDistribute(uint256 hlgAmount) external onlyOwner nonReentrant {
         if (hlgAmount == 0) revert ZeroAmount();
@@ -218,16 +228,16 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
 
         if (actualAmount != hlgAmount) revert FeeOnTransferNotSupported();
 
-        // Calculate 50/50 split
-        uint256 burnAmount = actualAmount / 2;
+        // Calculate burn/reward split based on burnPercentage
+        uint256 burnAmount = (actualAmount * burnPercentage) / MAX_PERCENTAGE;
         uint256 rewardAmount = actualAmount - burnAmount;
 
-        // TODO: Switch to IERC20Burnable(address(HLG)).burn() if HLG implements burn()
-        // Currently using transfer to address(0) for compatibility
-        // Burn 50% by sending to address(0)
+        // NOTE: HLG (0x740df024CE73f589ACD5E8756b377ef8C6558BaB) exposes burn/burnFrom,
+        // but they require an allowance. Using transfer(address(0)) is universally safe
+        // and still decreases total supply onchain (see HLG implementation).
         HLG.safeTransfer(address(0), burnAmount);
 
-        // Distribute the remaining 50% as auto-compounding rewards
+        // Distribute the remaining portion as auto-compounding rewards
         _addRewards(rewardAmount);
 
         // Emit event after state changes for consistent indexing
@@ -240,8 +250,8 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
 
     /**
      * @notice Add rewards from FeeRouter (automated flow)
-     * @dev Handles 50% burn and 50% reward distribution, same as manual bootstrap
-     * @param amount Total amount of HLG to process (will be split 50/50)
+     * @dev Handles burn/reward distribution according to burnPercentage, same as manual bootstrap
+     * @param amount Total amount of HLG to process (will be split according to burnPercentage)
      */
     function addRewards(uint256 amount) external nonReentrant {
         if (msg.sender != feeRouter) revert Unauthorized();
@@ -255,16 +265,16 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
 
         if (actualAmount != amount) revert FeeOnTransferNotSupported();
 
-        // Calculate 50/50 split
-        uint256 burnAmount = actualAmount / 2;
+        // Calculate burn/reward split based on burnPercentage
+        uint256 burnAmount = (actualAmount * burnPercentage) / MAX_PERCENTAGE;
         uint256 rewardAmount = actualAmount - burnAmount;
 
-        // TODO: Switch to IERC20Burnable(address(HLG)).burn() if HLG implements burn()
-        // Currently using transfer to address(0) for compatibility
-        // Burn 50% by sending to address(0)
+        // NOTE: HLG (0x740dF024Ce73F589AcD5E8756B377eF8C6558BaB) exposes burn/burnFrom,
+        // but they require an allowance. Using transfer(address(0)) is universally safe
+        // and still decreases total supply onchain (see HLG implementation).
         HLG.safeTransfer(address(0), burnAmount);
 
-        // Distribute remaining 50% as auto-compounding rewards
+        // Distribute remaining portion as auto-compounding rewards
         _addRewards(rewardAmount);
 
         // Emit event after state changes for consistent indexing
@@ -401,6 +411,20 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
         if (_feeRouter == address(0)) revert ZeroAddress();
         feeRouter = _feeRouter;
         emit FeeRouterUpdated(_feeRouter);
+    }
+
+    /**
+     * @notice Set burn percentage for reward distribution
+     * @param _burnPercentage Percentage of rewards to burn (in basis points, 10000 = 100%)
+     * @dev Remaining percentage (10000 - _burnPercentage) goes to stakers as rewards
+     */
+    function setBurnPercentage(uint256 _burnPercentage) external onlyOwner {
+        if (_burnPercentage > MAX_PERCENTAGE) revert InvalidBurnPercentage();
+
+        uint256 oldPercentage = burnPercentage;
+        burnPercentage = _burnPercentage;
+
+        emit BurnPercentageUpdated(oldPercentage, _burnPercentage);
     }
 
     /**

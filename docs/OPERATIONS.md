@@ -15,7 +15,7 @@ Base Chain                  LayerZero V2               Ethereum Chain
 └─────────────────┘        └─────────────┘           └─────────────────┘
 ```
 
-**Fee Flow**: Doppler → Airlock → FeeRouter (50% protocol, 50% treasury) → LayerZero → Ethereum → WETH/HLG swap → 50% burn, 50% stake
+**Fee Flow**: Doppler → Airlock → FeeRouter (50% protocol, 50% treasury) → LayerZero → Ethereum → WETH/HLG swap → configurable burn/stake split
 
 ## Fee Collection (Owner Operations)
 

@@ -77,7 +77,9 @@ contract StakingRewardsTest is Test {
         stakingRewards.addRewards(rewardAmt);
 
         uint256 earned = stakingRewards.earned(user1);
-        uint256 expectedReward = rewardAmt / 2; // 50% distributed, 50% burned
+        // Get burn percentage and calculate expected reward
+        uint256 burnPercentage = stakingRewards.burnPercentage();
+        uint256 expectedReward = (rewardAmt * (10000 - burnPercentage)) / 10000;
         assertApproxEqAbs(earned, expectedReward, 1); // allow 1-wei rounding
 
         // Trigger auto-compounding by calling updateUser
@@ -147,7 +149,103 @@ contract StakingRewardsTest is Test {
         stakingRewards.addRewards(rewardAmt);
 
         uint256 earned = stakingRewards.earned(user1);
-        uint256 expectedReward = rewardAmt / 2; // 50% distributed, 50% burned
+        // Get burn percentage and calculate expected reward
+        uint256 burnPercentage = stakingRewards.burnPercentage();
+        uint256 expectedReward = (rewardAmt * (10000 - burnPercentage)) / 10000;
         assertApproxEqAbs(earned, expectedReward, 1e18); // Allow larger delta for 1e12 precision vs 1e18
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /*                           Burn Percentage Tests                            */
+    /* -------------------------------------------------------------------------- */
+    
+    function testSetBurnPercentage() public {
+        // Test setting valid burn percentage
+        vm.prank(owner);
+        vm.expectEmit(true, true, false, true);
+        emit StakingRewards.BurnPercentageUpdated(5000, 3000); // 50% to 30%
+        stakingRewards.setBurnPercentage(3000);
+        
+        assertEq(stakingRewards.burnPercentage(), 3000);
+    }
+    
+    function testSetBurnPercentageOnlyOwner() public {
+        // Test that only owner can set burn percentage
+        vm.prank(user1);
+        vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", user1));
+        stakingRewards.setBurnPercentage(3000);
+    }
+    
+    function testSetBurnPercentageInvalidValue() public {
+        // Test that burn percentage cannot exceed 100%
+        vm.prank(owner);
+        vm.expectRevert(StakingRewards.InvalidBurnPercentage.selector);
+        stakingRewards.setBurnPercentage(10001); // > 100%
+    }
+    
+    function testDifferentBurnPercentages() public {
+        uint256 stakeAmt = 100 ether;
+        uint256 rewardAmt = 100 ether;
+        
+        // Setup user stake
+        vm.startPrank(user1);
+        hlg.approve(address(stakingRewards), stakeAmt);
+        stakingRewards.stake(stakeAmt);
+        vm.stopPrank();
+        
+        // Test 25% burn (75% rewards)
+        vm.prank(owner);
+        stakingRewards.setBurnPercentage(2500);
+        
+        hlg.mint(feeRouter, rewardAmt);
+        vm.prank(feeRouter);
+        hlg.approve(address(stakingRewards), rewardAmt);
+        vm.prank(feeRouter);
+        stakingRewards.addRewards(rewardAmt);
+        
+        uint256 earned = stakingRewards.earned(user1);
+        uint256 expectedReward = (rewardAmt * 7500) / 10000; // 75% to stakers
+        assertApproxEqAbs(earned, expectedReward, 1e15); // Allow for precision loss with 1e12
+        
+        // Reset for next test
+        stakingRewards.updateUser(user1);
+        
+        // Test 80% burn (20% rewards)
+        vm.prank(owner);
+        stakingRewards.setBurnPercentage(8000);
+        
+        hlg.mint(feeRouter, rewardAmt);
+        vm.prank(feeRouter);
+        hlg.approve(address(stakingRewards), rewardAmt);
+        vm.prank(feeRouter);
+        stakingRewards.addRewards(rewardAmt);
+        
+        earned = stakingRewards.earned(user1);
+        expectedReward = (rewardAmt * 2000) / 10000; // 20% to stakers
+        assertApproxEqAbs(earned, expectedReward, 1e15); // Allow for precision loss with 1e12
+    }
+    
+    function testZeroBurnPercentage() public {
+        uint256 stakeAmt = 100 ether;
+        uint256 rewardAmt = 100 ether;
+        
+        // Setup user stake
+        vm.startPrank(user1);
+        hlg.approve(address(stakingRewards), stakeAmt);
+        stakingRewards.stake(stakeAmt);
+        vm.stopPrank();
+        
+        // Set 0% burn (100% rewards)
+        vm.prank(owner);
+        stakingRewards.setBurnPercentage(0);
+        
+        hlg.mint(feeRouter, rewardAmt);
+        vm.prank(feeRouter);
+        hlg.approve(address(stakingRewards), rewardAmt);
+        vm.prank(feeRouter);
+        stakingRewards.addRewards(rewardAmt);
+        
+        uint256 earned = stakingRewards.earned(user1);
+        assertEq(earned, rewardAmt); // All rewards go to stakers
     }
 }

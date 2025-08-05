@@ -33,8 +33,8 @@ flowchart TD
     HLG --> |depositAndDistribute| SR[StakingRewards]
     
     %% Distribution
-    SR --> |50%| BURN[Burn to address 0]
-    SR --> |50%| STAKE[Auto-Compound to Stakers]
+    SR --> |X%| BURN[Burn to address 0]
+    SR --> |(100-X)%| STAKE[Auto-Compound to Stakers]
     
     style MS fill:#fff3e0
     style ETHMS fill:#fff3e0

@@ -245,12 +245,12 @@ function setTrustedAirlock(address airlock, bool trusted) external; // Owner onl
 
 ### StakingRewards
 
-Single-token HLG staking with reward distribution, cooldown periods, and emergency controls.
+Single-token HLG staking with configurable burn/reward distribution, emergency controls, and auto-compounding.
 
 ```solidity
 function stake(uint256 amount) external; // Stake HLG tokens
-function withdraw(uint256 amount) external; // Withdraw after cooldown (default 7 days)
-function claim() external; // Claim accumulated rewards
+function unstake() external; // Withdraw full balance (auto-compounded rewards)
+function setBurnPercentage(uint256 _burnPercentage) external; // Owner only
 function addRewards(uint256 amount) external; // FeeRouter only
 ```
 
@@ -267,7 +267,7 @@ function addRewards(uint256 amount) external; // FeeRouter only
 - **Source**: Trading fees from Doppler auctions (collected by Airlock contracts)
 - **Protocol Split**: 50% of collected fees (HOLO_FEE_BPS = 5000)
 - **Treasury Split**: 50% of collected fees forwarded to treasury address
-- **HLG Distribution**: Protocol fees bridged to Ethereum, swapped WETH→HLG, 50% burned / 50% staked
+- **HLG Distribution**: Protocol fees bridged to Ethereum, swapped WETH→HLG, configurable burn/stake split (default 50% burned / 50% staked)
 - **Security**: Trusted Airlock whitelist prevents unauthorized ETH transfers to FeeRouter
 
 ## Integration
