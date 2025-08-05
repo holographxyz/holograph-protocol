@@ -10,7 +10,7 @@ import "../src/interfaces/IAirlock.sol";
  * @title FeeOperations
  * @notice Owner-only operations script for fee collection and cross-chain bridging
  * @dev Automated script for FeeRouter operations - replaces old keeper-based system
- * 
+ *
  * Usage:
  *   1. Setup: Update FEE_ROUTER address with deployed contract
  *   2. Configure: Run setupTrustedAirlocks() to whitelist Doppler Airlocks
@@ -47,18 +47,18 @@ contract FeeOperations is Script {
     function fullFeeProcessing() external {
         console.log("=== Starting Full Fee Processing ===");
         _validateOwnership();
-        
+
         vm.startBroadcast();
-        
+
         // Step 1: Collect fees from all known Airlocks
         _collectAllFees();
-        
+
         // Step 2: Bridge ETH to Ethereum for HLG conversion
         _bridgeETH();
-        
+
         // Step 3: Bridge accumulated tokens
         _bridgeTokens();
-        
+
         console.log("=== Fee Processing Complete ===");
         vm.stopBroadcast();
     }
@@ -70,7 +70,7 @@ contract FeeOperations is Script {
     function collectFees() external {
         console.log("=== Collecting Fees from Airlocks ===");
         _validateOwnership();
-        
+
         vm.startBroadcast();
         _collectAllFees();
         vm.stopBroadcast();
@@ -83,7 +83,7 @@ contract FeeOperations is Script {
     function bridgeToEthereum() external {
         console.log("=== Bridging Fees to Ethereum ===");
         _validateOwnership();
-        
+
         vm.startBroadcast();
         _bridgeETH();
         _bridgeTokens();
@@ -101,7 +101,7 @@ contract FeeOperations is Script {
     function setupTrustedAirlocks() external {
         console.log("=== Setting up Trusted Airlocks ===");
         _validateOwnership();
-        
+
         vm.startBroadcast();
 
         address[] memory airlocks = _getKnownAirlocks();
@@ -127,16 +127,16 @@ contract FeeOperations is Script {
     function emergencyRedirect(address emergencyTreasury) external {
         console.log("=== EMERGENCY: Redirecting Treasury ===");
         _validateOwnership();
-        
+
         vm.startBroadcast();
-        
+
         try FEE_ROUTER.setTreasury(emergencyTreasury) {
             console.log(">> Treasury redirected to:", emergencyTreasury);
             console.log("All new fees will go to emergency address");
         } catch {
             console.log("!! Failed to redirect treasury");
         }
-        
+
         vm.stopBroadcast();
     }
 
@@ -151,17 +151,17 @@ contract FeeOperations is Script {
     function checkSystemStatus() external view {
         console.log("=== FeeRouter System Status ===");
         console.log("FeeRouter Address:", address(FEE_ROUTER));
-        
+
         // Get current balances
         (uint256 ethBalance, uint256 hlgBalance) = FEE_ROUTER.getBalances();
         console.log("ETH Balance:", ethBalance);
         console.log("HLG Balance:", hlgBalance);
-        
+
         // Check fee configuration
         (uint256 protocolFee, uint256 treasuryFee) = FEE_ROUTER.calculateFeeSplit(1 ether);
         console.log("Protocol Fee (50%):", protocolFee);
         console.log("Treasury Fee (50%):", treasuryFee);
-        
+
         // Check trusted Airlock status
         console.log("=== Trusted Airlock Status ===");
         address[] memory airlocks = _getKnownAirlocks();
@@ -171,7 +171,7 @@ contract FeeOperations is Script {
                 console.log("Airlock:", airlocks[i], "Trusted:", trusted);
             }
         }
-        
+
         console.log("=== Status Check Complete ===");
     }
 
@@ -194,16 +194,16 @@ contract FeeOperations is Script {
      */
     function _collectAllFees() internal {
         console.log("Collecting fees from Doppler Airlocks...");
-        
+
         address[] memory airlocks = _getKnownAirlocks();
         uint256 successCount = 0;
-        
+
         for (uint256 i = 0; i < airlocks.length; i++) {
             if (_collectFromAirlock(airlocks[i])) {
                 successCount++;
             }
         }
-        
+
         console.log("Fee collection completed. Success:", successCount, "of", airlocks.length);
     }
 
@@ -215,7 +215,7 @@ contract FeeOperations is Script {
      */
     function _collectFromAirlock(address airlock) internal returns (bool success) {
         if (airlock == address(0)) return false;
-        
+
         // Collect ETH fees
         try FEE_ROUTER.collectAirlockFees(airlock, address(0), 0.01 ether) {
             console.log(">> Collected ETH from:", airlock);
@@ -223,7 +223,7 @@ contract FeeOperations is Script {
         } catch {
             console.log("?? No ETH fees available from:", airlock);
         }
-        
+
         // Collect token fees
         address[] memory tokens = _getSupportedTokens();
         for (uint256 i = 0; i < tokens.length; i++) {
@@ -242,7 +242,7 @@ contract FeeOperations is Script {
      */
     function _bridgeETH() internal {
         (uint256 balance,) = FEE_ROUTER.getBalances();
-        
+
         if (balance >= 0.01 ether) {
             try FEE_ROUTER.bridge(200_000, 0) {
                 console.log(">> Bridged ETH to Ethereum:", balance);
@@ -260,7 +260,7 @@ contract FeeOperations is Script {
      */
     function _bridgeTokens() internal {
         address[] memory tokens = _getSupportedTokens();
-        
+
         for (uint256 i = 0; i < tokens.length; i++) {
             try FEE_ROUTER.bridgeToken(tokens[i], 200_000, 0) {
                 console.log(">> Bridged", _getTokenSymbol(tokens[i]), "to Ethereum");
@@ -282,14 +282,14 @@ contract FeeOperations is Script {
     function _getKnownAirlocks() internal pure returns (address[] memory) {
         // TODO: Update with actual deployed Doppler Airlock addresses
         address[] memory airlocks = new address[](1);
-        
+
         // Placeholder - replace with real Doppler Airlock addresses
         airlocks[0] = 0x742D35cC6634C0532925a3b8D4014dd1C4D9dC07;
-        
+
         // Add more as Airlocks are deployed:
         // airlocks[1] = 0x...;
         // airlocks[2] = 0x...;
-        
+
         return airlocks;
     }
 
@@ -313,9 +313,9 @@ contract FeeOperations is Script {
      * @return Minimum amount in token's native decimals
      */
     function _getMinAmount(address token) internal pure returns (uint256) {
-        if (token == USDC) return 100e6;   // 100 USDC
+        if (token == USDC) return 100e6; // 100 USDC
         if (token == WETH) return 0.01 ether; // 0.01 WETH
-        if (token == DAI) return 100e18;   // 100 DAI
+        if (token == DAI) return 100e18; // 100 DAI
         return 1e18; // Default 1 token
     }
 
@@ -337,10 +337,10 @@ contract FeeOperations is Script {
      */
     function _validateOwnership() internal view {
         require(address(FEE_ROUTER) != address(0), "FeeRouter address not configured - update with deployed address");
-        
+
         console.log("Using FeeRouter at:", address(FEE_ROUTER));
         console.log("Operations will be executed by contract owner");
-        
+
         // Note: Actual ownership validation happens in FeeRouter.onlyOwner modifier
     }
 }

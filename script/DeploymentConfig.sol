@@ -30,7 +30,7 @@ library DeploymentConfig {
     uint32 internal constant BASE_MAINNET_EID = 30184;
     uint32 internal constant BASE_SEPOLIA_EID = 40245;
     uint32 internal constant UNICHAIN_MAINNET_EID = 30328; // TODO: Verify
-    
+
     // LayerZero V2 Endpoint Addresses
     address internal constant LZ_ENDPOINT_MAINNET = 0x1a44076050125825900e736c501f859c50fE728c;
     address internal constant LZ_ENDPOINT_SEPOLIA = 0x6EDCE65403992e310A62460808c4b910D972f10f;
@@ -38,7 +38,7 @@ library DeploymentConfig {
     // LayerZero Labs DVN addresses
     address internal constant LAYERZERO_LABS_DVN_ETHEREUM_MAINNET = 0xF4DA94b4EE9D8e209e3bf9f469221CE2731A7112;
     address internal constant LAYERZERO_LABS_DVN_ETHEREUM_SEPOLIA = 0x53f488E93b4f1b60E8E83aa374dBe1780A1EE8a8;
-    
+
     // Base DVN addresses
     // TODO: Update Base mainnet address when LayerZero publishes official DVN
     // Currently using Dead DVN as fallback: https://docs.layerzero.network/v2/deployments/dvn-addresses

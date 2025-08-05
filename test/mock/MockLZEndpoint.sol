@@ -94,9 +94,7 @@ contract MockLZEndpoint {
 
             // We need to simulate the target endpoint calling lzReceive
             // Note: No ETH value is sent here - destination uses its own reserves
-            MockLZEndpoint(targetEndpoint).deliverMessage{value: 0}(
-                crossChainTarget, srcEid, payload, msg.sender
-            );
+            MockLZEndpoint(targetEndpoint).deliverMessage{value: 0}(crossChainTarget, srcEid, payload, msg.sender);
         }
     }
 

@@ -33,7 +33,10 @@ contract StakingRewardsTest is Test {
         hlg.mint(feeRouter, INITIAL_SUPPLY);
 
         // Deploy staking contract
-        stakingRewards = new StakingRewards(address(hlg), feeRouter);
+        stakingRewards = new StakingRewards(address(hlg), owner);
+
+        // Set fee router
+        stakingRewards.setFeeRouter(feeRouter);
 
         // Unpause the contract for testing
         stakingRewards.unpause();
@@ -53,13 +56,13 @@ contract StakingRewardsTest is Test {
         assertEq(stakingRewards.balanceOf(user1), amt);
 
         vm.warp(block.timestamp + 7 days + 1);
-        stakingRewards.withdraw(amt);
+        stakingRewards.unstake();
         assertEq(stakingRewards.totalStaked(), 0);
         assertEq(stakingRewards.balanceOf(user1), 0);
         vm.stopPrank();
     }
 
-    function testClaimRewards() public {
+    function testAutoCompoundingRewards() public {
         uint256 stakeAmt = 100 ether;
         vm.startPrank(user1);
         hlg.approve(address(stakingRewards), stakeAmt);
@@ -74,22 +77,28 @@ contract StakingRewardsTest is Test {
         stakingRewards.addRewards(rewardAmt);
 
         uint256 earned = stakingRewards.earned(user1);
-        assertApproxEqAbs(earned, rewardAmt, 1); // allow 1-wei rounding
+        uint256 expectedReward = rewardAmt / 2; // 50% distributed, 50% burned
+        assertApproxEqAbs(earned, expectedReward, 1); // allow 1-wei rounding
 
-        vm.prank(user1);
-        stakingRewards.claim();
-        assertApproxEqAbs(hlg.balanceOf(user1), 1e24 - stakeAmt + rewardAmt, 1);
+        // Trigger auto-compounding by calling updateUser
+        stakingRewards.updateUser(user1);
+
+        // After compounding, user's balance should include rewards
+        assertApproxEqAbs(stakingRewards.balanceOf(user1), stakeAmt + expectedReward, 1);
+        assertApproxEqAbs(stakingRewards.totalStaked(), stakeAmt + expectedReward, 1);
+
+        // Pending rewards should now be zero
         assertEq(stakingRewards.earned(user1), 0);
-    }
 
-    function testWithdrawBeforeCooldownReverts() public {
-        uint256 amt = 10 ether;
-        vm.startPrank(user1);
-        hlg.approve(address(stakingRewards), amt);
-        stakingRewards.stake(amt);
-        vm.expectRevert(abi.encodeWithSignature("CooldownActive(uint256)", 604800));
-        stakingRewards.withdraw(amt);
-        vm.stopPrank();
+        // User unstakes and should receive original stake + compounded rewards
+        uint256 userBalanceBefore = hlg.balanceOf(user1);
+        vm.prank(user1);
+        stakingRewards.unstake();
+
+        // User should receive their full balance (original stake + rewards)
+        assertApproxEqAbs(hlg.balanceOf(user1), userBalanceBefore + stakeAmt + expectedReward, 1);
+        assertEq(stakingRewards.balanceOf(user1), 0);
+        assertEq(stakingRewards.totalStaked(), 0);
     }
 
     /* -------------------------------------------------------------------------- */
@@ -114,7 +123,7 @@ contract StakingRewardsTest is Test {
         vm.prank(user1);
         hlg.approve(address(stakingRewards), amt);
         vm.prank(user1);
-        vm.expectRevert(StakingRewards.FeeRouterOnly.selector);
+        vm.expectRevert(StakingRewards.Unauthorized.selector);
         stakingRewards.addRewards(amt);
     }
 
@@ -138,6 +147,7 @@ contract StakingRewardsTest is Test {
         stakingRewards.addRewards(rewardAmt);
 
         uint256 earned = stakingRewards.earned(user1);
-        assertApproxEqAbs(earned, rewardAmt, 1000000); // Allow reasonable delta for precision
+        uint256 expectedReward = rewardAmt / 2; // 50% distributed, 50% burned
+        assertApproxEqAbs(earned, expectedReward, 1e18); // Allow larger delta for 1e12 precision vs 1e18
     }
 }

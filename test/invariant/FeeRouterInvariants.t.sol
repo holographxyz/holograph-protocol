@@ -74,13 +74,10 @@ contract FeeRouterInvariants is Test {
     function invariant_bridgeOnlyWithTrustedRemote() public {
         uint32 currentRemoteEid = feeRouter.remoteEid();
         bytes32 trustedRemote = feeRouter.trustedRemotes(currentRemoteEid);
-        
+
         // If the router has sufficient balance for bridging, trusted remote must be set
         if (address(feeRouter).balance >= feeRouter.MIN_BRIDGE_VALUE()) {
-            assertTrue(
-                trustedRemote != bytes32(0), 
-                "Bridge possible but no trusted remote configured"
-            );
+            assertTrue(trustedRemote != bytes32(0), "Bridge possible but no trusted remote configured");
         }
     }
 

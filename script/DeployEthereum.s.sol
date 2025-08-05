@@ -107,7 +107,7 @@ contract DeployEthereum is DeploymentBase {
         console.log("Gas used:", gasFeeRouter);
 
         // Update stakingRewards to use actual FeeRouter address
-        StakingRewards(stakingRewards).setFeeRouter(feeRouter);
+        StakingRewards(payable(stakingRewards)).setFeeRouter(feeRouter);
 
         // Store final addresses
         addresses.stakingRewards = stakingRewards;
