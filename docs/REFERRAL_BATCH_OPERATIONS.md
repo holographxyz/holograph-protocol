@@ -61,17 +61,16 @@ The protocol includes two complementary gas analysis scripts that serve differen
 
 Based on optimized 500 users/batch (1,139 gas/user):
 
-| Gas Price | Total ETH Cost | Total USD Cost | Cost Per User | Savings vs 30 gwei |
-|-----------|----------------|----------------|---------------|-----------------|
-| 1 gwei    | 0.006 ETH      | $20.88         | $0.00         | 96%             |
-| 5 gwei    | 0.028 ETH      | $104.41        | $0.02         | 83%             |
-| 10 gwei   | 0.057 ETH      | $208.82        | $0.04         | 66%             |
-| 15 gwei   | 0.085 ETH      | $313.23        | $0.06         | 50%             |
-| 30 gwei   | 0.171 ETH      | $626.47        | $0.12         | baseline        |
-| 50 gwei   | 0.285 ETH      | $1,044.12      | $0.21         | -67%            |
-| 100 gwei  | 0.570 ETH      | $2,088.25      | $0.42         | -233%           |
+| Gas Price | Total ETH Cost | Total USD Cost | Cost Per User |
+|-----------|----------------|----------------|---------------|
+| 0.2 gwei  | 0.001 ETH      | $4.18          | $0.0008       |
+| 0.5 gwei  | 0.003 ETH      | $10.45         | $0.002        |
+| 1 gwei    | 0.006 ETH      | $20.89         | $0.004        |
+| 2 gwei    | 0.011 ETH      | $41.79         | $0.008        |
+| 5 gwei    | 0.028 ETH      | $104.48        | $0.02         |
+| 10 gwei   | 0.057 ETH      | $208.96        | $0.04         |
 
-*Live ETH price via Chainlink oracle. Gas measurements via mainnet fork testing.
+**Important**: These are **ETH gas costs only** for executing batch transactions. They do NOT include the HLG tokens being distributed to users. Live ETH price via Chainlink oracle. Gas measurements via mainnet fork testing.
 
 ### Execution Strategy
 
@@ -81,21 +80,22 @@ Based on optimized 500 users/batch (1,139 gas/user):
 - **Hybrid Approach**: Start with 50 users/batch, increase if comfortable
 
 **Optimal Execution Windows:**
-- **Best**: Weekends Saturday/Sunday 2-6 AM UTC (1-5 gwei typical)
-- **Good**: Weekdays Tuesday-Thursday 3-5 AM UTC
-- **Avoid**: Weekday business hours (10+ gwei common)
-- **Target gas price**: 1-5 gwei for optimal savings
+- **Best**: Weekends Saturday/Sunday 2-6 AM UTC (0.2-0.5 gwei typical)
+- **Good**: Weekdays Tuesday-Thursday 3-5 AM UTC (0.5-1 gwei)  
+- **Avoid**: High-activity periods (5+ gwei)
+- **Target gas price**: 0.2-1 gwei for optimal costs
 
 **Real-Time Monitoring:**
 1. Run `make gas-analysis-all` before execution for current costs
 2. Monitor https://etherscan.io/gastracker for live gas prices
-3. Set alerts on Blocknative/MevBlocker for <5 gwei notifications
+3. Set alerts on Blocknative/MevBlocker for <1 gwei notifications
 4. Check current ETH price impact on total costs
 
 **Cost Optimization:**
-- **96% savings** possible with optimal timing (1 gwei vs 30 gwei)
-- **83% savings** at reasonable 5 gwei execution
+- **Very low gas environment** makes execution extremely cost-effective
+- **Target 0.2-1 gwei** for optimal execution costs
 - Share gas analysis output with team for approval before execution
+- Remember: Gas costs are only for transaction execution, not HLG token distribution
 
 ## Pre-Execution Checklist
 
@@ -173,7 +173,7 @@ forge script script/ProcessReferralCSV.s.sol:ProcessReferralCSV \
   --fork-url $ETH_RPC_URL \
   --broadcast \
   --verify \
-  --gas-price 5gwei \
+  --gas-price 1gwei \
   -vvv
 ```
 

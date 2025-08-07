@@ -73,14 +73,14 @@ contract GasAnalysis is Script {
     function setUp() public {
         priceOracle = new PriceFeedOracle();
 
-        // Initialize gas prices array
-        gasPrices.push(1 gwei);
-        gasPrices.push(5 gwei);
-        gasPrices.push(10 gwei);
-        gasPrices.push(15 gwei);
-        gasPrices.push(30 gwei);
-        gasPrices.push(50 gwei);
-        gasPrices.push(100 gwei);
+        // Initialize gas prices array - current typical mainnet ranges
+        gasPrices.push(0.2 gwei);  // Very low (weekend nights)
+        gasPrices.push(0.5 gwei);  // Low (off-peak)
+        gasPrices.push(1 gwei);    // Normal low
+        gasPrices.push(2 gwei);    // Typical current
+        gasPrices.push(5 gwei);    // Higher activity
+        gasPrices.push(10 gwei);   // Network congestion
+        gasPrices.push(20 gwei);   // High congestion
     }
 
     function run() public {
@@ -131,12 +131,11 @@ contract GasAnalysis is Script {
 
     function _printCostTable(uint256 ethPrice, uint256 gasPerUser) internal view {
         console.log("\n== COST ANALYSIS @ ETH PRICE: $", vm.toString(ethPrice / 1e18));
-        console.log("+--------------+---------------+---------------+--------------+-------------+");
-        console.log("| Gas Price    | Total Cost    | Cost/User     | ETH Cost     | Savings     |");
-        console.log("+--------------+---------------+---------------+--------------+-------------+");
+        console.log("+--------------+---------------+---------------+--------------+");
+        console.log("| Gas Price    | Total Cost    | Cost/User     | ETH Cost     |");
+        console.log("+--------------+---------------+---------------+--------------+");
 
         uint256 totalGas = gasPerUser * TOTAL_USERS;
-        uint256 baselineCost = (totalGas * 30 gwei * ethPrice / 1e18) / 1e16; // 30 gwei baseline in cents
 
         for (uint256 i = 0; i < gasPrices.length; i++) {
             uint256 gasPrice = gasPrices[i];
@@ -144,27 +143,21 @@ contract GasAnalysis is Script {
             // Convert to USD cents (ethPrice has 18 decimals, result needs to be in cents)
             uint256 usdCostInCents = (ethCost * ethPrice / 1e18) / 1e16; // Result in cents
             uint256 perUserCostInCents = usdCostInCents / TOTAL_USERS;
-            uint256 savings = baselineCost > usdCostInCents ? ((baselineCost - usdCostInCents) * 100) / baselineCost : 0;
-
-            _printTableRow(gasPrice, usdCostInCents, perUserCostInCents, ethCost, savings);
+            _printTableRow(gasPrice, usdCostInCents, perUserCostInCents, ethCost);
         }
 
-        console.log("+--------------+---------------+---------------+--------------+-------------+");
+        console.log("+--------------+---------------+---------------+--------------+");
     }
 
-    function _printTableRow(uint256 gasPrice, uint256 usdCost, uint256 perUserCost, uint256 ethCost, uint256 savings)
+    function _printTableRow(uint256 gasPrice, uint256 usdCost, uint256 perUserCost, uint256 ethCost)
         internal
         pure
     {
         // Format each column with fixed width padding
-        string memory col1 = _padRight(string(abi.encodePacked(vm.toString(gasPrice / 1e9), " gwei")), 12);
+        string memory col1 = _padRight(_formatGasPrice(gasPrice), 12);
         string memory col2 = _padRight(_formatUsdAmount(usdCost), 13);
         string memory col3 = _padRight(_formatUsdAmount(perUserCost), 13);
         string memory col4 = _padRight(_formatEthAmount(ethCost), 12);
-        string memory col5 = _padRight(
-            savings > 0 ? string(abi.encodePacked(vm.toString(savings), "%")) : "baseline",
-            11
-        );
 
         console.log(
             string(
@@ -177,8 +170,6 @@ contract GasAnalysis is Script {
                     col3,
                     "  | ",
                     col4,
-                    "  | ",
-                    col5,
                     "  |"
                 )
             )
@@ -187,31 +178,20 @@ contract GasAnalysis is Script {
 
     function _printExecutionStrategy(uint256 ethPrice, uint256 gasPerUser) internal pure {
         console.log("\n== EXECUTION STRATEGY ==");
-        console.log("- Best execution window: Weekends 2-6 AM UTC (1-5 gwei typical)");
+        console.log("- Best execution window: Weekends 2-6 AM UTC (0.2-0.5 gwei typical)");
         console.log("- Monitor gas: https://etherscan.io/gastracker");
-        console.log("- Set alerts: < 5 gwei on Blocknative or similar");
-        console.log("- Potential savings: Up to 97% vs standard gas (30 gwei)");
+        console.log("- Set alerts: < 1 gwei on Blocknative or similar");
+        console.log("- Current gas environment: Very low (0.2-2 gwei typical)");
 
-        // Calculate specific savings with current prices
+        // Calculate cost comparison for current gas environment
         uint256 totalGas = gasPerUser * TOTAL_USERS;
-        uint256 costAt1GweiInCents = (totalGas * 1 gwei * ethPrice / 1e18) / 1e16;
-        uint256 costAt30GweiInCents = (totalGas * 30 gwei * ethPrice / 1e18) / 1e16;
-        uint256 savedAmountInCents = costAt30GweiInCents - costAt1GweiInCents;
+        uint256 costAtLowGweiInCents = (totalGas * 0.2 gwei * ethPrice / 1e18) / 1e16;
+        uint256 costAtTypicalGweiInCents = (totalGas * 2 gwei * ethPrice / 1e18) / 1e16;
 
-        console.log("\n== CURRENT SAVINGS OPPORTUNITY ==");
-        console.log(string(abi.encodePacked("- Cost @ 30 gwei: ", _formatUsdAmount(costAt30GweiInCents))));
-        console.log(string(abi.encodePacked("- Cost @ 1 gwei:  ", _formatUsdAmount(costAt1GweiInCents))));
-        console.log(
-            string(
-                abi.encodePacked(
-                    "- Potential savings: ",
-                    _formatUsdAmount(savedAmountInCents),
-                    " (",
-                    vm.toString((savedAmountInCents * 100) / costAt30GweiInCents),
-                    "%)"
-                )
-            )
-        );
+        console.log("\n== CURRENT COST RANGE ==");
+        console.log(string(abi.encodePacked("- Cost @ 0.2 gwei (optimal): ", _formatUsdAmount(costAtLowGweiInCents))));
+        console.log(string(abi.encodePacked("- Cost @ 2 gwei (typical):   ", _formatUsdAmount(costAtTypicalGweiInCents))));
+        console.log("- Note: These are ETH gas costs only, NOT including HLG token transfers");
     }
 
     function _printBatchBreakdown(uint256 optimalBatchSize) internal pure {
@@ -300,6 +280,31 @@ contract GasAnalysis is Script {
         }
         
         return string(abi.encodePacked("$", vm.toString(dollars), ".", centsStr));
+    }
+
+    /**
+     * @notice Format gas price with proper decimal places for fractional gwei
+     */
+    function _formatGasPrice(uint256 gasPrice) internal pure returns (string memory) {
+        // Convert to gwei (divide by 1e9)
+        uint256 gweiWhole = gasPrice / 1e9;
+        uint256 remainder = gasPrice % 1e9;
+        
+        if (remainder == 0) {
+            // Whole gwei value
+            return string(abi.encodePacked(vm.toString(gweiWhole), " gwei"));
+        }
+        
+        // Handle fractional gwei (0.1, 0.2, 0.5, etc)
+        if (gweiWhole == 0) {
+            // Less than 1 gwei - show one decimal place
+            uint256 tenthGweiValue = remainder / 1e8; // 0.1 gwei precision
+            return string(abi.encodePacked("0.", vm.toString(tenthGweiValue), " gwei"));
+        }
+        
+        // More than 1 gwei with decimals - show one decimal place
+        uint256 tenthGwei = remainder / 1e8;
+        return string(abi.encodePacked(vm.toString(gweiWhole), ".", vm.toString(tenthGwei), " gwei"));
     }
 
     /**

@@ -471,27 +471,30 @@ The scripts serve different purposes and use different optimization approaches:
 Recent analysis shows significant cost optimization opportunities:
 
 ```
-Current ETH Price: $3,666 (live via Chainlink)
-Measured Gas: 1,139 gas/user (87% more efficient than initial estimates)
+Current ETH Price: $3,669 (live via Chainlink)
+Measured Gas: 1,139 gas/user (highly optimized batch operations)
 
-Cost Analysis for 5,000 users (500/batch, 1,139 gas/user):
-+--------------+---------------+---------------+--------------+-------------+
-| Gas Price    | Total Cost    | Cost/User     | ETH Cost     | Savings     |
-+--------------+---------------+---------------+--------------+-------------+
-| 1 gwei       | $20.88        | $0.00         | 0.006 ETH    | 96%         |
-| 5 gwei       | $104.41       | $0.02         | 0.028 ETH    | 83%         |
-| 30 gwei      | $626.47       | $0.12         | 0.171 ETH    | baseline    |
-| 100 gwei     | $2,088.25     | $0.42         | 0.570 ETH    | -233%       |
-+--------------+---------------+---------------+--------------+-------------+
+ETH Gas Cost Analysis for 5,000 users (500/batch, 1,139 gas/user):
++--------------+---------------+---------------+--------------+
+| Gas Price    | Total Cost    | Cost/User     | ETH Cost     |
++--------------+---------------+---------------+--------------+
+| 0.2 gwei     | $4.18         | $0.0008       | 0.001 ETH    |
+| 0.5 gwei     | $10.45        | $0.002        | 0.003 ETH    |
+| 1 gwei       | $20.89        | $0.004        | 0.006 ETH    |
+| 2 gwei       | $41.79        | $0.008        | 0.011 ETH    |
+| 5 gwei       | $104.48       | $0.02         | 0.028 ETH    |
+| 10 gwei      | $208.96       | $0.04         | 0.057 ETH    |
++--------------+---------------+---------------+--------------+
 ```
 
 **Key Insights:**
-- **96% cost savings** possible with optimal gas timing (1 gwei vs 30 gwei)  
-- Best execution window: Weekends 2-6 AM UTC (1-5 gwei typical)
+- **Very low execution costs** due to current gas environment (0.2-2 gwei typical)
+- Best execution window: Weekends 2-6 AM UTC (0.2-0.5 gwei typical)
 - Script recommendations: 500 users/batch (production) vs 50 users/batch (conservative)
+- **Important**: Costs shown are ETH gas fees only, NOT including HLG token transfers
 - Run `make gas-analysis-all` before execution for current costs and recommendations
 - Monitor gas prices: https://etherscan.io/gastracker
-- Set alerts for <5 gwei on services like Blocknative
+- Set alerts for <1 gwei on services like Blocknative
 
 ## Testing
 
