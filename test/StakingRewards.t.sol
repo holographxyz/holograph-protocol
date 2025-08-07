@@ -248,4 +248,178 @@ contract StakingRewardsTest is Test {
         uint256 earned = stakingRewards.earned(user1);
         assertEq(earned, rewardAmt); // All rewards go to stakers
     }
+
+    /* -------------------------------------------------------------------------- */
+    /*                           Batch Staking Tests                              */
+    /* -------------------------------------------------------------------------- */
+    
+    function testStakeFor() public {
+        uint256 amount = 100 ether;
+        hlg.mint(owner, amount);
+        
+        vm.startPrank(owner);
+        stakingRewards.pause(); // Pause for stakeFor
+        hlg.approve(address(stakingRewards), amount);
+        stakingRewards.stakeFor(user1, amount);
+        vm.stopPrank();
+        
+        assertEq(stakingRewards.balanceOf(user1), amount);
+        assertEq(stakingRewards.totalStaked(), amount);
+    }
+    
+    function testStakeForOnlyOwner() public {
+        uint256 amount = 100 ether;
+        hlg.mint(user1, amount);
+        
+        vm.prank(user1);
+        hlg.approve(address(stakingRewards), amount);
+        vm.prank(user1);
+        vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", user1));
+        stakingRewards.stakeFor(user2, amount);
+    }
+    
+    function testStakeForOnlyWhenPaused() public {
+        uint256 amount = 100 ether;
+        hlg.mint(owner, amount);
+        
+        // Contract is unpaused in setUp, so stakeFor should fail
+        vm.prank(owner);
+        hlg.approve(address(stakingRewards), amount);
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSignature("ExpectedPause()"));
+        stakingRewards.stakeFor(user1, amount);
+    }
+    
+    function testBatchStakeFor() public {
+        // Pause contract for batch operations
+        vm.prank(owner);
+        stakingRewards.pause();
+        
+        address[] memory users = new address[](3);
+        users[0] = user1;
+        users[1] = user2;
+        users[2] = address(0x5);
+        
+        uint256[] memory amounts = new uint256[](3);
+        amounts[0] = 100 ether;
+        amounts[1] = 200 ether;
+        amounts[2] = 300 ether;
+        
+        uint256 totalAmount = 600 ether;
+        hlg.mint(owner, totalAmount);
+        
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), totalAmount);
+        stakingRewards.batchStakeFor(users, amounts, 0, 3);
+        vm.stopPrank();
+        
+        assertEq(stakingRewards.balanceOf(user1), 100 ether);
+        assertEq(stakingRewards.balanceOf(user2), 200 ether);
+        assertEq(stakingRewards.balanceOf(address(0x5)), 300 ether);
+        assertEq(stakingRewards.totalStaked(), 600 ether);
+    }
+    
+    function testBatchStakeForPartialRange() public {
+        vm.prank(owner);
+        stakingRewards.pause();
+        
+        address[] memory users = new address[](5);
+        uint256[] memory amounts = new uint256[](5);
+        
+        for (uint256 i = 0; i < 5; i++) {
+            users[i] = address(uint160(0x100 + i));
+            amounts[i] = (i + 1) * 100 ether;
+        }
+        
+        // Process only users 1-3 (indices 1,2,3)
+        uint256 batchAmount = 200 ether + 300 ether + 400 ether; // 900 ether
+        hlg.mint(owner, batchAmount);
+        
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), batchAmount);
+        stakingRewards.batchStakeFor(users, amounts, 1, 4);
+        vm.stopPrank();
+        
+        assertEq(stakingRewards.balanceOf(users[0]), 0); // Not processed
+        assertEq(stakingRewards.balanceOf(users[1]), 200 ether);
+        assertEq(stakingRewards.balanceOf(users[2]), 300 ether);
+        assertEq(stakingRewards.balanceOf(users[3]), 400 ether);
+        assertEq(stakingRewards.balanceOf(users[4]), 0); // Not processed
+        assertEq(stakingRewards.totalStaked(), 900 ether);
+    }
+    
+    function testBatchStakeForArrayMismatch() public {
+        vm.prank(owner);
+        stakingRewards.pause();
+        
+        address[] memory users = new address[](2);
+        uint256[] memory amounts = new uint256[](3); // Different length
+        
+        vm.prank(owner);
+        vm.expectRevert("Array length mismatch");
+        stakingRewards.batchStakeFor(users, amounts, 0, 2);
+    }
+    
+    function testBatchStakeForInvalidRange() public {
+        vm.prank(owner);
+        stakingRewards.pause();
+        
+        address[] memory users = new address[](2);
+        uint256[] memory amounts = new uint256[](2);
+        
+        vm.prank(owner);
+        vm.expectRevert("End index out of bounds");
+        stakingRewards.batchStakeFor(users, amounts, 0, 3);
+        
+        vm.prank(owner);
+        vm.expectRevert("Invalid index range");
+        stakingRewards.batchStakeFor(users, amounts, 2, 1);
+    }
+    
+    function testBatchStakeForCompoundsExistingRewards() public {
+        // First, setup a user with some stake and add rewards
+        uint256 initialStake = 100 ether;
+        vm.startPrank(user1);
+        hlg.approve(address(stakingRewards), initialStake);
+        stakingRewards.stake(initialStake);
+        vm.stopPrank();
+        
+        // Add rewards
+        uint256 rewardAmount = 50 ether;
+        hlg.mint(feeRouter, rewardAmount);
+        vm.prank(feeRouter);
+        hlg.approve(address(stakingRewards), rewardAmount);
+        vm.prank(feeRouter);
+        stakingRewards.addRewards(rewardAmount);
+        
+        // Check pending rewards
+        uint256 burnPercentage = stakingRewards.burnPercentage();
+        uint256 expectedReward = (rewardAmount * (10000 - burnPercentage)) / 10000;
+        assertApproxEqAbs(stakingRewards.earned(user1), expectedReward, 1);
+        
+        // Now pause and batch stake for the same user
+        vm.prank(owner);
+        stakingRewards.pause();
+        
+        address[] memory users = new address[](1);
+        users[0] = user1;
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 200 ether;
+        
+        hlg.mint(owner, 200 ether);
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 200 ether);
+        stakingRewards.batchStakeFor(users, amounts, 0, 1);
+        vm.stopPrank();
+        
+        // User should have initial stake + rewards + new stake
+        assertApproxEqAbs(
+            stakingRewards.balanceOf(user1), 
+            initialStake + expectedReward + 200 ether, 
+            1
+        );
+        
+        // Pending rewards should be 0 after compounding
+        assertEq(stakingRewards.earned(user1), 0);
+    }
 }

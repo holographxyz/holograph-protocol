@@ -44,6 +44,9 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
     error InsufficientToken();
     error EthTransferFailed();
     error InvalidBurnPercentage();
+    error ArrayLengthMismatch();
+    error EndIndexOutOfBounds();
+    error InvalidIndexRange();
 
     /* -------------------------------------------------------------------------- */
     /*                                Constants                                    */
@@ -474,6 +477,88 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
         if (!success) revert EthTransferFailed();
 
         emit EthSwept(balance, to);
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /*                          Referral Batch Operations                         */
+    /* -------------------------------------------------------------------------- */
+
+    /**
+     * @notice Stake HLG tokens on behalf of a user (owner only)
+     * @dev Used for referral rewards and airdrops, only callable when paused
+     * @param user Address to stake for
+     * @param amount Amount of HLG to stake
+     */
+    function stakeFor(address user, uint256 amount) public nonReentrant onlyOwner whenPaused {
+        if (user == address(0)) revert ZeroAddress();
+        if (amount == 0) revert ZeroAmount();
+
+        // Auto-compound any pending rewards first
+        updateUser(user);
+
+        // Update user balance and total staked
+        balanceOf[user] += amount;
+        totalStaked += amount;
+
+        // Update user's snapshot to current index
+        userIndexSnapshot[user] = globalRewardIndex;
+
+        emit Staked(user, amount);
+    }
+
+    /**
+     * @notice Batch stake HLG tokens for multiple users (gas optimized)
+     * @dev Processes a range of users from the provided arrays for gas-bounded execution
+     * @param users Array of user addresses to stake for
+     * @param amounts Array of amounts to stake for each user
+     * @param startIndex Starting index in the arrays to process
+     * @param endIndex Ending index (exclusive) in the arrays to process
+     */
+    function batchStakeFor(
+        address[] calldata users,
+        uint256[] calldata amounts,
+        uint256 startIndex,
+        uint256 endIndex
+    ) external onlyOwner whenPaused nonReentrant {
+        // Validate inputs
+        if (users.length != amounts.length) revert ArrayLengthMismatch();
+        if (endIndex > users.length) revert EndIndexOutOfBounds();
+        if (startIndex >= endIndex) revert InvalidIndexRange();
+
+        // Calculate total amount needed for this batch
+        uint256 totalAmount;
+        for (uint256 i = startIndex; i < endIndex;) {
+            if (users[i] == address(0)) revert ZeroAddress();
+            if (amounts[i] == 0) revert ZeroAmount();
+            totalAmount += amounts[i];
+            unchecked { ++i; }
+        }
+
+        // Single transfer for entire batch (gas optimization)
+        uint256 balanceBefore = HLG.balanceOf(address(this));
+        HLG.safeTransferFrom(msg.sender, address(this), totalAmount);
+        uint256 balanceAfter = HLG.balanceOf(address(this));
+        if (balanceAfter - balanceBefore != totalAmount) revert FeeOnTransferNotSupported();
+
+        // Process each user in the batch
+        for (uint256 i = startIndex; i < endIndex;) {
+            address user = users[i];
+            uint256 amount = amounts[i];
+
+            // Auto-compound any existing rewards
+            updateUser(user);
+
+            // Update balances
+            balanceOf[user] += amount;
+            totalStaked += amount;
+
+            // Set user's index snapshot to prevent earning on pre-staked amount
+            userIndexSnapshot[user] = globalRewardIndex;
+
+            emit Staked(user, amount);
+
+            unchecked { ++i; }
+        }
     }
 
     /* -------------------------------------------------------------------------- */
