@@ -514,12 +514,12 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
      * @param startIndex Starting index in the arrays to process
      * @param endIndex Ending index (exclusive) in the arrays to process
      */
-    function batchStakeFor(
-        address[] calldata users,
-        uint256[] calldata amounts,
-        uint256 startIndex,
-        uint256 endIndex
-    ) external onlyOwner whenPaused nonReentrant {
+    function batchStakeFor(address[] calldata users, uint256[] calldata amounts, uint256 startIndex, uint256 endIndex)
+        external
+        onlyOwner
+        whenPaused
+        nonReentrant
+    {
         // Validate inputs
         if (users.length != amounts.length) revert ArrayLengthMismatch();
         if (endIndex > users.length) revert EndIndexOutOfBounds();
@@ -531,7 +531,9 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
             if (users[i] == address(0)) revert ZeroAddress();
             if (amounts[i] == 0) revert ZeroAmount();
             totalAmount += amounts[i];
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
 
         // Single transfer for entire batch (gas optimization)
@@ -557,7 +559,9 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
 
             emit Staked(user, amount);
 
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
     }
 

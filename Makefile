@@ -30,7 +30,7 @@ print-step    = @echo "$(YELLOW)$1$(NC)"
 # ---------------------------------------------------------------------------- #
 #                                   Targets                                   #
 # ---------------------------------------------------------------------------- #
-.PHONY: all help fmt build clean test deploy-base deploy-base-sepolia deploy-eth deploy-eth-sepolia deploy-unichain deploy-unichain-sepolia configure-base configure-eth configure-unichain configure-dvn-base configure-dvn-eth fee-ops abi verify-addresses gas-analysis gas-analysis-live gas-analysis-all
+.PHONY: all help fmt build clean test deploy-base deploy-base-sepolia deploy-eth deploy-eth-sepolia deploy-unichain deploy-unichain-sepolia configure-base configure-eth configure-unichain configure-dvn-base configure-dvn-eth fee-ops abi verify-addresses gas-analysis
 
 ## all: Build and test (default target)
 all: build test
@@ -202,33 +202,8 @@ abi: build
 	bash script/_generate_abis.sh
 	$(call print-success,ABI generation)
 
-## gas-analysis: Run comprehensive gas analysis with real ETH prices for referral campaign.
+## gas-analysis: Run gas cost analysis for referral campaign (5,000 users).
 gas-analysis:
-	$(call print-step,Running gas analysis with real ETH prices…)
+	$(call print-step,Analyzing gas costs for referral campaign…)
 	forge script script/GasAnalysis.s.sol:GasAnalysis --fork-url https://ethereum-rpc.publicnode.com -vv
-	$(call print-success,Gas analysis)
-
-## gas-analysis-live: Run live batch size optimization analysis.
-gas-analysis-live:
-	$(call print-step,Running live batch size optimization…)
-	forge script script/GasAnalysis.s.sol:GasAnalysisLive --fork-url https://ethereum-rpc.publicnode.com -vv
-	$(call print-success,Live gas analysis)
-
-## gas-analysis-all: Run both gas analysis scripts for complete analysis.
-gas-analysis-all:
-	@echo "\n============================================================"
-	@echo "        HOLOGRAPH REFERRAL REWARDS GAS ANALYSIS SUITE"
-	@echo "============================================================"
-	@echo "\nThis suite runs two complementary gas analysis scripts:"
-	@echo "\n1. GasAnalysis (Main): Production-ready cost estimation"
-	@echo "   - Tests batch sizes and scales up for efficiency"
-	@echo "   - Provides complete cost breakdown for 5,000 users"
-	@echo "   - Recommends 500 users/batch for production"
-	@echo "\n2. GasAnalysisLive: Conservative validation tool"
-	@echo "   - Tests exact gas usage on small batches"
-	@echo "   - Validates the main analysis results"
-	@echo "   - Recommends 50 users/batch for safety"
-	@echo "\n============================================================\n"
-	@$(MAKE) gas-analysis
-	@$(MAKE) gas-analysis-live
-	$(call print-success,Complete gas analysis) 
+	$(call print-success,Gas analysis) 

@@ -6,60 +6,27 @@ This guide documents the operational procedures for executing the referral waitl
 
 ## Gas Cost Analysis
 
-### Production Gas Analysis Tools
+### Gas Cost Analysis Tool
 
-The protocol now includes sophisticated gas analysis tools that provide real-time cost optimization:
+The protocol includes a single, focused gas analysis tool that provides real-time cost optimization:
 
-#### Gas Analysis Scripts
+**Gas Analysis** (`make gas-analysis`):
+- Fetches live ETH/USD prices from Chainlink mainnet oracle
+- Tests gas consumption via mainnet fork testing
+- Dynamically determines optimal batch size (typically 500 users)
+- Provides essential cost information: total cost in ETH and USD
 
-**Understanding the Two Scripts:**
+### Gas Cost Analysis Results
 
-The protocol includes two complementary gas analysis scripts that serve different purposes:
-
-1. **GasAnalysis** (`make gas-analysis`) - **MAIN PRODUCTION PLANNING TOOL**
-   - **Purpose**: Production-ready cost estimation for large-scale distribution
-   - **How it works**:
-     - Fetches live ETH/USD prices from Chainlink mainnet oracle
-     - Tests batch sizes (10-100 users) then scales up for production efficiency
-     - Recommends **500 users/batch** for optimal production execution
-   - **Current measurement**: 1,139 gas per user at scale
-   - **Use this for**: Planning actual execution and sharing with stakeholders
-
-2. **GasAnalysisLive** (`make gas-analysis-live`) - **VALIDATION TOOL**
-   - **Purpose**: Conservative batch size validation with actual deployments
-   - **How it works**:
-     - Deploys real StakingRewards contract on mainnet fork
-     - Tests exact gas consumption for small batches (10-50 users)
-     - Recommends **50 users/batch** as conservative baseline
-   - **Current measurement**: 1,578 gas per user for 50-user batches
-   - **Use this for**: Validating gas estimates or if you prefer smaller, safer batches
-
-3. **Combined Analysis** (`make gas-analysis-all`)
-   - Runs both scripts with clear explanations
-   - Provides complete context for decision-making
-   - Best for sharing comprehensive analysis with team
-
-### Real-Time Gas Measurements
-
-**Latest Gas Measurements (Production Analysis):**
-
-| Batch Size | Gas Per User | Efficiency | Recommendation |
-|------------|--------------|------------|----------------|
-| 10 users   | ~7,374       | Low        | Testing only   |
-| 25 users   | ~3,190       | Medium     | Small campaigns|
-| 50 users   | ~1,823       | Good       | Conservative   |
-| 100 users  | ~1,139       | Excellent  | Test baseline  |
-| **500 users** | **~1,139** | **Optimal** | **Production** |
-
-- **Production recommendation**: 500 users/batch (scaled from 100-user test)
-- **Conservative recommendation**: 50 users/batch (GasAnalysisLive result)
-- **Dynamic optimization**: Scripts determine optimal size based on current conditions
+**Current Measurements:**
+- **Gas per user**: ~1,139 gas (measured via mainnet fork)
+- **Optimal batch size**: 500 users per batch
+- **Total gas for 5,000 users**: 5,695,000 gas
+- **Total batches needed**: 10 batches
 
 ### Live Cost Analysis (5,000 users)
 
-**Real-Time Analysis Results** (Live ETH Price via Chainlink):
-
-Based on optimized 500 users/batch (1,139 gas/user):
+**Real-Time Cost Analysis** (Live ETH Price via Chainlink):
 
 | Gas Price | Total ETH Cost | Total USD Cost | Cost Per User |
 |-----------|----------------|----------------|---------------|
@@ -74,11 +41,6 @@ Based on optimized 500 users/batch (1,139 gas/user):
 
 ### Execution Strategy
 
-**Script Recommendations Summary:**
-- **GasAnalysis (Production)**: Use 500 users/batch for maximum efficiency
-- **GasAnalysisLive (Conservative)**: Use 50 users/batch for safety
-- **Hybrid Approach**: Start with 50 users/batch, increase if comfortable
-
 **Optimal Execution Windows:**
 - **Best**: Weekends Saturday/Sunday 2-6 AM UTC (0.2-0.5 gwei typical)
 - **Good**: Weekdays Tuesday-Thursday 3-5 AM UTC (0.5-1 gwei)  
@@ -86,9 +48,9 @@ Based on optimized 500 users/batch (1,139 gas/user):
 - **Target gas price**: 0.2-1 gwei for optimal costs
 
 **Real-Time Monitoring:**
-1. Run `make gas-analysis-all` before execution for current costs
+1. Run `make gas-analysis` before execution for current costs
 2. Monitor https://etherscan.io/gastracker for live gas prices
-3. Set alerts on Blocknative/MevBlocker for <1 gwei notifications
+3. Set alerts on Blocknative for <1 gwei notifications
 4. Check current ETH price impact on total costs
 
 **Cost Optimization:**
@@ -146,17 +108,14 @@ forge script script/ProcessReferralCSV.s.sol:ProcessReferralCSV \
 
 ### Step 3: Run Gas Analysis
 ```bash
-# Run comprehensive analysis with both scripts (RECOMMENDED)
-make gas-analysis-all
+# Run gas cost analysis
+make gas-analysis
 
-# Or run individual scripts:
-make gas-analysis      # Production planning (500 users/batch)
-make gas-analysis-live # Conservative validation (50 users/batch)
-
-# Understanding the output:
-# - First script shows production-optimized costs
-# - Second script validates with conservative estimates
-# - Use the data to choose your risk tolerance
+# This provides:
+# - Current ETH price via Chainlink oracle
+# - Gas per user measurement via mainnet fork
+# - Total cost in ETH and USD across different gas price scenarios
+# - Optimal batch size and execution plan
 ```
 
 ### Step 4: Monitor Gas Prices
