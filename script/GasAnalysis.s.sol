@@ -224,7 +224,7 @@ contract GasAnalysis is Script {
         console.log("   - Transfers HLG from deployer to StakingRewards contract");
         console.log("   - Executes batchStakeFor() in 500-user batches");
         console.log("   - Users receive staked HLG (not liquid tokens)");
-        console.log("   - Contract remains paused until unpaused it");
+        console.log("   - Contract remains paused until we unpause it");
     }
 
     // Utility functions for formatting
