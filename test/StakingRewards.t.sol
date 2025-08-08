@@ -356,7 +356,7 @@ contract StakingRewardsTest is Test {
         uint256[] memory amounts = new uint256[](3); // Different length
 
         vm.prank(owner);
-        vm.expectRevert("Array length mismatch");
+        vm.expectRevert(StakingRewards.ArrayLengthMismatch.selector);
         stakingRewards.batchStakeFor(users, amounts, 0, 2);
     }
 
@@ -368,11 +368,11 @@ contract StakingRewardsTest is Test {
         uint256[] memory amounts = new uint256[](2);
 
         vm.prank(owner);
-        vm.expectRevert("End index out of bounds");
+        vm.expectRevert(StakingRewards.EndIndexOutOfBounds.selector);
         stakingRewards.batchStakeFor(users, amounts, 0, 3);
 
         vm.prank(owner);
-        vm.expectRevert("Invalid index range");
+        vm.expectRevert(StakingRewards.InvalidIndexRange.selector);
         stakingRewards.batchStakeFor(users, amounts, 2, 1);
     }
 
@@ -417,5 +417,61 @@ contract StakingRewardsTest is Test {
 
         // Pending rewards should be 0 after compounding
         assertEq(stakingRewards.earned(user1), 0);
+    }
+
+    function testDistributorPauseBehavior() public {
+        address mockDistributor = address(0x1234);
+        uint256 amount = 100 ether;
+        
+        // Setup distributor
+        vm.prank(owner);
+        stakingRewards.setDistributor(mockDistributor, true);
+        
+        // Fund distributor
+        hlg.mint(address(this), amount * 2); // Need extra for second call
+        hlg.transfer(mockDistributor, amount * 2);
+        
+        // Distributor can call when not paused (contract is unpaused by default in setup)
+        vm.startPrank(mockDistributor);
+        hlg.approve(address(stakingRewards), amount);
+        stakingRewards.stakeFromDistributor(user1, amount);
+        vm.stopPrank();
+        
+        // Verify stake was credited
+        assertEq(stakingRewards.balanceOf(user1), amount, "Stake should be credited when not paused");
+        
+        // Pause the contract
+        vm.prank(owner);
+        stakingRewards.pause();
+        
+        // Distributor call should revert when paused
+        vm.startPrank(mockDistributor);
+        hlg.approve(address(stakingRewards), amount);
+        vm.expectRevert(); // EnforcedPause() is the actual error
+        stakingRewards.stakeFromDistributor(user2, amount);
+        vm.stopPrank();
+        
+        // But user can still unstake when paused
+        vm.prank(user1);
+        stakingRewards.unstake();
+        assertEq(stakingRewards.balanceOf(user1), 0, "User should be able to unstake when paused");
+    }
+
+    function testDistributorWhitelistError() public {
+        address unauthorizedDistributor = address(0x5678);
+        uint256 amount = 100 ether;
+        
+        // Fund unauthorized distributor
+        hlg.mint(address(this), amount);
+        hlg.transfer(unauthorizedDistributor, amount);
+        
+        // Contract is already unpaused by setup
+        
+        // Unauthorized distributor should revert with NotWhitelistedDistributor
+        vm.startPrank(unauthorizedDistributor);
+        hlg.approve(address(stakingRewards), amount);
+        vm.expectRevert(StakingRewards.NotWhitelistedDistributor.selector);
+        stakingRewards.stakeFromDistributor(user1, amount);
+        vm.stopPrank();
     }
 }
