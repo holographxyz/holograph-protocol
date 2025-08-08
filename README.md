@@ -254,13 +254,17 @@ Single-token HLG staking with configurable burn/reward distribution, emergency c
 function stake(uint256 amount) external; // Stake HLG tokens
 function unstake() external; // Withdraw full balance (auto-compounded rewards)
 function setBurnPercentage(uint256 _burnPercentage) external; // Owner only
-function addRewards(uint256 amount) external; // FeeRouter only
+function depositAndDistribute(uint256 hlgAmount) external; // Owner only, manual funding
+function addRewards(uint256 amount) external; // FeeRouter only, automated funding
 function batchStakeFor(address[] calldata users, uint256[] calldata amounts, uint256 startIndex, uint256 endIndex) external; // Owner only, batch referral rewards
+
+// Extra token management
+function getExtraTokens() external view returns (uint256); // View extra HLG available for recovery
+function recoverExtraHLG(address to, uint256 amount) external; // Owner only, recover extra HLG tokens
 
 // Distributor System (for future campaigns)
 function setDistributor(address distributor, bool status) external; // Owner only, whitelist campaign distributors
-function stakeFromDistributor(address user, uint256 amount) external; // Distributor only, credit stakes (tokens must be pre-transferred)
-function stakeFromDistributorAndPull(address user, uint256 amount) external; // Distributor only, credit stakes with automatic token pull
+function stakeFromDistributor(address user, uint256 amount) external; // Distributor only, credit stakes with automatic token pull
 ```
 
 ## Token Launch Process
