@@ -47,7 +47,7 @@ interface ILayerZeroEndpointV2Config {
     function setSendLibrary(address _oapp, uint32 _eid, address _newLib) external;
     function setReceiveLibrary(address _oapp, uint32 _eid, address _newLib, uint256 _gracePeriod) external;
     function setConfig(address _oapp, address _lib, SetConfigParam[] calldata _params) external;
-    
+
     function getSendLibrary(address _sender, uint32 _dstEid) external view returns (address lib);
     function getReceiveLibrary(address _receiver, uint32 _srcEid) external view returns (address lib, bool isDefault);
 }
@@ -71,15 +71,14 @@ interface IMessageLib {
 }
 
 contract ConfigureDVN is Script {
-
     /* -------------------------------------------------------------------------- */
     /*                                Constants                                   */
     /* -------------------------------------------------------------------------- */
-    
+
     // Configuration type constants for LayerZero V2
     uint32 internal constant CONFIG_TYPE_ULN = 2;
     uint32 internal constant CONFIG_TYPE_EXECUTOR = 1;
-    
+
     // Grace period for receive library updates (24 hours)
     uint256 internal constant RECEIVE_LIBRARY_GRACE_PERIOD = 86400;
 
@@ -103,10 +102,10 @@ contract ConfigureDVN is Script {
     function run() external {
         // Initialize configuration from environment
         DVNConfiguration memory config = initializeConfiguration();
-        
+
         // Validate configuration
         validateConfiguration(config);
-        
+
         // Start broadcasting if enabled
         if (vm.envOr("BROADCAST", false)) {
             console.log("Broadcasting DVN configuration transactions");
@@ -118,15 +117,15 @@ contract ConfigureDVN is Script {
 
         // Configure DVN security stack
         configureDVNSecurity(config);
-        
+
         // Set enforced options for reliable execution
         configureEnforcedOptions(config);
 
         vm.stopBroadcast();
-        
+
         // Verify configuration
         verifyConfiguration(config);
-        
+
         console.log("\n========================================");
         console.log("DVN Configuration Complete");
         console.log("========================================");
@@ -141,11 +140,11 @@ contract ConfigureDVN is Script {
         config.endpoint = vm.envAddress("LZ_ENDPOINT");
         config.feeRouter = vm.envAddress("FEE_ROUTER");
         config.remoteEid = uint32(vm.envUint("REMOTE_EID"));
-        
+
         // Use default libraries if not specified
         config.sendLibrary = vm.envOr("SEND_LIBRARY", address(0));
         config.receiveLibrary = vm.envOr("RECEIVE_LIBRARY", address(0));
-        
+
         console.log("Configuring DVN for chain:", config.chainId);
         console.log("FeeRouter address:", config.feeRouter);
         console.log("LayerZero endpoint:", config.endpoint);
@@ -156,13 +155,11 @@ contract ConfigureDVN is Script {
         DeploymentConfig.validateNonZeroAddress(config.endpoint, "LZ_ENDPOINT");
         DeploymentConfig.validateNonZeroAddress(config.feeRouter, "FEE_ROUTER");
         require(config.remoteEid != 0, "REMOTE_EID not set");
-        
+
         // Validate chain is supported
         require(
-            config.chainId == DeploymentConfig.ETHEREUM_MAINNET ||
-            config.chainId == DeploymentConfig.ETHEREUM_SEPOLIA ||
-            config.chainId == DeploymentConfig.BASE_MAINNET ||
-            config.chainId == DeploymentConfig.BASE_SEPOLIA,
+            config.chainId == DeploymentConfig.ETHEREUM_MAINNET || config.chainId == DeploymentConfig.ETHEREUM_SEPOLIA
+                || config.chainId == DeploymentConfig.BASE_MAINNET || config.chainId == DeploymentConfig.BASE_SEPOLIA,
             "Unsupported chain for DVN configuration"
         );
     }
@@ -173,25 +170,22 @@ contract ConfigureDVN is Script {
 
     function configureDVNSecurity(DVNConfiguration memory config) internal {
         console.log("\nConfiguring DVN security stack...");
-        
+
         ILayerZeroEndpointV2Config endpoint = ILayerZeroEndpointV2Config(config.endpoint);
-        
+
         // Set up send and receive libraries if not using defaults
         if (config.sendLibrary != address(0)) {
             console.log("Setting custom send library:", config.sendLibrary);
             endpoint.setSendLibrary(config.feeRouter, config.remoteEid, config.sendLibrary);
         }
-        
+
         if (config.receiveLibrary != address(0)) {
             console.log("Setting custom receive library:", config.receiveLibrary);
             endpoint.setReceiveLibrary(
-                config.feeRouter, 
-                config.remoteEid, 
-                config.receiveLibrary, 
-                RECEIVE_LIBRARY_GRACE_PERIOD
+                config.feeRouter, config.remoteEid, config.receiveLibrary, RECEIVE_LIBRARY_GRACE_PERIOD
             );
         }
-        
+
         // Configure ULN (Ultra Light Node) settings
         configureULNSettings(config, endpoint);
     }
@@ -200,14 +194,14 @@ contract ConfigureDVN is Script {
         // Get current libraries
         address sendLib = endpoint.getSendLibrary(config.feeRouter, config.remoteEid);
         (address receiveLib,) = endpoint.getReceiveLibrary(config.feeRouter, config.remoteEid);
-        
+
         console.log("Using send library:", sendLib);
         console.log("Using receive library:", receiveLib);
-        
+
         // Build DVN configuration - single required DVN only
         address[] memory requiredDVNs = buildRequiredDVNs(config);
         address[] memory optionalDVNs = new address[](0); // No optional DVNs
-        
+
         // Create ULN config
         bytes memory ulnConfig = abi.encode(
             DeploymentConfig.getBlockConfirmations(config.chainId), // confirmations
@@ -217,7 +211,7 @@ contract ConfigureDVN is Script {
             requiredDVNs,
             optionalDVNs
         );
-        
+
         // Apply configuration to both send and receive libraries
         ILayerZeroEndpointV2Config.SetConfigParam[] memory params = new ILayerZeroEndpointV2Config.SetConfigParam[](1);
         params[0] = ILayerZeroEndpointV2Config.SetConfigParam({
@@ -225,25 +219,25 @@ contract ConfigureDVN is Script {
             configType: CONFIG_TYPE_ULN,
             config: ulnConfig
         });
-        
+
         // Configure send library
         endpoint.setConfig(config.feeRouter, sendLib, params);
         console.log("ULN configuration applied to send library");
-        
-        // Configure receive library  
+
+        // Configure receive library
         endpoint.setConfig(config.feeRouter, receiveLib, params);
         console.log("ULN configuration applied to receive library");
-        
+
         // Log DVN configuration
         logDVNConfiguration(requiredDVNs, config.chainId);
     }
 
     function buildRequiredDVNs(DVNConfiguration memory config) internal pure returns (address[] memory) {
         address[] memory requiredDVNs = new address[](1);
-        
+
         // Use LayerZero Labs DVN (or Dead DVN for Base mainnet as temporary fallback)
         requiredDVNs[0] = DeploymentConfig.getLayerZeroLabsDVN(config.chainId);
-        
+
         return requiredDVNs;
     }
 
@@ -253,12 +247,12 @@ contract ConfigureDVN is Script {
 
     function configureEnforcedOptions(DVNConfiguration memory config) internal pure {
         console.log("\nConfiguring enforced options...");
-        
+
         // Get appropriate gas limit for destination chain
         uint256 gasLimit = DeploymentConfig.getLzReceiveGasLimit(config.chainId);
-        
+
         console.log("Setting enforced options with gas limit:", gasLimit);
-        
+
         // Note: This would require the FeeRouter to support setEnforcedOptions
         // For now, we document the recommended gas limits
         console.log("Recommended gas limit for remote chain:", gasLimit);
@@ -271,17 +265,17 @@ contract ConfigureDVN is Script {
 
     function verifyConfiguration(DVNConfiguration memory config) internal view {
         console.log("\nVerifying DVN configuration...");
-        
+
         ILayerZeroEndpointV2Config endpoint = ILayerZeroEndpointV2Config(config.endpoint);
-        
+
         // Verify libraries are set
         address sendLib = endpoint.getSendLibrary(config.feeRouter, config.remoteEid);
         (address receiveLib, bool isDefault) = endpoint.getReceiveLibrary(config.feeRouter, config.remoteEid);
-        
+
         console.log("Send library configured:", sendLib != address(0));
         console.log("Receive library configured:", receiveLib != address(0));
         console.log("Using default receive library:", isDefault);
-        
+
         console.log("DVN configuration verification complete");
     }
 
@@ -289,17 +283,14 @@ contract ConfigureDVN is Script {
     /*                              Helper Functions                             */
     /* -------------------------------------------------------------------------- */
 
-    function logDVNConfiguration(
-        address[] memory requiredDVNs,
-        uint256 chainId
-    ) internal pure {
+    function logDVNConfiguration(address[] memory requiredDVNs, uint256 chainId) internal pure {
         console.log("\nDVN Configuration Summary:");
         console.log("Block confirmations:", DeploymentConfig.getBlockConfirmations(chainId));
         console.log("Required DVNs:", requiredDVNs.length);
         for (uint256 i = 0; i < requiredDVNs.length; i++) {
             console.log("  DVN:", requiredDVNs[i]);
         }
-        
+
         // Note about Base mainnet
         if (chainId == DeploymentConfig.BASE_MAINNET) {
             console.log("  Note: Using Dead DVN for Base mainnet until official DVN is available");

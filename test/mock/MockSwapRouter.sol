@@ -88,11 +88,11 @@ contract MockSwapRouter is ISwapRouter {
  */
 contract MockFactory is IUniswapV3Factory {
     MockPool private immutable mockPool;
-    
+
     constructor() {
         mockPool = new MockPool();
     }
-    
+
     function getPool(address tokenA, address tokenB, uint24 fee) external view override returns (address pool) {
         // Return the mock pool address to indicate pool exists for any pair
         return address(mockPool);

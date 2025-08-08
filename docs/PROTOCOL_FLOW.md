@@ -50,9 +50,9 @@ flowchart TD
         end
         
         subgraph TOKENOMICS["HLG Tokenomics"]
-            HLG --> HD{50/50 Distribution}
-            HD --> |50% Burn| BURN[address 0 - Permanently Removed]
-            HD --> |50% Rewards| SR[StakingRewards Contract]
+            HLG --> HD{Configurable Distribution}
+            HD --> |X% Burn| BURN[address 0 - Permanently Removed]
+            HD --> |(100-X)% Rewards| SR[StakingRewards Contract]
             SR --> |distribute| STAKERS[HLG Stakers]
         end
     end
@@ -127,7 +127,7 @@ flowchart TD
     
     K --> N[Swap via Uniswap V3]
     N --> O[WETH → HLG Conversion]
-    O --> P[50% Burn / 50% Stake Distribution]
+    O --> P[Configurable Burn / Stake Distribution]
     
     P --> Q[HLG Burned to address(0)]
     P --> R[HLG Sent to StakingRewards]
@@ -151,7 +151,7 @@ flowchart TD
     
     K --> L[Convert ETH to WETH]
     L --> M[Swap WETH → HLG via Uniswap V3]
-    M --> N[50% Burn / 50% Stake Distribution]
+    M --> N[Configurable Burn / Stake Distribution]
     
     N --> O[HLG Burned to address(0)]
     N --> P[HLG Sent to StakingRewards]
@@ -200,8 +200,8 @@ graph TB
     EF --> WETH
     WETH --> UV3
     UV3 --> HLG
-    HLG -->|50% Burn| NULL[address(0)]
-    HLG -->|50% Stake| SR
+    HLG -->|X% Burn| NULL[address(0)]
+    HLG -->|(100-X)% Stake| SR
     
     style BF fill:#e3f2fd
     style EF fill:#e8f5e8
@@ -239,10 +239,10 @@ sequenceDiagram
 ```mermaid
 flowchart TD
     A[Protocol Fees Received] --> B[Convert to HLG via Uniswap V3]
-    B --> C{Split HLG 50/50}
+    B --> C{Split HLG by Config}
     
-    C --> D[50% Burn]
-    C --> E[50% Stake Rewards]
+    C --> D[X% Burn]
+    C --> E[(100-X)% Stake Rewards]
     
     D --> F[Transfer to address(0)]
     F --> G[Permanently Removed from Circulation]
@@ -332,7 +332,7 @@ flowchart TD
 - Gas limit controls to prevent griefing
 
 ### Economic Model
-- 50% protocol fees for HLG burn/stake operations
+- 50% protocol fees for HLG configurable burn/stake operations
 - 50% treasury fees for operational funding
 - Deflationary tokenomics through HLG burning
 - Staking rewards to incentivize long-term holding

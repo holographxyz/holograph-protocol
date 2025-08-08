@@ -19,7 +19,7 @@ import {OptionsBuilder} from
 
 contract FeeRouterTest is Test {
     using OptionsBuilder for bytes;
-    
+
     // Contracts
     FeeRouter public feeRouterBase;
     FeeRouter public feeRouterEth;
@@ -64,7 +64,7 @@ contract FeeRouterTest is Test {
         swapRouter = new MockSwapRouter();
         airlock = new MockAirlock();
 
-        // Configure MockSwapRouter with correct exchange rate and output token  
+        // Configure MockSwapRouter with correct exchange rate and output token
         swapRouter.setExchangeRate(1000 * 1e18); // Simplified rate for testing
         swapRouter.setOutputToken(address(hlg));
 
@@ -81,7 +81,7 @@ contract FeeRouterTest is Test {
         );
 
         // Deploy StakingRewards
-        stakingRewards = new StakingRewards(address(hlg), address(1)); // temporary address, will set fee router later
+        stakingRewards = new StakingRewards(address(hlg), owner); // owner will set fee router later
 
         // Deploy FeeRouter for Ethereum (with swap functionality)
         feeRouterEth = new FeeRouter(
@@ -120,7 +120,7 @@ contract FeeRouterTest is Test {
         vm.deal(user, 10 ether); // User pays protocol fees
         vm.deal(staker1, 1 ether); // Gas for staking operations
         vm.deal(staker2, 1 ether);
-        
+
         // Fund Ethereum FeeRouter with ETH for cross-chain message processing
         vm.deal(address(feeRouterEth), 100 ether); // Increased for multiple cycles
 
@@ -188,15 +188,16 @@ contract FeeRouterTest is Test {
         uint256 bridgedAmount = protocolFeeAmount - lzFee; // Amount after LZ fee deduction
         uint256 expectedHlgFromSwap = bridgedAmount * 1000; // Using simplified 1000:1 rate
 
-        // Calculate minimum HLG for slippage protection (50% goes to stakers)
-        uint256 minHlgForStakers = expectedHlgFromSwap / 2;
+        // Calculate minimum HLG for slippage protection (reward percentage goes to stakers)
+        uint256 burnPercentage = stakingRewards.burnPercentage();
+        uint256 minHlgForStakers = (expectedHlgFromSwap * (10000 - burnPercentage)) / 10000;
 
         vm.prank(owner);
         feeRouterBase.bridge(minGas, minHlgForStakers);
 
         // Verify ETH was bridged (LayerZero fee was deducted)
         // With MockLZEndpoint, the bridged amount stays in contract but LZ fee is deducted
-        uint256 expectedRemainingBalance = expectedProtocolFee - lzFee;  
+        uint256 expectedRemainingBalance = expectedProtocolFee - lzFee;
         assertEq(address(feeRouterBase).balance, expectedRemainingBalance);
 
         // Step 3: Verify swap and distribution on Ethereum
@@ -207,7 +208,7 @@ contract FeeRouterTest is Test {
         // 3. Burns 50% of HLG (~17,986 HLG burned)
         // 4. Sends 50% to staking rewards (~17,986 HLG to stakers)
 
-        uint256 expectedBurnAmountHLG = expectedHlgFromSwap / 2; // HLG tokens burned
+        uint256 expectedBurnAmountHLG = (expectedHlgFromSwap * burnPercentage) / 10000; // HLG tokens burned
         uint256 expectedRewardAmountHLG = expectedHlgFromSwap - expectedBurnAmountHLG; // HLG tokens to stakers
 
         // Check that HLG was burned (using totalBurned instead of balanceOf(address(0)))
@@ -227,16 +228,17 @@ contract FeeRouterTest is Test {
         assertApproxEqAbs(staker1RewardsHLG, expectedStaker1RewardsHLG, 1e15); // Allow small rounding error
         assertApproxEqAbs(staker2RewardsHLG, expectedStaker2RewardsHLG, 1e15);
 
-        // Step 5: Test reward claiming
+        // Step 5: Test auto-compounding (rewards automatically added to balance)
 
-        uint256 staker1HlgBalanceBefore = hlg.balanceOf(staker1);
+        // Before any interaction, check that rewards are pending
+        assertApproxEqAbs(staker1RewardsHLG, expectedStaker1RewardsHLG, 1e15);
 
-        vm.prank(staker1);
-        stakingRewards.claim();
+        // Trigger auto-compounding for staker1
+        stakingRewards.updateUser(staker1);
 
-        // Verify staker1 received their HLG rewards
-        assertApproxEqAbs(hlg.balanceOf(staker1), staker1HlgBalanceBefore + expectedStaker1RewardsHLG, 1e15);
-        assertEq(stakingRewards.earned(staker1), 0);
+        // Verify rewards were auto-compounded into balance
+        assertApproxEqAbs(stakingRewards.balanceOf(staker1), staker1StakeAmount + expectedStaker1RewardsHLG, 1e15);
+        assertEq(stakingRewards.earned(staker1), 0); // No more pending rewards
     }
 
     function test_MultipleFeeCycles() public {
@@ -257,7 +259,8 @@ contract FeeRouterTest is Test {
         // Bridge ETH to Ethereum and swap to HLG
         // Only protocol fee portion (50%) gets bridged: 0.005 ETH → ~35,971 HLG → ~17,986 HLG to stakers
         uint256 protocolFeeAmount = (TEST_FEE_AMOUNT_ETH * 5000) / 10_000; // 50%
-        uint256 expectedHlgToStakers = (protocolFeeAmount * WETH_TO_HLG_RATE) / 2;
+        uint256 expectedHlgToStakers =
+            (protocolFeeAmount * WETH_TO_HLG_RATE * (10000 - stakingRewards.burnPercentage())) / 10000;
         vm.prank(owner);
         feeRouterBase.bridge(200000, expectedHlgToStakers);
 
@@ -281,7 +284,7 @@ contract FeeRouterTest is Test {
         // Second cycle: ~499 HLG additional rewards (due to accumulated ETH from remaining balance)
         // Total after second cycle: ~748.5 HLG
         assertGt(rewardsAfterSecondCycle, rewardsAfterFirstCycle);
-        
+
         // Second cycle should add significant rewards (at least 1.5x the first cycle due to accumulated balance)
         uint256 additionalRewards = rewardsAfterSecondCycle - rewardsAfterFirstCycle;
         assertGt(additionalRewards, rewardsAfterFirstCycle); // Additional should be > first cycle
@@ -347,30 +350,42 @@ contract FeeRouterTest is Test {
         assertFalse(feeRouterBase.trustedRemotes(ETH_EID) == bytes32(uint256(uint160(address(feeRouterEth)))));
     }
 
-    function test_StakingCooldown() public {
-        // Test staking cooldown period
+    function test_AutoCompoundingRewards() public {
+        // Test auto-compounding reward mechanism
 
         // Stake 500 HLG tokens
         uint256 stakeAmountHLG = 500 ether; // 500 HLG tokens
         vm.startPrank(staker1);
         hlg.approve(address(stakingRewards), stakeAmountHLG);
         stakingRewards.stake(stakeAmountHLG);
-
-        // Try to withdraw 100 HLG immediately (should fail due to cooldown)
-        uint256 withdrawAmountHLG = 100 ether; // 100 HLG tokens
-        vm.expectRevert();
-        stakingRewards.withdraw(withdrawAmountHLG);
-
-        // Fast forward past cooldown period (7 days)
-        vm.warp(block.timestamp + 7 days + 1);
-
-        // Should work now - withdraw 100 HLG tokens
-        stakingRewards.withdraw(withdrawAmountHLG);
-
-        // Verify remaining stake: 500 - 100 = 400 HLG tokens
-        assertEq(stakingRewards.balanceOf(staker1), stakeAmountHLG - withdrawAmountHLG);
-
         vm.stopPrank();
+
+        // Add some rewards
+        uint256 rewardAmount = 100 ether;
+        hlg.mint(address(feeRouterEth), rewardAmount);
+        vm.prank(address(feeRouterEth));
+        hlg.approve(address(stakingRewards), rewardAmount);
+        vm.prank(address(feeRouterEth));
+        stakingRewards.addRewards(rewardAmount);
+
+        // Check pending rewards (50% of what StakingRewards receives, 50% burned)
+        uint256 expectedRewards = (rewardAmount * (10000 - stakingRewards.burnPercentage())) / 10000;
+        assertApproxEqAbs(stakingRewards.earned(staker1), expectedRewards, 1);
+
+        // Trigger auto-compounding
+        stakingRewards.updateUser(staker1);
+
+        // Verify rewards were compounded into balance
+        assertApproxEqAbs(stakingRewards.balanceOf(staker1), stakeAmountHLG + expectedRewards, 1);
+        assertEq(stakingRewards.earned(staker1), 0); // No more pending rewards
+
+        // Full unstake should give original stake + compounded rewards
+        uint256 expectedTotal = stakeAmountHLG + expectedRewards;
+        vm.prank(staker1);
+        stakingRewards.unstake();
+
+        // Verify staker received full amount
+        assertApproxEqAbs(hlg.balanceOf(staker1), MODERATE_HLG_BALANCE - stakeAmountHLG + expectedTotal, 1);
     }
 
     function test_LayerZeroOptionsEncoding() public {
@@ -384,7 +399,8 @@ contract FeeRouterTest is Test {
         uint256 protocolFeeAmount = (TEST_FEE_AMOUNT_ETH * 5000) / 10_000; // 50%
         uint256 lzFee = 0.001 ether; // MockLZEndpoint fee
         uint256 bridgedAmount = protocolFeeAmount - lzFee; // Amount after LZ fee
-        uint256 minHlgForStakers = (bridgedAmount * WETH_TO_HLG_RATE) / 2;
+        uint256 minHlgForStakers =
+            (bridgedAmount * WETH_TO_HLG_RATE * (10000 - stakingRewards.burnPercentage())) / 10000;
 
         // Capture the MessageSent event to verify LayerZero V2 options format
         vm.expectEmit(true, true, true, true);
@@ -425,7 +441,7 @@ contract FeeRouterTest is Test {
         uint256 lzFee = 0.001 ether; // MockLZEndpoint fee
         uint256 bridgedAmount = protocolFeeAmount - lzFee; // Amount after LZ fee deduction
         uint256 expectedHlgFromSwap = bridgedAmount * WETH_TO_HLG_RATE;
-        uint256 expectedRewardAmountHLG = expectedHlgFromSwap / 2;
+        uint256 expectedRewardAmountHLG = (expectedHlgFromSwap * (10000 - stakingRewards.burnPercentage())) / 10000;
 
         vm.prank(owner);
         feeRouterBase.bridge(200000, expectedRewardAmountHLG);

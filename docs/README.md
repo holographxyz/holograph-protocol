@@ -7,6 +7,7 @@ Technical documentation for the Holograph omnichain token protocol.
 | File | Purpose | Audience |
 |------|---------|----------|
 | **[../README.md](../README.md)** | Main protocol overview, deployment guide | Developers, integrators |
+| **[STAKING_REWARDS.md](STAKING_REWARDS.md)** | StakingRewards contract deep dive | Developers, auditors, team members |
 | **[CREATE_TOKEN.md](CREATE_TOKEN.md)** | TypeScript token creation utility | Developers |
 | **[DVN_CONFIGURATION.md](DVN_CONFIGURATION.md)** | LayerZero V2 DVN setup | DevOps, deployers |
 | **[OPERATIONS.md](OPERATIONS.md)** | System monitoring and management | Operations teams |
@@ -25,6 +26,6 @@ Technical documentation for the Holograph omnichain token protocol.
 
 **Primary Chains**: Base (token deployment) ↔ Ethereum (fee processing)  
 **Cross-chain**: LayerZero V2 messaging  
-**Fee Model**: 50% protocol (HLG burn/stake), 50% treasury
+**Fee Model**: 50% protocol (HLG configurable burn/stake split), 50% treasury
 
 For detailed architecture and deployment instructions, see the [main README](../README.md).

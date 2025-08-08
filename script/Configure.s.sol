@@ -105,18 +105,18 @@ contract Configure is Script {
      */
     function configureLayerZeroGas(FeeRouter router, uint32 remoteEid) internal {
         console.log("\nConfiguring LayerZero gas settings...");
-        
+
         // Get recommended gas limit for the current chain
         uint256 gasLimit = DeploymentConfig.getLzReceiveGasLimit(block.chainid);
-        
+
         console.log("Recommended gas limit for lzReceive:", gasLimit);
         console.log("Remote endpoint ID:", remoteEid);
-        
+
         // Note: Enforced options should be configured via LayerZero endpoint
         // This is typically done in a separate DVN configuration step
         console.log("To set enforced options, use the ConfigureDVN script:");
         console.log("  forge script script/ConfigureDVN.s.sol --broadcast");
-        
+
         // Log current bridge settings for verification
         try router.quoteBridgeFee(gasLimit) returns (uint256 fee) {
             console.log("Current bridge fee estimate:", fee, "wei");

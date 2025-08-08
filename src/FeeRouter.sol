@@ -116,9 +116,6 @@ contract FeeRouter is Ownable, ReentrancyGuard, ILayerZeroReceiver {
     /// @notice Emitted when HLG rewards are sent to staking pool
     event RewardsSent(uint256 hlgAmt);
 
-    /// @notice Emitted when HLG tokens are burned
-    event Burned(uint256 hlgAmt);
-
     /// @notice Emitted when trusted remote is updated
     event TrustedRemoteSet(uint32 indexed eid, bytes32 remote);
 
@@ -274,7 +271,7 @@ contract FeeRouter is Ownable, ReentrancyGuard, ILayerZeroReceiver {
 
     /**
      * @notice Convert collected fees to HLG and distribute (50% burn, 50% stake)
-     * @dev Handles three token types: ETH (wraps to WETH), WETH (direct swap), 
+     * @dev Handles three token types: ETH (wraps to WETH), WETH (direct swap),
      *      and other ERC20s (two-hop swap through WETH). Falls back gracefully
      *      if no liquidity exists for exotic tokens.
      * @param token Input token (address(0) for ETH, or ERC20 address)
@@ -371,7 +368,7 @@ contract FeeRouter is Ownable, ReentrancyGuard, ILayerZeroReceiver {
 
         // Prepare and send cross-chain message
         (uint256 bridgedAmount, uint64 nonce) = _executeBridge(token, amount, minGas, minHlg);
-        
+
         emit TokenBridged(token, bridgedAmount, nonce);
     }
 
@@ -414,7 +411,10 @@ contract FeeRouter is Ownable, ReentrancyGuard, ILayerZeroReceiver {
      * @return bridgedAmount The actual amount bridged after fees
      * @return nonce The LayerZero message nonce
      */
-    function _executeBridge(address token, uint256 amount, uint256 minGas, uint256 minHlg) internal returns (uint256 bridgedAmount, uint64 nonce) {
+    function _executeBridge(address token, uint256 amount, uint256 minGas, uint256 minHlg)
+        internal
+        returns (uint256 bridgedAmount, uint64 nonce)
+    {
         // Prepare initial message payload
         bytes memory payload = abi.encode(token, amount, minHlg);
         bytes memory options = _buildLzReceiveOption(minGas);
@@ -609,10 +609,9 @@ contract FeeRouter is Ownable, ReentrancyGuard, ILayerZeroReceiver {
     /* -------------------------------------------------------------------------- */
 
     /**
-     * @notice Execute HLG tokenomics: 50% burn (deflationary), 50% stake (rewards)
-     * @dev Uses unchecked math for gas efficiency (no overflow risk with division).
-     *      Burn happens first to ensure deflationary pressure even if staking fails.
-     * @param hlgAmt Total HLG to distribute
+     * @notice Send HLG to StakingRewards for tokenomics execution
+     * @dev StakingRewards handles the 50% burn / 50% reward distribution
+     * @param hlgAmt Total HLG to send to StakingRewards
      */
     function _distribute(uint256 hlgAmt) internal {
         if (hlgAmt == 0) return;
@@ -621,27 +620,11 @@ contract FeeRouter is Ownable, ReentrancyGuard, ILayerZeroReceiver {
         IERC20 hlg = HLG;
         IStakingRewards stakingPoolAddr = stakingPool;
 
-        uint256 stakeAmt;
-        uint256 burnAmt;
-        unchecked {
-            // Integer division ensures stakeAmt <= hlgAmt/2
-            stakeAmt = hlgAmt / 2;
-            burnAmt = hlgAmt - stakeAmt; // Handles odd amounts
-        }
-
-        if (burnAmt > 0) {
-            // Burn by sending to zero address (permanent removal from circulation)
-            hlg.safeTransfer(address(0), burnAmt);
-            emit Burned(burnAmt);
-        }
-
-        if (stakeAmt > 0) {
-            // Add to staking rewards pool for distribution to stakers
-            // forceApprove handles tokens that don't follow approval spec
-            hlg.forceApprove(address(stakingPoolAddr), stakeAmt);
-            stakingPoolAddr.addRewards(stakeAmt);
-            emit RewardsSent(stakeAmt);
-        }
+        // Send full amount to StakingRewards
+        // StakingRewards will handle the 50/50 burn/reward split
+        hlg.forceApprove(address(stakingPoolAddr), hlgAmt);
+        stakingPoolAddr.addRewards(hlgAmt);
+        emit RewardsSent(hlgAmt);
     }
 
     /* -------------------------------------------------------------------------- */
