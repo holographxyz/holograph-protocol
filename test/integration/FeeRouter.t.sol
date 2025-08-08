@@ -259,7 +259,8 @@ contract FeeRouterTest is Test {
         // Bridge ETH to Ethereum and swap to HLG
         // Only protocol fee portion (50%) gets bridged: 0.005 ETH → ~35,971 HLG → ~17,986 HLG to stakers
         uint256 protocolFeeAmount = (TEST_FEE_AMOUNT_ETH * 5000) / 10_000; // 50%
-        uint256 expectedHlgToStakers = (protocolFeeAmount * WETH_TO_HLG_RATE * (10000 - stakingRewards.burnPercentage())) / 10000;
+        uint256 expectedHlgToStakers =
+            (protocolFeeAmount * WETH_TO_HLG_RATE * (10000 - stakingRewards.burnPercentage())) / 10000;
         vm.prank(owner);
         feeRouterBase.bridge(200000, expectedHlgToStakers);
 
@@ -398,7 +399,8 @@ contract FeeRouterTest is Test {
         uint256 protocolFeeAmount = (TEST_FEE_AMOUNT_ETH * 5000) / 10_000; // 50%
         uint256 lzFee = 0.001 ether; // MockLZEndpoint fee
         uint256 bridgedAmount = protocolFeeAmount - lzFee; // Amount after LZ fee
-        uint256 minHlgForStakers = (bridgedAmount * WETH_TO_HLG_RATE * (10000 - stakingRewards.burnPercentage())) / 10000;
+        uint256 minHlgForStakers =
+            (bridgedAmount * WETH_TO_HLG_RATE * (10000 - stakingRewards.burnPercentage())) / 10000;
 
         // Capture the MessageSent event to verify LayerZero V2 options format
         vm.expectEmit(true, true, true, true);

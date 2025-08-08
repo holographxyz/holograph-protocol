@@ -43,6 +43,8 @@ remappings = [
   "@layerzerolabs/lz-evm-messagelib-v2/=lib/LayerZero-v2/packages/layerzero-v2/evm/messagelib/",
   # Solidity bytes utils for LayerZero
   "solidity-bytes-utils/=lib/solidity-bytes-utils/",
+  # Chainlink contracts for price feeds
+  "@chainlink/contracts/=lib/chainlink-brownie-contracts/contracts/",
 ]
 
 # Specify include paths to control which directories are searched for imports

@@ -30,7 +30,7 @@ print-step    = @echo "$(YELLOW)$1$(NC)"
 # ---------------------------------------------------------------------------- #
 #                                   Targets                                   #
 # ---------------------------------------------------------------------------- #
-.PHONY: all help fmt build clean test deploy-base deploy-base-sepolia deploy-eth deploy-eth-sepolia deploy-unichain deploy-unichain-sepolia configure-base configure-eth configure-unichain configure-dvn-base configure-dvn-eth fee-ops abi verify-addresses
+.PHONY: all help fmt build clean test deploy-base deploy-base-sepolia deploy-eth deploy-eth-sepolia deploy-unichain deploy-unichain-sepolia configure-base configure-eth configure-unichain configure-dvn-base configure-dvn-eth fee-ops abi verify-addresses gas-analysis
 
 ## all: Build and test (default target)
 all: build test
@@ -200,4 +200,10 @@ verify-addresses:
 abi: build
 	$(call print-step,Generating ABIs…)
 	bash script/_generate_abis.sh
-	$(call print-success,ABI generation) 
+	$(call print-success,ABI generation)
+
+## gas-analysis: Run gas cost analysis for referral campaign (5,000 users).
+gas-analysis:
+	$(call print-step,Analyzing gas costs for referral campaign…)
+	forge script script/GasAnalysis.s.sol:GasAnalysis --fork-url https://ethereum-rpc.publicnode.com -vv
+	$(call print-success,Gas analysis) 

@@ -51,6 +51,9 @@ make clean          # Clean build artifacts
 
 # View all available commands
 make help
+
+# Gas analysis for referral campaigns
+make gas-analysis         # Cost analysis for 5,000 user campaign
 ```
 
 #### Deployment Commands
@@ -245,13 +248,14 @@ function setTrustedAirlock(address airlock, bool trusted) external; // Owner onl
 
 ### StakingRewards
 
-Single-token HLG staking with configurable burn/reward distribution, emergency controls, and auto-compounding.
+Single-token HLG staking with configurable burn/reward distribution, emergency controls, and auto-compounding. Supports batch operations for referral reward distribution.
 
 ```solidity
 function stake(uint256 amount) external; // Stake HLG tokens
 function unstake() external; // Withdraw full balance (auto-compounded rewards)
 function setBurnPercentage(uint256 _burnPercentage) external; // Owner only
 function addRewards(uint256 amount) external; // FeeRouter only
+function batchStakeFor(address[] calldata users, uint256[] calldata amounts, uint256 startIndex, uint256 endIndex) external; // Owner only, batch referral rewards
 ```
 
 ## Token Launch Process
@@ -367,6 +371,55 @@ feeRouter.bridge(minGas, minHlgOut);
 - **Slippage Protection**: Configurable minimum HLG output for swaps
 - **Cooldown Period**: 7-day default withdrawal cooldown prevents staking manipulation
 - **Emergency Controls**: Owner can pause all major contract functions
+
+## Gas Analysis
+
+Simple gas cost analysis for referral reward distribution campaigns.
+
+### Usage
+
+```bash
+# Analyze costs for distributing rewards to 5,000 users
+make gas-analysis
+```
+
+### What It Provides
+
+**Essential Information:**
+- Current ETH price (live from Chainlink oracle)
+- Gas cost per user (measured via mainnet fork testing)
+- Total costs in USD and ETH across different gas price scenarios
+- Optimal batch size and execution plan
+- Best timing for execution
+
+**Sample Output:**
+```
+Current ETH Price: $3,669 (live via Chainlink)
+Gas per user: 1,139 (measured on mainnet fork)
+Optimal batch size: 500 users
+
+== COST BREAKDOWN (ETH Gas Fees Only) ==
++--------------+---------------+---------------+--------------+
+| Gas Price    | Total Cost    | Cost/User     | ETH Cost     |
++--------------+---------------+---------------+--------------+
+| 0.2 gwei     | $4.18         | $0.0008       | 0.001 ETH    |
+| 0.5 gwei     | $10.45        | $0.002        | 0.003 ETH    |
+| 1 gwei       | $20.89        | $0.004        | 0.006 ETH    |
+| 2 gwei       | $41.79        | $0.008        | 0.011 ETH    |
+| 5 gwei       | $104.48       | $0.02         | 0.028 ETH    |
+| 10 gwei      | $208.96       | $0.04         | 0.057 ETH    |
++--------------+---------------+---------------+--------------+
+
+NOTE: These are ETH gas costs only. HLG tokens must be provided separately.
+```
+
+### Key Points
+
+- **Very low costs** due to current gas environment (0.2-2 gwei typical)
+- **Best timing**: Weekends 2-6 AM UTC for lowest gas prices  
+- **Gas costs only**: HLG tokens for rewards must be provided separately
+- **Monitor gas prices**: Use https://etherscan.io/gastracker before execution
+- **Current efficiency**: ~1,139 gas per user with optimized batch operations
 
 ## Testing
 

@@ -15,7 +15,7 @@ contract MockStakingRewards {
 
     uint256 public totalRewardsAdded;
     mapping(address => uint256) public rewardsAddedBy;
-    
+
     // Mock burn percentage (default 50%)
     uint256 public burnPercentage = 5000;
 
