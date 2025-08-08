@@ -22,7 +22,9 @@ contract MockFeeOnTransfer is IERC20 {
 
     function transfer(address to, uint256 amount) external override returns (bool) {
         require(balanceOf[msg.sender] >= amount, "bal");
-        unchecked { balanceOf[msg.sender] -= amount; }
+        unchecked {
+            balanceOf[msg.sender] -= amount;
+        }
         // Fee: recipient gets amount - 1
         uint256 received = amount > 0 ? amount - 1 : 0;
         balanceOf[to] += received;
@@ -41,7 +43,9 @@ contract MockFeeOnTransfer is IERC20 {
         require(allowed >= amount, "allow");
         allowance[from][msg.sender] = allowed - amount;
         require(balanceOf[from] >= amount, "bal");
-        unchecked { balanceOf[from] -= amount; }
+        unchecked {
+            balanceOf[from] -= amount;
+        }
         // Fee: recipient gets amount - 1
         uint256 received = amount > 0 ? amount - 1 : 0;
         balanceOf[to] += received;

@@ -54,7 +54,6 @@ contract StakingRewardsInvariants is StdInvariant, Test {
 
         assertGe(currentIndex, lastIndex, "Invariant violated: globalRewardIndex decreased");
     }
-
 }
 
 /// @title StakingRewardsHandler

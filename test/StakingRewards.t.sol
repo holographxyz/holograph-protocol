@@ -87,10 +87,10 @@ contract StakingRewardsConsolidated is Test {
         vm.startPrank(alice);
         hlg.approve(address(stakingRewards), STAKE_AMOUNT);
         stakingRewards.stake(STAKE_AMOUNT);
-        
+
         uint256 balanceBefore = hlg.balanceOf(alice);
         stakingRewards.emergencyExit();
-        
+
         assertEq(stakingRewards.balanceOf(alice), 0);
         assertEq(hlg.balanceOf(alice), balanceBefore + STAKE_AMOUNT);
         vm.stopPrank();
@@ -235,7 +235,7 @@ contract StakingRewardsConsolidated is Test {
 
         // Each user should get exactly 25 ether in rewards (50 total rewards split equally)
         assertEq(stakingRewards.balanceOf(alice), 125 ether); // 100 original + 25 rewards
-        assertEq(stakingRewards.balanceOf(bob), 125 ether);   // 100 original + 25 rewards
+        assertEq(stakingRewards.balanceOf(bob), 125 ether); // 100 original + 25 rewards
 
         // unallocatedRewards should be 0
         assertEq(stakingRewards.unallocatedRewards(), 0);
@@ -266,16 +266,16 @@ contract StakingRewardsConsolidated is Test {
         // Now totalStaked = 345, unallocated = 45, active = 300
         assertEq(stakingRewards.totalStaked(), 345 ether);
         assertEq(stakingRewards.unallocatedRewards(), 45 ether);
-        
+
         // Check pending rewards are based on active stake (300), not totalStaked (345)
         uint256 alicePending = stakingRewards.earned(alice);
         uint256 bobPending = stakingRewards.earned(bob);
-        
+
         // Alice has 100/300 = 1/3 of active stake, should get 15 HLG
         // Bob has 200/300 = 2/3 of active stake, should get 30 HLG
         assertEq(alicePending, 15 ether, "Alice should get 15 HLG based on active stake");
         assertEq(bobPending, 30 ether, "Bob should get 30 HLG based on active stake");
-        
+
         // Total pending should equal unallocated
         assertEq(alicePending + bobPending, stakingRewards.unallocatedRewards());
     }
@@ -329,19 +329,19 @@ contract StakingRewardsConsolidated is Test {
         StakingRewards noBurnStaking = new StakingRewards(address(noburn), owner);
 
         noburn.mint(owner, 1000 ether);
-        
+
         vm.startPrank(owner);
         noBurnStaking.setFeeRouter(feeRouter);
         noBurnStaking.setBurnPercentage(10000); // 100% burn
         // Note: stakeFor only works when paused, so don't unpause yet
-        
+
         // Stake some tokens while paused
         noburn.approve(address(noBurnStaking), 500 ether);
         noBurnStaking.stakeFor(alice, 500 ether);
-        
+
         // Now unpause for distribution
         noBurnStaking.unpause();
-        
+
         // Try to distribute - should fail with BurnFailed
         noburn.approve(address(noBurnStaking), 100 ether);
         vm.expectRevert(StakingRewards.BurnFailed.selector);
@@ -393,7 +393,7 @@ contract StakingRewardsConsolidated is Test {
         // Deploy fee-on-transfer token
         MockFeeOnTransfer feeToken = new MockFeeOnTransfer();
         StakingRewards feeStaking = new StakingRewards(address(feeToken), owner);
-        
+
         vm.prank(owner);
         feeStaking.unpause();
 
@@ -554,7 +554,7 @@ contract StakingRewardsConsolidated is Test {
 
         // totalStaked should be 0, but there might be dust in unallocatedRewards
         assertEq(stakingRewards.totalStaked(), stakingRewards.unallocatedRewards());
-        
+
         // New user stakes - should work normally
         vm.startPrank(charlie);
         hlg.approve(address(stakingRewards), 500 ether);
@@ -562,7 +562,7 @@ contract StakingRewardsConsolidated is Test {
         vm.stopPrank();
 
         assertEq(stakingRewards.balanceOf(charlie), 500 ether);
-        
+
         // System should work normally with new distributions
         vm.startPrank(owner);
         hlg.approve(address(stakingRewards), 100 ether);
@@ -583,10 +583,10 @@ contract StakingRewardsConsolidated is Test {
         if (block.chainid != 8453) return; // Base mainnet
 
         vm.createSelectFork("https://mainnet.base.org", 22_500_000);
-        
+
         IERC20 realHLG = IERC20(HLG_ADDRESS);
         StakingRewards forkStaking = new StakingRewards(HLG_ADDRESS, owner);
-        
+
         vm.startPrank(owner);
         forkStaking.setFeeRouter(feeRouter);
         forkStaking.setBurnPercentage(10000); // 100% burn
@@ -644,10 +644,14 @@ contract StakingRewardsConsolidated is Test {
 
         // Index delta should be 0 due to integer division: (250 * 1e12) / 1e24 = 0
         assertEq(stakingRewards.rewardPerToken(), initialIndex, "Index should be unchanged for dust");
-        
+
         // But unallocatedRewards and totalStaked increased by full actualReward
-        assertEq(stakingRewards.unallocatedRewards(), initialUnallocated + actualReward, "Unallocated should increase by full reward");
-        
+        assertEq(
+            stakingRewards.unallocatedRewards(),
+            initialUnallocated + actualReward,
+            "Unallocated should increase by full reward"
+        );
+
         // getExtraTokens stays the same (balance increased by actualReward, totalStaked also increased by actualReward)
         assertEq(stakingRewards.getExtraTokens(), initialSurplus, "Extra tokens should remain unchanged");
     }
@@ -673,11 +677,15 @@ contract StakingRewardsConsolidated is Test {
         vm.stopPrank();
 
         // Assert unallocatedRewards increased by full actualReward
-        assertEq(stakingRewards.unallocatedRewards(), initialUnallocated + actualReward, "Unallocated should equal full reward");
-        
+        assertEq(
+            stakingRewards.unallocatedRewards(),
+            initialUnallocated + actualReward,
+            "Unallocated should equal full reward"
+        );
+
         // Assert extra tokens stay the same (balance increased by actualReward, totalStaked also increased by actualReward)
         assertEq(stakingRewards.getExtraTokens(), initialSurplus, "Extra tokens should remain unchanged");
-        
+
         // Verify user can claim the expected amount
         uint256 expectedEarned = actualReward; // Alice has 100% of stake
         assertEq(stakingRewards.earned(alice), expectedEarned, "Alice should earn full reward");
@@ -692,47 +700,44 @@ contract StakingRewardsConsolidated is Test {
 
         // Use seed to create pseudo-random sequence
         uint256 rng = uint256(keccak256(abi.encode(seed)));
-        
+
         for (uint256 i = 0; i < 5; i++) {
             uint256 action = rng % 4;
             rng = uint256(keccak256(abi.encode(rng)));
-            
+
             if (action == 0) {
                 // Stake
                 uint256 amount = (rng % 1000) + 100; // 100-1099
                 rng = uint256(keccak256(abi.encode(rng)));
-                
+
                 vm.startPrank(alice);
                 hlg.approve(address(stakingRewards), amount);
                 stakingRewards.stake(amount);
                 vm.stopPrank();
-                
             } else if (action == 1) {
                 // Distribute
                 uint256 amount = (rng % 500) + 50; // 50-549
                 rng = uint256(keccak256(abi.encode(rng)));
-                
+
                 vm.startPrank(owner);
                 hlg.approve(address(stakingRewards), amount);
                 stakingRewards.depositAndDistribute(amount);
                 vm.stopPrank();
-                
             } else if (action == 2) {
                 // Update user
                 stakingRewards.updateUser(alice);
-                
             } else if (action == 3 && stakingRewards.balanceOf(alice) > 0) {
                 // Unstake (only if has balance)
                 vm.prank(alice);
                 stakingRewards.unstake();
-                
+
                 // Re-stake something to continue
                 vm.startPrank(alice);
                 hlg.approve(address(stakingRewards), 1000 ether);
                 stakingRewards.stake(1000 ether);
                 vm.stopPrank();
             }
-            
+
             // Check invariants after each action
             _checkInvariants();
         }
@@ -762,5 +767,4 @@ contract StakingRewardsConsolidated is Test {
         uint256 expectedExtra = contractBalance > totalStaked ? contractBalance - totalStaked : 0;
         assertEq(extraTokens, expectedExtra, "Extra tokens should be contractBalance - totalStaked");
     }
-
 }

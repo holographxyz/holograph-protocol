@@ -98,7 +98,7 @@ contract MerkleDistributor is Ownable, ReentrancyGuard {
         if (block.timestamp > campaignEndTime) revert CampaignNotActive();
         if (amount == 0) revert ZeroAmount();
         if (claimed[msg.sender]) revert AlreadyClaimed();
-        
+
         // Preflight check: ensure this distributor is whitelisted (saves user gas)
         if (!stakingRewards.isDistributor(address(this))) revert DistributorNotWhitelisted();
         if (totalClaimed + amount > totalAllocation) revert ExceedsAllocation();

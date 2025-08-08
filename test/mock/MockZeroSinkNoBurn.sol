@@ -22,7 +22,9 @@ contract MockZeroSinkNoBurn is IERC20 {
 
     function transfer(address to, uint256 amount) external override returns (bool) {
         require(balanceOf[msg.sender] >= amount, "bal");
-        unchecked { balanceOf[msg.sender] -= amount; }
+        unchecked {
+            balanceOf[msg.sender] -= amount;
+        }
         // Sink to zero address but do NOT change totalSupply
         balanceOf[to] += amount;
         emit Transfer(msg.sender, to, amount);
@@ -40,7 +42,9 @@ contract MockZeroSinkNoBurn is IERC20 {
         require(allowed >= amount, "allow");
         allowance[from][msg.sender] = allowed - amount;
         require(balanceOf[from] >= amount, "bal");
-        unchecked { balanceOf[from] -= amount; }
+        unchecked {
+            balanceOf[from] -= amount;
+        }
         balanceOf[to] += amount;
         emit Transfer(from, to, amount);
         return true;
