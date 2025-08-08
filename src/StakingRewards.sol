@@ -44,6 +44,8 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
     error BurnFailed();
     error NotEnoughExtraTokens();
     error NotEnoughRewardsAvailable();
+    error ActiveStakeExists();
+    error RewardTooSmall();
 
     /* -------------------------------------------------------------------------- */
     /*                                  Storage                                   */
@@ -176,6 +178,10 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
         if (_activeStaked() == 0) return;
         if (hlgAmount == 0) revert ZeroAmount();
 
+        uint256 active = _activeStaked();
+        uint256 netReward = (hlgAmount * (MAX_PERCENTAGE - burnPercentage)) / MAX_PERCENTAGE;
+        if ((netReward * INDEX_PRECISION) / active == 0) revert RewardTooSmall();
+
         uint256 received = _pullHLG(msg.sender, hlgAmount); // exact amount enforced
         uint256 burnAmount = (received * burnPercentage) / MAX_PERCENTAGE;
         uint256 rewardAmount = received - burnAmount;
@@ -196,6 +202,10 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
         if (msg.sender != feeRouter) revert Unauthorized();
         if (_activeStaked() == 0) return;
         if (amount == 0) revert ZeroAmount();
+
+        uint256 active = _activeStaked();
+        uint256 netReward = (amount * (MAX_PERCENTAGE - burnPercentage)) / MAX_PERCENTAGE;
+        if ((netReward * INDEX_PRECISION) / active == 0) revert RewardTooSmall();
 
         uint256 received = _pullHLG(msg.sender, amount);
         uint256 burnAmount = (received * burnPercentage) / MAX_PERCENTAGE;
@@ -422,6 +432,26 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
         if (amount > free) revert NotEnoughExtraTokens();
         HLG.safeTransfer(to, amount);
         emit TokensRecovered(address(HLG), amount, to);
+    }
+
+    /**
+     * @notice Reclaim unallocated rewards when there are no active stakers
+     * @param to Address to send unallocated rewards to
+     */
+    function reclaimUnallocatedRewards(address to) external onlyOwner nonReentrant {
+        if (to == address(0)) revert ZeroAddress();
+        if (_activeStaked() != 0) revert ActiveStakeExists();
+
+        uint256 u = unallocatedRewards;
+        if (u == 0) revert ZeroAmount();
+
+        unallocatedRewards = 0;
+        unchecked {
+            totalStaked -= u;
+        }
+        HLG.safeTransfer(to, u);
+
+        emit TokensRecovered(address(HLG), u, to);
     }
 
     /**
