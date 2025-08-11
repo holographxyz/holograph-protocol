@@ -174,11 +174,10 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
      * @dev Splits burn/reward and updates the index. If there are no stakers,
      *      this call is a no-op.
      */
-    function depositAndDistribute(uint256 hlgAmount) external onlyOwner nonReentrant {
-        if (_activeStaked() == 0) return;
-        if (hlgAmount == 0) revert ZeroAmount();
-
+    function depositAndDistribute(uint256 hlgAmount) external onlyOwner nonReentrant whenNotPaused {
         uint256 active = _activeStaked();
+        if (active == 0) return;
+        if (hlgAmount == 0) revert ZeroAmount();
 
         // Pull tokens first to get the exact received amount
         uint256 received = _pullHLG(msg.sender, hlgAmount);
@@ -203,12 +202,11 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
      * @dev Splits burn/reward and updates the index. If there are no stakers,
      *      this call is a no-op.
      */
-    function addRewards(uint256 amount) external nonReentrant {
+    function addRewards(uint256 amount) external nonReentrant whenNotPaused {
         if (msg.sender != feeRouter) revert Unauthorized();
-        if (_activeStaked() == 0) return;
-        if (amount == 0) revert ZeroAmount();
-
         uint256 active = _activeStaked();
+        if (active == 0) return;
+        if (amount == 0) revert ZeroAmount();
 
         // Pull tokens first to get the exact received amount
         uint256 received = _pullHLG(msg.sender, amount);

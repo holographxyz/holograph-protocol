@@ -367,6 +367,51 @@ contract StakingRewardsConsolidated is Test {
         assertEq(stakingRewards.earned(alice), REWARD_AMOUNT);
     }
 
+    function testHundredPercentBurnNoRevertAndNoIndexChange() public {
+        // Set 100% burn
+        vm.prank(owner);
+        stakingRewards.setBurnPercentage(10000);
+
+        // Alice stakes
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), STAKE_AMOUNT);
+        stakingRewards.stake(STAKE_AMOUNT);
+        vm.stopPrank();
+
+        // Record index
+        uint256 indexBefore = stakingRewards.rewardPerToken();
+
+        // Distribute; should not revert, all burned, no rewards
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), REWARD_AMOUNT);
+        stakingRewards.depositAndDistribute(REWARD_AMOUNT);
+        vm.stopPrank();
+
+        // Index unchanged and no pending rewards
+        assertEq(stakingRewards.rewardPerToken(), indexBefore);
+        assertEq(stakingRewards.earned(alice), 0);
+    }
+
+    function testFundingBlockedWhenPaused() public {
+        // Pause contract
+        vm.prank(owner);
+        stakingRewards.pause();
+
+        // depositAndDistribute should revert
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), REWARD_AMOUNT);
+        vm.expectRevert();
+        stakingRewards.depositAndDistribute(REWARD_AMOUNT);
+        vm.stopPrank();
+
+        // addRewards should revert
+        vm.startPrank(feeRouter);
+        hlg.approve(address(stakingRewards), REWARD_AMOUNT);
+        vm.expectRevert();
+        stakingRewards.addRewards(REWARD_AMOUNT);
+        vm.stopPrank();
+    }
+
     function testDifferentBurnPercentages() public {
         vm.startPrank(alice);
         hlg.approve(address(stakingRewards), STAKE_AMOUNT);
