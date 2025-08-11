@@ -121,12 +121,12 @@ userIndexSnapshot = globalRewardIndex;  // Update snapshot
 
 The contract uses `INDEX_PRECISION = 1e12` following the MasterChef V2 standard. While this provides less precision than 1e18, it offers significant gas savings with negligible precision loss. The rounding always favors the protocol, with users potentially losing wei-level amounts.
 
-### Mathematical Invariant
+### Mathematical Accounting Identity
 
-The fundamental invariant that ensures correctness:
+The core accounting identity that ensures correctness:
 
 ```
-totalStaked == sum(balanceOf[user] for all users)
+sum(balanceOf[user] for all users) + unallocatedRewards == totalStaked
 ```
 
 We test this constantly to make sure the math always works correctly.
@@ -310,7 +310,7 @@ if (after - before != amount) revert FeeOnTransferNotSupported();
 **Pause everything:**
 
 ```solidity
-pause();  // Stops all staking, but unstaking still works
+pause();  // Stops staking and funding; unstaking/emergency exit still work
 ```
 
 **Emergency exit** (works even when paused):
@@ -527,8 +527,8 @@ constructor(address _hlg, address _owner) {
 **Monitoring:**
 
 ```solidity
-// Critical invariant (must always be true)
-totalStaked == sum(all user balances)
+// Critical accounting identity (must always hold)
+sum(all user balances) + unallocatedRewards == totalStaked
 
 // Solvency check
 HLG.balanceOf(contract) >= totalStaked
@@ -608,7 +608,7 @@ While StakingRewards builds on the proven MasterChef V2 algorithm, several key d
 | **Reward Cadence**       | Fixed emission schedule    | Variable based on protocol activity |
 | **Asset Custody**        | Multiple LP tokens         | Single HLG token only               |
 | **User Experience**      | Manual harvest required    | Auto-compounding rewards            |
-| **Zero-Staker Handling** | Rewards wasted/delayed     | Genesis bonus buffer system         |
+| **Zero-Staker Handling** | Rewards wasted/delayed     | No-staker distributions are no-ops  |
 | **Burn Mechanism**       | No burning                 | Configurable % of rewards burned   |
 | **Security Additions**   | Basic protections          | Enhanced with emergency exits       |
 | **Precision/Arithmetic** | Standard 1e12              | Optimized 1e12 with gas savings     |
