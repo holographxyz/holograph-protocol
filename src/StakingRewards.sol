@@ -179,15 +179,20 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
         if (hlgAmount == 0) revert ZeroAmount();
 
         uint256 active = _activeStaked();
-        uint256 netReward = (hlgAmount * (MAX_PERCENTAGE - burnPercentage)) / MAX_PERCENTAGE;
-        if ((netReward * INDEX_PRECISION) / active == 0) revert RewardTooSmall();
 
-        uint256 received = _pullHLG(msg.sender, hlgAmount); // exact amount enforced
+        // Pull tokens first to get the exact received amount
+        uint256 received = _pullHLG(msg.sender, hlgAmount);
         uint256 burnAmount = (received * burnPercentage) / MAX_PERCENTAGE;
         uint256 rewardAmount = received - burnAmount;
 
+        // If there is a positive rewardAmount, ensure it will move the index
+        if (rewardAmount > 0) {
+            if ((rewardAmount * INDEX_PRECISION) / active == 0) revert RewardTooSmall();
+            _addRewards(rewardAmount);
+        }
+
+        // Perform burn after validation to avoid partial side effects on revert
         _burnHLG(burnAmount);
-        _addRewards(rewardAmount);
 
         emit RewardsDistributed(received, burnAmount, rewardAmount);
     }
@@ -204,15 +209,20 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
         if (amount == 0) revert ZeroAmount();
 
         uint256 active = _activeStaked();
-        uint256 netReward = (amount * (MAX_PERCENTAGE - burnPercentage)) / MAX_PERCENTAGE;
-        if ((netReward * INDEX_PRECISION) / active == 0) revert RewardTooSmall();
 
+        // Pull tokens first to get the exact received amount
         uint256 received = _pullHLG(msg.sender, amount);
         uint256 burnAmount = (received * burnPercentage) / MAX_PERCENTAGE;
         uint256 rewardAmount = received - burnAmount;
 
+        // If there is a positive rewardAmount, ensure it will move the index
+        if (rewardAmount > 0) {
+            if ((rewardAmount * INDEX_PRECISION) / active == 0) revert RewardTooSmall();
+            _addRewards(rewardAmount);
+        }
+
+        // Perform burn after validation to avoid partial side effects on revert
         _burnHLG(burnAmount);
-        _addRewards(rewardAmount);
 
         emit RewardsDistributed(received, burnAmount, rewardAmount);
     }
