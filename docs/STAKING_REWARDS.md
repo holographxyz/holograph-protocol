@@ -121,15 +121,15 @@ userIndexSnapshot = globalRewardIndex;  // Update snapshot
 
 The contract uses `INDEX_PRECISION = 1e12` following the MasterChef V2 standard. While this provides less precision than 1e18, it offers significant gas savings with negligible precision loss. The rounding always favors the protocol, with users potentially losing wei-level amounts.
 
-### Mathematical Accounting Identity
+### Accounting Check
 
-The core accounting identity that ensures correctness:
+The key accounting check that must hold:
 
 ```
 sum(balanceOf[user] for all users) + unallocatedRewards == totalStaked
 ```
 
-We test this constantly to make sure the math always works correctly.
+We test this continuously to ensure the numbers stay in sync.
 
 ---
 

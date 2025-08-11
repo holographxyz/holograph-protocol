@@ -175,8 +175,8 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
      *      this call is a no-op.
      */
     function depositAndDistribute(uint256 hlgAmount) external onlyOwner nonReentrant whenNotPaused {
-        uint256 active = _activeStaked();
-        if (active == 0) return;
+        uint256 staked = _activeStaked();
+        if (staked == 0) return;
         if (hlgAmount == 0) revert ZeroAmount();
 
         // Pull tokens first to get the exact received amount
@@ -186,7 +186,7 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
 
         // If there is a positive rewardAmount, ensure it will move the index
         if (rewardAmount > 0) {
-            if ((rewardAmount * INDEX_PRECISION) / active == 0) revert RewardTooSmall();
+            if ((rewardAmount * INDEX_PRECISION) / staked == 0) revert RewardTooSmall();
             _addRewards(rewardAmount);
         }
 
@@ -204,8 +204,8 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
      */
     function addRewards(uint256 amount) external nonReentrant whenNotPaused {
         if (msg.sender != feeRouter) revert Unauthorized();
-        uint256 active = _activeStaked();
-        if (active == 0) return;
+        uint256 staked = _activeStaked();
+        if (staked == 0) return;
         if (amount == 0) revert ZeroAmount();
 
         // Pull tokens first to get the exact received amount
@@ -215,7 +215,7 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
 
         // If there is a positive rewardAmount, ensure it will move the index
         if (rewardAmount > 0) {
-            if ((rewardAmount * INDEX_PRECISION) / active == 0) revert RewardTooSmall();
+            if ((rewardAmount * INDEX_PRECISION) / staked == 0) revert RewardTooSmall();
             _addRewards(rewardAmount);
         }
 
@@ -269,11 +269,11 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
                 uint256 pendingRewards = (userBalance * indexDelta) / INDEX_PRECISION;
                 if (pendingRewards > 0) {
                     // Make sure we have enough rewards available to give to the user
-                    uint256 unalloc = unallocatedRewards;
-                    if (pendingRewards > unalloc) revert NotEnoughRewardsAvailable();
+                    uint256 unallocated = unallocatedRewards;
+                    if (pendingRewards > unallocated) revert NotEnoughRewardsAvailable();
 
                     balanceOf[account] = userBalance + pendingRewards;
-                    unallocatedRewards = unalloc - pendingRewards;
+                    unallocatedRewards = unallocated - pendingRewards;
                     emit RewardsCompounded(account, pendingRewards);
                 }
             }
@@ -450,16 +450,16 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
         if (to == address(0)) revert ZeroAddress();
         if (_activeStaked() != 0) revert ActiveStakeExists();
 
-        uint256 u = unallocatedRewards;
-        if (u == 0) revert ZeroAmount();
+        uint256 unallocated = unallocatedRewards;
+        if (unallocated == 0) revert ZeroAmount();
 
         unallocatedRewards = 0;
         unchecked {
-            totalStaked -= u;
+            totalStaked -= unallocated;
         }
-        HLG.safeTransfer(to, u);
+        HLG.safeTransfer(to, unallocated);
 
-        emit TokensRecovered(address(HLG), u, to);
+        emit TokensRecovered(address(HLG), unallocated, to);
     }
 
     /**
