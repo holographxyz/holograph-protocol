@@ -64,7 +64,11 @@ unichainSepolia = "${UNICHAIN_SEPOLIA_RPC_URL}"
 base = "${BASE_MAINNET_RPC_URL}"
 baseSepolia = "${BASE_SEPOLIA_RPC_URL}"
 
-etherscan_api_key = "${ETHERSCAN_API_KEY}"
+[etherscan]
+sepolia = { key = "${ETHERSCAN_API_KEY}", url = "https://api-sepolia.etherscan.io/api" }
+mainnet = { key = "${ETHERSCAN_API_KEY}", url = "https://api.etherscan.io/api" }
+base = { key = "${BASESCAN_API_KEY}", url = "https://api.basescan.org/api" }
+base_sepolia = { key = "${BASESCAN_API_KEY}", url = "https://api-sepolia.basescan.org/api" }
 
 [profile.default.fuzz]
 runs = 1000

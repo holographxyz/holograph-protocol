@@ -50,6 +50,15 @@ contract MockZeroSinkNoBurn is IERC20 {
         return true;
     }
 
+    // Expose a burn(uint256) that does NOT actually reduce totalSupply, to trigger BurnFailed logic
+    function burn(uint256 amount) external {
+        require(balanceOf[msg.sender] >= amount, "bal");
+        unchecked {
+            balanceOf[msg.sender] -= amount;
+        }
+        // totalSupply intentionally unchanged to simulate a non-burning token
+    }
+
     function mint(address to, uint256 amount) external {
         balanceOf[to] += amount;
         totalSupply += amount;

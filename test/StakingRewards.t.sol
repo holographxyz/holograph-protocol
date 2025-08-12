@@ -69,6 +69,7 @@ contract StakingRewardsConsolidated is Test {
     /*                            Basic Staking Tests                            */
     /* -------------------------------------------------------------------------- */
 
+    /// @notice Stakes and then fully withdraws, verifying balances and totals
     function testStakeAndWithdraw() public {
         vm.startPrank(alice);
         hlg.approve(address(stakingRewards), STAKE_AMOUNT);
@@ -83,6 +84,7 @@ contract StakingRewardsConsolidated is Test {
         vm.stopPrank();
     }
 
+    /// @notice Emergency exit returns staked tokens without compounding rewards
     function testEmergencyExit() public {
         vm.startPrank(alice);
         hlg.approve(address(stakingRewards), STAKE_AMOUNT);
@@ -96,6 +98,7 @@ contract StakingRewardsConsolidated is Test {
         vm.stopPrank();
     }
 
+    /// @notice Reverts when attempting to stake a zero amount
     function testCannotStakeZeroAmount() public {
         vm.startPrank(alice);
         hlg.approve(address(stakingRewards), STAKE_AMOUNT);
@@ -104,6 +107,7 @@ contract StakingRewardsConsolidated is Test {
         vm.stopPrank();
     }
 
+    /// @notice Reverts when attempting to unstake without an active stake
     function testCannotUnstakeWithNoStake() public {
         vm.prank(alice);
         vm.expectRevert(StakingRewards.NoStake.selector);
@@ -114,6 +118,7 @@ contract StakingRewardsConsolidated is Test {
     /*                         Reward Distribution Tests                         */
     /* -------------------------------------------------------------------------- */
 
+    /// @notice Rewards accrue and compound into balance via updateUser()
     function testAutoCompoundingRewards() public {
         // Alice stakes
         vm.startPrank(alice);
@@ -137,6 +142,7 @@ contract StakingRewardsConsolidated is Test {
         assertEq(stakingRewards.earned(alice), 0);
     }
 
+    /// @notice FeeRouter.addRewards() accrues rewards to active stakers
     function testFeeRouterAddRewards() public {
         // Alice stakes
         vm.startPrank(alice);
@@ -154,12 +160,14 @@ contract StakingRewardsConsolidated is Test {
         assertEq(stakingRewards.earned(alice), expectedRewards);
     }
 
+    /// @notice Non-router callers cannot add rewards
     function testAddRewardsOnlyRouter() public {
         vm.prank(alice);
         vm.expectRevert(StakingRewards.Unauthorized.selector);
         stakingRewards.addRewards(REWARD_AMOUNT);
     }
 
+    /// @notice Rewards split proportionally among multiple concurrent stakers
     function testMultipleUsersProportionalRewards() public {
         // Alice stakes 300, Bob stakes 200
         vm.startPrank(alice);
@@ -194,6 +202,7 @@ contract StakingRewardsConsolidated is Test {
     /*                      Virtual Compounding Model Tests                      */
     /* -------------------------------------------------------------------------- */
 
+    /// @notice Multiple distributions before user updates are allocated exactly once
     function testNoDoubleCountingAcrossMultipleDistributions() public {
         // Two users stake 100 each
         vm.startPrank(alice);
@@ -245,6 +254,7 @@ contract StakingRewardsConsolidated is Test {
         assertEq(sumBalances, stakingRewards.totalStaked());
     }
 
+    /// @notice Pending rewards use active stake as the denominator, not totalStaked
     function testDenominatorCorrectness() public {
         // Alice stakes 100, Bob stakes 200
         vm.startPrank(alice);
@@ -280,6 +290,7 @@ contract StakingRewardsConsolidated is Test {
         assertEq(alicePending + bobPending, stakingRewards.unallocatedRewards());
     }
 
+    /// @notice updateUser() reverts if unallocated rewards are corrupted below what is owed
     function testInsufficientUnallocatedReverts() public {
         // Deploy corrupted staking contract for this test
         MockCorruptedStaking corruptedStaking = new MockCorruptedStaking(address(hlg), owner);
@@ -323,6 +334,7 @@ contract StakingRewardsConsolidated is Test {
     /*                            Burn Functionality                             */
     /* -------------------------------------------------------------------------- */
 
+    /// @notice Reverts distribution if token "burn" does not truly reduce total supply
     function testBurnHelperRevertsIfTransferToZeroDoesNotBurn() public {
         // Deploy zero-sink token that doesn't actually burn
         MockZeroSinkNoBurn noburn = new MockZeroSinkNoBurn();
@@ -349,6 +361,7 @@ contract StakingRewardsConsolidated is Test {
         vm.stopPrank();
     }
 
+    /// @notice With 0% burn, 100% of distribution goes to stakers
     function testZeroBurnPercentage() public {
         vm.prank(owner);
         stakingRewards.setBurnPercentage(0);
@@ -367,6 +380,7 @@ contract StakingRewardsConsolidated is Test {
         assertEq(stakingRewards.earned(alice), REWARD_AMOUNT);
     }
 
+    /// @notice With 100% burn, no index change and no pending rewards
     function testHundredPercentBurnNoRevertAndNoIndexChange() public {
         // Set 100% burn
         vm.prank(owner);
@@ -392,6 +406,7 @@ contract StakingRewardsConsolidated is Test {
         assertEq(stakingRewards.earned(alice), 0);
     }
 
+    /// @notice Funding methods revert while the contract is paused
     function testFundingBlockedWhenPaused() public {
         // Pause contract
         vm.prank(owner);
@@ -412,6 +427,7 @@ contract StakingRewardsConsolidated is Test {
         vm.stopPrank();
     }
 
+    /// @notice Reward accrual amount reflects configured burn percentage
     function testDifferentBurnPercentages() public {
         vm.startPrank(alice);
         hlg.approve(address(stakingRewards), STAKE_AMOUNT);
@@ -434,6 +450,7 @@ contract StakingRewardsConsolidated is Test {
     /*                            Fee-on-Transfer Tests                          */
     /* -------------------------------------------------------------------------- */
 
+    /// @notice Fee-on-transfer tokens are rejected for staking
     function testFeeOnTransferRejection() public {
         // Deploy fee-on-transfer token
         MockFeeOnTransfer feeToken = new MockFeeOnTransfer();
@@ -456,24 +473,28 @@ contract StakingRewardsConsolidated is Test {
     /*                              Admin Functions                              */
     /* -------------------------------------------------------------------------- */
 
+    /// @notice Owner can set the burn percentage within bounds
     function testSetBurnPercentage() public {
         vm.prank(owner);
         stakingRewards.setBurnPercentage(7500);
         assertEq(stakingRewards.burnPercentage(), 7500);
     }
 
+    /// @notice Reverts when burn percentage exceeds 10000 bps
     function testSetBurnPercentageInvalidValue() public {
         vm.prank(owner);
         vm.expectRevert(StakingRewards.InvalidBurnPercentage.selector);
         stakingRewards.setBurnPercentage(10001);
     }
 
+    /// @notice Only the owner can modify burn percentage
     function testSetBurnPercentageOnlyOwner() public {
         vm.prank(alice);
         vm.expectRevert();
         stakingRewards.setBurnPercentage(7500);
     }
 
+    /// @notice Pausing disables staking and reflects paused state
     function testPause() public {
         vm.prank(owner);
         stakingRewards.pause();
@@ -486,18 +507,21 @@ contract StakingRewardsConsolidated is Test {
         vm.stopPrank();
     }
 
+    /// @notice Only the owner may call stakeFor()
     function testStakeForOnlyOwner() public {
         vm.prank(alice);
         vm.expectRevert();
         stakingRewards.stakeFor(bob, STAKE_AMOUNT);
     }
 
+    /// @notice stakeFor() is only available while the contract is paused
     function testStakeForOnlyWhenPaused() public {
         vm.prank(owner);
         vm.expectRevert();
         stakingRewards.stakeFor(alice, STAKE_AMOUNT);
     }
 
+    /// @notice Owner can whitelist and de-whitelist distributor addresses
     function testDistributorWhitelist() public {
         vm.prank(owner);
         stakingRewards.setDistributor(distributor, true);
@@ -508,6 +532,7 @@ contract StakingRewardsConsolidated is Test {
         assertFalse(stakingRewards.isDistributor(distributor));
     }
 
+    /// @notice Whitelisted distributors can stake on behalf of users
     function testDistributorStake() public {
         vm.prank(owner);
         stakingRewards.setDistributor(distributor, true);
@@ -520,6 +545,7 @@ contract StakingRewardsConsolidated is Test {
         assertEq(stakingRewards.balanceOf(alice), STAKE_AMOUNT);
     }
 
+    /// @notice Non-whitelisted distributor cannot stake on behalf of users
     function testDistributorStakeNotWhitelisted() public {
         vm.startPrank(distributor);
         hlg.approve(address(stakingRewards), STAKE_AMOUNT);
@@ -532,6 +558,7 @@ contract StakingRewardsConsolidated is Test {
     /*                            Extra Token Recovery                           */
     /* -------------------------------------------------------------------------- */
 
+    /// @notice Owner can recover surplus tokens not tracked by accounting
     function testExtraTokenRecovery() public {
         // Directly transfer 100 HLG to the contract (not via functions)
         hlg.mint(address(this), 100 ether);
@@ -557,6 +584,7 @@ contract StakingRewardsConsolidated is Test {
         assertEq(stakingRewards.getExtraTokens(), 40 ether);
     }
 
+    /// @notice Owner can reclaim unallocated rewards when no active stake exists
     function testReclaimUnallocatedRewards() public {
         // Setup: Alice stakes, rewards distributed, Alice uses emergency exit
         vm.startPrank(alice);
@@ -592,6 +620,7 @@ contract StakingRewardsConsolidated is Test {
         assertEq(hlg.balanceOf(owner), treasuryBalanceBefore + unallocatedAmount);
     }
 
+    /// @notice Reclaiming unallocated rewards reverts if there is active stake
     function testReclaimUnallocatedRewardsRevertsWithActiveStake() public {
         // Alice stakes
         vm.startPrank(alice);
@@ -611,6 +640,7 @@ contract StakingRewardsConsolidated is Test {
         stakingRewards.reclaimUnallocatedRewards(owner);
     }
 
+    /// @notice Distributions too small to move the index revert with RewardTooSmall
     function testRewardTooSmall() public {
         // Large stake to make tiny rewards not move the index
         vm.startPrank(alice);
@@ -630,6 +660,7 @@ contract StakingRewardsConsolidated is Test {
     /*                              Edge Cases                                   */
     /* -------------------------------------------------------------------------- */
 
+    /// @notice Distributions are no-ops when there are zero active stakers
     function testZeroStakerNoOp() public {
         // No one has staked, distributions should be no-ops
         vm.startPrank(owner);
@@ -642,6 +673,7 @@ contract StakingRewardsConsolidated is Test {
         assertEq(stakingRewards.unallocatedRewards(), 0);
     }
 
+    /// @notice System remains consistent after all users exit and a new user stakes
     function testEveryoneExitsThenNewStake() public {
         // Alice and Bob stake
         vm.startPrank(alice);
@@ -692,6 +724,7 @@ contract StakingRewardsConsolidated is Test {
     /*                               Fork Tests                                  */
     /* -------------------------------------------------------------------------- */
 
+    /// @notice On Base fork, 100% burn reduces HLG total supply by distribution amount
     function testForkBurnReducesSupply() public {
         // Skip if not forking
         if (block.chainid != 8453) return; // Base mainnet
@@ -733,6 +766,7 @@ contract StakingRewardsConsolidated is Test {
     /*                       Precision and Dust Handling Tests                  */
     /* -------------------------------------------------------------------------- */
 
+    /// @notice Dust guard prevents zero-index updates from tiny distributions
     function testDustHandling() public {
         // Setup large active stake
         vm.startPrank(alice);
@@ -750,6 +784,7 @@ contract StakingRewardsConsolidated is Test {
         vm.stopPrank();
     }
 
+    /// @notice Unallocated increases by full reward; extra tokens remain unchanged
     function testFullRewardPreCredit() public {
         // Setup moderate stake
         vm.startPrank(alice);
@@ -785,6 +820,7 @@ contract StakingRewardsConsolidated is Test {
         assertEq(stakingRewards.earned(alice), expectedEarned, "Alice should earn full reward");
     }
 
+    /// @notice Randomized action sequences preserve accounting invariants
     function testInvariantFuzzSequences(uint8 seed) public {
         // Initialize with some stake
         vm.startPrank(alice);
@@ -839,6 +875,401 @@ contract StakingRewardsConsolidated is Test {
             // Check invariants after each action
             _checkInvariants();
         }
+    }
+
+    /// @notice rewardPerToken index accrues as expected across stake/distribute sequence
+    function testIndexAccrualTwoStakersSequenceMatchesExpectedRPT() public {
+        // Alice stakes 1 HLG
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 1 ether);
+        stakingRewards.stake(1 ether);
+        vm.stopPrank();
+
+        // First distribution: 1 HLG total, 50% rewards -> 0.5 HLG over active=1
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 1 ether);
+        stakingRewards.depositAndDistribute(1 ether);
+        vm.stopPrank();
+
+        // Bob stakes 1 HLG after first distribution
+        vm.startPrank(bob);
+        hlg.approve(address(stakingRewards), 1 ether);
+        stakingRewards.stake(1 ether);
+        vm.stopPrank();
+
+        // Second distribution: 1 HLG total, 50% rewards -> 0.5 HLG over active=2
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 1 ether);
+        stakingRewards.depositAndDistribute(1 ether);
+        vm.stopPrank();
+
+        // Expected rewardPerToken index = 0.5e12 + 0.25e12 = 0.75e12
+        assertEq(stakingRewards.rewardPerToken(), 750_000_000_000);
+    }
+
+    /// @notice Per-user earned amounts match expected allocations across distributions
+    function testEarnedAllocationTwoStakersSequence() public {
+        // Alice stakes 1 HLG
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 1 ether);
+        stakingRewards.stake(1 ether);
+        vm.stopPrank();
+
+        // First distribution with only Alice active
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 1 ether);
+        stakingRewards.depositAndDistribute(1 ether); // 0.5 HLG rewards
+        vm.stopPrank();
+
+        // Bob stakes 1 HLG, then second distribution
+        vm.startPrank(bob);
+        hlg.approve(address(stakingRewards), 1 ether);
+        stakingRewards.stake(1 ether);
+        vm.stopPrank();
+
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 1 ether);
+        stakingRewards.depositAndDistribute(1 ether); // +0.5 HLG rewards over active=2
+        vm.stopPrank();
+
+        // Alice should have 0.75 HLG pending (0.5 from first, 0.25 from second)
+        // Bob should have 0.25 HLG pending (only second distribution share)
+        assertEq(stakingRewards.earned(alice), 0.75 ether);
+        assertEq(stakingRewards.earned(bob), 0.25 ether);
+
+        // After update, balances should compound accordingly
+        stakingRewards.updateUser(alice);
+        stakingRewards.updateUser(bob);
+        assertEq(stakingRewards.balanceOf(alice), 1.75 ether);
+        assertEq(stakingRewards.balanceOf(bob), 1.25 ether);
+        assertEq(stakingRewards.unallocatedRewards(), 0);
+    }
+
+    /// @notice User snapshot updates on settlement and resets to zero after full exit
+    function testUserIndexSnapshotLifecycle() public {
+        // Alice stakes at index 0
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 10 ether);
+        stakingRewards.stake(10 ether);
+        vm.stopPrank();
+
+        // Distribute to bump index
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 10 ether);
+        stakingRewards.depositAndDistribute(10 ether);
+        vm.stopPrank();
+
+        // Snapshot remains 0 until Alice is updated
+        assertEq(stakingRewards.userIndexSnapshot(alice), 0);
+        assertGt(stakingRewards.rewardPerToken(), 0);
+
+        // Update Alice -> snapshot set to current index
+        uint256 indexBefore = stakingRewards.rewardPerToken();
+        stakingRewards.updateUser(alice);
+        assertEq(stakingRewards.userIndexSnapshot(alice), indexBefore);
+
+        // Full exit resets snapshot to 0
+        vm.prank(alice);
+        stakingRewards.unstake();
+        assertEq(stakingRewards.userIndexSnapshot(alice), 0);
+    }
+
+    /// @notice addRewards() with zero active stakers does not transfer tokens or change index
+    function testAddRewardsNoStakerDoesNotPullTokens() public {
+        // Ensure no active stakers
+        assertEq(stakingRewards.totalStaked(), 0);
+        uint256 feeRouterBalanceBefore = hlg.balanceOf(feeRouter);
+        uint256 contractBalanceBefore = hlg.balanceOf(address(stakingRewards));
+
+        // FeeRouter attempts addRewards while no active stake
+        vm.startPrank(feeRouter);
+        hlg.approve(address(stakingRewards), 100 ether);
+        stakingRewards.addRewards(100 ether);
+        vm.stopPrank();
+
+        // Tokens should NOT be pulled; balances unchanged; index unchanged
+        assertEq(hlg.balanceOf(feeRouter), feeRouterBalanceBefore);
+        assertEq(hlg.balanceOf(address(stakingRewards)), contractBalanceBefore);
+        assertEq(stakingRewards.unallocatedRewards(), 0);
+        assertEq(stakingRewards.rewardPerToken(), 0);
+    }
+
+    /// @notice Any address can call updateUser() to settle another user’s rewards
+    function testUpdateUserCallableByAnyoneForSettling() public {
+        // Alice stakes and a distribution occurs
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 100 ether);
+        stakingRewards.stake(100 ether);
+        vm.stopPrank();
+
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 50 ether);
+        stakingRewards.depositAndDistribute(50 ether); // 25 rewards
+        vm.stopPrank();
+
+        // Bob (third-party) can settle Alice via updateUser
+        vm.prank(bob);
+        stakingRewards.updateUser(alice);
+
+        assertEq(stakingRewards.balanceOf(alice), 125 ether);
+        assertEq(stakingRewards.unallocatedRewards(), 0);
+    }
+
+    /// @notice Three stakers join sequentially across distributions; exact earned splits verified
+    function testThreeStakersSequentialJoinsAndDistributionsExactSplit() public {
+        // Alice stakes 1 HLG
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 1 ether);
+        stakingRewards.stake(1 ether);
+        vm.stopPrank();
+
+        // First distribution: 1 HLG total -> 0.5 reward over active=1
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 1 ether);
+        stakingRewards.depositAndDistribute(1 ether);
+        vm.stopPrank();
+
+        // Bob stakes 1 HLG
+        vm.startPrank(bob);
+        hlg.approve(address(stakingRewards), 1 ether);
+        stakingRewards.stake(1 ether);
+        vm.stopPrank();
+
+        // Second distribution: 1 HLG total -> 0.5 reward over active=2
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 1 ether);
+        stakingRewards.depositAndDistribute(1 ether);
+        vm.stopPrank();
+
+        // Charlie stakes 2 HLG
+        vm.startPrank(charlie);
+        hlg.approve(address(stakingRewards), 2 ether);
+        stakingRewards.stake(2 ether);
+        vm.stopPrank();
+
+        // Third distribution: 2 HLG total -> 1 reward over active=4
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 2 ether);
+        stakingRewards.depositAndDistribute(2 ether);
+        vm.stopPrank();
+
+        // Expected pendings: Alice 1.0, Bob 0.5, Charlie 0.5
+        assertEq(stakingRewards.earned(alice), 1 ether);
+        assertEq(stakingRewards.earned(bob), 0.5 ether);
+        assertEq(stakingRewards.earned(charlie), 0.5 ether);
+
+        // Compound all
+        stakingRewards.updateUser(alice);
+        stakingRewards.updateUser(bob);
+        stakingRewards.updateUser(charlie);
+
+        assertEq(stakingRewards.balanceOf(alice), 2 ether);
+        assertEq(stakingRewards.balanceOf(bob), 1.5 ether);
+        assertEq(stakingRewards.balanceOf(charlie), 2.5 ether);
+        assertEq(stakingRewards.unallocatedRewards(), 0);
+    }
+
+    /// @notice Users exit mid-sequence; remaining stakers correctly receive subsequent rewards
+    function testThreeStakersExitMidwayDistributions() public {
+        // Alice 2, Bob 2
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 2 ether);
+        stakingRewards.stake(2 ether);
+        vm.stopPrank();
+
+        vm.startPrank(bob);
+        hlg.approve(address(stakingRewards), 2 ether);
+        stakingRewards.stake(2 ether);
+        vm.stopPrank();
+
+        // Distribute 2 -> 1 reward over active=4 (Alice 0.5, Bob 0.5)
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 2 ether);
+        stakingRewards.depositAndDistribute(2 ether);
+        vm.stopPrank();
+
+        // Alice settles and exits
+        stakingRewards.updateUser(alice);
+        vm.prank(alice);
+        stakingRewards.unstake();
+        assertEq(stakingRewards.balanceOf(alice), 0);
+
+        // Charlie joins with 2
+        vm.startPrank(charlie);
+        hlg.approve(address(stakingRewards), 2 ether);
+        stakingRewards.stake(2 ether);
+        vm.stopPrank();
+
+        // Distribute 2 -> 1 reward over active=4 (Bob 0.5, Charlie 0.5)
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 2 ether);
+        stakingRewards.depositAndDistribute(2 ether);
+        vm.stopPrank();
+
+        // Bob total pending 1.0, Charlie 0.5, Alice 0 (exited after settling)
+        assertEq(stakingRewards.earned(bob), 1 ether);
+        assertEq(stakingRewards.earned(charlie), 0.5 ether);
+        assertEq(stakingRewards.earned(alice), 0);
+
+        // Compound and verify
+        stakingRewards.updateUser(bob);
+        stakingRewards.updateUser(charlie);
+        assertEq(stakingRewards.balanceOf(bob), 3 ether);
+        assertEq(stakingRewards.balanceOf(charlie), 2.5 ether);
+    }
+
+    /// @notice Interleaves stakeFor (paused) and distributor stakes with distributions
+    function testInterleavedStakeForAndDistributorStakesAcrossDistributions() public {
+        // Pause to use stakeFor
+        vm.prank(owner);
+        stakingRewards.pause();
+
+        // Owner stakes for Alice (1) and Bob (2) while paused
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 3 ether);
+        stakingRewards.stakeFor(alice, 1 ether);
+        stakingRewards.stakeFor(bob, 2 ether);
+        stakingRewards.unpause();
+        vm.stopPrank();
+
+        // Whitelist distributor and stake for Charlie (1)
+        vm.prank(owner);
+        stakingRewards.setDistributor(distributor, true);
+        vm.startPrank(distributor);
+        hlg.approve(address(stakingRewards), 1 ether);
+        stakingRewards.stakeFromDistributor(charlie, 1 ether);
+        vm.stopPrank();
+
+        // Distribute 2 -> 1 reward over active=4 (Alice 0.25, Bob 0.5, Charlie 0.25)
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 2 ether);
+        stakingRewards.depositAndDistribute(2 ether);
+        vm.stopPrank();
+
+        // Settle and verify balances
+        stakingRewards.updateUser(alice);
+        stakingRewards.updateUser(bob);
+        stakingRewards.updateUser(charlie);
+
+        assertEq(stakingRewards.balanceOf(alice), 1.25 ether);
+        assertEq(stakingRewards.balanceOf(bob), 2.5 ether);
+        assertEq(stakingRewards.balanceOf(charlie), 1.25 ether);
+    }
+
+    /// @notice Randomized sequence across three users maintains invariants and does not revert unexpectedly
+    function testFuzz_ThreeStakersRandomizedSequences(uint8 seed) public {
+        // Seed initial stakes to avoid zero-active edge early
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 10_000 ether);
+        stakingRewards.stake(1_000 ether);
+        vm.stopPrank();
+
+        vm.startPrank(bob);
+        hlg.approve(address(stakingRewards), 10_000 ether);
+        stakingRewards.stake(1_000 ether);
+        vm.stopPrank();
+
+        vm.startPrank(charlie);
+        hlg.approve(address(stakingRewards), 10_000 ether);
+        stakingRewards.stake(1_000 ether);
+        vm.stopPrank();
+
+        uint256 rng = uint256(keccak256(abi.encode(seed)));
+        for (uint256 i = 0; i < 8; i++) {
+            uint256 action = rng % 6; // 0..5
+            rng = uint256(keccak256(abi.encode(rng)));
+
+            if (action == 0) {
+                // Random user stakes [100, 1100)
+                address user = [alice, bob, charlie][rng % 3];
+                rng = uint256(keccak256(abi.encode(rng)));
+                uint256 amount = (rng % 1000) + 100;
+                rng = uint256(keccak256(abi.encode(rng)));
+                // Only attempt to stake when unpaused to avoid expected revert
+                if (!stakingRewards.paused()) {
+                    vm.startPrank(user);
+                    hlg.approve(address(stakingRewards), amount);
+                    // Stake may still revert on edge conditions; ignore failures
+                    try stakingRewards.stake(amount) {} catch {}
+                    vm.stopPrank();
+                }
+            } else if (action == 1) {
+                // Distribute [1000, 2000) to avoid dust
+                uint256 amount = (rng % 1000) + 1000;
+                rng = uint256(keccak256(abi.encode(rng)));
+                vm.startPrank(owner);
+                hlg.approve(address(stakingRewards), amount);
+                try stakingRewards.depositAndDistribute(amount) {} catch {}
+                vm.stopPrank();
+            } else if (action == 2) {
+                // Update random user
+                address user = [alice, bob, charlie][rng % 3];
+                rng = uint256(keccak256(abi.encode(rng)));
+                stakingRewards.updateUser(user);
+            } else if (action == 3) {
+                // Unstake random user if has balance
+                address user = [alice, bob, charlie][rng % 3];
+                rng = uint256(keccak256(abi.encode(rng)));
+                if (stakingRewards.balanceOf(user) > 0) {
+                    vm.prank(user);
+                    stakingRewards.unstake();
+                }
+            } else if (action == 4) {
+                // Pause/unpause rarely
+                if (!stakingRewards.paused() && (rng & 0xFF) == 0x7F) {
+                    vm.prank(owner);
+                    stakingRewards.pause();
+                } else if (stakingRewards.paused() && (rng & 0xFF) == 0x80) {
+                    vm.prank(owner);
+                    stakingRewards.unpause();
+                }
+                rng = uint256(keccak256(abi.encode(rng)));
+            } else if (action == 5) {
+                // Third-party settlement
+                address settleTarget = [alice, bob, charlie][rng % 3];
+                rng = uint256(keccak256(abi.encode(rng)));
+                vm.prank(address(0xBEEF));
+                stakingRewards.updateUser(settleTarget);
+            }
+
+            _checkInvariants();
+        }
+    }
+
+    /// @notice Snapshots and accrual remain correct across pause/unpause boundaries
+    function testSnapshotsAcrossPauseUnpause() public {
+        // Alice stakes and one distribution occurs
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 10 ether);
+        stakingRewards.stake(10 ether);
+        vm.stopPrank();
+
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 10 ether);
+        stakingRewards.depositAndDistribute(10 ether);
+        vm.stopPrank();
+
+        // Pause; funding should revert, snapshot unchanged
+        vm.prank(owner);
+        stakingRewards.pause();
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 1 ether);
+        vm.expectRevert();
+        stakingRewards.depositAndDistribute(1 ether);
+        vm.stopPrank();
+        assertEq(stakingRewards.userIndexSnapshot(alice), 0);
+
+        // Unpause and distribute again; then settle
+        vm.prank(owner);
+        stakingRewards.unpause();
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 10 ether);
+        stakingRewards.depositAndDistribute(10 ether);
+        vm.stopPrank();
+
+        uint256 indexNow = stakingRewards.rewardPerToken();
+        stakingRewards.updateUser(alice);
+        assertEq(stakingRewards.userIndexSnapshot(alice), indexNow);
     }
 
     /* -------------------------------------------------------------------------- */

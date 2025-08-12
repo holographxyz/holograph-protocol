@@ -15,6 +15,7 @@ pragma solidity ^0.8.24;
  */
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
@@ -288,12 +289,15 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
     function _burnHLG(uint256 amount) internal {
         if (amount == 0) return;
 
-        // Assert that transfer-to-zero actually burns supply on HLG
+        // HolographERC20 has a burn() function that burns from msg.sender
+        // At this point, the tokens have been pulled to this contract via _pullHLG
         uint256 supplyBefore = HLG.totalSupply();
-        HLG.safeTransfer(address(0), amount);
+
+        // Cast to ERC20Burnable interface and burn from this contract's balance
+        ERC20Burnable(address(HLG)).burn(amount);
         uint256 supplyAfter = HLG.totalSupply();
 
-        // If supply did not decrease by exactly amount, revert and revert the transfer
+        // Verify supply was reduced by the burn amount
         if (supplyBefore != supplyAfter + amount) revert BurnFailed();
     }
 
@@ -304,9 +308,9 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
     function _addRewards(uint256 rewardAmount) internal {
         if (rewardAmount == 0) return;
 
-        uint256 active = _activeStaked();
+        uint256 staked = _activeStaked();
         // index bump uses active stake
-        globalRewardIndex += (rewardAmount * INDEX_PRECISION) / active;
+        globalRewardIndex += (rewardAmount * INDEX_PRECISION) / staked;
 
         // Track the full reward amount for distribution to users
         unallocatedRewards += rewardAmount;
@@ -345,10 +349,10 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
      * @param user Address to check
      * @return User's percentage share in basis points (10000 = 100%)
      */
-    function getUserShare(address user) external view returns (uint256) {
-        uint256 active = _activeStaked();
-        if (active == 0) return 0;
-        return (balanceOf[user] * MAX_PERCENTAGE) / active;
+    function getUserShareBps(address user) external view returns (uint256) {
+        uint256 staked = _activeStaked();
+        if (staked == 0) return 0;
+        return (balanceOf[user] * MAX_PERCENTAGE) / staked;
     }
 
     /**

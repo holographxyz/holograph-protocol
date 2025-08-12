@@ -68,7 +68,7 @@ deploy-base-sepolia:
 	@if [ -z "$(BASE_SEPOLIA_RPC_URL)" ]; then echo "$(RED)BASE_SEPOLIA_RPC_URL not set$(NC)"; exit 1; fi
 	@if [ -z "$(BASESCAN_API_KEY)" ]; then echo "$(RED)BASESCAN_API_KEY not set$(NC)"; exit 1; fi
 	$(call print-step,Deploying to Base Sepolia…)
-	forge script script/DeployBase.s.sol --rpc-url $(BASE_SEPOLIA_RPC_URL) $(FORGE_FLAGS) --verify --etherscan-api-key $(BASESCAN_API_KEY)
+	forge script script/DeployBase.s.sol --rpc-url $(BASE_SEPOLIA_RPC_URL) $(FORGE_FLAGS) --verify --verifier-url https://api-sepolia.basescan.org/api --delay 30 --retries 10 --etherscan-api-key $(BASESCAN_API_KEY)
 	$(call print-success,Base Sepolia deploy)
 
 ## deploy-base: Deploy FeeRouter + Factory on Base mainnet.
@@ -76,7 +76,7 @@ deploy-base:
 	@if [ -z "$(BASE_RPC_URL)" ]; then echo "$(RED)BASE_RPC_URL not set$(NC)"; exit 1; fi
 	@if [ -z "$(BASESCAN_API_KEY)" ]; then echo "$(RED)BASESCAN_API_KEY not set$(NC)"; exit 1; fi
 	$(call print-step,Deploying to Base mainnet…)
-	forge script script/DeployBase.s.sol --rpc-url $(BASE_RPC_URL) $(FORGE_FLAGS) --verify --etherscan-api-key $(BASESCAN_API_KEY)
+	forge script script/DeployBase.s.sol --rpc-url $(BASE_RPC_URL) $(FORGE_FLAGS) --verify --verifier-url https://api.basescan.org/api --delay 30 --retries 10 --etherscan-api-key $(BASESCAN_API_KEY)
 	$(call print-success,Base mainnet deploy)
 
 ## deploy-eth-sepolia: Deploy StakingRewards + FeeRouter on Ethereum Sepolia (testnet).
@@ -84,7 +84,7 @@ deploy-eth-sepolia:
 	@if [ -z "$(ETHEREUM_SEPOLIA_RPC_URL)" ]; then echo "$(RED)ETHEREUM_SEPOLIA_RPC_URL not set$(NC)"; exit 1; fi
 	@if [ -z "$(ETHERSCAN_API_KEY)" ]; then echo "$(RED)ETHERSCAN_API_KEY not set$(NC)"; exit 1; fi
 	$(call print-step,Deploying to Ethereum Sepolia…)
-	forge script script/DeployEthereum.s.sol --rpc-url $(ETHEREUM_SEPOLIA_RPC_URL) $(FORGE_FLAGS) --verify --etherscan-api-key $(ETHERSCAN_API_KEY)
+	forge script script/DeployEthereum.s.sol --rpc-url $(ETHEREUM_SEPOLIA_RPC_URL) $(FORGE_FLAGS) --verify --verifier-url https://api-sepolia.etherscan.io/api --delay 30 --retries 10 --etherscan-api-key $(ETHERSCAN_API_KEY)
 	$(call print-success,Ethereum Sepolia deploy)
 
 ## deploy-eth: Deploy StakingRewards + FeeRouter on Ethereum mainnet.
@@ -92,7 +92,7 @@ deploy-eth:
 	@if [ -z "$(ETHEREUM_RPC_URL)" ]; then echo "$(RED)ETHEREUM_RPC_URL not set$(NC)"; exit 1; fi
 	@if [ -z "$(ETHERSCAN_API_KEY)" ]; then echo "$(RED)ETHERSCAN_API_KEY not set$(NC)"; exit 1; fi
 	$(call print-step,Deploying to Ethereum mainnet…)
-	forge script script/DeployEthereum.s.sol --rpc-url $(ETHEREUM_RPC_URL) $(FORGE_FLAGS) --verify --etherscan-api-key $(ETHERSCAN_API_KEY)
+	forge script script/DeployEthereum.s.sol --rpc-url $(ETHEREUM_RPC_URL) $(FORGE_FLAGS) --verify --verifier-url https://api.etherscan.io/api --delay 30 --retries 10 --etherscan-api-key $(ETHERSCAN_API_KEY)
 	$(call print-success,Ethereum mainnet deploy)
 
 ## deploy-unichain-sepolia: Deploy Factory on Unichain Sepolia (testnet).
