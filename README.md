@@ -691,6 +691,7 @@ Additional technical documentation is available in the [`docs/`](docs/) director
 - **[DVN Configuration](docs/DVN_CONFIGURATION.md)** - LayerZero V2 security setup  
 - **[Operations Guide](docs/OPERATIONS.md)** - System monitoring and management
 - **[Upgrade Guide](docs/UPGRADE_GUIDE.md)** - Contract upgrade procedures
+- **[Uniswap V3 Pool Setup](docs/UNISWAP_V3_POOL_SETUP.md)** - HLG/WETH liquidity pool deployment guide
 
 ## License
 
