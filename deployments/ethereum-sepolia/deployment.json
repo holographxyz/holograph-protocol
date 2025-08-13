@@ -1,0 +1,11 @@
+{
+  "blockNumber": 8970346,
+  "chainId": 11155111,
+  "chainName": "Ethereum Sepolia",
+  "deployedAt": 1755027396,
+  "deployer": "0x5f5C3548f96C7DA33A18E5F2F2f13519e1c8bD0d",
+  "feeRouter": "0x81EcEEB94B53c817C86f4fad22A6E99a0A73df1F",
+  "holographDeployer": "0xc8C25dcC9f5eF4A0469B40f92E2EfA71E8007Baa",
+  "stakingRewards": "0xa411C35d92Fc1372c7aebb087DCf6383580fCeB2",
+  "version": "1.0"
+}

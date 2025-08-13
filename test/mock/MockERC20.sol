@@ -10,6 +10,11 @@ contract MockERC20 is ERC20 {
         _mint(to, amount);
     }
 
+    // Support ERC20Burnable-style burn from msg.sender
+    function burn(uint256 amount) external {
+        _burn(_msgSender(), amount);
+    }
+
     function burn(address from, uint256 amount) external {
         _burn(from, amount);
     }

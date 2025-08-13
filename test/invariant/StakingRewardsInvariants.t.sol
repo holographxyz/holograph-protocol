@@ -21,12 +21,14 @@ contract StakingRewardsInvariants is StdInvariant, Test {
         hlg = new MockERC20("HLG", "HLG");
         stakingRewards = new StakingRewards(address(hlg), address(this));
 
-        // Set up staking rewards
-        stakingRewards.setFeeRouter(address(this));
+        // Set up staking rewards (feeRouter will be the handler once deployed)
         stakingRewards.unpause();
 
         // Deploy handler
         handler = new StakingRewardsHandler(stakingRewards, hlg);
+
+        // Route addRewards through handler by setting it as feeRouter
+        stakingRewards.setFeeRouter(address(handler));
 
         // Set handler as target for invariant testing
         targetContract(address(handler));
@@ -36,7 +38,7 @@ contract StakingRewardsInvariants is StdInvariant, Test {
     }
 
     /// @notice Core invariant: sum of all user balances equals totalStaked
-    function invariant_totalStakedEqualsSumOfBalances() public view {
+    function invariant_totalStakedAccounting() public view {
         uint256 sumOfBalances = 0;
         address[] memory users = handler.getUsers();
 
@@ -44,7 +46,11 @@ contract StakingRewardsInvariants is StdInvariant, Test {
             sumOfBalances += stakingRewards.balanceOf(users[i]);
         }
 
-        assertEq(stakingRewards.totalStaked(), sumOfBalances, "Invariant violated: totalStaked != sum(balanceOf)");
+        assertEq(
+            sumOfBalances + stakingRewards.unallocatedRewards(),
+            stakingRewards.totalStaked(),
+            "Invariant violated: sum(balanceOf) + unallocatedRewards != totalStaked"
+        );
     }
 
     /// @notice Global reward index should never decrease
@@ -53,15 +59,6 @@ contract StakingRewardsInvariants is StdInvariant, Test {
         uint256 lastIndex = handler.lastGlobalRewardIndex();
 
         assertGe(currentIndex, lastIndex, "Invariant violated: globalRewardIndex decreased");
-    }
-
-    /// @notice Unallocated buffer should be zero when there are stakers
-    function invariant_unallocatedBufferZeroWithStakers() public view {
-        if (stakingRewards.totalStaked() > 0) {
-            assertEq(
-                stakingRewards.unallocatedBuffer(), 0, "Invariant violated: unallocatedBuffer > 0 with stakers present"
-            );
-        }
     }
 }
 
