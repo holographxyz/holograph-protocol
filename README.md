@@ -488,8 +488,7 @@ export ETH_RPC="https://eth-mainnet.alchemyapi.io/v2/YOUR_KEY"
 
 # Private Keys
 export DEPLOYER_PK="0x..."      # Contract deployment
-export OWNER_PK="0x..."         # Contract administration
-export KEEPER_PK="0x..."        # Automation operations
+export OWNER_PK="0x..."         # Contract administration and operations
 
 # LayerZero Endpoint IDs
 export BASE_EID=30184           # Base mainnet
@@ -507,7 +506,6 @@ export STAKING_REWARDS="0x..."  # StakingRewards contract
 # Addresses (set after deployment)
 export FEE_ROUTER="0x..."
 export HOLOGRAPH_FACTORY="0x..."
-export KEEPER_ADDRESS="0x..."
 ```
 
 ## Deployment Infrastructure
@@ -599,17 +597,17 @@ cast send $FEE_ROUTER "setTrustedRemote(uint32,bytes32)" \
   --rpc-url $ETH_RPC --private-key $OWNER_PK
 ```
 
-### Keeper Automation
+### Fee Operations Automation
 
 ```bash
 # Monitor system status
 make fee-status
 
-# Run fee collection and bridging (automated/cron)
+# Run fee collection and bridging (owner-only)
 make fee-ops BROADCAST=true
 
-# Set up automated execution (example cron)
-echo "*/10 * * * * cd /path/to/holograph && make fee-ops BROADCAST=true" | crontab -
+# Set up automated execution (example cron with owner key)
+echo "*/10 * * * * cd /path/to/holograph && OWNER_PK=$OWNER_PK make fee-ops BROADCAST=true" | crontab -
 ```
 
 ### Emergency Controls

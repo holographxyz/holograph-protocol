@@ -27,6 +27,7 @@ import {
   MultisigCliError 
 } from "./types/index.js";
 import { getEnvironmentConfig } from "./lib/config.js";
+import { formatCompactEther, formatAmount, formatPercent } from "./lib/format.js";
 import { TenderlyService } from "./services/TenderlyService.js";
 import { UniswapService } from "./services/UniswapService.js";
 import { StakingService } from "./services/StakingService.js";
@@ -85,8 +86,8 @@ export class MultisigCLI {
       let slippageBps = this.config.multisig.slippageBps;
       let minHlgOut = (expectedHlgOut * (10_000n - slippageBps)) / 10_000n;
 
-      console.log(`Expected HLG: ${formatEther(expectedHlgOut)}`);
-      console.log(`Min HLG (${Number(slippageBps) / 100}% slippage): ${formatEther(minHlgOut)}`);
+      console.log(`Expected HLG: ${formatCompactEther(expectedHlgOut)}`);
+      console.log(`Min HLG (${formatPercent(Number(slippageBps) / 100)} slippage): ${formatCompactEther(minHlgOut)}`);
 
       // Auto-scale if needed to meet RewardTooSmall threshold
       if (minHlgNeeded > 0n && minHlgOut < minHlgNeeded) {
@@ -99,8 +100,8 @@ export class MultisigCLI {
         poolFee = newQuote.fee;
         minHlgOut = (expectedHlgOut * (10_000n - slippageBps)) / 10_000n;
         
-        console.log(`✅ Scaled to ${formatEther(amount)} ETH`);
-        console.log(`New expected HLG: ${formatEther(expectedHlgOut)}`);
+        console.log(`✅ Scaled to ${formatAmount(amount, "ETH")}`);
+        console.log(`New expected HLG: ${formatCompactEther(expectedHlgOut)} HLG`);
       }
 
       // Create the Safe batch transaction
@@ -117,12 +118,12 @@ export class MultisigCLI {
       );
 
       // Simulate with Tenderly
-      await this.simulateBatchTransaction(batch, multisigAddress, amount, expectedHlgOut);
+      const simulationSuccess = await this.simulateBatchTransaction(batch, multisigAddress, amount, expectedHlgOut);
 
       // Output the final JSON only if not simulate-only mode
       if (!simulateOnly) {
         this.safeBuilder.displayInstructions(batch);
-      } else {
+      } else if (simulationSuccess) {
         console.log("\n✅ Simulation completed successfully! (simulate-only mode)");
       }
 
@@ -154,7 +155,7 @@ export class MultisigCLI {
       );
 
       if (minHlgNeeded > 0n && amount < minHlgNeeded) {
-        console.log(`⚠️  Warning: Deposit amount ${formatEther(amount)} is below minimum required ${formatEther(minHlgNeeded)}`);
+        console.log(`⚠️  Warning: Deposit amount ${formatCompactEther(amount)} HLG is below minimum required ${formatCompactEther(minHlgNeeded)} HLG`);
         console.log("Consider increasing the amount or waiting for more stakers to join.");
       }
 
@@ -342,13 +343,14 @@ ${this.stakingService.explainStakingMechanics()}
 
   /**
    * Simulate batch transaction with Tenderly
+   * @returns true if simulation succeeded, false otherwise
    */
   private async simulateBatchTransaction(
     batch: any,
     multisigAddress: string,
     amount: bigint,
     expectedHlgOut: bigint
-  ): Promise<void> {
+  ): Promise<boolean> {
     console.log("\n🧪 Tenderly Simulation");
     
     try {
@@ -394,15 +396,18 @@ ${this.stakingService.explainStakingMechanics()}
 
       if (result.transaction.status) {
         console.log("✅ Simulation SUCCESS!");
+        return true;
       } else {
         console.log("❌ Simulation FAILED");
         console.log("Error:", result.transaction.error_message || "Unknown error");
         console.log("\n⚠️  Transaction failed simulation but JSON is generated below for investigation:");
+        return false;
       }
 
     } catch (error) {
       console.log("❌ Simulation request failed:", (error as Error).message);
       console.log("\n⚠️  Proceeding without simulation...");
+      return false;
     }
   }
 
@@ -481,7 +486,7 @@ function parseCliArgs(): CliOptions {
         
       default:
         // Positional argument - treat as ETH amount
-        if (!arg.startsWith("-")) {
+        if (arg && !arg.startsWith("-")) {
           options.ethAmount = arg;
         }
         break;

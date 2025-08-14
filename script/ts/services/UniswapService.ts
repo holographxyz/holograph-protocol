@@ -20,6 +20,7 @@ import {
   EnvironmentConfig 
 } from "../types/index.js";
 import { getEnvironmentConfig, validateFeeTier } from "../lib/config.js";
+import { formatCompactEther } from "../lib/format.js";
 
 export class UniswapService {
   private config: EnvironmentConfig;
@@ -64,7 +65,7 @@ export class UniswapService {
       feesToCheck = baseFees;
     }
 
-    let bestQuote: UniswapQuoteResult = { amountOut: 0n, fee: feesToCheck[0] };
+    let bestQuote: UniswapQuoteResult = { amountOut: 0n, fee: feesToCheck[0] || 3000 };
     const quotes: { fee: number; amountOut: bigint; valid: boolean }[] = [];
 
     console.log(`🔍 Checking ${feesToCheck.length} fee tier(s) for optimal quote...`);
@@ -73,7 +74,7 @@ export class UniswapService {
       try {
         const quote = await this.getQuoteForFeeTier(ethAmount, fee);
         
-        console.log(`   ${FEE_TIERS[fee]?.description || `${fee} bps`}: ${quote.amountOut.toString()} HLG`);
+        console.log(`   ${FEE_TIERS[fee]?.description || `${fee} bps`}: ${formatCompactEther(quote.amountOut)} HLG`);
         
         quotes.push({ fee, amountOut: quote.amountOut, valid: true });
         
@@ -91,7 +92,7 @@ export class UniswapService {
     }
 
     const selectedTier = FEE_TIERS[bestQuote.fee];
-    console.log(`✅ Best quote: ${selectedTier?.description || `${bestQuote.fee} bps`} (${bestQuote.amountOut.toString()} HLG)`);
+    console.log(`✅ Best quote: ${selectedTier?.description || `${bestQuote.fee} bps`} (${formatCompactEther(bestQuote.amountOut)} HLG)`);
 
     return bestQuote;
   }

@@ -38,6 +38,7 @@ import { baseSepolia } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import { readFileSync } from "fs";
 import { spawn } from "child_process";
+import { formatCompactEther, formatGas } from "./lib/format.js";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -395,16 +396,16 @@ async function verifyTokenContract(
   console.log(`📍 Token Address: ${tokenAddress}`);
   console.log(`📛 Token Name: ${config.name}`);
   console.log(`🏷️  Token Symbol: ${config.symbol}`);
-  console.log(`💰 Initial Supply: ${createParams.initialSupply.toString()}`);
+  console.log(`💰 Initial Supply: ${formatCompactEther(createParams.initialSupply)}`);
   console.log(`🌐 Explorer: https://sepolia.basescan.org/address/${tokenAddress}`);
   console.log(`📄 Contract Code: https://sepolia.basescan.org/address/${tokenAddress}#code`);
 }
 
 // Salt mining
 async function mineValidSalt(
-  tokenFactoryData: `0x${string}`,
+  _tokenFactoryData: `0x${string}`,
   poolInitializerData: `0x${string}`,
-  initialSupply: bigint,
+  _initialSupply: bigint,
   numTokensToSell: bigint,
   numeraire: Address,
   publicClient: any,
@@ -457,10 +458,8 @@ async function mineValidSalt(
   // Note: Token constructor args not needed for ERC1167 minimal proxy CREATE2 calculation
   // Tokens are deployed as clones of the implementation, not full contracts
   
-  // These variables are extracted from poolInitializerData but not all are used in salt mining
-  // They're kept for completeness and to match the expected parameter structure
-  void tokenFactoryData; // Suppress unused variable warning
-  void initialSupply; // Suppress unused variable warning
+  // Note: tokenFactoryData and initialSupply are extracted from poolInitializerData
+  // for parameter structure matching but not directly used in salt mining
 
   // Calculate init code hashes
   const dopplerBytecode = loadContractBytecode("Doppler");
@@ -649,7 +648,7 @@ async function executeTokenCreation(
     account: account,
   });
 
-  console.log(`📊 Gas estimated: ${gasEstimate.toString()}`);
+  console.log(`📊 Gas estimated: ${formatGas(gasEstimate)}`);
 
   console.log("📤 Submitting transaction to Doppler Airlock...");
   const hash = await walletClient.writeContract({
@@ -671,7 +670,7 @@ async function executeTokenCreation(
   }
 
   console.log("✅ Token creation successful!");
-  console.log(`💰 Gas used: ${receipt.gasUsed.toString()}`);
+  console.log(`💰 Gas used: ${formatGas(receipt.gasUsed)}`);
 
   const tokenAddress = extractTokenAddress(receipt);
   return { hash, tokenAddress: tokenAddress || undefined };

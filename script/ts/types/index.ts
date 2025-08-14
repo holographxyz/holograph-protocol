@@ -95,8 +95,8 @@ export interface FeeTierInfo {
 
 export const FEE_TIERS: Record<number, FeeTierInfo> = {
   500: { fee: 500, tickSpacing: 10, description: "0.05% - Stable pairs" },
-  3000: { fee: 3000, tickSpacing: 60, description: "0.3% - Standard pairs" },
-  10000: { fee: 10000, tickSpacing: 200, description: "1% - Exotic pairs" }
+  3000: { fee: 3000, tickSpacing: 60, description: "0.3% - Most pairs" },
+  10000: { fee: 10000, tickSpacing: 200, description: "1% - Volatile pairs" }
 };
 
 export interface UniswapQuoteResult {
@@ -158,8 +158,8 @@ export interface EnvironmentConfig {
   networkAddresses: NetworkAddresses;
   tenderly: TenderlyConfig;
   multisig: MultisigConfig;
-  requiredFeeTier?: number;
-  preferFeeTier?: number;
+  requiredFeeTier: number | undefined;
+  preferFeeTier: number | undefined;
 }
 
 // ============================================================================
@@ -194,7 +194,7 @@ export class MultisigCliError extends Error {
   constructor(
     message: string,
     public code: string,
-    public cause?: Error
+    public override cause?: Error
   ) {
     super(message);
     this.name = 'MultisigCliError';

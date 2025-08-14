@@ -10,7 +10,7 @@
  * - Active staked: Total staked minus unallocated rewards
  */
 
-import { createPublicClient, http, parseAbi, encodeFunctionData, formatEther } from "viem";
+import { createPublicClient, http, parseAbi, encodeFunctionData } from "viem";
 import { sepolia } from "viem/chains";
 import { 
   StakingInfo, 
@@ -19,6 +19,7 @@ import {
   EnvironmentConfig 
 } from "../types/index.js";
 import { getEnvironmentConfig, CONSTANTS } from "../lib/config.js";
+import { formatCompactEther, formatPercent } from "../lib/format.js";
 
 export class StakingService {
   private config: EnvironmentConfig;
@@ -116,11 +117,11 @@ export class StakingService {
     
     // Calculate actual reward amount after burn
     const burnAmount = (depositAmount * BigInt(burnBps)) / 10_000n;
-    const rewardAmount = depositAmount - burnAmount;
+    const _rewardAmount = depositAmount - burnAmount; // Computed for reference but not currently used
     
     // Check if this meets the minimum threshold
     const minHlgNeeded = this.calculateMinHLGToAvoidRewardTooSmall(activeStaked, burnBps);
-    const meetsThreshold = depositAmount >= minHlgNeeded;
+    const _meetsThreshold = depositAmount >= minHlgNeeded; // Computed for reference but not currently used
     
     return {
       minHlgNeeded,
@@ -265,9 +266,9 @@ export class StakingService {
       
       return `
 📊 Current Staking State:
-   • Active Staked: ${formatEther(info.activeStaked)} HLG
-   • Burn Percentage: ${info.burnBps / 100}%
-   • Min Deposit (RewardTooSmall): ${formatEther(minDeposit)} HLG
+   • Active Staked: ${formatCompactEther(info.activeStaked)} HLG
+   • Burn Percentage: ${formatPercent(info.burnBps / 100)}
+   • Min Deposit (RewardTooSmall): ${formatCompactEther(minDeposit)} HLG
       `;
     } catch (error) {
       return "❌ Failed to fetch staking summary";

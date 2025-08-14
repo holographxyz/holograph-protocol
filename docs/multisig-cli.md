@@ -361,6 +361,27 @@ fi
 3. **Document changes**: Record any customizations or modifications
 4. **Test thoroughly**: Verify operations on testnet before mainnet
 
+## Features and Improvements
+
+### Recent Enhancements
+
+- **Human-readable output**: All values displayed in compact format (e.g., "333.5K HLG" instead of wei)
+- **Clear fee tier labels**: "Volatile pairs" for 1% tier, "Most pairs" for 0.3% tier
+- **Smart number formatting**: Very small values show as "< 0.000001" instead of scientific notation
+- **Improved simulation**: Full Safe transaction simulation with storage overrides
+- **Better error handling**: Clear messages with helpful context
+
+### Output Formatting
+
+The CLI now provides clean, readable output:
+```
+🔍 Checking 3 fee tier(s) for optimal quote...
+   0.05% - Stable pairs: 689.56K HLG
+   0.3% - Most pairs: 394.85K HLG
+   1% - Volatile pairs: 333.5M HLG
+✅ Best quote: 1% - Volatile pairs (333.5M HLG)
+```
+
 ## Support and Resources
 
 - **CLI Help**: `npm run multisig-cli --help`

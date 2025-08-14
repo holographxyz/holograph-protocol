@@ -208,8 +208,8 @@ contract ProcessFees is Script {
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address constant SWAP_ROUTER = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
     address constant QUOTER_V2 = 0x61fFE014bA17989E743c5F6cB21bF9697530B21e;
-    address constant HLG = 0x...; // TODO: Add your HLG address
-    address constant STAKING_REWARDS = 0x...; // TODO: Add your StakingRewards address
+    address constant HLG = 0x5Ff07042d14E60EC1de7a860BBE968344431BaA1; // HLG on Sepolia
+    address constant STAKING_REWARDS = 0x50D5972b1ACc89F8433E70C7c8C044100E211081; // StakingRewards on Sepolia
 
     uint24 constant POOL_FEE = 3000; // 0.3%
     uint256 constant SLIPPAGE_BPS = 200; // 2% slippage

@@ -12,7 +12,7 @@ Uniswap V3 introduces concentrated liquidity through discrete price ranges defin
 |----------|------------|--------------|----------|------------------|
 | 500 | 0.05% | 10 | Stable pairs | USDC/USDT, stablecoins |
 | 3000 | 0.3% | 60 | Standard pairs | ETH/USDC, most tokens |
-| 10000 | 1% | 200 | Exotic pairs | New tokens, high volatility |
+| 10000 | 1% | 200 | Volatile pairs | New tokens, high volatility |
 
 **For HLG/WETH Operations:**
 - **500 basis points**: Use when HLG price is stable relative to ETH
