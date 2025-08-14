@@ -161,3 +161,134 @@ cast call 0x5Ff07042d14E60EC1de7a860BBE968344431BaA1 \
 cast call 0x5Ff07042d14E60EC1de7a860BBE968344431BaA1 'decimals()(uint8)' \
   --rpc-url $ETHEREUM_SEPOLIA_RPC_URL
 ```
+
+## 🔄 Token Swapping Guide
+
+Now that the HLG/WETH pool is live with liquidity, you can perform token swaps on Ethereum Sepolia testnet.
+
+### Swap Addresses (Sepolia)
+- **Uniswap V3 SwapRouter**: `0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E`
+- **Pool Address**: `0x333A14e3e32D8905432b9A70903c473A57dD5E2b`
+- **HLG Token**: `0x5Ff07042d14E60EC1de7a860BBE968344431BaA1`
+- **WETH Token**: `0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14`
+
+### Web Interface Trading
+The easiest way to test swapping is through the Uniswap web interface:
+
+#### Important: Enable Testnet Mode First!
+
+1. **Enable Testnet Mode:**
+   - Go to https://app.uniswap.org
+   - Click the **Settings gear icon** (⚙️) in the top right
+   - Toggle **"Testnet mode"** to ON
+   - The interface will reload with testnet support
+
+2. **Switch to Sepolia:**
+   - Connect your wallet (make sure MetaMask is on Sepolia)
+   - Click the network selector near your address
+   - Select **Sepolia** from the dropdown
+
+3. **Wrap ETH to WETH First:**
+   - The pool uses WETH, not ETH directly
+   - In Uniswap, select ETH as the top token
+   - Select WETH (`0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14`) as the bottom token
+   - Enter amount to wrap and click "Wrap"
+   - Confirm the transaction
+
+4. **Import HLG Token:**
+   - Click "Select token"
+   - Paste HLG address: `0x5Ff07042d14E60EC1de7a860BBE968344431BaA1`
+   - Click "Import" and acknowledge
+
+5. **Swap Between HLG and WETH:**
+   - Select WETH and HLG as your pair
+   - Enter swap amount
+   - Review and confirm transaction
+
+**Note**: You need WETH to trade in this pool, not ETH. Always wrap ETH → WETH first!
+
+### Command Line Swapping
+
+#### Swap HLG for WETH
+```bash
+# Set up environment
+source .env
+SWAPPER_ADDRESS=$(cast wallet address --private-key $DEPLOYER_PK)
+SWAP_ROUTER=0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E
+
+# Example: Swap 1000 HLG for WETH
+HLG_AMOUNT=1000000000000000000000  # 1000 HLG (18 decimals)
+
+# 1. Approve SwapRouter to spend HLG
+cast send 0x5Ff07042d14E60EC1de7a860BBE968344431BaA1 \
+  'approve(address,uint256)' \
+  $SWAP_ROUTER $HLG_AMOUNT \
+  --rpc-url $ETHEREUM_SEPOLIA_RPC_URL \
+  --private-key $DEPLOYER_PK
+
+# 2. Execute swap using exactInputSingle
+# Parameters: (tokenIn, tokenOut, fee, recipient, deadline, amountIn, amountOutMinimum, sqrtPriceLimitX96)
+cast send $SWAP_ROUTER \
+  'exactInputSingle((address,address,uint24,address,uint256,uint256,uint256,uint160))' \
+  "(0x5Ff07042d14E60EC1de7a860BBE968344431BaA1,0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14,3000,$SWAPPER_ADDRESS,$(($(date +%s) + 1800)),$HLG_AMOUNT,0,0)" \
+  --rpc-url $ETHEREUM_SEPOLIA_RPC_URL \
+  --private-key $DEPLOYER_PK
+```
+
+#### Swap WETH for HLG
+```bash
+# Example: Swap 0.001 WETH for HLG
+WETH_AMOUNT=1000000000000000  # 0.001 WETH (18 decimals)
+
+# 1. Approve SwapRouter to spend WETH
+cast send 0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14 \
+  'approve(address,uint256)' \
+  $SWAP_ROUTER $WETH_AMOUNT \
+  --rpc-url $ETHEREUM_SEPOLIA_RPC_URL \
+  --private-key $DEPLOYER_PK
+
+# 2. Execute swap
+cast send $SWAP_ROUTER \
+  'exactInputSingle((address,address,uint24,address,uint256,uint256,uint256,uint160))' \
+  "(0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14,0x5Ff07042d14E60EC1de7a860BBE968344431BaA1,3000,$SWAPPER_ADDRESS,$(($(date +%s) + 1800)),$WETH_AMOUNT,0,0)" \
+  --rpc-url $ETHEREUM_SEPOLIA_RPC_URL \
+  --private-key $DEPLOYER_PK
+```
+
+### Get Swap Quotes
+
+Before executing swaps, you can get quotes to see expected output amounts:
+
+```bash
+# Get quote for HLG → WETH swap (1000 HLG)
+cast call 0x61fFE014bA17989E743c5F6cB21bF9697530B21e \
+  'quoteExactInputSingle((address,address,uint24,uint256,uint160))' \
+  "(0x5Ff07042d14E60EC1de7a860BBE968344431BaA1,0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14,3000,1000000000000000000000,0)" \
+  --rpc-url $ETHEREUM_SEPOLIA_RPC_URL
+
+# Get quote for WETH → HLG swap (0.001 WETH)
+cast call 0x61fFE014bA17989E743c5F6cB21bF9697530B21e \
+  'quoteExactInputSingle((address,address,uint24,uint256,uint160))' \
+  "(0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14,0x5Ff07042d14E60EC1de7a860BBE968344431BaA1,3000,1000000000000000,0)" \
+  --rpc-url $ETHEREUM_SEPOLIA_RPC_URL
+```
+
+### Check Token Balances
+```bash
+# Check your HLG balance
+cast call 0x5Ff07042d14E60EC1de7a860BBE968344431BaA1 \
+  'balanceOf(address)(uint256)' $YOUR_ADDRESS \
+  --rpc-url $ETHEREUM_SEPOLIA_RPC_URL
+
+# Check your WETH balance
+cast call 0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14 \
+  'balanceOf(address)(uint256)' $YOUR_ADDRESS \
+  --rpc-url $ETHEREUM_SEPOLIA_RPC_URL
+```
+
+### Important Notes
+- **Pool Fee**: 0.3% fee tier (3000)
+- **Slippage**: Set to 0 in examples above - adjust based on trade size
+- **Deadline**: Set to 30 minutes (1800 seconds) from current time
+- **Minimum Output**: Set to 0 for simplicity - use proper slippage protection for real trades
+- **Quote Contract**: `0x61fFE014bA17989E743c5F6cB21bF9697530B21e` (Quoter V2 on Sepolia)

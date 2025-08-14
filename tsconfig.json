@@ -25,7 +25,7 @@
     "newLine": "lf",
     "types": ["node"]
   },
-  "include": ["script/*.ts"],
+  "include": ["script/**/*.ts"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"],
   "ts-node": {
     "esm": true
