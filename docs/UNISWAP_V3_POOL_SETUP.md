@@ -1,6 +1,108 @@
-# Uniswap v3 HLG/WETH Pool Setup (Sepolia)
+# Uniswap V3 HLG/WETH Pool Setup (Sepolia)
 
-This guide shows how to create and initialize the Uniswap v3 HLG/WETH pool on Sepolia using a Foundry script, and mint initial liquidity successfully.
+This guide provides a comprehensive understanding of Uniswap V3 concepts in the context of our HLG/WETH pool operations, along with practical setup instructions and troubleshooting based on real implementation experience.
+
+## 📚 Understanding Uniswap V3 Concepts
+
+### Fee Tiers and Tick Spacing
+
+Uniswap V3 introduces concentrated liquidity through discrete price ranges defined by "ticks". Different fee tiers have different tick spacings, affecting the precision of liquidity positioning:
+
+| Fee Tier | Percentage | Tick Spacing | Best For | Example Use Case |
+|----------|------------|--------------|----------|------------------|
+| 500 | 0.05% | 10 | Stable pairs | USDC/USDT, stablecoins |
+| 3000 | 0.3% | 60 | Standard pairs | ETH/USDC, most tokens |
+| 10000 | 1% | 200 | Exotic pairs | New tokens, high volatility |
+
+**For HLG/WETH Operations:**
+- **500 basis points**: Use when HLG price is stable relative to ETH
+- **3000 basis points**: Default choice for normal volatility (recommended)
+- **10000 basis points**: Use during high volatility periods
+
+```bash
+# Force specific fee tier in our scripts
+export REQUIRED_FEE_TIER=500    # Force 0.05% pool
+export PREFER_FEE_TIER=3000     # Prefer 0.3% with fallback
+```
+
+### Tick Math and Price Ranges
+
+**Key Concepts:**
+- **Ticks** represent discrete price points: `price = 1.0001^tick`
+- **Tick Spacing** determines valid tick positions (must be multiples)
+- **Current Tick** represents the current pool price
+- **Price Ranges** are defined by `tickLower` and `tickUpper`
+
+**Practical Examples:**
+```solidity
+// Current pool at tick 0 means price = 1.0001^0 = 1.0
+// Tick 6931 ≈ 2.0 price ratio
+// Tick -6931 ≈ 0.5 price ratio
+
+// For 3000 fee tier (spacing = 60):
+// Valid ticks: -6900, -6840, -6780, ..., 0, 60, 120, ...
+// Invalid tick: -6850 (not divisible by 60)
+```
+
+### Single-Sided vs Balanced Liquidity
+
+**Balanced Liquidity (Traditional):**
+- Range straddles current price
+- Requires both tokens at mint
+- Provides active liquidity immediately
+- Example: Range [-3000, +3000] around current tick
+
+**Single-Sided Liquidity (Advanced):**
+- Range entirely above OR below current price
+- Requires only one token at mint
+- Becomes active when price moves into range
+
+**Token0-Only Strategy:**
+```bash
+# Place liquidity ABOVE current price
+# Only HLG required, activated when price rises
+MINT_HLG=50000000000000000000000000 MINT_WETH=0 forge script CreateHLGWETHPool --broadcast
+```
+
+**Token1-Only Strategy:**
+```bash
+# Place liquidity BELOW current price  
+# Only WETH required, activated when price falls
+MINT_HLG=0 MINT_WETH=50000000000000000 forge script CreateHLGWETHPool --broadcast
+```
+
+### Price Encoding (sqrtPriceX96)
+
+Uniswap V3 encodes prices as `sqrtPriceX96 = sqrt(price) * 2^96`:
+
+```javascript
+// Convert real-world price to sqrtPriceX96
+// Example: 2.81e-8 WETH per HLG
+const price = 0.0000000281;
+const sqrtPrice = Math.sqrt(price);
+const sqrtPriceX96 = sqrtPrice * (2 ** 96);
+
+// In Solidity (our implementation):
+function _encodeSqrtPriceX96FromPriceE18(uint256 priceE18) internal pure returns (uint160) {
+    uint256 sqrtValue = _sqrt(priceE18);
+    uint256 Q96 = 0x1000000000000000000000000;  // 2**96
+    uint256 result = (sqrtValue * Q96) / 1e9;
+    return uint160(result);
+}
+```
+
+### Liquidity Mining and Rewards
+
+**Understanding Liquidity Positions:**
+- Each position is an NFT with unique ID
+- Contains specific price range and liquidity amount
+- Earns fees only when price is within range
+- Can be increased, decreased, or collected from
+
+**Fee Accumulation:**
+- Fees accrue continuously when price is in range
+- Collected via `collect()` function on PositionManager
+- Split between token0 and token1 based on trading activity
 
 ## ✅ Deployed Pool Details
 - **Pool Address**: [`0x333A14e3e32D8905432b9A70903c473A57dD5E2b`](https://sepolia.etherscan.io/address/0x333A14e3e32D8905432b9A70903c473A57dD5E2b)
@@ -128,6 +230,52 @@ cast call 0x0227628f3F023bb0B980b67D528571c95c6DaC1c \
 - **Ensure sufficient WETH**: Wrap enough ETH beforehand (recommended: 0.3+ ETH)
 
 ### Troubleshooting
+
+#### Common Errors and Solutions
+
+**SwapRouter Interface Errors:**
+- **Problem**: `exactInputSingle()` reverts with wrong parameters
+- **Root Cause**: SwapRouter V1 vs V2 interface differences  
+- **Solution**: SwapRouter02 does NOT have `deadline` parameter
+```solidity
+// ❌ Wrong (SwapRouter V1)
+exactInputSingle((tokenIn, tokenOut, fee, recipient, deadline, amountIn, amountOutMinimum, sqrtPriceLimitX96))
+
+// ✅ Correct (SwapRouter02) 
+exactInputSingle((tokenIn, tokenOut, fee, recipient, amountIn, amountOutMinimum, sqrtPriceLimitX96))
+```
+
+**Pool Pricing Issues:**
+- **Problem**: Pool price is 387x higher than mainnet
+- **Root Cause**: Wrong initialization price or insufficient liquidity  
+- **Solution**: Use realistic mainnet-based pricing
+```bash
+# Calculate from real market data
+HLG_PRICE_USD=0.0001275
+ETH_PRICE_USD=4535.84
+WETH_PER_HLG=$(echo "$HLG_PRICE_USD / $ETH_PRICE_USD" | bc -l)
+# Result: 0.0000000281 WETH per HLG
+export INIT_PRICE_E18=28100000000
+```
+
+**RewardTooSmall Errors (in multisig-cli):**
+- **Problem**: `(rewardAmount * 1e12) / activeStaked < 1`
+- **Root Cause**: Not enough HLG being swapped relative to total staked
+- **Solution**: Auto-scaling is built into multisig-cli, or increase ETH amount
+
+**Single-Sided Liquidity Failures:**
+- **Problem**: Position requires both tokens even with single-sided intent
+- **Root Cause**: Range includes current price
+- **Solution**: Position ranges entirely above/below current tick
+```bash
+# Token0-only: Place ABOVE current price (only HLG needed)
+MINT_HLG=50000000000000000000000000 MINT_WETH=0 forge script CreateHLGWETHPool --broadcast
+
+# Token1-only: Place BELOW current price (only WETH needed)  
+MINT_HLG=0 MINT_WETH=50000000000000000 forge script CreateHLGWETHPool --broadcast
+```
+
+**Classic Errors:**
 - **"STF" error**: Not enough WETH balance - wrap more ETH
 - **"Price slippage check"**: Use `SLIPPAGE_BPS=10000` to disable minimum amount checks
 - **Pool creation fails**: Check if pool already exists first

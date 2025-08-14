@@ -298,6 +298,37 @@ export BASESCAN_API_KEY=your_api_key
 npm run create-token
 ```
 
+### Multisig Operations via TypeScript
+
+Use the Multisig CLI for generating Safe Transaction Builder compatible JSON for common operations:
+
+```bash
+# Convert ETH to HLG and stake in StakingRewards
+npm run multisig-cli 0.5
+
+# Direct HLG deposit (no swapping)
+npm run multisig-cli --hlg 1000
+
+# Simulate transaction before execution
+npm run multisig-cli --simulate-only 0.1
+
+# Ownership management
+npm run multisig-cli --transfer-ownership
+npm run multisig-cli --accept-ownership
+
+# Get help and usage information
+npm run multisig-cli --help
+```
+
+**Key Features:**
+- **Automatic optimization**: Finds best Uniswap V3 fee tiers and pricing
+- **RewardTooSmall protection**: Auto-scales amounts to meet staking thresholds
+- **Tenderly integration**: Pre-execution simulation with detailed error reporting
+- **Safe Transaction Builder**: Compatible JSON format for easy import
+- **Single-sided liquidity**: Support for token-specific operations
+
+See [`docs/multisig-cli.md`](docs/multisig-cli.md) for complete documentation.
+
 Or programmatically:
 
 ```typescript
@@ -688,10 +719,11 @@ Additional technical documentation is available in the [`docs/`](docs/) director
 
 - **[Scripts Overview](docs/SCRIPTS_OVERVIEW.md)** - Deployment and operational scripts guide
 - **[Token Creation](docs/CREATE_TOKEN.md)** - TypeScript utility for creating tokens
+- **[Multisig CLI](docs/multisig-cli.md)** - Safe transaction generator with Uniswap V3 integration
+- **[Uniswap V3 Pool Setup](docs/UNISWAP_V3_POOL_SETUP.md)** - V3 concepts, pool creation, and troubleshooting
 - **[DVN Configuration](docs/DVN_CONFIGURATION.md)** - LayerZero V2 security setup  
 - **[Operations Guide](docs/OPERATIONS.md)** - System monitoring and management
 - **[Upgrade Guide](docs/UPGRADE_GUIDE.md)** - Contract upgrade procedures
-- **[Uniswap V3 Pool Setup](docs/UNISWAP_V3_POOL_SETUP.md)** - HLG/WETH liquidity pool deployment guide
 
 ## License
 
