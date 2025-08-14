@@ -68,6 +68,7 @@ interface SafeTransactionBuilderBatch {
 
 // Ethereum Sepolia testnet addresses (verified from Uniswap docs)
 const ADDRESSES = {
+  FACTORY: "0x0227628f3F023bb0B980b67D528571c95c6DaC1c",
   WETH: "0xfff9976782d46cc05630d1f6ebab18b2324d6b14",
   // Uniswap V3 SwapRouter02 on Sepolia
   SWAP_ROUTER: "0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E",
@@ -76,10 +77,58 @@ const ADDRESSES = {
   STAKING_REWARDS: "0x50D5972b1ACc89F8433E70C7c8C044100E211081",
 };
 
+// On-chain staking info to compute minimum reward bump that avoids RewardTooSmall
+async function getStakingInfo() {
+  const client = createPublicClient({ chain: sepolia, transport: http() });
+  const [totalStaked, unallocatedRewards, burnPercentage] = (await Promise.all([
+    client.readContract({
+      address: ADDRESSES.STAKING_REWARDS as `0x${string}`,
+      abi: parseAbi(["function totalStaked() view returns (uint256)"]),
+      functionName: "totalStaked",
+    }),
+    client.readContract({
+      address: ADDRESSES.STAKING_REWARDS as `0x${string}`,
+      abi: parseAbi(["function unallocatedRewards() view returns (uint256)"]),
+      functionName: "unallocatedRewards",
+    }),
+    client.readContract({
+      address: ADDRESSES.STAKING_REWARDS as `0x${string}`,
+      abi: parseAbi(["function burnPercentage() view returns (uint256)"]),
+      functionName: "burnPercentage",
+    }),
+  ])) as [bigint, bigint, bigint];
+
+  const activeStaked = totalStaked - unallocatedRewards;
+  return { activeStaked, burnBps: Number(burnPercentage) };
+}
+
+// Compute minimum HLG that must be received by StakingRewards so that
+// (rewardAmount * 1e12) / activeStaked >= 1. rewardAmount = receivedHLG * (1 - burnBps/10000)
+function computeMinHLGToDepositToAvoidRewardTooSmall(activeStaked: bigint, burnBps: number): bigint {
+  if (activeStaked <= 0n) return 0n; // no stakers -> function is no-op
+  const INDEX_PRECISION = 1_000_000_000_000n; // 1e12
+  const minReward = (activeStaked + INDEX_PRECISION - 1n) / INDEX_PRECISION; // ceil(activeStaked / 1e12)
+  const numerator = minReward * 10_000n;
+  const denominator = BigInt(10_000 - burnBps);
+  return (numerator + denominator - 1n) / denominator; // ceil divide to account for burn
+}
+
 async function getQuote(ethAmount: bigint): Promise<{ amountOut: bigint; fee: number }> {
   const client = createPublicClient({ chain: sepolia, transport: http() });
-  const feeTiers = [3000, 500, 10000];
-  for (const fee of feeTiers) {
+  // Allow forcing a specific fee tier via env
+  const forcedFee: number | null = process.env.REQUIRED_FEE_TIER ? parseInt(process.env.REQUIRED_FEE_TIER, 10) : null;
+  const preferFee: number | null = process.env.PREFER_FEE_TIER ? parseInt(process.env.PREFER_FEE_TIER, 10) : null;
+
+  const feesBase = [500, 3000, 10000];
+  const fees = forcedFee !== null
+    ? [forcedFee]
+    : preferFee !== null
+      ? [preferFee, ...feesBase.filter((f) => f !== preferFee)]
+      : feesBase;
+
+  let bestOut = 0n;
+  let bestFee = fees[0] ?? 3000;
+  for (const fee of fees) {
     try {
       const res = (await client.readContract({
         address: ADDRESSES.QUOTER_V2 as `0x${string}`,
@@ -98,11 +147,13 @@ async function getQuote(ethAmount: bigint): Promise<{ amountOut: bigint; fee: nu
         ],
       })) as [bigint, bigint, number, bigint];
       const amountOut = res[0];
-      if (amountOut > 0n) return { amountOut, fee };
+      if (amountOut > bestOut) {
+        bestOut = amountOut;
+        bestFee = fee;
+      }
     } catch {}
   }
-  // Fallback: no pool/liquidity
-  return { amountOut: 0n, fee: 3000 };
+  return { amountOut: bestOut, fee: bestFee };
 }
 
 // Simulate transaction with Tenderly
@@ -209,7 +260,7 @@ async function simulateWithTenderly(
               storage: safeStorageOverride,
               // When overriding storage, we must also preserve/set balance
               // Otherwise Tenderly might reset it to 0
-              balance: `0x${parseEther("0.1").toString(16)}`, // Match Safe's actual balance
+              balance: `0x${parseEther("0.6").toString(16)}`, // Match Safe's actual balance
             },
           }
         : {}),
@@ -559,20 +610,71 @@ export async function generateAcceptOwnershipTransaction() {
 }
 
 export async function generateBatchTransaction(ethAmount: string) {
-  const amount = parseEther(ethAmount);
+  let amount = parseEther(ethAmount);
 
   // Use multisig address from env or default
   const multisigAddress = process.env.MULTISIG_ADDRESS || "0x8FE61F653450051cEcbae12475BA2b8fbA628c7A";
 
-  // Get actual quote from Uniswap for the swap
-  const { amountOut: expectedHlgOut, fee: poolFee } = await getQuote(amount);
-  const slippageBps = BigInt(parseInt(process.env.SLIPPAGE_BPS || "5000", 10)); // default 50%
-  const minHlgOut = (expectedHlgOut * (10_000n - slippageBps)) / 10_000n;
+  // 1) Get staking state and compute minimum HLG needed to avoid RewardTooSmall
+  const { activeStaked, burnBps } = await getStakingInfo();
+  const minHlgNeeded = computeMinHLGToDepositToAvoidRewardTooSmall(activeStaked, burnBps);
+
+  // 2) Get initial quote from Uniswap for the swap
+  let { amountOut: expectedHlgOut, fee: poolFee } = await getQuote(amount);
+  let slippageBps = BigInt(parseInt(process.env.SLIPPAGE_BPS || "5000", 10)); // default 50%
+  let minHlgOut = (expectedHlgOut * (10_000n - slippageBps)) / 10_000n;
+
+  // 3) If after slippage the min out is below the required threshold, scale ETH amount up
+  if (minHlgNeeded > 0n && minHlgOut < minHlgNeeded) {
+    // Exponential ramp-up until we cross the threshold or hit a sane cap
+    let attempts = 0;
+    while (attempts < 6 && minHlgOut < minHlgNeeded) {
+      // Increase by factor ~ required/min, with safety margin 1.15x, clamp to +2x at most per step
+      const ratio = Number(minHlgNeeded) / Math.max(1, Number(minHlgOut));
+      const factor = Math.min(2.0, Math.max(1.15, ratio * 1.05));
+      amount = BigInt(Math.ceil(Number(amount) * factor));
+      const q = await getQuote(amount);
+      expectedHlgOut = q.amountOut;
+      poolFee = q.fee;
+      minHlgOut = (expectedHlgOut * (10_000n - slippageBps)) / 10_000n;
+      attempts += 1;
+    }
+
+    // Optional small binary search refinement (2 iterations)
+    if (minHlgOut >= minHlgNeeded) {
+      let low = 0n;
+      let high = amount;
+      for (let i = 0; i < 2; i += 1) {
+        const mid = (low + high) / 2n;
+        const q = await getQuote(mid);
+        const midMinOut = (q.amountOut * (10_000n - slippageBps)) / 10_000n;
+        if (midMinOut >= minHlgNeeded) {
+          high = mid; // try smaller amount
+          expectedHlgOut = q.amountOut;
+          poolFee = q.fee;
+          minHlgOut = midMinOut;
+        } else {
+          low = mid + 1n;
+        }
+      }
+      amount = high;
+    }
+  }
 
   console.log(`Processing ${ethAmount} ETH`);
   console.log(`Multisig Address: ${multisigAddress}`);
   console.log(`Expected HLG: ${formatEther(expectedHlgOut)}`);
   console.log(`Min HLG (${Number(slippageBps) / 100}% slippage): ${formatEther(minHlgOut)}`);
+  if (minHlgNeeded > 0n) {
+    console.log(`Min HLG required to avoid RewardTooSmall: ${formatEther(minHlgNeeded)}`);
+    if (minHlgOut < minHlgNeeded) {
+      console.log(
+        `⚠️  Warning: even after scaling, min out ${formatEther(minHlgOut)} is below required ${formatEther(minHlgNeeded)}; consider providing more ETH or using --hlg direct deposit.`,
+      );
+    }
+  } else {
+    console.log("Note: No active stakers detected; deposit will be a no-op until staking starts.");
+  }
 
   const deadline = Math.floor(Date.now() / 1000) + 1800;
 
@@ -697,6 +799,7 @@ export async function generateBatchTransaction(ethAmount: string) {
       data: encodeFunctionData({
         abi: parseAbi(["function depositAndDistribute(uint256)"]),
         functionName: "depositAndDistribute",
+        // Deposit at least the conservative minOut to guarantee threshold
         args: [minHlgOut],
       }),
       contractMethod: {
@@ -832,14 +935,89 @@ export async function generateBatchTransaction(ethAmount: string) {
   return safeBatch;
 }
 
+// Build a Safe Transaction Builder batch that deposits HLG directly, no swaps
+export async function generateDirectHLGDeposit(hlgAmount: string) {
+  const amount = parseEther(hlgAmount);
+  const multisigAddress = process.env.MULTISIG_ADDRESS || "0x8FE61F653450051cEcbae12475BA2b8fbA628c7A";
+
+  console.log(`Direct deposit: ${hlgAmount} HLG to StakingRewards (no WETH, no swap)`);
+  console.log(`Multisig Address: ${multisigAddress}`);
+  console.log(`Reminder: Safe must hold at least ${hlgAmount} HLG balance`);
+
+  const transactions: SafeTransactionBuilderTransaction[] = [
+    // 1) Approve StakingRewards to pull HLG from the Safe
+    {
+      to: ADDRESSES.HLG,
+      value: "0",
+      data: encodeFunctionData({
+        abi: parseAbi(["function approve(address,uint256)"]),
+        functionName: "approve",
+        args: [ADDRESSES.STAKING_REWARDS as `0x${string}`, amount],
+      }),
+      contractMethod: {
+        inputs: [
+          { name: "spender", type: "address" },
+          { name: "amount", type: "uint256" },
+        ],
+        name: "approve",
+        payable: false,
+      },
+      contractInputsValues: {
+        spender: ADDRESSES.STAKING_REWARDS,
+        amount: amount.toString(),
+      },
+    },
+    // 2) Deposit and distribute
+    {
+      to: ADDRESSES.STAKING_REWARDS,
+      value: "0",
+      data: encodeFunctionData({
+        abi: parseAbi(["function depositAndDistribute(uint256)"]),
+        functionName: "depositAndDistribute",
+        args: [amount],
+      }),
+      contractMethod: {
+        inputs: [{ name: "amount", type: "uint256" }],
+        name: "depositAndDistribute",
+        payable: false,
+      },
+      contractInputsValues: {
+        amount: amount.toString(),
+      },
+    },
+  ];
+
+  const checksum = `0x${Buffer.from(JSON.stringify(transactions)).toString("hex").slice(0, 64)}`;
+
+  const safeBatch: SafeTransactionBuilderBatch = {
+    version: "1.0",
+    chainId: "11155111",
+    createdAt: Date.now(),
+    meta: {
+      name: "Direct HLG Deposit",
+      description: `Deposit ${hlgAmount} HLG into StakingRewards (burn/reward split applied)` ,
+      txBuilderVersion: "1.17.1",
+      createdFromSafeAddress: multisigAddress,
+      createdFromOwnerAddress: "",
+      checksum,
+    },
+    transactions,
+  };
+
+  console.log("\n=== Safe Transaction Builder JSON (Direct HLG) ===\n");
+  console.log(JSON.stringify(safeBatch));
+  return safeBatch;
+}
+
 // Run if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   // Simple CLI args parsing
   const args = process.argv.slice(2);
-  let ethAmount = "0.00005";
+  let ethAmount = "0.6";
   let simulateOnly = false;
   let transferOwnership = false;
   let acceptOwnership = false;
+  let directHLG: string | undefined;
 
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
@@ -863,6 +1041,14 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       }
       continue;
     }
+    if (arg === "--hlg" || arg === "--direct-hlg") {
+      const value = args[i + 1];
+      if (value && !value.startsWith("-")) {
+        directHLG = value;
+        i += 1;
+      }
+      continue;
+    }
     // If it's a positional non-flag argument, treat it as amount
     if (arg && !arg.startsWith("-")) {
       ethAmount = arg;
@@ -877,6 +1063,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     if (simulateOnly) {
       console.log("🎯 Running in simulation-only mode");
     }
-    generateBatchTransaction(ethAmount).catch(console.error);
+    if (directHLG) {
+      generateDirectHLGDeposit(directHLG).catch(console.error);
+    } else {
+      generateBatchTransaction(ethAmount).catch(console.error);
+    }
   }
 }
