@@ -278,7 +278,7 @@ function stakeFromDistributor(address user, uint256 amount) external; // Distrib
 ## Fee Model
 
 - **Source**: Trading fees from Doppler auctions (collected by Airlock contracts)
-- **Protocol Split**: 50% of collected fees (HOLO_FEE_BPS = 5000)
+- **Protocol Split**: 50% of collected fees (holographFeeBps = 5000)
 - **Treasury Split**: 50% of collected fees forwarded to treasury address
 - **HLG Distribution**: Protocol fees bridged to Ethereum, swapped WETH→HLG, configurable burn/stake split (default 50% burned / 50% staked)
 - **Security**: Trusted Airlock whitelist prevents unauthorized ETH transfers to FeeRouter
