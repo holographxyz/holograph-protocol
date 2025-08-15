@@ -1,4 +1,4 @@
-# Holograph Protocol v2
+# Holograph Protocol
 
 A protocol for deploying omnichain tokens with deterministic addresses across multiple blockchains. Built on Doppler Airlock technology and LayerZero V2 for secure cross-chain messaging.
 
