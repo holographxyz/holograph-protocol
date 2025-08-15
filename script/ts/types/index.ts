@@ -167,6 +167,7 @@ export interface EnvironmentConfig {
 // ============================================================================
 
 export interface CliOptions {
+  command?: string;
   ethAmount?: string;
   hlgAmount?: string;
   simulateOnly?: boolean;

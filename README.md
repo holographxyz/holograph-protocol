@@ -304,20 +304,31 @@ Use the Multisig CLI for generating Safe Transaction Builder compatible JSON for
 
 ```bash
 # Convert ETH to HLG and stake in StakingRewards
-npm run multisig-cli 0.5
+npm run multisig-cli batch --eth 0.5
 
 # Direct HLG deposit (no swapping)
-npm run multisig-cli --hlg 1000
+npm run multisig-cli deposit --hlg 1000
 
 # Simulate transaction before execution
-npm run multisig-cli --simulate-only 0.1
+npm run multisig-cli batch --eth 0.1 --simulate-only
 
 # Ownership management
-npm run multisig-cli --transfer-ownership
-npm run multisig-cli --accept-ownership
+npm run multisig-cli transfer-ownership
+npm run multisig-cli accept-ownership
 
 # Get help and usage information
-npm run multisig-cli --help
+npm run multisig-cli help
+npm run multisig-cli batch --help
+```
+
+**Convenient Script Aliases:**
+
+```bash
+# For faster execution, use dedicated scripts:
+npm run multisig-batch --eth 0.5                    # Same as: multisig-cli batch --eth 0.5
+npm run multisig-deposit --hlg 1000                 # Same as: multisig-cli deposit --hlg 1000
+npm run multisig-transfer-ownership                 # Same as: multisig-cli transfer-ownership
+npm run multisig-accept-ownership                   # Same as: multisig-cli accept-ownership
 ```
 
 **Key Features:**

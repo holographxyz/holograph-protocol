@@ -254,7 +254,12 @@ export class MultisigCLI {
   /**
    * Display educational information about the CLI and concepts
    */
-  displayHelp(): void {
+  displayHelp(subcommand?: string): void {
+    if (subcommand) {
+      this.displaySubcommandHelp(subcommand);
+      return;
+    }
+
     console.log(`
 🔧 Holograph Multisig CLI
 
@@ -266,13 +271,28 @@ ${this.uniswapService.explainFeeTierStrategy()}
 
 ${this.stakingService.explainStakingMechanics()}
 
-🎯 **Usage Examples:**
+🎯 **Commands:**
 
-  npm run multisig-cli 0.5                    # Convert 0.5 ETH to HLG and stake
-  npm run multisig-cli --hlg 1000             # Direct deposit 1000 HLG 
-  npm run multisig-cli --simulate-only 0.1    # Simulate without JSON output
-  npm run multisig-cli --transfer-ownership   # Start ownership transfer
-  npm run multisig-cli --accept-ownership     # Complete ownership transfer
+  batch                    Convert ETH to HLG and stake in StakingRewards
+  deposit                  Direct HLG deposit to StakingRewards
+  transfer-ownership       Start StakingRewards ownership transfer
+  accept-ownership         Complete StakingRewards ownership transfer
+  help                     Show this help message
+
+🚀 **Usage Examples:**
+
+  npm run multisig-cli -- batch --eth 0.5                  # Convert 0.5 ETH to HLG and stake
+  npm run multisig-cli -- deposit --hlg 1000               # Direct deposit 1000 HLG 
+  npm run multisig-cli -- batch --amount 0.1 --simulate-only  # Simulate batch without JSON output
+  npm run multisig-cli -- transfer-ownership               # Start ownership transfer
+  npm run multisig-cli -- accept-ownership --simulate-only # Simulate ownership acceptance
+
+📋 **Convenient Script Aliases:**
+
+  npm run multisig-batch -- --eth 0.5                      # Same as: npm run multisig-cli -- batch --eth 0.5
+  npm run multisig-deposit -- --hlg 1000                   # Same as: npm run multisig-cli -- deposit --hlg 1000
+  npm run multisig-transfer-ownership                      # Same as: npm run multisig-cli -- transfer-ownership
+  npm run multisig-accept-ownership                        # Same as: npm run multisig-cli -- accept-ownership
 
 🔧 **Environment Variables:**
 
@@ -286,8 +306,137 @@ ${this.stakingService.explainStakingMechanics()}
   REQUIRED_FEE_TIER             # Force specific Uniswap fee tier
   PREFER_FEE_TIER               # Prefer specific fee tier with fallback
 
+📖 **Get detailed help for any command:**
+  npm run multisig-cli                         # Show this help (no args)
+  npm run multisig-help                        # Show this help (alias)
+  npm run multisig-cli:help                    # Show this help (npm style)
+  npm run multisig-cli -- batch --help         # Batch command help
+  npm run multisig-batch:help                  # Batch command help (alias)
+
 📖 **Documentation:** See docs/multisig-cli.md for detailed usage guide
     `);
+  }
+
+  /**
+   * Display help for a specific subcommand
+   */
+  private displaySubcommandHelp(subcommand: string): void {
+    switch (subcommand) {
+      case "batch":
+        console.log(`
+🎯 **batch** - Convert ETH to HLG and stake in StakingRewards
+
+This is the main operation for fee distribution:
+1. Wraps ETH to WETH
+2. Swaps WETH to HLG via Uniswap V3 (finds best price across fee tiers)
+3. Approves and deposits HLG to StakingRewards
+4. Automatically handles RewardTooSmall threshold scaling
+
+**Usage:**
+  npm run multisig-cli -- batch --eth <amount> [--simulate-only]
+  npm run multisig-cli -- batch --amount <amount> [--simulate-only]
+
+**Examples:**
+  npm run multisig-cli -- batch --eth 0.5
+  npm run multisig-cli -- batch --amount 1.0 --simulate-only
+  npm run multisig-batch -- --eth 0.25
+
+**Flags:**
+  --eth, --amount <value>    ETH amount to convert (required)
+  --simulate-only           Simulate transaction without generating JSON
+  --help                    Show this help message
+
+📖 **Get help:**
+  npm run multisig-cli -- batch --help                    # This help message
+  npm run multisig-cli -- help                            # Global help
+        `);
+        break;
+
+      case "deposit":
+        console.log(`
+🎯 **deposit** - Direct HLG deposit to StakingRewards
+
+For cases where the Safe already holds HLG tokens and wants to
+deposit them directly without swapping.
+
+**Usage:**
+  npm run multisig-cli -- deposit --hlg <amount> [--simulate-only]
+
+**Examples:**
+  npm run multisig-cli -- deposit --hlg 1000
+  npm run multisig-cli -- deposit --hlg 500 --simulate-only
+  npm run multisig-deposit -- --hlg 2000
+
+**Flags:**
+  --hlg <value>             HLG amount to deposit (required)
+  --simulate-only           Simulate transaction without generating JSON
+  --help                    Show this help message
+
+📖 **Get help:**
+  npm run multisig-cli -- deposit --help                  # This help message
+  npm run multisig-cli -- help                            # Global help
+
+**Note:** Safe must already hold the specified HLG amount.
+        `);
+        break;
+
+      case "transfer-ownership":
+        console.log(`
+🎯 **transfer-ownership** - Start StakingRewards ownership transfer
+
+Provides instructions for the current owner to initiate ownership
+transfer to the Safe multisig.
+
+**Usage:**
+  npm run multisig-cli -- transfer-ownership [--simulate-only]
+
+**Examples:**
+  npm run multisig-cli -- transfer-ownership
+  npm run multisig-transfer-ownership
+
+**Flags:**
+  --simulate-only           Information mode only
+  --help                    Show this help message
+
+📖 **Get help:**
+  npm run multisig-cli -- transfer-ownership --help       # This help message
+  npm run multisig-cli -- help                            # Global help
+
+**Note:** This provides instructions rather than generating a transaction.
+The current owner must execute the transfer before the Safe can accept.
+        `);
+        break;
+
+      case "accept-ownership":
+        console.log(`
+🎯 **accept-ownership** - Complete StakingRewards ownership transfer
+
+Generates Safe transaction to accept ownership after transfer has been
+initiated by the current owner.
+
+**Usage:**
+  npm run multisig-cli -- accept-ownership [--simulate-only]
+
+**Examples:**
+  npm run multisig-cli -- accept-ownership
+  npm run multisig-accept-ownership -- --simulate-only
+
+**Flags:**
+  --simulate-only           Simulate transaction without generating JSON
+  --help                    Show this help message
+
+📖 **Get help:**
+  npm run multisig-cli -- accept-ownership --help         # This help message
+  npm run multisig-cli -- help                            # Global help
+
+**Note:** Can only be called after transfer-ownership has been executed.
+        `);
+        break;
+
+      default:
+        console.log(`❌ Unknown subcommand: ${subcommand}`);
+        console.log("Run 'npm run multisig-cli help' for available commands.");
+    }
   }
 
   // ========================================================================
@@ -439,58 +588,100 @@ ${this.stakingService.explainStakingMechanics()}
 // ============================================================================
 
 /**
- * Parse command line arguments into typed options
+ * Parse command line arguments into typed options with subcommand structure
  */
 function parseCliArgs(): CliOptions {
   const args = process.argv.slice(2);
   const options: CliOptions = {};
 
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
+  if (args.length === 0) {
+    return { help: true };
+  }
+
+  const subcommand = args[0];
+  const subArgs = args.slice(1);
+
+  // Handle global help or subcommand
+  if (subcommand === "help" || subcommand === "--help" || subcommand === "-h") {
+    return { help: true };
+  }
+
+  // Parse subcommand
+  switch (subcommand) {
+    case "batch":
+      options.command = "batch";
+      break;
+    case "deposit":
+      options.command = "deposit";
+      break;
+    case "transfer-ownership":
+      options.command = "transfer-ownership";
+      options.transferOwnership = true;
+      break;
+    case "accept-ownership":
+      options.command = "accept-ownership";
+      options.acceptOwnership = true;
+      break;
+    default:
+      console.error(`❌ Unknown subcommand: ${subcommand}`);
+      console.error("Run 'npm run multisig-cli help' for usage information.");
+      process.exit(1);
+  }
+
+  // Parse subcommand flags
+  for (let i = 0; i < subArgs.length; i++) {
+    const arg = subArgs[i];
 
     switch (arg) {
       case "--help":
       case "-h":
-        return { help: true };
+        return { help: true, command: options.command };
         
       case "--simulate-only":
         options.simulateOnly = true;
         break;
         
-      case "--transfer-ownership":
-        options.transferOwnership = true;
-        break;
-        
-      case "--accept-ownership":
-        options.acceptOwnership = true;
-        break;
-        
-      case "--amount":
       case "--eth":
-      case "-a":
-        const ethValue = args[i + 1];
+      case "--amount":
+        const ethValue = subArgs[i + 1];
         if (ethValue && !ethValue.startsWith("-")) {
           options.ethAmount = ethValue;
           i++;
+        } else {
+          console.error(`❌ ${arg} requires a value`);
+          process.exit(1);
         }
         break;
         
       case "--hlg":
-      case "--direct-hlg":
-        const hlgValue = args[i + 1];
+        const hlgValue = subArgs[i + 1];
         if (hlgValue && !hlgValue.startsWith("-")) {
           options.hlgAmount = hlgValue;
           i++;
+        } else {
+          console.error(`❌ ${arg} requires a value`);
+          process.exit(1);
         }
         break;
         
       default:
-        // Positional argument - treat as ETH amount
-        if (arg && !arg.startsWith("-")) {
-          options.ethAmount = arg;
-        }
-        break;
+        console.error(`❌ Unknown flag: ${arg}`);
+        console.error(`Run 'npm run multisig-cli ${options.command} --help' for usage information.`);
+        process.exit(1);
     }
+  }
+
+  // Validate required arguments for each subcommand
+  if (options.command === "batch" && !options.ethAmount) {
+    console.error("❌ batch command requires --eth or --amount flag");
+    console.error("Example: npm run multisig-cli batch --eth 0.5");
+    process.exit(1);
+  }
+
+  if (options.command === "deposit" && !options.hlgAmount) {
+    console.error("❌ deposit command requires --hlg flag");
+    console.error("Example: npm run multisig-cli deposit --hlg 1000");
+    process.exit(1);
   }
 
   return options;
@@ -504,28 +695,34 @@ async function main(): Promise<void> {
     const options = parseCliArgs();
     const cli = new MultisigCLI();
 
-    // Handle special operations first
+    // Handle help first
     if (options.help) {
-      cli.displayHelp();
+      cli.displayHelp(options.command);
       return;
     }
 
-    if (options.transferOwnership) {
-      await cli.transferStakingRewardsOwnership();
-      return;
-    }
+    // Execute based on subcommand
+    switch (options.command) {
+      case "batch":
+        await cli.generateBatchTransaction(options.ethAmount!, options.simulateOnly);
+        break;
 
-    if (options.acceptOwnership) {
-      await cli.generateAcceptOwnershipTransaction();
-      return;
-    }
+      case "deposit":
+        await cli.generateDirectHLGDeposit(options.hlgAmount!);
+        break;
 
-    // Handle main operations
-    if (options.hlgAmount) {
-      await cli.generateDirectHLGDeposit(options.hlgAmount);
-    } else {
-      const ethAmount = options.ethAmount || "0.6"; // Default amount
-      await cli.generateBatchTransaction(ethAmount, options.simulateOnly);
+      case "transfer-ownership":
+        await cli.transferStakingRewardsOwnership();
+        break;
+
+      case "accept-ownership":
+        await cli.generateAcceptOwnershipTransaction();
+        break;
+
+      default:
+        console.error("❌ No subcommand specified");
+        console.error("Run 'npm run multisig-cli help' for available commands.");
+        process.exit(1);
     }
 
   } catch (error) {

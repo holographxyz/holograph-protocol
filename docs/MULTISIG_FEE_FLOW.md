@@ -462,6 +462,10 @@ if (require.main === module) {
 Run with:
 
 ```bash
+# Using the new CLI
+npm run multisig-cli batch --eth 1.5
+
+# Or legacy TypeScript approach
 npx ts-node scripts/generateBatch.ts 1.5
 ```
 
@@ -531,7 +535,10 @@ Wednesday: Execute distribution
 1. **Generate Batch Transaction**:
 
    ```bash
-   # Run locally to get batch JSON
+   # Run locally to get batch JSON (recommended)
+   npm run multisig-cli batch --eth 5
+   
+   # Or using legacy approach
    npx ts-node scripts/generateBatch.ts 5
    ```
 

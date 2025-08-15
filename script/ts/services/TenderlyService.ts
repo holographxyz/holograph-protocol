@@ -77,7 +77,7 @@ export class TenderlyService {
         ...(safeStorageOverride ? {
           [getAddress(safeAddress).toLowerCase()]: {
             storage: safeStorageOverride,
-            balance: `0x${parseEther("0.6").toString(16)}`,
+            balance: `0x${parseEther("0").toString(16)}`, // Zero balance - rely on storage overrides
           }
         } : {}),
         ...(fundBalances ? Object.fromEntries(
