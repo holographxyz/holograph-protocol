@@ -297,6 +297,72 @@ export class SafeTransactionBuilder {
   }
 
   /**
+   * Create Safe transaction batch to pause StakingRewards contract
+   */
+  createPauseTransaction(multisigAddress: string): SafeTransactionBuilderBatch {
+    const networkAddresses = getEnvironmentConfig().networkAddresses;
+    
+    // Generate the pause() function call data
+    const pauseData = encodeFunctionData({
+      abi: parseAbi(["function pause()"]),
+      functionName: "pause",
+      args: [],
+    });
+
+    const transaction: SafeTransactionBuilderTransaction = {
+      to: networkAddresses.STAKING_REWARDS,
+      value: "0",
+      data: pauseData,
+      contractMethod: {
+        inputs: [],
+        name: "pause",
+        payable: false,
+      },
+      contractInputsValues: {},
+    };
+
+    return this.createSafeBatch(
+      [transaction],
+      "Emergency Pause StakingRewards",
+      "Emergency pause of StakingRewards contract operations",
+      multisigAddress
+    );
+  }
+
+  /**
+   * Create Safe transaction batch to unpause StakingRewards contract
+   */
+  createUnpauseTransaction(multisigAddress: string): SafeTransactionBuilderBatch {
+    const networkAddresses = getEnvironmentConfig().networkAddresses;
+    
+    // Generate the unpause() function call data
+    const unpauseData = encodeFunctionData({
+      abi: parseAbi(["function unpause()"]),
+      functionName: "unpause",
+      args: [],
+    });
+
+    const transaction: SafeTransactionBuilderTransaction = {
+      to: networkAddresses.STAKING_REWARDS,
+      value: "0",
+      data: unpauseData,
+      contractMethod: {
+        inputs: [],
+        name: "unpause",
+        payable: false,
+      },
+      contractInputsValues: {},
+    };
+
+    return this.createSafeBatch(
+      [transaction],
+      "Resume StakingRewards Operations",
+      "Resume normal StakingRewards contract operations",
+      multisigAddress
+    );
+  }
+
+  /**
    * Create the Safe Transaction Builder batch structure
    * 
    * @param transactions - Array of individual transactions

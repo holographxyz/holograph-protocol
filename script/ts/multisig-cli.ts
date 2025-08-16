@@ -252,6 +252,48 @@ export class MultisigCLI {
   }
 
   /**
+   * Generate Safe transaction to pause StakingRewards contract
+   */
+  async generatePauseTransaction(): Promise<void> {
+    try {
+      const multisigAddress = this.config.multisig.address;
+      
+      console.log("=== Emergency Pause StakingRewards ===");
+      console.log("⚠️  This will pause all staking operations");
+      console.log("⚠️  Users will not be able to stake or receive rewards");
+      console.log("⚠️  Users can still unstake and emergency exit");
+      
+      const batch = this.safeBuilder.createPauseTransaction(multisigAddress);
+      
+      this.safeBuilder.displayInstructions(batch);
+
+    } catch (error) {
+      this.handleError("Failed to generate pause transaction", error);
+    }
+  }
+
+  /**
+   * Generate Safe transaction to unpause StakingRewards contract
+   */
+  async generateUnpauseTransaction(): Promise<void> {
+    try {
+      const multisigAddress = this.config.multisig.address;
+      
+      console.log("=== Resume StakingRewards Operations ===");
+      console.log("✅ This will resume all staking operations");
+      console.log("✅ Users will be able to stake and receive rewards again");
+      console.log("✅ Normal operations will be restored");
+      
+      const batch = this.safeBuilder.createUnpauseTransaction(multisigAddress);
+      
+      this.safeBuilder.displayInstructions(batch);
+
+    } catch (error) {
+      this.handleError("Failed to generate unpause transaction", error);
+    }
+  }
+
+  /**
    * Display educational information about the CLI and concepts
    */
   displayHelp(subcommand?: string): void {
@@ -277,6 +319,8 @@ ${this.stakingService.explainStakingMechanics()}
   deposit                  Direct HLG deposit to StakingRewards
   transfer-ownership       Start StakingRewards ownership transfer
   accept-ownership         Complete StakingRewards ownership transfer
+  pause                    Pause StakingRewards contract (emergency)
+  unpause                  Unpause StakingRewards contract
   help                     Show this help message
 
 🚀 **Usage Examples:**
@@ -286,6 +330,8 @@ ${this.stakingService.explainStakingMechanics()}
   npm run multisig-cli:batch --amount 0.1 --simulate-only  # Simulate batch without JSON output
   npm run multisig-cli:transfer-ownership                  # Start ownership transfer
   npm run multisig-cli:accept-ownership --simulate-only    # Simulate ownership acceptance
+  npm run multisig-cli:pause --simulate-only               # Emergency pause StakingRewards
+  npm run multisig-cli:unpause                             # Resume StakingRewards operations
 
 🔧 **Environment Variables:**
 
@@ -304,6 +350,8 @@ ${this.stakingService.explainStakingMechanics()}
   npm run multisig-cli:help                    # Show this help
   npm run multisig-cli:batch --help            # Show batch command help
   npm run multisig-cli:deposit --help          # Show deposit command help
+  npm run multisig-cli:pause --help            # Show pause command help
+  npm run multisig-cli:unpause --help          # Show unpause command help
 
 📖 **Documentation:** See docs/multisig-cli.md for detailed usage guide
     `);
@@ -420,6 +468,64 @@ initiated by the current owner.
   npm run multisig-cli:help                               # Global help
 
 **Note:** Can only be called after transfer-ownership has been executed.
+        `);
+        break;
+
+      case "pause":
+        console.log(`
+🎯 **pause** - Emergency pause StakingRewards contract
+
+Generates Safe transaction to pause the StakingRewards contract. When paused:
+- Users cannot stake new tokens
+- Reward distributions are blocked  
+- Users can still unstake and emergency exit
+- Distributors are blocked from staking
+
+**Usage:**
+  npm run multisig-cli:pause [--simulate-only]
+
+**Examples:**
+  npm run multisig-cli:pause
+  npm run multisig-cli:pause --simulate-only
+
+**Flags:**
+  --simulate-only           Simulate transaction without generating JSON
+  --help                    Show this help message
+
+📖 **Get help:**
+  npm run multisig-cli:pause --help                       # This help message
+  npm run multisig-cli:help                               # Global help
+
+**Note:** This is an emergency function. Use carefully and communicate with stakeholders.
+        `);
+        break;
+
+      case "unpause":
+        console.log(`
+🎯 **unpause** - Resume StakingRewards contract operations
+
+Generates Safe transaction to unpause the StakingRewards contract. After unpausing:
+- Users can stake tokens again
+- Reward distributions resume
+- Distributors can stake for users again
+- All normal operations are restored
+
+**Usage:**
+  npm run multisig-cli:unpause [--simulate-only]
+
+**Examples:**
+  npm run multisig-cli:unpause
+  npm run multisig-cli:unpause --simulate-only
+
+**Flags:**
+  --simulate-only           Simulate transaction without generating JSON
+  --help                    Show this help message
+
+📖 **Get help:**
+  npm run multisig-cli:unpause --help                     # This help message
+  npm run multisig-cli:help                               # Global help
+
+**Note:** Ensure all issues are resolved before unpausing operations.
         `);
         break;
 
@@ -612,6 +718,12 @@ function parseCliArgs(): CliOptions {
       options.command = "accept-ownership";
       options.acceptOwnership = true;
       break;
+    case "pause":
+      options.command = "pause";
+      break;
+    case "unpause":
+      options.command = "unpause";
+      break;
     default:
       console.error(`❌ Unknown subcommand: ${subcommand}`);
       console.error("Run 'npm run multisig-cli help' for usage information.");
@@ -707,6 +819,14 @@ async function main(): Promise<void> {
 
       case "accept-ownership":
         await cli.generateAcceptOwnershipTransaction();
+        break;
+
+      case "pause":
+        await cli.generatePauseTransaction();
+        break;
+
+      case "unpause":
+        await cli.generateUnpauseTransaction();
         break;
 
       default:

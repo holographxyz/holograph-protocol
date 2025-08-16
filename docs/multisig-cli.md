@@ -4,10 +4,12 @@ The Holograph Multisig CLI is a TypeScript tool that generates Gnosis Safe Trans
 
 ## Overview
 
-The CLI handles three main operation types:
+The CLI handles five main operation types:
 1. **ETH → HLG → StakingRewards** batch transactions (primary use case)
 2. **Direct HLG deposits** to StakingRewards (when Safe already holds HLG)
 3. **StakingRewards ownership management** (transfer and acceptance)
+4. **Emergency pause operations** (pause/unpause StakingRewards)
+5. **Contract administration** (pausing for maintenance or emergencies)
 
 ## Installation and Setup
 
@@ -76,6 +78,10 @@ npx tsx script/ts/multisig-cli.ts deposit --hlg 500 --simulate-only
 npx tsx script/ts/multisig-cli.ts transfer-ownership
 npx tsx script/ts/multisig-cli.ts accept-ownership --simulate-only
 
+# Emergency pause operations
+npx tsx script/ts/multisig-cli.ts pause --simulate-only
+npx tsx script/ts/multisig-cli.ts unpause
+
 # Help and documentation
 npx tsx script/ts/multisig-cli.ts help
 npx tsx script/ts/multisig-cli.ts batch --help
@@ -95,6 +101,10 @@ npm run multisig-cli:deposit -- --hlg 500 --simulate-only
 # Ownership management
 npm run multisig-cli:transfer-ownership
 npm run multisig-cli:accept-ownership -- --simulate-only
+
+# Emergency pause operations
+npm run multisig-cli:pause -- --simulate-only
+npm run multisig-cli:unpause
 
 # Help and documentation
 npm run multisig-cli                    # Show global help (no args)
@@ -117,6 +127,8 @@ npx tsx script/ts/multisig-cli.ts batch --eth 0.5
 npx tsx script/ts/multisig-cli.ts deposit --hlg 1000
 npx tsx script/ts/multisig-cli.ts transfer-ownership
 npx tsx script/ts/multisig-cli.ts accept-ownership
+npx tsx script/ts/multisig-cli.ts pause --simulate-only
+npx tsx script/ts/multisig-cli.ts unpause
 
 # Help commands
 npx tsx script/ts/multisig-cli.ts help             # Global help
@@ -132,6 +144,8 @@ npm run multisig-cli:batch -- --eth 0.5
 npm run multisig-cli:deposit -- --hlg 1000
 npm run multisig-cli:transfer-ownership
 npm run multisig-cli:accept-ownership
+npm run multisig-cli:pause -- --simulate-only
+npm run multisig-cli:unpause
 
 # Help commands
 npm run multisig-cli                               # Global help (no args)
@@ -154,6 +168,8 @@ npx tsx script/ts/multisig-cli.ts batch --help
 npx tsx script/ts/multisig-cli.ts deposit --help
 npx tsx script/ts/multisig-cli.ts transfer-ownership --help
 npx tsx script/ts/multisig-cli.ts accept-ownership --help
+npx tsx script/ts/multisig-cli.ts pause --help
+npx tsx script/ts/multisig-cli.ts unpause --help
 ```
 
 ### npm Scripts (Alternative)
@@ -168,6 +184,8 @@ npm run multisig-cli:batch -- --help              # Batch command details
 npm run multisig-cli:deposit -- --help             # Deposit command details
 npm run multisig-cli:transfer-ownership -- --help  # Transfer ownership help
 npm run multisig-cli:accept-ownership -- --help    # Accept ownership help
+npm run multisig-cli:pause -- --help               # Pause operations help
+npm run multisig-cli:unpause -- --help             # Unpause operations help
 ```
 
 ### Important Note about `--` Separator

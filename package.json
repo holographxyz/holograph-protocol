@@ -15,6 +15,8 @@
     "multisig-cli:deposit": "tsx script/ts/multisig-cli.ts deposit",
     "multisig-cli:transfer-ownership": "tsx script/ts/multisig-cli.ts transfer-ownership",
     "multisig-cli:accept-ownership": "tsx script/ts/multisig-cli.ts accept-ownership",
+    "multisig-cli:pause": "tsx script/ts/multisig-cli.ts pause",
+    "multisig-cli:unpause": "tsx script/ts/multisig-cli.ts unpause",
     "type-check": "tsc --noEmit",
     "lint": "eslint script/*.ts",
     "lint:fix": "eslint script/*.ts --fix",

@@ -318,6 +318,10 @@ npx tsx script/ts/multisig-cli.ts batch --eth 0.1 --simulate-only
 npx tsx script/ts/multisig-cli.ts transfer-ownership
 npx tsx script/ts/multisig-cli.ts accept-ownership
 
+# Emergency pause operations
+npx tsx script/ts/multisig-cli.ts pause --simulate-only
+npx tsx script/ts/multisig-cli.ts unpause
+
 # Get help and usage information
 npx tsx script/ts/multisig-cli.ts help
 npx tsx script/ts/multisig-cli.ts batch --help
@@ -339,6 +343,10 @@ npm run multisig-cli:batch -- --eth 0.1 --simulate-only
 npm run multisig-cli:transfer-ownership
 npm run multisig-cli:accept-ownership -- --simulate-only
 
+# Emergency pause operations
+npm run multisig-cli:pause -- --simulate-only
+npm run multisig-cli:unpause
+
 # Get help and usage information
 npm run multisig-cli:help
 npm run multisig-cli:batch -- --help
@@ -352,12 +360,16 @@ npx tsx script/ts/multisig-cli.ts batch --eth 0.5
 npx tsx script/ts/multisig-cli.ts deposit --hlg 1000
 npx tsx script/ts/multisig-cli.ts transfer-ownership
 npx tsx script/ts/multisig-cli.ts accept-ownership
+npx tsx script/ts/multisig-cli.ts pause --simulate-only
+npx tsx script/ts/multisig-cli.ts unpause
 
 # npm scripts (alternative - require -- separator for flags)
 npm run multisig-cli:batch -- --eth 0.5
 npm run multisig-cli:deposit -- --hlg 1000
 npm run multisig-cli:transfer-ownership
 npm run multisig-cli:accept-ownership
+npm run multisig-cli:pause -- --simulate-only
+npm run multisig-cli:unpause
 ```
 
 **Key Features:**
