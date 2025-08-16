@@ -281,18 +281,11 @@ ${this.stakingService.explainStakingMechanics()}
 
 🚀 **Usage Examples:**
 
-  npm run multisig-cli -- batch --eth 0.5                  # Convert 0.5 ETH to HLG and stake
-  npm run multisig-cli -- deposit --hlg 1000               # Direct deposit 1000 HLG 
-  npm run multisig-cli -- batch --amount 0.1 --simulate-only  # Simulate batch without JSON output
-  npm run multisig-cli -- transfer-ownership               # Start ownership transfer
-  npm run multisig-cli -- accept-ownership --simulate-only # Simulate ownership acceptance
-
-📋 **Convenient Script Aliases:**
-
-  npm run multisig-batch -- --eth 0.5                      # Same as: npm run multisig-cli -- batch --eth 0.5
-  npm run multisig-deposit -- --hlg 1000                   # Same as: npm run multisig-cli -- deposit --hlg 1000
-  npm run multisig-transfer-ownership                      # Same as: npm run multisig-cli -- transfer-ownership
-  npm run multisig-accept-ownership                        # Same as: npm run multisig-cli -- accept-ownership
+  npm run multisig-cli:batch --eth 0.5                     # Convert 0.5 ETH to HLG and stake
+  npm run multisig-cli:deposit --hlg 1000                  # Direct deposit 1000 HLG 
+  npm run multisig-cli:batch --amount 0.1 --simulate-only  # Simulate batch without JSON output
+  npm run multisig-cli:transfer-ownership                  # Start ownership transfer
+  npm run multisig-cli:accept-ownership --simulate-only    # Simulate ownership acceptance
 
 🔧 **Environment Variables:**
 
@@ -306,12 +299,11 @@ ${this.stakingService.explainStakingMechanics()}
   REQUIRED_FEE_TIER             # Force specific Uniswap fee tier
   PREFER_FEE_TIER               # Prefer specific fee tier with fallback
 
-📖 **Get detailed help for any command:**
+📖 **Getting Help:**
   npm run multisig-cli                         # Show this help (no args)
-  npm run multisig-help                        # Show this help (alias)
-  npm run multisig-cli:help                    # Show this help (npm style)
-  npm run multisig-cli -- batch --help         # Batch command help
-  npm run multisig-batch:help                  # Batch command help (alias)
+  npm run multisig-cli:help                    # Show this help
+  npm run multisig-cli:batch --help            # Show batch command help
+  npm run multisig-cli:deposit --help          # Show deposit command help
 
 📖 **Documentation:** See docs/multisig-cli.md for detailed usage guide
     `);
@@ -333,13 +325,13 @@ This is the main operation for fee distribution:
 4. Automatically handles RewardTooSmall threshold scaling
 
 **Usage:**
-  npm run multisig-cli -- batch --eth <amount> [--simulate-only]
-  npm run multisig-cli -- batch --amount <amount> [--simulate-only]
+  npm run multisig-cli:batch --eth <amount> [--simulate-only]
+  npm run multisig-cli:batch --amount <amount> [--simulate-only]
 
 **Examples:**
-  npm run multisig-cli -- batch --eth 0.5
-  npm run multisig-cli -- batch --amount 1.0 --simulate-only
-  npm run multisig-batch -- --eth 0.25
+  npm run multisig-cli:batch --eth 0.5
+  npm run multisig-cli:batch --amount 1.0 --simulate-only
+  npm run multisig-cli:batch --eth 0.25
 
 **Flags:**
   --eth, --amount <value>    ETH amount to convert (required)
@@ -347,8 +339,8 @@ This is the main operation for fee distribution:
   --help                    Show this help message
 
 📖 **Get help:**
-  npm run multisig-cli -- batch --help                    # This help message
-  npm run multisig-cli -- help                            # Global help
+  npm run multisig-cli:batch --help                       # This help message
+  npm run multisig-cli:help                               # Global help
         `);
         break;
 
@@ -360,12 +352,11 @@ For cases where the Safe already holds HLG tokens and wants to
 deposit them directly without swapping.
 
 **Usage:**
-  npm run multisig-cli -- deposit --hlg <amount> [--simulate-only]
+  npm run multisig-cli:deposit --hlg <amount> [--simulate-only]
 
 **Examples:**
-  npm run multisig-cli -- deposit --hlg 1000
-  npm run multisig-cli -- deposit --hlg 500 --simulate-only
-  npm run multisig-deposit -- --hlg 2000
+  npm run multisig-cli:deposit --hlg 1000
+  npm run multisig-cli:deposit --hlg 500 --simulate-only
 
 **Flags:**
   --hlg <value>             HLG amount to deposit (required)
@@ -373,8 +364,8 @@ deposit them directly without swapping.
   --help                    Show this help message
 
 📖 **Get help:**
-  npm run multisig-cli -- deposit --help                  # This help message
-  npm run multisig-cli -- help                            # Global help
+  npm run multisig-cli:deposit --help                     # This help message
+  npm run multisig-cli:help                               # Global help
 
 **Note:** Safe must already hold the specified HLG amount.
         `);
@@ -388,19 +379,18 @@ Provides instructions for the current owner to initiate ownership
 transfer to the Safe multisig.
 
 **Usage:**
-  npm run multisig-cli -- transfer-ownership [--simulate-only]
+  npm run multisig-cli:transfer-ownership [--simulate-only]
 
 **Examples:**
-  npm run multisig-cli -- transfer-ownership
-  npm run multisig-transfer-ownership
+  npm run multisig-cli:transfer-ownership
 
 **Flags:**
   --simulate-only           Information mode only
   --help                    Show this help message
 
 📖 **Get help:**
-  npm run multisig-cli -- transfer-ownership --help       # This help message
-  npm run multisig-cli -- help                            # Global help
+  npm run multisig-cli:transfer-ownership --help          # This help message
+  npm run multisig-cli:help                               # Global help
 
 **Note:** This provides instructions rather than generating a transaction.
 The current owner must execute the transfer before the Safe can accept.
@@ -415,19 +405,19 @@ Generates Safe transaction to accept ownership after transfer has been
 initiated by the current owner.
 
 **Usage:**
-  npm run multisig-cli -- accept-ownership [--simulate-only]
+  npm run multisig-cli:accept-ownership [--simulate-only]
 
 **Examples:**
-  npm run multisig-cli -- accept-ownership
-  npm run multisig-accept-ownership -- --simulate-only
+  npm run multisig-cli:accept-ownership
+  npm run multisig-cli:accept-ownership --simulate-only
 
 **Flags:**
   --simulate-only           Simulate transaction without generating JSON
   --help                    Show this help message
 
 📖 **Get help:**
-  npm run multisig-cli -- accept-ownership --help         # This help message
-  npm run multisig-cli -- help                            # Global help
+  npm run multisig-cli:accept-ownership --help            # This help message
+  npm run multisig-cli:help                               # Global help
 
 **Note:** Can only be called after transfer-ownership has been executed.
         `);

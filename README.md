@@ -302,33 +302,62 @@ npm run create-token
 
 Use the Multisig CLI for generating Safe Transaction Builder compatible JSON for common operations:
 
+**Method 1: Direct Script Execution (Recommended - Cleanest)**
+
 ```bash
 # Convert ETH to HLG and stake in StakingRewards
-npm run multisig-cli batch --eth 0.5
+npx tsx script/ts/multisig-cli.ts batch --eth 0.5
 
 # Direct HLG deposit (no swapping)
-npm run multisig-cli deposit --hlg 1000
+npx tsx script/ts/multisig-cli.ts deposit --hlg 1000
 
 # Simulate transaction before execution
-npm run multisig-cli batch --eth 0.1 --simulate-only
+npx tsx script/ts/multisig-cli.ts batch --eth 0.1 --simulate-only
 
 # Ownership management
-npm run multisig-cli transfer-ownership
-npm run multisig-cli accept-ownership
+npx tsx script/ts/multisig-cli.ts transfer-ownership
+npx tsx script/ts/multisig-cli.ts accept-ownership
 
 # Get help and usage information
-npm run multisig-cli help
-npm run multisig-cli batch --help
+npx tsx script/ts/multisig-cli.ts help
+npx tsx script/ts/multisig-cli.ts batch --help
 ```
 
-**Convenient Script Aliases:**
+**Method 2: npm Scripts (Alternative)**
 
 ```bash
-# For faster execution, use dedicated scripts:
-npm run multisig-batch --eth 0.5                    # Same as: multisig-cli batch --eth 0.5
-npm run multisig-deposit --hlg 1000                 # Same as: multisig-cli deposit --hlg 1000
-npm run multisig-transfer-ownership                 # Same as: multisig-cli transfer-ownership
-npm run multisig-accept-ownership                   # Same as: multisig-cli accept-ownership
+# Convert ETH to HLG and stake in StakingRewards
+npm run multisig-cli:batch -- --eth 0.5
+
+# Direct HLG deposit (no swapping)
+npm run multisig-cli:deposit -- --hlg 1000
+
+# Simulate transaction before execution
+npm run multisig-cli:batch -- --eth 0.1 --simulate-only
+
+# Ownership management
+npm run multisig-cli:transfer-ownership
+npm run multisig-cli:accept-ownership -- --simulate-only
+
+# Get help and usage information
+npm run multisig-cli:help
+npm run multisig-cli:batch -- --help
+```
+
+**Command Structure:**
+
+```bash
+# Direct script execution (cleanest - no -- separator needed)
+npx tsx script/ts/multisig-cli.ts batch --eth 0.5
+npx tsx script/ts/multisig-cli.ts deposit --hlg 1000
+npx tsx script/ts/multisig-cli.ts transfer-ownership
+npx tsx script/ts/multisig-cli.ts accept-ownership
+
+# npm scripts (alternative - require -- separator for flags)
+npm run multisig-cli:batch -- --eth 0.5
+npm run multisig-cli:deposit -- --hlg 1000
+npm run multisig-cli:transfer-ownership
+npm run multisig-cli:accept-ownership
 ```
 
 **Key Features:**

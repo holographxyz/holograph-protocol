@@ -58,65 +58,137 @@ PREFER_FEE_TIER=3000  # Prefer 0.3% pools
 
 ## Usage
 
-### Core Commands
+### Two Ways to Run Commands
 
-The CLI uses a subcommand structure for clarity and explicit operation specification:
+**Method 1: Direct Script Execution (Recommended - Cleanest)**
+
+```bash
+# ✨ Clean syntax - no -- separator needed!
+# Convert ETH to HLG and stake
+npx tsx script/ts/multisig-cli.ts batch --eth 0.5
+npx tsx script/ts/multisig-cli.ts batch --amount 1.0 --simulate-only
+
+# Direct HLG deposit (no swapping)  
+npx tsx script/ts/multisig-cli.ts deposit --hlg 1000
+npx tsx script/ts/multisig-cli.ts deposit --hlg 500 --simulate-only
+
+# Ownership management
+npx tsx script/ts/multisig-cli.ts transfer-ownership
+npx tsx script/ts/multisig-cli.ts accept-ownership --simulate-only
+
+# Help and documentation
+npx tsx script/ts/multisig-cli.ts help
+npx tsx script/ts/multisig-cli.ts batch --help
+```
+
+**Method 2: npm Scripts (Alternative)**
 
 ```bash
 # Convert ETH to HLG and stake
-npm run multisig-cli -- batch --eth 0.5
-npm run multisig-cli -- batch --amount 1.0 --simulate-only
+npm run multisig-cli:batch -- --eth 0.5
+npm run multisig-cli:batch -- --amount 1.0 --simulate-only
 
 # Direct HLG deposit (no swapping)  
-npm run multisig-cli -- deposit --hlg 1000
-npm run multisig-cli -- deposit --hlg 500 --simulate-only
+npm run multisig-cli:deposit -- --hlg 1000
+npm run multisig-cli:deposit -- --hlg 500 --simulate-only
 
 # Ownership management
-npm run multisig-cli -- transfer-ownership
-npm run multisig-cli -- accept-ownership --simulate-only
+npm run multisig-cli:transfer-ownership
+npm run multisig-cli:accept-ownership -- --simulate-only
 
 # Help and documentation
 npm run multisig-cli                    # Show global help (no args)
-npm run multisig-help                   # Show global help (alias)
-npm run multisig-cli:help               # Show global help (npm style)
-npm run multisig-cli -- help            # Show global help (traditional)
-npm run multisig-cli -- batch --help    # Show batch command help
-npm run multisig-batch:help             # Show batch command help (alias)
+npm run multisig-cli:help               # Show global help
+npm run multisig-cli:batch -- --help    # Show batch command help (note: -- separator needed)
+npm run multisig-cli:deposit -- --help  # Show deposit command help (note: -- separator needed)
 ```
 
-### Convenient Script Aliases
+### Core Commands
 
-For faster execution, dedicated scripts are provided for each operation:
+The CLI uses a subcommand structure for clarity and explicit operation specification. Choose either method above based on your preference.
+
+### Command Reference
+
+**Direct Script Execution (Recommended):**
 
 ```bash
-# Command aliases
-npm run multisig-batch -- --eth 0.5                 # Same as: multisig-cli -- batch --eth 0.5
-npm run multisig-deposit -- --hlg 1000              # Same as: multisig-cli -- deposit --hlg 1000
-npm run multisig-transfer-ownership                 # Same as: multisig-cli -- transfer-ownership
-npm run multisig-accept-ownership                   # Same as: multisig-cli -- accept-ownership
+# Available commands - clean syntax
+npx tsx script/ts/multisig-cli.ts batch --eth 0.5
+npx tsx script/ts/multisig-cli.ts deposit --hlg 1000
+npx tsx script/ts/multisig-cli.ts transfer-ownership
+npx tsx script/ts/multisig-cli.ts accept-ownership
 
-# Help aliases
-npm run multisig-help                               # Same as: multisig-cli -- help
-npm run multisig-cli:help                           # npm-style global help
-npm run multisig-batch:help                         # npm-style batch help
-npm run multisig-deposit:help                       # npm-style deposit help
+# Help commands
+npx tsx script/ts/multisig-cli.ts help             # Global help
+npx tsx script/ts/multisig-cli.ts batch --help     # Batch command help
+npx tsx script/ts/multisig-cli.ts deposit --help   # Deposit command help
+```
+
+**npm Scripts (Alternative):**
+
+```bash
+# Available commands - require -- separator for flags
+npm run multisig-cli:batch -- --eth 0.5
+npm run multisig-cli:deposit -- --hlg 1000
+npm run multisig-cli:transfer-ownership
+npm run multisig-cli:accept-ownership
+
+# Help commands
+npm run multisig-cli                               # Global help (no args)
+npm run multisig-cli:help                          # Global help
+npm run multisig-cli:batch -- --help               # Batch command help (need -- separator)
+npm run multisig-cli:deposit -- --help             # Deposit command help (need -- separator)
 ```
 
 ## Getting Help
 
-### Global Help
+### Direct Script Execution (Recommended)
+
 ```bash
-npm run multisig-cli                    # Show all commands
-npm run multisig-help                   # Alias
-npm run multisig-cli:help               # npm-style
+# Global help
+npx tsx script/ts/multisig-cli.ts help
+npx tsx script/ts/multisig-cli.ts
+
+# Command-specific help
+npx tsx script/ts/multisig-cli.ts batch --help
+npx tsx script/ts/multisig-cli.ts deposit --help
+npx tsx script/ts/multisig-cli.ts transfer-ownership --help
+npx tsx script/ts/multisig-cli.ts accept-ownership --help
 ```
 
-### Command-Specific Help
+### npm Scripts (Alternative)
+
 ```bash
-npm run multisig-cli -- batch --help    # Batch command details
-npm run multisig-batch:help             # Batch help alias
-npm run multisig-deposit:help           # Deposit help alias
+# Global help
+npm run multisig-cli                    # Show all commands (no args)
+npm run multisig-cli:help               # Show all commands
+
+# Command-specific help (requires -- separator)
+npm run multisig-cli:batch -- --help              # Batch command details
+npm run multisig-cli:deposit -- --help             # Deposit command details
+npm run multisig-cli:transfer-ownership -- --help  # Transfer ownership help
+npm run multisig-cli:accept-ownership -- --help    # Accept ownership help
 ```
+
+### Important Note about `--` Separator
+
+**When using npm scripts**, you must use the `--` separator for flags because npm intercepts them:
+
+```bash
+# ❌ This won't work with npm scripts - npm shows its own help
+npm run multisig-cli:batch --help
+
+# ✅ This works with npm scripts - passes --help to the CLI
+npm run multisig-cli:batch -- --help
+
+# ✨ But this always works cleanly with direct execution
+npx tsx script/ts/multisig-cli.ts batch --help
+```
+
+**Comparison:**
+- **Direct script**: Clean syntax, no separators needed
+- **npm scripts**: Require `--` separator for all flags
+- **Both methods**: Support the same functionality
 
 ## Operation Details
 
@@ -134,26 +206,33 @@ npm run multisig-deposit:help           # Deposit help alias
 - Automatically scales ETH amount if needed to meet threshold
 - Uses exponential scaling with binary search refinement
 
-**Usage:**
+**Usage (Direct Script - Recommended):**
 ```bash
-npm run multisig-cli -- batch --eth <amount> [--simulate-only]
-npm run multisig-cli -- batch --amount <amount> [--simulate-only]
+npx tsx script/ts/multisig-cli.ts batch --eth <amount> [--simulate-only]
+npx tsx script/ts/multisig-cli.ts batch --amount <amount> [--simulate-only]
+```
+
+**Usage (npm Scripts - Alternative):**
+```bash
+npm run multisig-cli:batch -- --eth <amount> [--simulate-only]
+npm run multisig-cli:batch -- --amount <amount> [--simulate-only]
 ```
 
 **Examples:**
 ```bash
-# Basic usage
-npm run multisig-cli -- batch --eth 0.5
-npm run multisig-batch -- --amount 1.0
+# Direct script execution (cleanest)
+npx tsx script/ts/multisig-cli.ts batch --eth 0.5
+npx tsx script/ts/multisig-cli.ts batch --amount 1.0
+npx tsx script/ts/multisig-cli.ts batch --eth 0.2 --simulate-only
+PREFER_FEE_TIER=500 npx tsx script/ts/multisig-cli.ts batch --eth 0.2
+REQUIRED_FEE_TIER=10000 npx tsx script/ts/multisig-cli.ts batch --eth 1.0
 
-# Simulation mode
-npm run multisig-cli -- batch --eth 0.2 --simulate-only
-
-# With specific fee tier preference (via environment)
-PREFER_FEE_TIER=500 npm run multisig-cli -- batch --eth 0.2
-
-# Force specific fee tier (via environment)
-REQUIRED_FEE_TIER=10000 npm run multisig-batch -- --eth 1.0
+# npm scripts (alternative)
+npm run multisig-cli:batch -- --eth 0.5
+npm run multisig-cli:batch -- --amount 1.0
+npm run multisig-cli:batch -- --eth 0.2 --simulate-only
+PREFER_FEE_TIER=500 npm run multisig-cli:batch -- --eth 0.2
+REQUIRED_FEE_TIER=10000 npm run multisig-cli:batch -- --eth 1.0
 ```
 
 ### 2. Direct HLG Deposit (`deposit`)
@@ -167,19 +246,27 @@ REQUIRED_FEE_TIER=10000 npm run multisig-batch -- --eth 1.0
 - Bypass ETH → WETH → HLG conversion
 - Lower gas costs for existing HLG holdings
 
-**Usage:**
+**Usage (Direct Script - Recommended):**
 ```bash
-npm run multisig-cli -- deposit --hlg <amount> [--simulate-only]
+npx tsx script/ts/multisig-cli.ts deposit --hlg <amount> [--simulate-only]
+```
+
+**Usage (npm Scripts - Alternative):**
+```bash
+npm run multisig-cli:deposit -- --hlg <amount> [--simulate-only]
 ```
 
 **Examples:**
 ```bash
-# Deposit 1000 HLG directly
-npm run multisig-cli -- deposit --hlg 1000
-npm run multisig-deposit -- --hlg 2000
+# Direct script execution (cleanest)
+npx tsx script/ts/multisig-cli.ts deposit --hlg 1000
+npx tsx script/ts/multisig-cli.ts deposit --hlg 2000
+npx tsx script/ts/multisig-cli.ts deposit --hlg 100 --simulate-only
 
-# Check threshold first
-npm run multisig-cli -- deposit --hlg 100 --simulate-only
+# npm scripts (alternative)
+npm run multisig-cli:deposit -- --hlg 1000
+npm run multisig-cli:deposit -- --hlg 2000
+npm run multisig-cli:deposit -- --hlg 100 --simulate-only
 ```
 
 ### 3. Ownership Management
@@ -192,21 +279,35 @@ npm run multisig-cli -- deposit --hlg 100 --simulate-only
 - Generates Safe transaction to accept ownership
 - Creates JSON for `acceptOwnership()` function
 
-**Usage:**
+**Usage (Direct Script - Recommended):**
 ```bash
-npm run multisig-cli -- transfer-ownership [--simulate-only]
-npm run multisig-cli -- accept-ownership [--simulate-only]
+npx tsx script/ts/multisig-cli.ts transfer-ownership [--simulate-only]
+npx tsx script/ts/multisig-cli.ts accept-ownership [--simulate-only]
+```
+
+**Usage (npm Scripts - Alternative):**
+```bash
+npm run multisig-cli:transfer-ownership
+npm run multisig-cli:accept-ownership [-- --simulate-only]
 ```
 
 **Example workflow:**
 ```bash
+# Direct script execution (cleanest)
 # Step 1: Get transfer instructions
-npm run multisig-cli -- transfer-ownership
-npm run multisig-transfer-ownership
+npx tsx script/ts/multisig-cli.ts transfer-ownership
 
 # Step 2: Generate acceptance transaction
-npm run multisig-cli -- accept-ownership
-npm run multisig-accept-ownership -- --simulate-only
+npx tsx script/ts/multisig-cli.ts accept-ownership
+npx tsx script/ts/multisig-cli.ts accept-ownership --simulate-only
+
+# npm scripts (alternative)
+# Step 1: Get transfer instructions
+npm run multisig-cli:transfer-ownership
+
+# Step 2: Generate acceptance transaction
+npm run multisig-cli:accept-ownership
+npm run multisig-cli:accept-ownership -- --simulate-only
 ```
 
 ## Advanced Features
@@ -321,11 +422,15 @@ Warning: Safe must hold at least 1000 HLG balance
 Enable verbose logging for troubleshooting:
 
 ```bash
-# Add debug environment variable
-DEBUG=multisig-cli npm run multisig-cli -- batch --eth 0.1
+# Add debug environment variable (direct script)
+DEBUG=multisig-cli npx tsx script/ts/multisig-cli.ts batch --eth 0.1
+
+# Add debug environment variable (npm script)
+DEBUG=multisig-cli npm run multisig-cli:batch -- --eth 0.1
 
 # Check network connectivity
-npm run multisig-cli -- help  # Should load without RPC calls
+npx tsx script/ts/multisig-cli.ts help  # Should load without RPC calls
+npm run multisig-cli:help              # Alternative
 ```
 
 ### Simulation Failures
@@ -375,8 +480,11 @@ if [ "$ETH_BALANCE" -lt "$MIN_BALANCE" ]; then
     exit 1
 fi
 
-# Generate and save batch transaction
-npm run multisig-cli -- batch --eth 0.05 > batch_transaction.json
+# Generate and save batch transaction (direct script)
+npx tsx script/ts/multisig-cli.ts batch --eth 0.05 > batch_transaction.json
+
+# Generate and save batch transaction (npm script)
+npm run multisig-cli:batch -- --eth 0.05 > batch_transaction.json
 
 # Validate JSON format
 if jq empty batch_transaction.json 2>/dev/null; then
@@ -433,7 +541,7 @@ The CLI now provides clean, readable output:
 
 ## Support and Resources
 
-- **CLI Help**: `npm run multisig-cli -- help`
+- **CLI Help**: `npx tsx script/ts/multisig-cli.ts help` or `npm run multisig-cli:help`
 - **Documentation**: See `docs/` directory for additional guides
 - **Troubleshooting**: Check `docs/UNISWAP_V3_POOL_SETUP.md` for common issues
 - **Examples**: Review `script/ts/multisig-cli.ts` for implementation details
