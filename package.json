@@ -27,6 +27,7 @@
     "prestart": "npm run build"
   },
   "dependencies": {
+    "@safe-global/api-kit": "^4.0.0",
     "@safe-global/protocol-kit": "^6.1.0",
     "@safe-global/safe-core-sdk": "^3.3.5",
     "crypto-js": "^4.2.0",

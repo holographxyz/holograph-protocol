@@ -11,6 +11,8 @@ import {
   NetworkAddresses, 
   TenderlyConfig, 
   MultisigConfig,
+  SafeConfig,
+  ExecutionMode,
   MultisigCliError 
 } from "../types/index.js";
 
@@ -103,12 +105,52 @@ function parseMultisigConfig(): MultisigConfig {
 }
 
 /**
+ * Parse Safe SDK configuration from environment variables
+ */
+function parseSafeConfig(): SafeConfig | undefined {
+  const privateKey = process.env.SAFE_PRIVATE_KEY;
+  const signerAddress = process.env.SAFE_SIGNER_ADDRESS;
+  const transactionServiceUrl = process.env.SAFE_TRANSACTION_SERVICE_URL || 
+                                process.env.SAFE_SERVICE_URL;
+  const defaultExecutionMode = (process.env.DEFAULT_EXECUTION_MODE as ExecutionMode) || "json";
+
+  // If no Safe-specific config is provided, return undefined
+  if (!privateKey && !transactionServiceUrl) {
+    return undefined;
+  }
+
+  const config: SafeConfig = {
+    defaultExecutionMode
+  };
+
+  if (privateKey) {
+    config.privateKey = privateKey;
+    
+    // If private key is provided but no signer address, we'll derive it later
+    if (signerAddress) {
+      try {
+        config.signerAddress = getAddress(signerAddress);
+      } catch (error) {
+        console.warn("Invalid SAFE_SIGNER_ADDRESS provided, will derive from private key");
+      }
+    }
+  }
+
+  if (transactionServiceUrl) {
+    config.transactionServiceUrl = transactionServiceUrl;
+  }
+
+  return config;
+}
+
+/**
  * Get complete environment configuration with validation
  */
 export function getEnvironmentConfig(): EnvironmentConfig {
   try {
     const tenderly = parseTenderlyConfig();
     const multisig = parseMultisigConfig();
+    const safe = parseSafeConfig();
     
     const requiredFeeTier = process.env.REQUIRED_FEE_TIER ? 
       parseInt(process.env.REQUIRED_FEE_TIER, 10) : undefined;
@@ -116,10 +158,15 @@ export function getEnvironmentConfig(): EnvironmentConfig {
     const preferFeeTier = process.env.PREFER_FEE_TIER ? 
       parseInt(process.env.PREFER_FEE_TIER, 10) : undefined;
 
+    // Default to Sepolia testnet (chain ID 11155111)
+    const chainId = parseInt(process.env.CHAIN_ID || "11155111", 10);
+
     return {
       networkAddresses: SEPOLIA_ADDRESSES,
       tenderly,
       multisig,
+      safe,
+      chainId,
       requiredFeeTier,
       preferFeeTier
     };

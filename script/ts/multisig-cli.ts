@@ -24,6 +24,7 @@ import {
   CliOptions,
   BatchTransactionParams,
   DirectHLGDepositParams,
+  ExecutionMode,
   MultisigCliError 
 } from "./types/index.js";
 import { getEnvironmentConfig } from "./lib/config.js";
@@ -32,6 +33,7 @@ import { TenderlyService } from "./services/TenderlyService.js";
 import { UniswapService } from "./services/UniswapService.js";
 import { StakingService } from "./services/StakingService.js";
 import { SafeTransactionBuilder } from "./services/SafeTransactionBuilder.js";
+import { SafeExecutionService } from "./services/SafeExecutionService.js";
 
 // ============================================================================
 // Main CLI Class
@@ -42,6 +44,7 @@ export class MultisigCLI {
   private uniswapService: UniswapService;
   private stakingService: StakingService;
   private safeBuilder: SafeTransactionBuilder;
+  private safeExecutionService: SafeExecutionService;
   private config = getEnvironmentConfig();
 
   constructor() {
@@ -49,6 +52,7 @@ export class MultisigCLI {
     this.uniswapService = new UniswapService();
     this.stakingService = new StakingService();
     this.safeBuilder = new SafeTransactionBuilder();
+    this.safeExecutionService = new SafeExecutionService();
   }
 
   /**
@@ -61,7 +65,7 @@ export class MultisigCLI {
    * 4. Simulates transaction with Tenderly for validation
    * 5. Outputs Safe Transaction Builder compatible JSON
    */
-  async generateBatchTransaction(ethAmount: string, simulateOnly: boolean = false): Promise<void> {
+  async generateBatchTransaction(ethAmount: string, simulateOnly: boolean = false, executionMode?: ExecutionMode): Promise<void> {
     try {
       let amount = parseEther(ethAmount);
       const multisigAddress = this.config.multisig.address;
@@ -122,7 +126,7 @@ export class MultisigCLI {
 
       // Output the final JSON only if not simulate-only mode
       if (!simulateOnly) {
-        this.safeBuilder.displayInstructions(batch);
+        await this.executeTransaction(batch, executionMode);
       } else if (simulationSuccess) {
         console.log("\n✅ Simulation completed successfully! (simulate-only mode)");
       }
@@ -138,7 +142,7 @@ export class MultisigCLI {
    * For cases where the Safe already holds HLG tokens and wants to
    * deposit them directly without swapping.
    */
-  async generateDirectHLGDeposit(hlgAmount: string): Promise<void> {
+  async generateDirectHLGDeposit(hlgAmount: string, executionMode?: ExecutionMode): Promise<void> {
     try {
       const multisigAddress = this.config.multisig.address;
       
@@ -167,7 +171,7 @@ export class MultisigCLI {
         multisigAddress
       });
 
-      this.safeBuilder.displayInstructions(batch);
+      await this.executeTransaction(batch, executionMode);
 
     } catch (error) {
       this.handleError("Failed to generate direct HLG deposit", error);
@@ -236,7 +240,7 @@ export class MultisigCLI {
   /**
    * Generate Safe transaction to accept StakingRewards ownership
    */
-  async generateAcceptOwnershipTransaction(): Promise<void> {
+  async generateAcceptOwnershipTransaction(executionMode?: ExecutionMode): Promise<void> {
     try {
       const multisigAddress = this.config.multisig.address;
       
@@ -244,7 +248,7 @@ export class MultisigCLI {
       
       const batch = this.safeBuilder.createAcceptOwnershipTransaction(multisigAddress);
       
-      this.safeBuilder.displayInstructions(batch);
+      await this.executeTransaction(batch, executionMode);
 
     } catch (error) {
       this.handleError("Failed to generate accept ownership transaction", error);
@@ -254,7 +258,7 @@ export class MultisigCLI {
   /**
    * Generate Safe transaction to pause StakingRewards contract
    */
-  async generatePauseTransaction(): Promise<void> {
+  async generatePauseTransaction(executionMode?: ExecutionMode): Promise<void> {
     try {
       const multisigAddress = this.config.multisig.address;
       
@@ -265,7 +269,7 @@ export class MultisigCLI {
       
       const batch = this.safeBuilder.createPauseTransaction(multisigAddress);
       
-      this.safeBuilder.displayInstructions(batch);
+      await this.executeTransaction(batch, executionMode);
 
     } catch (error) {
       this.handleError("Failed to generate pause transaction", error);
@@ -275,7 +279,7 @@ export class MultisigCLI {
   /**
    * Generate Safe transaction to unpause StakingRewards contract
    */
-  async generateUnpauseTransaction(): Promise<void> {
+  async generateUnpauseTransaction(executionMode?: ExecutionMode): Promise<void> {
     try {
       const multisigAddress = this.config.multisig.address;
       
@@ -286,7 +290,7 @@ export class MultisigCLI {
       
       const batch = this.safeBuilder.createUnpauseTransaction(multisigAddress);
       
-      this.safeBuilder.displayInstructions(batch);
+      await this.executeTransaction(batch, executionMode);
 
     } catch (error) {
       this.handleError("Failed to generate unpause transaction", error);
@@ -677,6 +681,37 @@ Generates Safe transaction to unpause the StakingRewards contract. After unpausi
     console.error("\n💡 For help, run: npm run multisig-cli --help");
     process.exit(1);
   }
+
+  /**
+   * Execute Safe transaction based on execution mode
+   * @param batch - Safe transaction batch to execute
+   * @param executionMode - How to handle the transaction (json, execute, propose)
+   */
+  private async executeTransaction(batch: any, executionMode?: ExecutionMode): Promise<void> {
+    // Default to JSON mode if not specified (backwards compatibility)
+    const mode = executionMode || this.config.safe?.defaultExecutionMode || "json";
+
+    try {
+      switch (mode) {
+        case "execute":
+        case "propose":
+          console.log(`\n⚠️  ${mode.charAt(0).toUpperCase() + mode.slice(1)} mode is not yet implemented.`);
+          console.log("📄 Using JSON mode (current default behavior).");
+          console.log("🚀 Direct Safe execution will be available in a future update.");
+          // Fall through to JSON mode
+          
+        case "json":
+        default:
+          // Default behavior - generate JSON (backwards compatible)
+          this.safeBuilder.displayInstructions(batch);
+          break;
+      }
+    } catch (error) {
+      console.error(`❌ Execution failed: ${(error as Error).message}`);
+      console.log("\n⚠️  Falling back to JSON mode...");
+      this.safeBuilder.displayInstructions(batch);
+    }
+  }
 }
 
 // ============================================================================
@@ -743,6 +778,18 @@ function parseCliArgs(): CliOptions {
         options.simulateOnly = true;
         break;
         
+      case "--execute":
+        options.executionMode = "execute";
+        break;
+        
+      case "--propose":
+        options.executionMode = "propose";
+        break;
+        
+      case "--json":
+        options.executionMode = "json";
+        break;
+        
       case "--eth":
       case "--amount":
         const ethValue = subArgs[i + 1];
@@ -806,11 +853,11 @@ async function main(): Promise<void> {
     // Execute based on subcommand
     switch (options.command) {
       case "batch":
-        await cli.generateBatchTransaction(options.ethAmount!, options.simulateOnly);
+        await cli.generateBatchTransaction(options.ethAmount!, options.simulateOnly, options.executionMode);
         break;
 
       case "deposit":
-        await cli.generateDirectHLGDeposit(options.hlgAmount!);
+        await cli.generateDirectHLGDeposit(options.hlgAmount!, options.executionMode);
         break;
 
       case "transfer-ownership":
@@ -818,15 +865,15 @@ async function main(): Promise<void> {
         break;
 
       case "accept-ownership":
-        await cli.generateAcceptOwnershipTransaction();
+        await cli.generateAcceptOwnershipTransaction(options.executionMode);
         break;
 
       case "pause":
-        await cli.generatePauseTransaction();
+        await cli.generatePauseTransaction(options.executionMode);
         break;
 
       case "unpause":
-        await cli.generateUnpauseTransaction();
+        await cli.generateUnpauseTransaction(options.executionMode);
         break;
 
       default:

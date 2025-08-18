@@ -154,10 +154,19 @@ export interface MultisigConfig {
   slippageBps: bigint;
 }
 
+export interface SafeConfig {
+  privateKey?: string;
+  signerAddress?: string;
+  transactionServiceUrl?: string;
+  defaultExecutionMode?: ExecutionMode;
+}
+
 export interface EnvironmentConfig {
   networkAddresses: NetworkAddresses;
   tenderly: TenderlyConfig;
   multisig: MultisigConfig;
+  safe?: SafeConfig;
+  chainId: number;
   requiredFeeTier: number | undefined;
   preferFeeTier: number | undefined;
 }
@@ -165,6 +174,8 @@ export interface EnvironmentConfig {
 // ============================================================================
 // CLI Operation Types
 // ============================================================================
+
+export type ExecutionMode = "json" | "execute" | "propose";
 
 export interface CliOptions {
   command?: string;
@@ -174,6 +185,7 @@ export interface CliOptions {
   transferOwnership?: boolean;
   acceptOwnership?: boolean;
   help?: boolean;
+  executionMode?: ExecutionMode;
 }
 
 export interface BatchTransactionParams {
