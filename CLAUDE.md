@@ -71,7 +71,7 @@ cp .env.example .env
 - **Deploy Base**: `make deploy-base` (dry-run) or `BROADCAST=true make deploy-base`
 - **Deploy Ethereum**: `make deploy-eth` (dry-run) or `BROADCAST=true make deploy-eth`
 - **Configure**: `make configure-base configure-eth`
-- **Keeper**: `make keeper`
+- **Fee Operations**: `make fee-ops`
 
 ### TypeScript Utilities
 
@@ -95,7 +95,7 @@ cp .env.example .env
 Claude, add a new fee collection method to FeeRouter.sol
 Claude, optimize gas usage in the HolographFactory createToken function
 Claude, write integration tests for cross-chain token bridging
-Claude, analyze the security of the keeper role permissions
+Claude, analyze the security of the owner-only fee operations
 
 # TypeScript Development
 Claude, refactor create-token.ts to support multiple networks
@@ -105,7 +105,7 @@ Claude, add contract verification retry logic
 
 # Deployment & Operations
 Claude, update the deployment script for a new network
-Claude, create monitoring scripts for keeper operations
+Claude, create monitoring scripts for fee operations
 Claude, add emergency pause functionality to all contracts
 Claude, optimize the Makefile for better developer experience
 ```
@@ -217,9 +217,9 @@ ETHEREUM_RPC_URL=https://eth-mainnet.alchemyapi.io/v2/...
 
 ### Fee Management
 
-- 50% protocol fee (HOLO_FEE_BPS = 5000)
+- 50% protocol fee (holographFeeBps = 5000)
 - 50% treasury allocation
-- Automated fee collection via keepers
+- Automated fee collection via owner operations
 - Cross-chain fee bridging and distribution
 
 ## 📝 Documentation Standards

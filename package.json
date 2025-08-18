@@ -7,8 +7,16 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsx watch script/create-token.ts",
-    "start": "node dist/script/create-token.js",
-    "create-token": "tsx script/create-token.ts",
+    "start": "node dist/script/ts/create-token.js",
+    "create-token": "tsx script/ts/create-token.ts",
+    "multisig-cli": "tsx script/ts/multisig-cli.ts",
+    "multisig-cli:help": "tsx script/ts/multisig-cli.ts help",
+    "multisig-cli:batch": "tsx script/ts/multisig-cli.ts batch",
+    "multisig-cli:deposit": "tsx script/ts/multisig-cli.ts deposit",
+    "multisig-cli:transfer-ownership": "tsx script/ts/multisig-cli.ts transfer-ownership",
+    "multisig-cli:accept-ownership": "tsx script/ts/multisig-cli.ts accept-ownership",
+    "multisig-cli:pause": "tsx script/ts/multisig-cli.ts pause",
+    "multisig-cli:unpause": "tsx script/ts/multisig-cli.ts unpause",
     "type-check": "tsc --noEmit",
     "lint": "eslint script/*.ts",
     "lint:fix": "eslint script/*.ts --fix",
@@ -19,8 +27,12 @@
     "prestart": "npm run build"
   },
   "dependencies": {
-    "viem": "^2.8.18",
-    "dotenv": "^17.0.0"
+    "@safe-global/api-kit": "^4.0.0",
+    "@safe-global/protocol-kit": "^6.1.0",
+    "@safe-global/safe-core-sdk": "^3.3.5",
+    "crypto-js": "^4.2.0",
+    "dotenv": "^17.0.0",
+    "viem": "^2.8.18"
   },
   "devDependencies": {
     "@types/node": "^20.11.24",

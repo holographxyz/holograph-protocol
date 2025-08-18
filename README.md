@@ -278,7 +278,7 @@ function stakeFromDistributor(address user, uint256 amount) external; // Distrib
 ## Fee Model
 
 - **Source**: Trading fees from Doppler auctions (collected by Airlock contracts)
-- **Protocol Split**: 50% of collected fees (HOLO_FEE_BPS = 5000)
+- **Protocol Split**: 50% of collected fees (holographFeeBps = 5000)
 - **Treasury Split**: 50% of collected fees forwarded to treasury address
 - **HLG Distribution**: Protocol fees bridged to Ethereum, swapped WETH→HLG, configurable burn/stake split (default 50% burned / 50% staked)
 - **Security**: Trusted Airlock whitelist prevents unauthorized ETH transfers to FeeRouter
@@ -297,6 +297,89 @@ export BASESCAN_API_KEY=your_api_key
 # Create a token
 npm run create-token
 ```
+
+### Multisig Operations via TypeScript
+
+Use the Multisig CLI for generating Safe Transaction Builder compatible JSON for common operations:
+
+**Method 1: Direct Script Execution (Recommended - Cleanest)**
+
+```bash
+# Convert ETH to HLG and stake in StakingRewards
+npx tsx script/ts/multisig-cli.ts batch --eth 0.5
+
+# Direct HLG deposit (no swapping)
+npx tsx script/ts/multisig-cli.ts deposit --hlg 1000
+
+# Simulate transaction before execution
+npx tsx script/ts/multisig-cli.ts batch --eth 0.1 --simulate-only
+
+# Ownership management
+npx tsx script/ts/multisig-cli.ts transfer-ownership
+npx tsx script/ts/multisig-cli.ts accept-ownership
+
+# Emergency pause operations
+npx tsx script/ts/multisig-cli.ts pause --simulate-only
+npx tsx script/ts/multisig-cli.ts unpause
+
+# Get help and usage information
+npx tsx script/ts/multisig-cli.ts help
+npx tsx script/ts/multisig-cli.ts batch --help
+```
+
+**Method 2: npm Scripts (Alternative)**
+
+```bash
+# Convert ETH to HLG and stake in StakingRewards
+npm run multisig-cli:batch -- --eth 0.5
+
+# Direct HLG deposit (no swapping)
+npm run multisig-cli:deposit -- --hlg 1000
+
+# Simulate transaction before execution
+npm run multisig-cli:batch -- --eth 0.1 --simulate-only
+
+# Ownership management
+npm run multisig-cli:transfer-ownership
+npm run multisig-cli:accept-ownership -- --simulate-only
+
+# Emergency pause operations
+npm run multisig-cli:pause -- --simulate-only
+npm run multisig-cli:unpause
+
+# Get help and usage information
+npm run multisig-cli:help
+npm run multisig-cli:batch -- --help
+```
+
+**Command Structure:**
+
+```bash
+# Direct script execution (cleanest - no -- separator needed)
+npx tsx script/ts/multisig-cli.ts batch --eth 0.5
+npx tsx script/ts/multisig-cli.ts deposit --hlg 1000
+npx tsx script/ts/multisig-cli.ts transfer-ownership
+npx tsx script/ts/multisig-cli.ts accept-ownership
+npx tsx script/ts/multisig-cli.ts pause --simulate-only
+npx tsx script/ts/multisig-cli.ts unpause
+
+# npm scripts (alternative - require -- separator for flags)
+npm run multisig-cli:batch -- --eth 0.5
+npm run multisig-cli:deposit -- --hlg 1000
+npm run multisig-cli:transfer-ownership
+npm run multisig-cli:accept-ownership
+npm run multisig-cli:pause -- --simulate-only
+npm run multisig-cli:unpause
+```
+
+**Key Features:**
+- **Automatic optimization**: Finds best Uniswap V3 fee tiers and pricing
+- **RewardTooSmall protection**: Auto-scales amounts to meet staking thresholds
+- **Tenderly integration**: Pre-execution simulation with detailed error reporting
+- **Safe Transaction Builder**: Compatible JSON format for easy import
+- **Single-sided liquidity**: Support for token-specific operations
+
+See [`docs/multisig-cli.md`](docs/multisig-cli.md) for complete documentation.
 
 Or programmatically:
 
@@ -457,8 +540,7 @@ export ETH_RPC="https://eth-mainnet.alchemyapi.io/v2/YOUR_KEY"
 
 # Private Keys
 export DEPLOYER_PK="0x..."      # Contract deployment
-export OWNER_PK="0x..."         # Contract administration
-export KEEPER_PK="0x..."        # Automation operations
+export OWNER_PK="0x..."         # Contract administration and operations
 
 # LayerZero Endpoint IDs
 export BASE_EID=30184           # Base mainnet
@@ -476,7 +558,6 @@ export STAKING_REWARDS="0x..."  # StakingRewards contract
 # Addresses (set after deployment)
 export FEE_ROUTER="0x..."
 export HOLOGRAPH_FACTORY="0x..."
-export KEEPER_ADDRESS="0x..."
 ```
 
 ## Deployment Infrastructure
@@ -568,17 +649,17 @@ cast send $FEE_ROUTER "setTrustedRemote(uint32,bytes32)" \
   --rpc-url $ETH_RPC --private-key $OWNER_PK
 ```
 
-### Keeper Automation
+### Fee Operations Automation
 
 ```bash
 # Monitor system status
 make fee-status
 
-# Run fee collection and bridging (automated/cron)
+# Run fee collection and bridging (owner-only)
 make fee-ops BROADCAST=true
 
-# Set up automated execution (example cron)
-echo "*/10 * * * * cd /path/to/holograph && make fee-ops BROADCAST=true" | crontab -
+# Set up automated execution (example cron with owner key)
+echo "*/10 * * * * cd /path/to/holograph && OWNER_PK=$OWNER_PK make fee-ops BROADCAST=true" | crontab -
 ```
 
 ### Emergency Controls
@@ -688,6 +769,8 @@ Additional technical documentation is available in the [`docs/`](docs/) director
 
 - **[Scripts Overview](docs/SCRIPTS_OVERVIEW.md)** - Deployment and operational scripts guide
 - **[Token Creation](docs/CREATE_TOKEN.md)** - TypeScript utility for creating tokens
+- **[Multisig CLI](docs/multisig-cli.md)** - Safe transaction generator with Uniswap V3 integration
+- **[Uniswap V3 Pool Setup](docs/UNISWAP_V3_POOL_SETUP.md)** - V3 concepts, pool creation, and troubleshooting
 - **[DVN Configuration](docs/DVN_CONFIGURATION.md)** - LayerZero V2 security setup  
 - **[Operations Guide](docs/OPERATIONS.md)** - System monitoring and management
 - **[Upgrade Guide](docs/UPGRADE_GUIDE.md)** - Contract upgrade procedures
