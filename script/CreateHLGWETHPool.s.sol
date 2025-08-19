@@ -24,12 +24,10 @@ interface INonfungiblePositionManager {
         uint256 deadline;
     }
 
-    function createAndInitializePoolIfNecessary(
-        address token0,
-        address token1,
-        uint24 fee,
-        uint160 sqrtPriceX96
-    ) external payable returns (address pool);
+    function createAndInitializePoolIfNecessary(address token0, address token1, uint24 fee, uint160 sqrtPriceX96)
+        external
+        payable
+        returns (address pool);
 
     function mint(MintParams calldata params)
         external
@@ -60,13 +58,13 @@ interface IWETH is IERC20 {
 /**
  * @title CreateHLGWETHPool
  * @notice Creates and manages Uniswap V3 HLG/WETH pools on Sepolia testnet
- * 
+ *
  * This script provides functionality for:
  * - Creating new pools with realistic pricing
  * - Adding balanced liquidity (requires both tokens)
  * - Adding single-sided liquidity (HLG-only or WETH-only)
  * - Managing different fee tiers and tick ranges
- * 
+ *
  * Environment Variables:
  * - INIT_PRICE_E18: Price scaled by 1e18 (default: 28100000000 = 2.81e-8 WETH/HLG)
  * - FEE_TIER: Fee tier (500, 3000, 10000) (default: 3000)
@@ -75,31 +73,31 @@ interface IWETH is IERC20 {
  * - RANGE_SPACINGS: Range width in tick spacings (default: 50)
  * - SLIPPAGE_BPS: Slippage protection in basis points (default: 500)
  * - RECIPIENT: LP NFT recipient (default: tx.origin)
- * 
+ *
  * Usage Examples:
- * 
+ *
  * # Create pool only (no liquidity)
  * forge script CreateHLGWETHPool --rpc-url $ETHEREUM_SEPOLIA_RPC_URL --broadcast
- * 
+ *
  * # Add balanced liquidity
  * MINT_HLG=1000000000000000000000 MINT_WETH=28100000000000 forge script CreateHLGWETHPool --broadcast
- * 
- * # Add HLG-only liquidity  
+ *
+ * # Add HLG-only liquidity
  * MINT_HLG=50000000000000000000000000 MINT_WETH=0 forge script CreateHLGWETHPool --broadcast
- * 
+ *
  * # Create 0.05% fee tier pool
  * FEE_TIER=500 INIT_PRICE_E18=28100000000 forge script CreateHLGWETHPool --broadcast
  */
 
 /// @notice Configuration struct for pool operations
 struct PoolConfig {
-    uint24 feeTier;           // Fee tier (500, 3000, 10000)
-    uint256 priceE18;         // Initial price scaled by 1e18
-    uint256 amount0Desired;   // Token0 amount to deposit  
-    uint256 amount1Desired;   // Token1 amount to deposit
-    uint256 slippageBps;      // Slippage protection in basis points
-    address recipient;        // LP NFT recipient
-    int24 rangeSpacings;      // Range width in tick spacings
+    uint24 feeTier; // Fee tier (500, 3000, 10000)
+    uint256 priceE18; // Initial price scaled by 1e18
+    uint256 amount0Desired; // Token0 amount to deposit
+    uint256 amount1Desired; // Token1 amount to deposit
+    uint256 slippageBps; // Slippage protection in basis points
+    address recipient; // LP NFT recipient
+    int24 rangeSpacings; // Range width in tick spacings
 }
 
 contract CreateHLGWETHPool is Script {
@@ -123,23 +121,23 @@ contract CreateHLGWETHPool is Script {
 
         // Parse configuration from environment
         PoolConfig memory config = _parseConfig();
-        
+
         // Determine token order (token0 < token1)
         (address token0, address token1) = HLG < WETH ? (HLG, WETH) : (WETH, HLG);
-        
+
         console.log("=== Uniswap V3 Pool Creation ===");
         console.log("Token0 (lower address):", token0);
         console.log("Token1 (higher address):", token1);
         console.log("Fee tier:", config.feeTier);
         console.log("Initial price (E18):", config.priceE18);
-        
+
         // Create or get existing pool
         address pool = _createOrGetPool(token0, token1, config);
-        
+
         // Add liquidity if requested
         if (config.amount0Desired > 0 || config.amount1Desired > 0) {
             console.log("\n=== Adding Liquidity ===");
-            
+
             // Determine liquidity strategy
             if (config.amount0Desired > 0 && config.amount1Desired > 0) {
                 console.log("Strategy: Balanced liquidity");
@@ -183,7 +181,7 @@ contract CreateHLGWETHPool is Script {
     }
 
     // ========================================================================
-    // Configuration and Setup Functions  
+    // Configuration and Setup Functions
     // ========================================================================
 
     /**
@@ -197,55 +195,56 @@ contract CreateHLGWETHPool is Script {
         config.slippageBps = _envOrUint("SLIPPAGE_BPS", 500); // 5%
         config.recipient = _envOrAddress("RECIPIENT", tx.origin);
         config.rangeSpacings = _envOrInt("RANGE_SPACINGS", DEFAULT_RANGE_SPACINGS);
-        
+
         // Parse amounts - handle HLG/WETH mapping to token0/token1
         uint256 hlgAmount = _envOrUint("MINT_HLG", 0);
         uint256 wethAmount = _envOrUint("MINT_WETH", 0);
-        
+
         if (HLG < WETH) {
             // HLG is token0, WETH is token1
             config.amount0Desired = hlgAmount;
             config.amount1Desired = wethAmount;
         } else {
-            // WETH is token0, HLG is token1  
+            // WETH is token0, HLG is token1
             config.amount0Desired = wethAmount;
             config.amount1Desired = hlgAmount;
         }
-        
+
         // Validate configuration
-        require(config.feeTier == 500 || config.feeTier == 3000 || config.feeTier == 10000, 
-                "Invalid fee tier (supported: 500, 3000, 10000)");
+        require(
+            config.feeTier == 500 || config.feeTier == 3000 || config.feeTier == 10000,
+            "Invalid fee tier (supported: 500, 3000, 10000)"
+        );
         require(config.rangeSpacings > 0, "Range spacings must be positive");
     }
 
     /**
      * @notice Create pool if it doesn't exist, or return existing pool
-     * @param token0 Lower address token  
+     * @param token0 Lower address token
      * @param token1 Higher address token
      * @param config Pool configuration
      * @return pool Pool address
      */
-    function _createOrGetPool(
-        address token0, 
-        address token1, 
-        PoolConfig memory config
-    ) internal returns (address pool) {
+    function _createOrGetPool(address token0, address token1, PoolConfig memory config)
+        internal
+        returns (address pool)
+    {
         // Check if pool already exists
         address existing = IUniswapV3Factory(UNISWAP_V3_FACTORY).getPool(token0, token1, config.feeTier);
-        
+
         if (existing != address(0)) {
             console.log("Using existing pool:", existing);
             return existing;
         }
-        
+
         // Create new pool
         console.log("Creating new pool...");
         uint160 sqrtPriceX96 = _encodeSqrtPriceX96FromPriceE18(config.priceE18);
-        
+
         pool = INonfungiblePositionManager(NPM).createAndInitializePoolIfNecessary(
             token0, token1, config.feeTier, sqrtPriceX96
         );
-        
+
         console.log("New pool created:", pool);
     }
 
@@ -257,25 +256,19 @@ contract CreateHLGWETHPool is Script {
      * @notice Add balanced liquidity that straddles current price
      * @param pool Pool address
      * @param token0 Token0 address
-     * @param token1 Token1 address  
+     * @param token1 Token1 address
      * @param config Pool configuration
      */
-    function _addBalancedLiquidity(
-        address pool,
-        address token0, 
-        address token1,
-        PoolConfig memory config
-    ) internal {
+    function _addBalancedLiquidity(address pool, address token0, address token1, PoolConfig memory config) internal {
         int24 tickSpacing = UniswapV3TickMath.tickSpacingForFee(config.feeTier);
-        (, int24 currentTick, , , , ,) = IUniswapV3Pool(pool).slot0();
-        
-        (int24 tickLower, int24 tickUpper) = UniswapV3TickMath.calculateBalancedRange(
-            currentTick, tickSpacing, config.rangeSpacings
-        );
-        
+        (, int24 currentTick,,,,,) = IUniswapV3Pool(pool).slot0();
+
+        (int24 tickLower, int24 tickUpper) =
+            UniswapV3TickMath.calculateBalancedRange(currentTick, tickSpacing, config.rangeSpacings);
+
         console.log("Current tick:", vm.toString(currentTick));
         console.log("Tick range:", vm.toString(tickLower), "to", vm.toString(tickUpper));
-        
+
         _mintPosition(pool, token0, token1, config, tickLower, tickUpper);
     }
 
@@ -284,25 +277,19 @@ contract CreateHLGWETHPool is Script {
      * @param pool Pool address
      * @param token0 Token0 address
      * @param token1 Token1 address
-     * @param config Pool configuration  
+     * @param config Pool configuration
      */
-    function _addToken0OnlyLiquidity(
-        address pool,
-        address token0,
-        address token1, 
-        PoolConfig memory config
-    ) internal {
+    function _addToken0OnlyLiquidity(address pool, address token0, address token1, PoolConfig memory config) internal {
         int24 tickSpacing = UniswapV3TickMath.tickSpacingForFee(config.feeTier);
-        (, int24 currentTick, , , , ,) = IUniswapV3Pool(pool).slot0();
-        
-        (int24 tickLower, int24 tickUpper) = UniswapV3TickMath.calculateSingleSidedRange(
-            currentTick, tickSpacing, true, config.rangeSpacings
-        );
-        
+        (, int24 currentTick,,,,,) = IUniswapV3Pool(pool).slot0();
+
+        (int24 tickLower, int24 tickUpper) =
+            UniswapV3TickMath.calculateSingleSidedRange(currentTick, tickSpacing, true, config.rangeSpacings);
+
         console.log("Current tick:", vm.toString(currentTick));
         console.log("Token0-only range:", vm.toString(tickLower), "to", vm.toString(tickUpper));
         console.log("(Range is ABOVE current price, only token0 required)");
-        
+
         _mintPosition(pool, token0, token1, config, tickLower, tickUpper);
     }
 
@@ -313,30 +300,24 @@ contract CreateHLGWETHPool is Script {
      * @param token1 Token1 address
      * @param config Pool configuration
      */
-    function _addToken1OnlyLiquidity(
-        address pool,
-        address token0,
-        address token1,
-        PoolConfig memory config
-    ) internal {
+    function _addToken1OnlyLiquidity(address pool, address token0, address token1, PoolConfig memory config) internal {
         int24 tickSpacing = UniswapV3TickMath.tickSpacingForFee(config.feeTier);
-        (, int24 currentTick, , , , ,) = IUniswapV3Pool(pool).slot0();
-        
-        (int24 tickLower, int24 tickUpper) = UniswapV3TickMath.calculateSingleSidedRange(
-            currentTick, tickSpacing, false, config.rangeSpacings
-        );
-        
+        (, int24 currentTick,,,,,) = IUniswapV3Pool(pool).slot0();
+
+        (int24 tickLower, int24 tickUpper) =
+            UniswapV3TickMath.calculateSingleSidedRange(currentTick, tickSpacing, false, config.rangeSpacings);
+
         console.log("Current tick:", vm.toString(currentTick));
         console.log("Token1-only range:", vm.toString(tickLower), "to", vm.toString(tickUpper));
         console.log("(Range is BELOW current price, only token1 required)");
-        
+
         _mintPosition(pool, token0, token1, config, tickLower, tickUpper);
     }
 
     /**
      * @notice Mint LP position with given tick range
      * @param pool Pool address
-     * @param token0 Token0 address  
+     * @param token0 Token0 address
      * @param token1 Token1 address
      * @param config Pool configuration
      * @param tickLower Lower tick of range
@@ -345,7 +326,7 @@ contract CreateHLGWETHPool is Script {
     function _mintPosition(
         address pool,
         address token0,
-        address token1, 
+        address token1,
         PoolConfig memory config,
         int24 tickLower,
         int24 tickUpper
@@ -357,13 +338,13 @@ contract CreateHLGWETHPool is Script {
         if (config.amount1Desired > 0) {
             IERC20(token1).approve(NPM, config.amount1Desired);
         }
-        
+
         // Calculate minimum amounts with slippage protection
-        uint256 amount0Min = config.amount0Desired > 0 ? 
-            (config.amount0Desired * (10_000 - config.slippageBps)) / 10_000 : 0;
-        uint256 amount1Min = config.amount1Desired > 0 ? 
-            (config.amount1Desired * (10_000 - config.slippageBps)) / 10_000 : 0;
-        
+        uint256 amount0Min =
+            config.amount0Desired > 0 ? (config.amount0Desired * (10_000 - config.slippageBps)) / 10_000 : 0;
+        uint256 amount1Min =
+            config.amount1Desired > 0 ? (config.amount1Desired * (10_000 - config.slippageBps)) / 10_000 : 0;
+
         // Create mint parameters
         INonfungiblePositionManager.MintParams memory params = INonfungiblePositionManager.MintParams({
             token0: token0,
@@ -378,16 +359,16 @@ contract CreateHLGWETHPool is Script {
             recipient: config.recipient,
             deadline: block.timestamp + 1 hours
         });
-        
+
         console.log("Minting position...");
         console.log("Amount0 desired:", config.amount0Desired);
         console.log("Amount1 desired:", config.amount1Desired);
         console.log("Amount0 min:", amount0Min);
         console.log("Amount1 min:", amount1Min);
-        
-        (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1) = 
+
+        (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1) =
             INonfungiblePositionManager(NPM).mint(params);
-        
+
         console.log("Position minted successfully!");
         console.log("Token ID:", tokenId);
         console.log("Liquidity:", liquidity);
@@ -415,7 +396,7 @@ contract CreateHLGWETHPool is Script {
             return defaultValue;
         }
     }
-    
+
     function _envOrInt(string memory key, int24 defaultValue) internal view returns (int24) {
         try vm.envInt(key) returns (int256 v) {
             require(v >= type(int24).min && v <= type(int24).max, "int24 overflow");

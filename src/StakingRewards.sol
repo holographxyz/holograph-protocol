@@ -64,6 +64,9 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
     /// @notice Total HLG staked in the contract (includes compounded rewards)
     uint256 public totalStaked;
 
+    /// @notice Count of unique addresses with nonzero stake
+    uint256 public totalStakers;
+
     /// @notice User stake balances (includes original stake + compounded rewards)
     mapping(address => uint256) public balanceOf;
 
@@ -123,6 +126,12 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
 
         uint256 actualAmount = _pullHLG(msg.sender, amount);
         updateUser(msg.sender);
+
+        // Track new staker
+        if (balanceOf[msg.sender] == 0) {
+            totalStakers++;
+        }
+
         balanceOf[msg.sender] += actualAmount;
         totalStaked += actualAmount;
 
@@ -141,8 +150,9 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
 
         balanceOf[msg.sender] = 0;
         userIndexSnapshot[msg.sender] = 0;
+        totalStaked -= userBalance;
         unchecked {
-            totalStaked -= userBalance;
+            totalStakers -= 1;
         }
         HLG.safeTransfer(msg.sender, userBalance);
         emit Unstaked(msg.sender, userBalance);
@@ -158,8 +168,9 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
 
         balanceOf[msg.sender] = 0;
         userIndexSnapshot[msg.sender] = 0;
+        totalStaked -= userBalance;
         unchecked {
-            totalStaked -= userBalance;
+            totalStakers -= 1;
         }
         HLG.safeTransfer(msg.sender, userBalance);
         emit EmergencyExit(msg.sender, userBalance);
@@ -493,6 +504,12 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
 
         _pullHLG(msg.sender, amount);
         updateUser(user);
+
+        // Track new staker
+        if (balanceOf[user] == 0) {
+            totalStakers++;
+        }
+
         balanceOf[user] += amount;
         totalStaked += amount;
 
@@ -535,6 +552,12 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
             uint256 amount = amounts[i];
 
             updateUser(user);
+
+            // Track new staker
+            if (balanceOf[user] == 0) {
+                totalStakers++;
+            }
+
             balanceOf[user] += amount;
             totalStaked += amount;
 
@@ -572,6 +595,12 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
 
         _pullHLG(msg.sender, amount);
         updateUser(user);
+
+        // Track new staker
+        if (balanceOf[user] == 0) {
+            totalStakers++;
+        }
+
         balanceOf[user] += amount;
         totalStaked += amount;
 

@@ -1273,6 +1273,309 @@ contract StakingRewardsConsolidated is Test {
     }
 
     /* -------------------------------------------------------------------------- */
+    /*                            Staker Count Tests                             */
+    /* -------------------------------------------------------------------------- */
+
+    /// @notice Staker count increments from 0 to 1 on first stake
+    function testStakerCountIncrementOnFirstStake() public {
+        assertEq(stakingRewards.totalStakers(), 0);
+
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), STAKE_AMOUNT);
+        stakingRewards.stake(STAKE_AMOUNT);
+        vm.stopPrank();
+
+        assertEq(stakingRewards.totalStakers(), 1);
+    }
+
+    /// @notice Staker count does not increment on subsequent stakes by same user
+    function testStakerCountNoIncrementOnSubsequentStake() public {
+        // Alice stakes twice
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), STAKE_AMOUNT * 2);
+        stakingRewards.stake(STAKE_AMOUNT);
+        assertEq(stakingRewards.totalStakers(), 1);
+
+        stakingRewards.stake(STAKE_AMOUNT);
+        assertEq(stakingRewards.totalStakers(), 1);
+        vm.stopPrank();
+    }
+
+    /// @notice Staker count decrements on full unstake
+    function testStakerCountDecrementOnUnstake() public {
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), STAKE_AMOUNT);
+        stakingRewards.stake(STAKE_AMOUNT);
+        assertEq(stakingRewards.totalStakers(), 1);
+
+        stakingRewards.unstake();
+        assertEq(stakingRewards.totalStakers(), 0);
+        vm.stopPrank();
+    }
+
+    /// @notice Staker count decrements on emergency exit
+    function testStakerCountDecrementOnEmergencyExit() public {
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), STAKE_AMOUNT);
+        stakingRewards.stake(STAKE_AMOUNT);
+        assertEq(stakingRewards.totalStakers(), 1);
+
+        stakingRewards.emergencyExit();
+        assertEq(stakingRewards.totalStakers(), 0);
+        vm.stopPrank();
+    }
+
+    /// @notice Staker count tracks multiple users correctly
+    function testStakerCountMultipleUsers() public {
+        assertEq(stakingRewards.totalStakers(), 0);
+
+        // Alice stakes
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), STAKE_AMOUNT);
+        stakingRewards.stake(STAKE_AMOUNT);
+        vm.stopPrank();
+        assertEq(stakingRewards.totalStakers(), 1);
+
+        // Bob stakes
+        vm.startPrank(bob);
+        hlg.approve(address(stakingRewards), STAKE_AMOUNT);
+        stakingRewards.stake(STAKE_AMOUNT);
+        vm.stopPrank();
+        assertEq(stakingRewards.totalStakers(), 2);
+
+        // Charlie stakes
+        vm.startPrank(charlie);
+        hlg.approve(address(stakingRewards), STAKE_AMOUNT);
+        stakingRewards.stake(STAKE_AMOUNT);
+        vm.stopPrank();
+        assertEq(stakingRewards.totalStakers(), 3);
+
+        // Alice exits
+        vm.prank(alice);
+        stakingRewards.unstake();
+        assertEq(stakingRewards.totalStakers(), 2);
+
+        // Bob exits
+        vm.prank(bob);
+        stakingRewards.emergencyExit();
+        assertEq(stakingRewards.totalStakers(), 1);
+
+        // Charlie exits
+        vm.prank(charlie);
+        stakingRewards.unstake();
+        assertEq(stakingRewards.totalStakers(), 0);
+    }
+
+    /// @notice Staker count remains accurate with rewards and compounding
+    function testStakerCountWithRewardsAndCompounding() public {
+        // Alice stakes
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), STAKE_AMOUNT);
+        stakingRewards.stake(STAKE_AMOUNT);
+        vm.stopPrank();
+        assertEq(stakingRewards.totalStakers(), 1);
+
+        // Distribute rewards
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), REWARD_AMOUNT);
+        stakingRewards.depositAndDistribute(REWARD_AMOUNT);
+        vm.stopPrank();
+
+        // Count unchanged by reward distribution
+        assertEq(stakingRewards.totalStakers(), 1);
+
+        // Update user to compound rewards
+        stakingRewards.updateUser(alice);
+        assertEq(stakingRewards.totalStakers(), 1);
+
+        // Exit still decrements count
+        vm.prank(alice);
+        stakingRewards.unstake();
+        assertEq(stakingRewards.totalStakers(), 0);
+    }
+
+    /// @notice Staker count works correctly with stakeFor (owner-only, paused)
+    function testStakerCountStakeFor() public {
+        vm.prank(owner);
+        stakingRewards.pause();
+
+        assertEq(stakingRewards.totalStakers(), 0);
+
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), STAKE_AMOUNT * 3);
+        stakingRewards.stakeFor(alice, STAKE_AMOUNT);
+        assertEq(stakingRewards.totalStakers(), 1);
+
+        stakingRewards.stakeFor(bob, STAKE_AMOUNT);
+        assertEq(stakingRewards.totalStakers(), 2);
+
+        // Stake more for Alice (no increment)
+        stakingRewards.stakeFor(alice, STAKE_AMOUNT);
+        assertEq(stakingRewards.totalStakers(), 2);
+        vm.stopPrank();
+
+        vm.prank(owner);
+        stakingRewards.unpause();
+
+        // Users can still exit and count decrements
+        vm.prank(alice);
+        stakingRewards.unstake();
+        assertEq(stakingRewards.totalStakers(), 1);
+
+        vm.prank(bob);
+        stakingRewards.unstake();
+        assertEq(stakingRewards.totalStakers(), 0);
+    }
+
+    /// @notice Staker count works correctly with batch operations
+    function testStakerCountBatchOperations() public {
+        vm.prank(owner);
+        stakingRewards.pause();
+
+        address[] memory users = new address[](3);
+        users[0] = alice;
+        users[1] = bob;
+        users[2] = charlie;
+
+        uint256[] memory amounts = new uint256[](3);
+        amounts[0] = 100 ether;
+        amounts[1] = 200 ether;
+        amounts[2] = 300 ether;
+
+        assertEq(stakingRewards.totalStakers(), 0);
+
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 600 ether);
+        stakingRewards.batchStakeFor(users, amounts, 0, 3);
+        vm.stopPrank();
+
+        assertEq(stakingRewards.totalStakers(), 3);
+
+        vm.prank(owner);
+        stakingRewards.unpause();
+
+        // Batch again for same users (no increment)
+        vm.prank(owner);
+        stakingRewards.pause();
+
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 600 ether);
+        stakingRewards.batchStakeFor(users, amounts, 0, 3);
+        vm.stopPrank();
+
+        assertEq(stakingRewards.totalStakers(), 3);
+    }
+
+    /// @notice Staker count works correctly with distributor staking
+    function testStakerCountDistributorStaking() public {
+        vm.prank(owner);
+        stakingRewards.setDistributor(distributor, true);
+
+        assertEq(stakingRewards.totalStakers(), 0);
+
+        vm.startPrank(distributor);
+        hlg.approve(address(stakingRewards), STAKE_AMOUNT * 3);
+        stakingRewards.stakeFromDistributor(alice, STAKE_AMOUNT);
+        assertEq(stakingRewards.totalStakers(), 1);
+
+        stakingRewards.stakeFromDistributor(bob, STAKE_AMOUNT);
+        assertEq(stakingRewards.totalStakers(), 2);
+
+        // Stake more for Alice (no increment)
+        stakingRewards.stakeFromDistributor(alice, STAKE_AMOUNT);
+        assertEq(stakingRewards.totalStakers(), 2);
+        vm.stopPrank();
+
+        // Users can exit normally
+        vm.prank(alice);
+        stakingRewards.unstake();
+        assertEq(stakingRewards.totalStakers(), 1);
+
+        vm.prank(bob);
+        stakingRewards.unstake();
+        assertEq(stakingRewards.totalStakers(), 0);
+    }
+
+    /// @notice Zero to one to zero cycle maintains count accuracy
+    function testStakerCountZeroToOneToZero() public {
+        for (uint256 i = 0; i < 3; i++) {
+            assertEq(stakingRewards.totalStakers(), 0);
+
+            vm.startPrank(alice);
+            hlg.approve(address(stakingRewards), STAKE_AMOUNT);
+            stakingRewards.stake(STAKE_AMOUNT);
+            assertEq(stakingRewards.totalStakers(), 1);
+
+            if (i % 2 == 0) {
+                stakingRewards.unstake();
+            } else {
+                stakingRewards.emergencyExit();
+            }
+            assertEq(stakingRewards.totalStakers(), 0);
+            vm.stopPrank();
+        }
+    }
+
+    /// @notice Rapid stake/unstake operations maintain count accuracy
+    function testStakerCountRapidStakeUnstake() public {
+        address[3] memory users = [alice, bob, charlie];
+
+        // Rapid stakes
+        for (uint256 i = 0; i < 3; i++) {
+            vm.startPrank(users[i]);
+            hlg.approve(address(stakingRewards), STAKE_AMOUNT);
+            stakingRewards.stake(STAKE_AMOUNT);
+            vm.stopPrank();
+            assertEq(stakingRewards.totalStakers(), i + 1);
+        }
+
+        // Rapid unstakes
+        for (uint256 i = 0; i < 3; i++) {
+            vm.prank(users[i]);
+            stakingRewards.unstake();
+            assertEq(stakingRewards.totalStakers(), 2 - i);
+        }
+    }
+
+    /// @notice Staker count persists across pause/unpause
+    function testStakerCountAcrossPauseUnpause() public {
+        // Stake while unpaused
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), STAKE_AMOUNT);
+        stakingRewards.stake(STAKE_AMOUNT);
+        vm.stopPrank();
+        assertEq(stakingRewards.totalStakers(), 1);
+
+        // Pause
+        vm.prank(owner);
+        stakingRewards.pause();
+        assertEq(stakingRewards.totalStakers(), 1);
+
+        // Can still exit while paused
+        vm.prank(alice);
+        stakingRewards.unstake();
+        assertEq(stakingRewards.totalStakers(), 0);
+
+        // Use stakeFor while paused
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), STAKE_AMOUNT);
+        stakingRewards.stakeFor(bob, STAKE_AMOUNT);
+        assertEq(stakingRewards.totalStakers(), 1);
+
+        // Unpause
+        stakingRewards.unpause();
+        vm.stopPrank();
+        assertEq(stakingRewards.totalStakers(), 1);
+
+        // Normal operations work
+        vm.startPrank(charlie);
+        hlg.approve(address(stakingRewards), STAKE_AMOUNT);
+        stakingRewards.stake(STAKE_AMOUNT);
+        vm.stopPrank();
+        assertEq(stakingRewards.totalStakers(), 2);
+    }
+
+    /* -------------------------------------------------------------------------- */
     /*                            Invariant Helpers                             */
     /* -------------------------------------------------------------------------- */
 

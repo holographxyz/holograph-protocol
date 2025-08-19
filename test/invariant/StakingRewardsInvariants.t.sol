@@ -60,6 +60,22 @@ contract StakingRewardsInvariants is StdInvariant, Test {
 
         assertGe(currentIndex, lastIndex, "Invariant violated: globalRewardIndex decreased");
     }
+
+    /// @notice totalStakers should equal the count of users with non-zero balances
+    function invariant_stakerCountAccuracy() public view {
+        address[] memory users = handler.getUsers();
+        uint256 actualStakers = 0;
+
+        for (uint256 i = 0; i < users.length; i++) {
+            if (stakingRewards.balanceOf(users[i]) > 0) {
+                actualStakers++;
+            }
+        }
+
+        assertEq(
+            stakingRewards.totalStakers(), actualStakers, "Invariant violated: totalStakers != count(balanceOf > 0)"
+        );
+    }
 }
 
 /// @title StakingRewardsHandler
