@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.30;
 
 /**
  * @notice Generic interface to migrate current liquidity to a new pool

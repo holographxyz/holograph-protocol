@@ -30,7 +30,7 @@ print-step    = @echo "$(YELLOW)$1$(NC)"
 # ---------------------------------------------------------------------------- #
 #                                   Targets                                   #
 # ---------------------------------------------------------------------------- #
-.PHONY: all help fmt build clean test deploy-base deploy-base-sepolia deploy-eth deploy-eth-sepolia deploy-unichain deploy-unichain-sepolia configure-base configure-eth configure-unichain configure-dvn-base configure-dvn-eth fee-ops abi verify-addresses gas-analysis
+.PHONY: all help install-hooks fmt build clean test deploy-base deploy-base-sepolia deploy-eth deploy-eth-sepolia deploy-unichain deploy-unichain-sepolia configure-base configure-eth configure-unichain configure-dvn-base configure-dvn-eth fee-ops abi verify-addresses gas-analysis
 
 ## all: Build and test (default target)
 all: build test
@@ -38,6 +38,19 @@ all: build test
 ## help: Show this help.
 help:
 	@grep -E '^##' $(MAKEFILE_LIST) | sed -E 's/##[ ]*//g'
+
+## install-hooks: Install git hooks (e.g., pre-commit for auto-formatting).
+install-hooks:
+	$(call print-step,Installing git hooks…)
+	@mkdir -p .git/hooks
+	@for hook in .githooks/*; do \
+		if [ -f "$$hook" ]; then \
+			cp "$$hook" .git/hooks/$$(basename "$$hook"); \
+			chmod +x .git/hooks/$$(basename "$$hook"); \
+			echo "Installed: $$(basename "$$hook")"; \
+		fi \
+	done
+	$(call print-success,Git hooks installed)
 
 ## fmt: Format Solidity code with forge fmt.
 fmt:

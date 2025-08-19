@@ -1,5 +1,5 @@
 [profile.default]
-solc = "0.8.26"
+solc = "0.8.30"
 auto_detect_solc = false
 auto_detect_remappings = false
 bytecode_hash = "none"
@@ -86,7 +86,7 @@ optimizer_runs = 1
 fuzz.runs = 100
 
 [profile.deploy]
-solc = "0.8.26"
+solc = "0.8.30"
 optimizer = true
 optimizer_runs = 20000
 via_ir = true

@@ -48,6 +48,7 @@ make build          # Compile all contracts
 make test           # Run the full test suite
 make fmt            # Format Solidity code
 make clean          # Clean build artifacts
+make install-hooks  # Install git hooks for auto-formatting
 
 # View all available commands
 make help

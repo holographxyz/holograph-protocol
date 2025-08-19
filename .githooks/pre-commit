@@ -1,0 +1,23 @@
+#!/bin/sh
+#
+# Pre-commit hook to run `make fmt` before committing
+# This ensures all code is properly formatted before it enters the repository
+
+echo "Running make fmt to format code..."
+
+# Run make fmt
+if ! make fmt; then
+    echo "Error: make fmt failed. Please fix formatting issues and try again."
+    exit 1
+fi
+
+echo "Code formatting completed successfully."
+
+# Check if there are any changes after formatting
+if ! git diff --quiet && ! git diff --cached --quiet; then
+    echo "Code was reformatted. Please review changes and commit again."
+    exit 1
+fi
+
+echo "All formatting checks passed."
+exit 0
