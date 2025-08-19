@@ -14,6 +14,13 @@ This is the only new contract requiring audit. It handles HLG token staking with
 
 **Key Functions**:
 
+`stake(uint256 amount)` (lines 124-139):
+- Primary user-facing function to stake HLG tokens
+- Triggers auto-compounding of any pending rewards via `updateUser()`
+- Transfers HLG from user to contract with fee-on-transfer protection
+- Updates user balance and global staking totals
+- Tracks new stakers for analytics
+
 `depositAndDistribute(uint256 hlgAmount)` (lines 189-209):
 - Manual bootstrap reward distribution 
 - Takes HLG from owner, splits based on `burnPercentage` (default 50/50)
