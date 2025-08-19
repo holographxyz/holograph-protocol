@@ -23,6 +23,18 @@ This is the only new contract requiring audit. It handles HLG token staking with
 - Future automated reward distribution from FeeRouter
 - Same burn/reward logic as depositAndDistribute but called by FeeRouter
 
+`unstake()` (lines 145-159):
+- Allows users to fully withdraw their stake including all auto-compounded rewards
+- Triggers auto-compounding via `updateUser()` before withdrawal
+- Transfers full balance (original stake + all rewards) back to user
+- Updates global counters and resets user state
+
+`emergencyExit()` (lines 165-177):
+- Emergency withdrawal function that works even when contract is paused
+- Withdraws current balance without triggering reward update
+- User forfeits any pending rewards not yet compounded
+- Designed for critical situations requiring immediate exit
+
 `batchStakeFor()` (lines 526-569):
 - Referral rewards initialization (up to 250M HLG total, max 780K per user)
 - Owner-only, paused-only, gas-optimized batch processing
@@ -49,13 +61,37 @@ Weekly process:
 
 This replaces what would eventually be a complex system involving LayerZero V2 cross-chain messaging, automated Uniswap swaps, and multiple contracts across chains.
 
+## Auto-Compounding Mechanism
+
+The contract implements automatic reward compounding using the proven MasterChef V2 algorithm. Unlike traditional staking where users must manually claim and restake rewards, this system automatically increases user balances as rewards are distributed.
+
+**How it works**:
+
+1. **Global Reward Index**: The contract maintains a `globalRewardIndex` that tracks cumulative rewards per staked token (scaled by 1e12 for gas efficiency)
+2. **User Snapshots**: Each user has a `userIndexSnapshot` recording the global index at their last interaction
+3. **Automatic Compounding**: When a user interacts with the contract (stake, unstake, or updateUser), pending rewards are calculated and automatically added to their balance:
+   ```
+   pendingRewards = userBalance * (globalRewardIndex - userIndexSnapshot) / 1e12
+   newBalance = currentBalance + pendingRewards
+   ```
+4. **Reward Distribution**: When new rewards arrive via `depositAndDistribute()` or `addRewards()`:
+   - Configured percentage is burned (default 50%)
+   - Remainder increases the global index: `globalRewardIndex += (rewards * 1e12) / totalStaked`
+   - All stakers' balances grow proportionally without any action required
+
+**Benefits**:
+- No gas costs for claiming rewards
+- Compound interest effect maximizes returns
+- O(1) gas complexity regardless of number of stakers
+- Set-and-forget user experience
+
 ## Security Considerations
 
 **Access Control**: Owner-only functions include reward distribution, referral initialization, emergency recovery. Owner is a multisig wallet.
 
 **Burn Mechanism**: Uses the HLG token's native `burn()` function with supply reduction verification to ensure burns actually reduce total supply.
 
-**Auto-Compounding**: Uses high-precision math (1e12 scaling) to track rewards proportionally across all stakers with no loss due to rounding.
+**Auto-Compounding Math**: Uses high-precision math (1e12 scaling) to track rewards proportionally across all stakers. Rounding always favors the protocol to prevent exploitation.
 
 **Fee-on-Transfer Protection**: The `_pullHLG()` function explicitly rejects tokens that take fees on transfer, requiring exact amounts received.
 
@@ -98,4 +134,12 @@ While not requiring audit, these files provide context for understanding the sys
 
 ## Testing
 
-The contract has extensive test coverage including unit tests for all staking/unstaking scenarios, reward distribution and compounding logic, emergency functions and edge cases, and invariant tests. All tests pass with Solidity 0.8.30.
+The contract has extensive test coverage including:
+- Unit tests for all staking scenarios (stake, unstake, emergency exit)
+- Reward distribution and auto-compounding logic verification
+- Unstake flow testing including full balance withdrawal with compounded rewards
+- Emergency functions and edge cases (paused state, zero stakers, etc.)
+- Invariant tests ensuring critical accounting identities hold
+- Gas optimization verification
+
+All tests pass with Solidity 0.8.30.
