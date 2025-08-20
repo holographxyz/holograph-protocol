@@ -1,11 +1,28 @@
 {
-  "blockNumber": 8970346,
+  "network": "ethereum-sepolia",
   "chainId": 11155111,
-  "chainName": "Ethereum Sepolia",
-  "deployedAt": 1755027396,
-  "deployer": "0x5f5C3548f96C7DA33A18E5F2F2f13519e1c8bD0d",
-  "feeRouter": "0x81EcEEB94B53c817C86f4fad22A6E99a0A73df1F",
-  "holographDeployer": "0xc8C25dcC9f5eF4A0469B40f92E2EfA71E8007Baa",
-  "stakingRewards": "0xa411C35d92Fc1372c7aebb087DCf6383580fCeB2",
-  "version": "1.0"
+  "deploymentDate": "2025-08-20",
+  "contracts": {
+    "HolographDeployer": {
+      "address": "0x17BCb0F2Cf18db1abd2D774C73F3B7343132043c",
+      "blockNumber": 9027307
+    },
+    "StakingRewards": {
+      "address": "0xff5CEBc016f50d40D4C1eCaDB7427c5F3E3c3f97",
+      "blockNumber": 9027307
+    },
+    "FeeRouter": {
+      "address": "0xA042bd2391a2756907AFf8e2837E30b70A2743C5",
+      "blockNumber": 9027307
+    }
+  },
+  "tokens": {
+    "HLG": "0x5ff07042d14e60ec1de7a860bbe968344431baa1",
+    "WETH": "0xfff9976782d46cc05630d1f6ebab18b2324d6b14"
+  },
+  "external": {
+    "SwapRouter": "0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E",
+    "UniswapV3Factory": "0x0227628f3F023bb0B980b67D528571c95c6DaC1c",
+    "QuoterV2": "0xEd1f6473345F45b75F8179591dd5bA1888cf2FB3"
+  }
 }
