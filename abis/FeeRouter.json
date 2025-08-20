@@ -684,19 +684,6 @@
   },
   {
     "type": "event",
-    "name": "Burned",
-    "inputs": [
-      {
-        "name": "hlgAmt",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
     "name": "DustRecovered",
     "inputs": [
       {
