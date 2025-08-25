@@ -1,0 +1,228 @@
+[
+  {
+    "type": "function",
+    "name": "calculateBalancedRange",
+    "inputs": [
+      {
+        "name": "currentTick",
+        "type": "int24",
+        "internalType": "int24"
+      },
+      {
+        "name": "tickSpacing",
+        "type": "int24",
+        "internalType": "int24"
+      },
+      {
+        "name": "rangeSpacings",
+        "type": "int24",
+        "internalType": "int24"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "tickLower",
+        "type": "int24",
+        "internalType": "int24"
+      },
+      {
+        "name": "tickUpper",
+        "type": "int24",
+        "internalType": "int24"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "calculateSingleSidedRange",
+    "inputs": [
+      {
+        "name": "currentTick",
+        "type": "int24",
+        "internalType": "int24"
+      },
+      {
+        "name": "tickSpacing",
+        "type": "int24",
+        "internalType": "int24"
+      },
+      {
+        "name": "isToken0Only",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "rangeSpacings",
+        "type": "int24",
+        "internalType": "int24"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "tickLower",
+        "type": "int24",
+        "internalType": "int24"
+      },
+      {
+        "name": "tickUpper",
+        "type": "int24",
+        "internalType": "int24"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "floorToSpacing",
+    "inputs": [
+      {
+        "name": "tick",
+        "type": "int24",
+        "internalType": "int24"
+      },
+      {
+        "name": "spacing",
+        "type": "int24",
+        "internalType": "int24"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "int24",
+        "internalType": "int24"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "isValidTick",
+    "inputs": [
+      {
+        "name": "tick",
+        "type": "int24",
+        "internalType": "int24"
+      },
+      {
+        "name": "spacing",
+        "type": "int24",
+        "internalType": "int24"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "maxTickForSpacing",
+    "inputs": [
+      {
+        "name": "spacing",
+        "type": "int24",
+        "internalType": "int24"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "int24",
+        "internalType": "int24"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "minTickForSpacing",
+    "inputs": [
+      {
+        "name": "spacing",
+        "type": "int24",
+        "internalType": "int24"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "int24",
+        "internalType": "int24"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "nextTick",
+    "inputs": [
+      {
+        "name": "tick",
+        "type": "int24",
+        "internalType": "int24"
+      },
+      {
+        "name": "spacing",
+        "type": "int24",
+        "internalType": "int24"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "int24",
+        "internalType": "int24"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "prevTick",
+    "inputs": [
+      {
+        "name": "tick",
+        "type": "int24",
+        "internalType": "int24"
+      },
+      {
+        "name": "spacing",
+        "type": "int24",
+        "internalType": "int24"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "int24",
+        "internalType": "int24"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "tickSpacingForFee",
+    "inputs": [
+      {
+        "name": "fee",
+        "type": "uint24",
+        "internalType": "uint24"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "int24",
+        "internalType": "int24"
+      }
+    ],
+    "stateMutability": "pure"
+  }
+]
