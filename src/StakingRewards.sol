@@ -3,14 +3,16 @@ pragma solidity ^0.8.30;
 
 /**
  * @title StakingRewards
- * @notice HLG staking with automatic reward compounding and configurable burn/reward split.
+ * @notice HLG staking with epoch-gated eligibility, automatic reward compounding, and configurable burn/reward split.
  * @dev
- * - Rewards automatically compound using a reward tracking system with high precision math.
- * - When paused, users can still withdraw but cannot stake; reward distributors are also blocked.
- * - When rewards are distributed, they're immediately tracked for all stakers proportionally.
+ * - Rewards compound automatically using a dual-index model:
+ *   - `currentEpochRewardIndex` accrues rewards for the ongoing epoch using `eligibleTotal` as denominator
+ *   - `globalRewardIndex` accumulates rewards of all fully-completed epochs
+ * - Epochs are 7 days. Stakes activate next epoch; withdrawals finalize next epoch.
+ * - Distributions are allowed while paused. Staking is blocked while paused.
  * - Extra HLG tokens sent directly to the contract can be recovered with `recoverExtraHLG`.
- * - If no one is staking, reward distributions are skipped to save gas.
- * - Token burning works by transferring to address(0). The HLG token at
+ * - If no eligible stake exists, reward distributions are skipped to save gas.
+ * - Token burning works by calling ERC20Burnable burn. The HLG token at
  *   0x740dF024Ce73F589AcD5E8756B377eF8C6558BaB reduces its total supply when tokens are burned.
  */
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -47,6 +49,7 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
     error NotEnoughRewardsAvailable();
     error ActiveStakeExists();
     error RewardTooSmall();
+    error PendingWithdrawalExists();
 
     /* -------------------------------------------------------------------------- */
     /*                                  Storage                                   */
@@ -89,6 +92,46 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
     mapping(address => bool) public isDistributor;
 
     /* -------------------------------------------------------------------------- */
+    /*                          Epochs and Eligibility                            */
+    /* -------------------------------------------------------------------------- */
+
+    /// @notice Duration of a single epoch
+    uint256 public constant EPOCH_DURATION = 7 days;
+
+    /// @notice Timestamp when epoch 0 starts (set on first unpause)
+    uint256 public epochStartTime;
+
+    /// @notice Last matured epoch number (globalRewardIndex contains all deltas up to this epoch)
+    uint256 public lastProcessedEpoch;
+
+    /// @notice Accumulated reward-per-eligible-token for the currently ongoing epoch
+    uint256 public currentEpochRewardIndex;
+
+    /// @notice Total amount of tokens eligible for the current epoch's rewards
+    uint256 public eligibleTotal;
+
+    /// @notice Aggregate stake additions to apply on next epoch roll
+    uint256 public scheduledAdditionsNextEpoch;
+
+    /// @notice Aggregate stake removals to apply on next epoch roll
+    uint256 public scheduledRemovalsNextEpoch;
+
+    /// @notice Per-user eligible balance participating in the current epoch
+    mapping(address => uint256) public eligibleBalanceOf;
+
+    /// @notice Per-user amount scheduled to become eligible next epoch
+    mapping(address => uint256) public pendingActivationAmount;
+
+    /// @notice Epoch at which the pending activation takes effect
+    mapping(address => uint256) public pendingActivationEpoch;
+
+    /// @notice Per-user full-withdrawal amount scheduled to be withdrawable next epoch
+    mapping(address => uint256) public pendingWithdrawalAmount;
+
+    /// @notice Epoch when the scheduled withdrawal becomes eligible to finalize
+    mapping(address => uint256) public pendingWithdrawalEpoch;
+
+    /* -------------------------------------------------------------------------- */
     /*                                  Events                                    */
     /* -------------------------------------------------------------------------- */
     event Staked(address indexed user, uint256 amount);
@@ -102,6 +145,11 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
     event EthSwept(uint256 amount, address indexed to);
     event DistributorUpdated(address indexed distributor, bool status);
     event BoostedStake(address indexed distributor, address indexed user, uint256 amount);
+    event UnstakeScheduled(address indexed user, uint256 amount, uint256 availableEpoch);
+    event EpochAdvanced(uint256 indexed newEpoch, uint256 maturedIndexDelta, uint256 newEligibleTotal);
+    event StakeActivated(address indexed user, uint256 amount, uint256 epoch);
+    event EpochInitialized(uint256 startTime);
+    event AccountingError(string reason, uint256 removals, uint256 eligibleBefore);
 
     /* -------------------------------------------------------------------------- */
     /*                               Constructor                                  */
@@ -124,6 +172,9 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
     function stake(uint256 amount) external nonReentrant whenNotPaused {
         if (amount == 0) revert ZeroAmount();
 
+        _advanceEpoch();
+        if (pendingWithdrawalAmount[msg.sender] != 0) revert PendingWithdrawalExists();
+
         uint256 actualAmount = _pullHLG(msg.sender, amount);
         updateUser(msg.sender);
 
@@ -135,6 +186,12 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
         balanceOf[msg.sender] += actualAmount;
         totalStaked += actualAmount;
 
+        // Schedule activation next epoch
+        uint256 activationEpoch = _currentEpoch() + 1;
+        pendingActivationAmount[msg.sender] += actualAmount;
+        pendingActivationEpoch[msg.sender] = activationEpoch;
+        scheduledAdditionsNextEpoch += actualAmount;
+
         emit Staked(msg.sender, actualAmount);
     }
 
@@ -143,19 +200,53 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
      * @dev Auto-compounds first, then transfers full balance. Can be called while paused.
      */
     function unstake() external nonReentrant {
+        _advanceEpoch();
         updateUser(msg.sender);
 
         uint256 userBalance = balanceOf[msg.sender];
         if (userBalance == 0) revert NoStake();
+        if (pendingWithdrawalAmount[msg.sender] != 0) revert PendingWithdrawalExists();
 
+        // Cancel any scheduled activation for next epoch (e.g. recent stake or compounded rewards)
+        uint256 pendingAdd = pendingActivationAmount[msg.sender];
+        if (pendingAdd != 0) {
+            scheduledAdditionsNextEpoch -= pendingAdd;
+            pendingActivationAmount[msg.sender] = 0;
+            pendingActivationEpoch[msg.sender] = 0;
+        }
+
+        // Schedule removal of the user's currently eligible balance to take effect next epoch
+        uint256 nextEpoch = _currentEpoch() + 1;
+        uint256 eligibleAmt = eligibleBalanceOf[msg.sender];
+        if (eligibleAmt != 0) {
+            scheduledRemovalsNextEpoch += eligibleAmt;
+        }
+        pendingWithdrawalAmount[msg.sender] = userBalance;
+        pendingWithdrawalEpoch[msg.sender] = nextEpoch;
+
+        emit UnstakeScheduled(msg.sender, userBalance, nextEpoch);
+    }
+
+    function finalizeUnstake() external nonReentrant {
+        _advanceEpoch();
+        updateUser(msg.sender);
+
+        uint256 amt = pendingWithdrawalAmount[msg.sender];
+        if (amt == 0) revert NoStake();
+        if (_currentEpoch() < pendingWithdrawalEpoch[msg.sender]) revert ActiveStakeExists();
+
+        // Zero out eligible balance and user state; transfer principal + compounded
         balanceOf[msg.sender] = 0;
-        userIndexSnapshot[msg.sender] = 0;
-        totalStaked -= userBalance;
+        eligibleBalanceOf[msg.sender] = 0;
+        userIndexSnapshot[msg.sender] = globalRewardIndex;
+        pendingWithdrawalAmount[msg.sender] = 0;
+        pendingWithdrawalEpoch[msg.sender] = 0;
+        totalStaked -= amt;
         unchecked {
             totalStakers -= 1;
         }
-        HLG.safeTransfer(msg.sender, userBalance);
-        emit Unstaked(msg.sender, userBalance);
+        HLG.safeTransfer(msg.sender, amt);
+        emit Unstaked(msg.sender, amt);
     }
 
     /**
@@ -163,16 +254,38 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
      * @dev Does not call updateUser; returns current recorded balance. Can be called while paused.
      */
     function emergencyExit() external nonReentrant {
+        _advanceEpoch();
+        // Do not compound; schedule exit for next epoch for invariant simplicity
         uint256 userBalance = balanceOf[msg.sender];
         if (userBalance == 0) revert NoStake();
+        if (pendingWithdrawalAmount[msg.sender] != 0) revert PendingWithdrawalExists();
 
-        balanceOf[msg.sender] = 0;
-        userIndexSnapshot[msg.sender] = 0;
-        totalStaked -= userBalance;
-        unchecked {
-            totalStakers -= 1;
+        // Cancel any scheduled activation for next epoch
+        uint256 pendingAdd = pendingActivationAmount[msg.sender];
+        if (pendingAdd != 0) {
+            uint256 activationEpoch = pendingActivationEpoch[msg.sender];
+            // If activation is still pending in a future epoch, remove it from schedule
+            if (activationEpoch > lastProcessedEpoch) {
+                scheduledAdditionsNextEpoch -= pendingAdd;
+            }
+            // If activation has matured but user never activated, schedule removal of ghost eligibility
+            else if (activationEpoch <= lastProcessedEpoch) {
+                scheduledRemovalsNextEpoch += pendingAdd;
+            }
+            // In all cases, clear the per-user pending activation state
+            pendingActivationAmount[msg.sender] = 0;
+            pendingActivationEpoch[msg.sender] = 0;
         }
-        HLG.safeTransfer(msg.sender, userBalance);
+
+        // Schedule removal of eligible balance next epoch
+        uint256 nextEpoch = _currentEpoch() + 1;
+        uint256 eligibleAmt = eligibleBalanceOf[msg.sender];
+        if (eligibleAmt != 0) {
+            scheduledRemovalsNextEpoch += eligibleAmt;
+        }
+        pendingWithdrawalAmount[msg.sender] = userBalance;
+        pendingWithdrawalEpoch[msg.sender] = nextEpoch;
+
         emit EmergencyExit(msg.sender, userBalance);
     }
 
@@ -186,9 +299,10 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
      * @dev Splits burn/reward and updates the index. If there are no stakers,
      *      this call is a no-op.
      */
-    function depositAndDistribute(uint256 hlgAmount) external onlyOwner nonReentrant whenNotPaused {
-        uint256 staked = _activeStaked();
-        if (staked == 0) return;
+    function depositAndDistribute(uint256 hlgAmount) external onlyOwner nonReentrant {
+        _advanceEpoch();
+        uint256 eligible = eligibleTotal;
+        if (eligible == 0) return;
         if (hlgAmount == 0) revert ZeroAmount();
 
         // Pull tokens first to get the exact received amount
@@ -198,8 +312,9 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
 
         // If there is a positive rewardAmount, ensure it will move the index
         if (rewardAmount > 0) {
-            if ((rewardAmount * INDEX_PRECISION) / staked == 0) revert RewardTooSmall();
-            _addRewards(rewardAmount);
+            uint256 indexDelta = (rewardAmount * INDEX_PRECISION) / eligible;
+            if (indexDelta == 0) revert RewardTooSmall();
+            _addRewards(rewardAmount, indexDelta);
         }
 
         // Perform burn after validation to avoid partial side effects on revert
@@ -214,10 +329,11 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
      * @dev Splits burn/reward and updates the index. If there are no stakers,
      *      this call is a no-op.
      */
-    function addRewards(uint256 amount) external nonReentrant whenNotPaused {
+    function addRewards(uint256 amount) external nonReentrant {
         if (msg.sender != feeRouter) revert Unauthorized();
-        uint256 staked = _activeStaked();
-        if (staked == 0) return;
+        _advanceEpoch();
+        uint256 eligible = eligibleTotal;
+        if (eligible == 0) return;
         if (amount == 0) revert ZeroAmount();
 
         // Pull tokens first to get the exact received amount
@@ -227,8 +343,9 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
 
         // If there is a positive rewardAmount, ensure it will move the index
         if (rewardAmount > 0) {
-            if ((rewardAmount * INDEX_PRECISION) / staked == 0) revert RewardTooSmall();
-            _addRewards(rewardAmount);
+            uint256 indexDelta = (rewardAmount * INDEX_PRECISION) / eligible;
+            if (indexDelta == 0) revert RewardTooSmall();
+            _addRewards(rewardAmount, indexDelta);
         }
 
         // Perform burn after validation to avoid partial side effects on revert
@@ -271,25 +388,73 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
      * @param account Address to update rewards for
      */
     function updateUser(address account) public {
-        uint256 userBalance = balanceOf[account];
+        _advanceEpoch();
+        _updateUserWithoutEpochAdvance(account);
+    }
+
+    /**
+     * @dev Internal utility to update a user's state without advancing epochs.
+     *      Used to avoid redundant epoch advances in batch flows.
+     */
+    function _updateUserWithoutEpochAdvance(address account) internal {
+        // Read index/snapshot first for consistent compounding window
         uint256 currentIndex = globalRewardIndex;
         uint256 snapshot = userIndexSnapshot[account];
 
-        if (userBalance > 0) {
+        // Compute compounding base as eligibility from prior matured epochs.
+        // Include pending activation amount only if it matured before the last processed epoch.
+        uint256 eligibleForCompounding = eligibleBalanceOf[account];
+        uint256 activationEpoch = pendingActivationEpoch[account];
+        uint256 cachedActivationAmount = pendingActivationAmount[account];
+        if (activationEpoch != 0 && activationEpoch < lastProcessedEpoch) {
+            eligibleForCompounding += cachedActivationAmount;
+        }
+
+        // Single activation point: activate if pending activation is for a matured epoch (<=)
+        if (activationEpoch != 0 && activationEpoch <= lastProcessedEpoch) {
+            uint256 activationAmount = cachedActivationAmount;
+            if (activationAmount != 0) {
+                eligibleBalanceOf[account] += activationAmount;
+                pendingActivationAmount[account] = 0;
+                pendingActivationEpoch[account] = 0;
+                emit StakeActivated(account, activationAmount, activationEpoch);
+            }
+        }
+
+        // Determine if user has a withdrawal that is active this epoch
+        uint256 withdrawalEpoch = pendingWithdrawalEpoch[account];
+        bool withdrawalActive = (withdrawalEpoch != 0 && _currentEpoch() >= withdrawalEpoch);
+
+        // Compound matured rewards using the computed eligibility base
+        if (eligibleForCompounding != 0 && !withdrawalActive) {
             uint256 indexDelta = currentIndex - snapshot;
             if (indexDelta != 0) {
-                uint256 pendingRewards = (userBalance * indexDelta) / INDEX_PRECISION;
-                if (pendingRewards > 0) {
-                    // Make sure we have enough rewards available to give to the user
+                uint256 pendingRewards = (eligibleForCompounding * indexDelta) / INDEX_PRECISION;
+                if (pendingRewards != 0) {
                     uint256 unallocated = unallocatedRewards;
                     if (pendingRewards > unallocated) revert NotEnoughRewardsAvailable();
 
-                    balanceOf[account] = userBalance + pendingRewards;
+                    // Increase principal balance
+                    balanceOf[account] += pendingRewards;
                     unallocatedRewards = unallocated - pendingRewards;
+
+                    // Schedule compounded rewards to become eligible next epoch
+                    uint256 nextEpoch = _currentEpoch() + 1;
+                    pendingActivationAmount[account] += pendingRewards;
+                    pendingActivationEpoch[account] = nextEpoch;
+                    scheduledAdditionsNextEpoch += pendingRewards;
+
                     emit RewardsCompounded(account, pendingRewards);
                 }
             }
         }
+
+        // Deactivate eligibility if withdrawal epoch reached
+        if (withdrawalActive) {
+            eligibleBalanceOf[account] = 0;
+        }
+
+        // Update snapshot to current index
         userIndexSnapshot[account] = currentIndex;
     }
 
@@ -316,16 +481,56 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
      * @notice Add rewards to the pool for immediate distribution
      * @param rewardAmount Amount of HLG rewards to distribute to stakers
      */
-    function _addRewards(uint256 rewardAmount) internal {
+    function _addRewards(uint256 rewardAmount, uint256 indexDelta) internal {
         if (rewardAmount == 0) return;
-
-        uint256 staked = _activeStaked();
-        // index bump uses active stake
-        globalRewardIndex += (rewardAmount * INDEX_PRECISION) / staked;
-
+        // Accrue into current epoch index; do not touch globalRewardIndex here
+        currentEpochRewardIndex += indexDelta;
         // Track the full reward amount for distribution to users
         unallocatedRewards += rewardAmount;
         totalStaked += rewardAmount;
+    }
+
+    /// @notice Get current epoch number based on epochStartTime
+    function _currentEpoch() internal view returns (uint256) {
+        if (epochStartTime == 0) return 0;
+        unchecked {
+            return (block.timestamp - epochStartTime) / EPOCH_DURATION;
+        }
+    }
+
+    /// @notice Advance to current epoch, maturing indices and applying scheduled changes
+    function _advanceEpoch() internal {
+        if (epochStartTime == 0) return;
+        uint256 epochNow = _currentEpoch();
+        if (epochNow <= lastProcessedEpoch) return;
+
+        while (lastProcessedEpoch < epochNow) {
+            // Mature current epoch into global index
+            uint256 delta = currentEpochRewardIndex;
+            if (delta != 0) {
+                globalRewardIndex += delta;
+                currentEpochRewardIndex = 0;
+            }
+
+            // Apply aggregated scheduled additions/removals for the new epoch window
+            uint256 additionAmount = scheduledAdditionsNextEpoch;
+            uint256 removalAmount = scheduledRemovalsNextEpoch;
+            if (additionAmount != 0 || removalAmount != 0) {
+                uint256 newEligible = eligibleTotal + additionAmount;
+                if (removalAmount > newEligible) {
+                    emit AccountingError("Removals exceed eligible total", removalAmount, newEligible);
+                    newEligible = 0;
+                } else if (removalAmount != 0) {
+                    newEligible -= removalAmount;
+                }
+                eligibleTotal = newEligible;
+                scheduledAdditionsNextEpoch = 0;
+                scheduledRemovalsNextEpoch = 0;
+            }
+
+            lastProcessedEpoch += 1;
+            emit EpochAdvanced(lastProcessedEpoch, delta, eligibleTotal);
+        }
     }
 
     /* -------------------------------------------------------------------------- */
@@ -333,9 +538,18 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
     /* -------------------------------------------------------------------------- */
 
     function _pendingRewards(address account) internal view returns (uint256) {
-        uint256 userBalance = balanceOf[account];
-        if (userBalance == 0) return 0;
-        return (userBalance * (globalRewardIndex - userIndexSnapshot[account])) / INDEX_PRECISION;
+        // If a withdrawal is active this epoch or later, user is not eligible
+        uint256 withdrawalEpoch = pendingWithdrawalEpoch[account];
+        if (withdrawalEpoch != 0 && _currentEpoch() >= withdrawalEpoch) {
+            return 0;
+        }
+        uint256 effectiveEligible = eligibleBalanceOf[account];
+        uint256 activationEpoch = pendingActivationEpoch[account];
+        if (activationEpoch != 0 && activationEpoch < lastProcessedEpoch) {
+            effectiveEligible += pendingActivationAmount[account];
+        }
+        if (effectiveEligible == 0) return 0;
+        return (effectiveEligible * (globalRewardIndex - userIndexSnapshot[account])) / INDEX_PRECISION;
     }
 
     /**
@@ -355,15 +569,20 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
         return globalRewardIndex;
     }
 
+    /// @notice Get current epoch index accumulator (for transparency)
+    function rewardPerTokenCurrentEpoch() external view returns (uint256) {
+        return currentEpochRewardIndex;
+    }
+
     /**
      * @notice Get user's share of active staked pool (excluding unallocated rewards)
      * @param user Address to check
      * @return User's percentage share in basis points (10000 = 100%)
      */
     function getUserShareBps(address user) external view returns (uint256) {
-        uint256 staked = _activeStaked();
-        if (staked == 0) return 0;
-        return (balanceOf[user] * MAX_PERCENTAGE) / staked;
+        uint256 eligible = eligibleTotal;
+        if (eligible == 0) return 0;
+        return (eligibleBalanceOf[user] * MAX_PERCENTAGE) / eligible;
     }
 
     /**
@@ -373,6 +592,23 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
      */
     function balanceWithPendingRewards(address user) external view returns (uint256) {
         return balanceOf[user] + _pendingRewards(user);
+    }
+
+    /// @notice Current epoch number
+    function currentEpoch() external view returns (uint256) {
+        return _currentEpoch();
+    }
+
+    /// @notice Time until next epoch boundary
+    function timeUntilNextEpoch() external view returns (uint256) {
+        if (epochStartTime == 0) return 0;
+        uint256 elapsed = (block.timestamp - epochStartTime) % EPOCH_DURATION;
+        return EPOCH_DURATION - elapsed;
+    }
+
+    /// @notice Epoch configuration
+    function epochConfig() external view returns (uint256 startTime, uint256 duration) {
+        return (epochStartTime, EPOCH_DURATION);
     }
 
     /**
@@ -424,6 +660,11 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
      */
     function unpause() external onlyOwner {
         _unpause();
+        if (epochStartTime == 0) {
+            epochStartTime = block.timestamp;
+            lastProcessedEpoch = 0;
+            emit EpochInitialized(epochStartTime);
+        }
     }
 
     /**
@@ -502,6 +743,9 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
         if (user == address(0)) revert ZeroAddress();
         if (amount == 0) revert ZeroAmount();
 
+        _advanceEpoch();
+        if (pendingWithdrawalAmount[user] != 0) revert PendingWithdrawalExists();
+
         _pullHLG(msg.sender, amount);
         updateUser(user);
 
@@ -512,6 +756,12 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
 
         balanceOf[user] += amount;
         totalStaked += amount;
+
+        // Schedule activation next epoch
+        uint256 activationEpoch = _currentEpoch() + 1;
+        pendingActivationAmount[user] += amount;
+        pendingActivationEpoch[user] = activationEpoch;
+        scheduledAdditionsNextEpoch += amount;
 
         emit Staked(user, amount);
     }
@@ -546,12 +796,16 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
 
         _pullHLG(msg.sender, totalAmount);
 
+        // Sync epoch once for the entire batch to save gas
+        _advanceEpoch();
+
         // Process each user: compound existing rewards, add new stake
         for (uint256 i = startIndex; i < endIndex;) {
             address user = users[i];
             uint256 amount = amounts[i];
 
-            updateUser(user);
+            if (pendingWithdrawalAmount[user] != 0) revert PendingWithdrawalExists();
+            _updateUserWithoutEpochAdvance(user);
 
             // Track new staker
             if (balanceOf[user] == 0) {
@@ -560,6 +814,12 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
 
             balanceOf[user] += amount;
             totalStaked += amount;
+
+            // Schedule activation next epoch
+            uint256 activationEpoch = _currentEpoch() + 1;
+            pendingActivationAmount[user] += amount;
+            pendingActivationEpoch[user] = activationEpoch;
+            scheduledAdditionsNextEpoch += amount;
 
             emit Staked(user, amount);
             unchecked {
@@ -593,6 +853,9 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
         if (user == address(0)) revert ZeroAddress();
         if (amount == 0) revert ZeroAmount();
 
+        _advanceEpoch();
+        if (pendingWithdrawalAmount[user] != 0) revert PendingWithdrawalExists();
+
         _pullHLG(msg.sender, amount);
         updateUser(user);
 
@@ -603,6 +866,12 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
 
         balanceOf[user] += amount;
         totalStaked += amount;
+
+        // Schedule activation next epoch
+        uint256 activationEpoch = _currentEpoch() + 1;
+        pendingActivationAmount[user] += amount;
+        pendingActivationEpoch[user] = activationEpoch;
+        scheduledAdditionsNextEpoch += amount;
 
         emit Staked(user, amount);
         emit BoostedStake(msg.sender, user, amount);

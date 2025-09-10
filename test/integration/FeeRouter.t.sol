@@ -132,6 +132,11 @@ contract FeeRouterTest is Test {
         hlg.mint(address(swapRouter), 10_000_000 ether); // 10M HLG tokens
     }
 
+    function _rollEpoch() internal {
+        vm.warp(block.timestamp + 8 days);
+        stakingRewards.updateUser(address(0xdead));
+    }
+
     /// @notice Helper function to simulate fee collection through Airlock
     function _simulateFeeCollection(uint256 amount) internal {
         // Fund the airlock with ETH
@@ -177,6 +182,9 @@ contract FeeRouterTest is Test {
 
         assertEq(address(feeRouterBase).balance, expectedProtocolFee);
 
+        // Ensure stakes become eligible by rolling to next epoch before distribution
+        _rollEpoch();
+
         // Step 2: Bridge ETH fees from Base to Ethereum
 
         uint256 minGas = 200000;
@@ -214,11 +222,15 @@ contract FeeRouterTest is Test {
         // Check that HLG was burned (using totalBurned instead of balanceOf(address(0)))
         assertEq(hlg.totalBurned(), expectedBurnAmountHLG);
 
-        // Step 4: Verify proportional reward distribution
-
-        // Check that rewards were distributed proportionally based on stake
-        uint256 staker1RewardsHLG = stakingRewards.earned(staker1);
-        uint256 staker2RewardsHLG = stakingRewards.earned(staker2);
+        // Step 4: Verify proportional reward distribution (after rewards mature next epoch)
+        // Roll to mature current epoch rewards
+        _rollEpoch();
+        // Settle users (compounds matured rewards)
+        stakingRewards.updateUser(staker1);
+        stakingRewards.updateUser(staker2);
+        // Measure compounded rewards as balance growth
+        uint256 staker1RewardsHLG = stakingRewards.balanceOf(staker1) - staker1StakeAmount;
+        uint256 staker2RewardsHLG = stakingRewards.balanceOf(staker2) - staker2StakeAmount;
 
         // Staker1 has 500/2500 = 20% of total stake
         // Staker2 has 2000/2500 = 80% of total stake
@@ -228,17 +240,23 @@ contract FeeRouterTest is Test {
         assertApproxEqAbs(staker1RewardsHLG, expectedStaker1RewardsHLG, 1e15); // Allow small rounding error
         assertApproxEqAbs(staker2RewardsHLG, expectedStaker2RewardsHLG, 1e15);
 
-        // Step 5: Test auto-compounding (rewards automatically added to balance)
-
-        // Before any interaction, check that rewards are pending
-        assertApproxEqAbs(staker1RewardsHLG, expectedStaker1RewardsHLG, 1e15);
-
-        // Trigger auto-compounding for staker1
-        stakingRewards.updateUser(staker1);
-
-        // Verify rewards were auto-compounded into balance
+        // Step 5: Test auto-compounding already occurred on updateUser above
         assertApproxEqAbs(stakingRewards.balanceOf(staker1), staker1StakeAmount + expectedStaker1RewardsHLG, 1e15);
         assertEq(stakingRewards.earned(staker1), 0); // No more pending rewards
+
+        // Schedule unstake then finalize next epoch; user receives principal + compounded rewards
+        uint256 expectedTotal = staker1StakeAmount + expectedStaker1RewardsHLG;
+        vm.prank(staker1);
+        stakingRewards.unstake();
+        vm.prank(staker1);
+        vm.expectRevert();
+        stakingRewards.finalizeUnstake();
+        _rollEpoch();
+        vm.prank(staker1);
+        stakingRewards.finalizeUnstake();
+
+        // Verify staker received full amount
+        assertApproxEqAbs(hlg.balanceOf(staker1), MODERATE_HLG_BALANCE - staker1StakeAmount + expectedTotal, 1);
     }
 
     function test_MultipleFeeCycles() public {
@@ -250,6 +268,9 @@ contract FeeRouterTest is Test {
         hlg.approve(address(stakingRewards), stakerHlgAmount);
         stakingRewards.stake(stakerHlgAmount);
         vm.stopPrank();
+
+        // Ensure eligibility before first cycle
+        _rollEpoch();
 
         // First fee cycle
 
@@ -264,8 +285,11 @@ contract FeeRouterTest is Test {
         vm.prank(owner);
         feeRouterBase.bridge(200000, expectedHlgToStakers);
 
-        // Check HLG rewards after first cycle
-        uint256 rewardsAfterFirstCycle = stakingRewards.earned(staker1);
+        // Rewards mature next epoch
+        _rollEpoch();
+        // Settle and measure HLG rewards after first cycle
+        stakingRewards.updateUser(staker1);
+        uint256 rewardsAfterFirstCycle = stakingRewards.balanceOf(staker1) - stakerHlgAmount;
 
         // Second fee cycle
 
@@ -276,8 +300,11 @@ contract FeeRouterTest is Test {
         vm.prank(owner);
         feeRouterBase.bridge(200000, expectedHlgToStakers);
 
-        // Check HLG rewards after second cycle
-        uint256 rewardsAfterSecondCycle = stakingRewards.earned(staker1);
+        // Mature second cycle
+        _rollEpoch();
+        // Settle and measure HLG rewards after second cycle
+        stakingRewards.updateUser(staker1);
+        uint256 rewardsAfterSecondCycle = stakingRewards.balanceOf(staker1) - stakerHlgAmount;
 
         // Rewards should have increased from first cycle
         // First cycle: ~249.5 HLG rewards
@@ -360,6 +387,9 @@ contract FeeRouterTest is Test {
         stakingRewards.stake(stakeAmountHLG);
         vm.stopPrank();
 
+        // Make stake eligible
+        _rollEpoch();
+
         // Add some rewards
         uint256 rewardAmount = 100 ether;
         hlg.mint(address(feeRouterEth), rewardAmount);
@@ -368,21 +398,22 @@ contract FeeRouterTest is Test {
         vm.prank(address(feeRouterEth));
         stakingRewards.addRewards(rewardAmount);
 
-        // Check pending rewards (50% of what StakingRewards receives, 50% burned)
+        // Rewards accrue to current epoch; roll to mature
+        _rollEpoch();
+
+        // Mature rewards and settle; verify compounded balance increase equals expected
         uint256 expectedRewards = (rewardAmount * (10000 - stakingRewards.burnPercentage())) / 10000;
-        assertApproxEqAbs(stakingRewards.earned(staker1), expectedRewards, 1);
-
-        // Trigger auto-compounding
         stakingRewards.updateUser(staker1);
-
-        // Verify rewards were compounded into balance
         assertApproxEqAbs(stakingRewards.balanceOf(staker1), stakeAmountHLG + expectedRewards, 1);
-        assertEq(stakingRewards.earned(staker1), 0); // No more pending rewards
+        assertEq(stakingRewards.earned(staker1), 0);
 
-        // Full unstake should give original stake + compounded rewards
+        // Schedule and finalize unstake next epoch
         uint256 expectedTotal = stakeAmountHLG + expectedRewards;
         vm.prank(staker1);
         stakingRewards.unstake();
+        _rollEpoch();
+        vm.prank(staker1);
+        stakingRewards.finalizeUnstake();
 
         // Verify staker received full amount
         assertApproxEqAbs(hlg.balanceOf(staker1), MODERATE_HLG_BALANCE - stakeAmountHLG + expectedTotal, 1);
@@ -432,6 +463,9 @@ contract FeeRouterTest is Test {
         stakingRewards.stake(staker2HlgAmount);
         vm.stopPrank();
 
+        // Stakes become eligible next epoch
+        _rollEpoch();
+
         // Send ETH fees and bridge to Ethereum
         _simulateFeeCollection(TEST_FEE_AMOUNT_ETH);
 
@@ -446,9 +480,13 @@ contract FeeRouterTest is Test {
         vm.prank(owner);
         feeRouterBase.bridge(200000, expectedRewardAmountHLG);
 
-        // Check actual HLG rewards earned
-        uint256 staker1RewardsHLG = stakingRewards.earned(staker1);
-        uint256 staker2RewardsHLG = stakingRewards.earned(staker2);
+        // Rewards mature next epoch
+        _rollEpoch();
+        // Settle both users, then measure actual HLG rewards via balance increases
+        stakingRewards.updateUser(staker1);
+        stakingRewards.updateUser(staker2);
+        uint256 staker1RewardsHLG = stakingRewards.balanceOf(staker1) - staker1HlgAmount;
+        uint256 staker2RewardsHLG = stakingRewards.balanceOf(staker2) - staker2HlgAmount;
 
         // Check proportional distribution
         // Staker1: 30% of 35,971.225 HLG = 10,791.375 HLG

@@ -66,6 +66,24 @@ contract StakingRewardsConsolidated is Test {
     }
 
     /* -------------------------------------------------------------------------- */
+    /*                              Epoch Helpers                                */
+    /* -------------------------------------------------------------------------- */
+
+    /// @notice Roll forward to next epoch (7+ days)
+    function _rollEpoch() internal {
+        vm.warp(block.timestamp + 8 days);
+        // Trigger epoch sync by calling updateUser on a dummy address
+        stakingRewards.updateUser(address(0xdead));
+    }
+
+    /// @notice Roll forward multiple epochs
+    function _rollEpochs(uint256 count) internal {
+        for (uint256 i = 0; i < count; i++) {
+            _rollEpoch();
+        }
+    }
+
+    /* -------------------------------------------------------------------------- */
     /*                            Basic Staking Tests                            */
     /* -------------------------------------------------------------------------- */
 
@@ -78,13 +96,22 @@ contract StakingRewardsConsolidated is Test {
         assertEq(stakingRewards.balanceOf(alice), STAKE_AMOUNT);
         assertEq(stakingRewards.totalStaked(), STAKE_AMOUNT);
 
+        // With epochs, unstake is a 2-step process
         stakingRewards.unstake();
+        // Balance still exists until finalized
+        assertEq(stakingRewards.balanceOf(alice), STAKE_AMOUNT);
+
+        // Roll to next epoch to finalize
+        vm.stopPrank();
+        _rollEpoch();
+
+        vm.prank(alice);
+        stakingRewards.finalizeUnstake();
         assertEq(stakingRewards.balanceOf(alice), 0);
         assertEq(stakingRewards.totalStaked(), 0);
-        vm.stopPrank();
     }
 
-    /// @notice Emergency exit returns staked tokens without compounding rewards
+    /// @notice Emergency exit schedules withdrawal without compounding rewards
     function testEmergencyExit() public {
         vm.startPrank(alice);
         hlg.approve(address(stakingRewards), STAKE_AMOUNT);
@@ -93,9 +120,17 @@ contract StakingRewardsConsolidated is Test {
         uint256 balanceBefore = hlg.balanceOf(alice);
         stakingRewards.emergencyExit();
 
+        // With epochs, emergency exit also schedules for next epoch
+        assertEq(stakingRewards.balanceOf(alice), STAKE_AMOUNT);
+        vm.stopPrank();
+
+        // Roll to next epoch and finalize
+        _rollEpoch();
+
+        vm.prank(alice);
+        stakingRewards.finalizeUnstake();
         assertEq(stakingRewards.balanceOf(alice), 0);
         assertEq(hlg.balanceOf(alice), balanceBefore + STAKE_AMOUNT);
-        vm.stopPrank();
     }
 
     /// @notice Reverts when attempting to stake a zero amount
@@ -114,6 +149,13 @@ contract StakingRewardsConsolidated is Test {
         stakingRewards.unstake();
     }
 
+    /// @notice Reverts when attempting to finalize without pending unstake
+    function testCannotFinalizeWithNoPendingUnstake() public {
+        vm.prank(alice);
+        vm.expectRevert(StakingRewards.NoStake.selector);
+        stakingRewards.finalizeUnstake();
+    }
+
     /* -------------------------------------------------------------------------- */
     /*                         Reward Distribution Tests                         */
     /* -------------------------------------------------------------------------- */
@@ -126,11 +168,17 @@ contract StakingRewardsConsolidated is Test {
         stakingRewards.stake(STAKE_AMOUNT);
         vm.stopPrank();
 
+        // Roll to next epoch to activate stake
+        _rollEpoch();
+
         // Distribute rewards (50% burn, 50% rewards)
         vm.startPrank(owner);
         hlg.approve(address(stakingRewards), REWARD_AMOUNT);
         stakingRewards.depositAndDistribute(REWARD_AMOUNT);
         vm.stopPrank();
+
+        // Roll to mature the rewards
+        _rollEpoch();
 
         // Check pending rewards
         uint256 expectedRewards = REWARD_AMOUNT / 2; // 50% of 100 = 50
@@ -150,11 +198,17 @@ contract StakingRewardsConsolidated is Test {
         stakingRewards.stake(STAKE_AMOUNT);
         vm.stopPrank();
 
+        // Roll to next epoch to activate stake
+        _rollEpoch();
+
         // FeeRouter distributes rewards
         vm.startPrank(feeRouter);
         hlg.approve(address(stakingRewards), REWARD_AMOUNT);
         stakingRewards.addRewards(REWARD_AMOUNT);
         vm.stopPrank();
+
+        // Roll to mature the rewards
+        _rollEpoch();
 
         uint256 expectedRewards = REWARD_AMOUNT / 2;
         assertEq(stakingRewards.earned(alice), expectedRewards);
@@ -180,11 +234,15 @@ contract StakingRewardsConsolidated is Test {
         stakingRewards.stake(200 ether);
         vm.stopPrank();
 
-        // Distribute 100 HLG (50 rewards after 50% burn)
+        // Roll to next epoch to activate stakes
+        _rollEpoch();
+
+        // Distribute 100 HLG (50 rewards after 50% burn), then mature
         vm.startPrank(owner);
         hlg.approve(address(stakingRewards), 100 ether);
         stakingRewards.depositAndDistribute(100 ether);
         vm.stopPrank();
+        _rollEpoch();
 
         // Alice should get 60% (30 HLG), Bob should get 40% (20 HLG)
         assertEq(stakingRewards.earned(alice), 30 ether);
@@ -215,6 +273,9 @@ contract StakingRewardsConsolidated is Test {
         stakingRewards.stake(100 ether);
         vm.stopPrank();
 
+        // Roll to activate stakes
+        _rollEpoch();
+
         // Distribute 60 HLG, don't call updateUser
         vm.startPrank(owner);
         hlg.approve(address(stakingRewards), 60 ether);
@@ -237,6 +298,9 @@ contract StakingRewardsConsolidated is Test {
         uint256 totalExpectedReward = expectedReward + additionalReward;
         assertEq(stakingRewards.unallocatedRewards(), totalExpectedReward);
         assertEq(stakingRewards.totalStaked(), 200 ether + totalExpectedReward);
+
+        // Roll to mature rewards
+        _rollEpoch();
 
         // Now updateUser both users
         stakingRewards.updateUser(alice);
@@ -266,12 +330,15 @@ contract StakingRewardsConsolidated is Test {
         hlg.approve(address(stakingRewards), 200 ether);
         stakingRewards.stake(200 ether);
         vm.stopPrank();
+        // Activate stakes
+        _rollEpoch();
 
-        // Distribute 90 HLG (45 rewards)
+        // Distribute 90 HLG (45 rewards) and mature
         vm.startPrank(owner);
         hlg.approve(address(stakingRewards), 90 ether);
         stakingRewards.depositAndDistribute(90 ether);
         vm.stopPrank();
+        _rollEpoch();
 
         // Now totalStaked = 345, unallocated = 45, active = 300
         assertEq(stakingRewards.totalStaked(), 345 ether);
@@ -310,11 +377,13 @@ contract StakingRewardsConsolidated is Test {
         corruptedStaking.stake(100 ether);
         vm.stopPrank();
 
-        // Distribute rewards
+        // Activate both, distribute rewards, and mature
+        _rollEpoch();
         vm.startPrank(owner);
         hlg.approve(address(corruptedStaking), 80 ether);
         corruptedStaking.depositAndDistribute(80 ether); // 40 ether rewards
         vm.stopPrank();
+        _rollEpoch();
 
         // Alice updates first, consuming some unallocated
         corruptedStaking.updateUser(alice);
@@ -351,10 +420,12 @@ contract StakingRewardsConsolidated is Test {
         noburn.approve(address(noBurnStaking), 500 ether);
         noBurnStaking.stakeFor(alice, 500 ether);
 
-        // Now unpause for distribution
+        // Now unpause and roll to activate eligibility
         noBurnStaking.unpause();
+        vm.warp(block.timestamp + 8 days);
+        noBurnStaking.updateUser(address(0xdead));
 
-        // Try to distribute - should fail with BurnFailed (large enough amount to pass RewardTooSmall check)
+        // Try to distribute - should fail with BurnFailed (large enough to pass RewardTooSmall)
         noburn.approve(address(noBurnStaking), 100 ether);
         vm.expectRevert(StakingRewards.BurnFailed.selector);
         noBurnStaking.depositAndDistribute(100 ether);
@@ -371,11 +442,17 @@ contract StakingRewardsConsolidated is Test {
         stakingRewards.stake(STAKE_AMOUNT);
         vm.stopPrank();
 
+        // Roll to activate stake
+        _rollEpoch();
+
         // All rewards should go to stakers, nothing burned
         vm.startPrank(owner);
         hlg.approve(address(stakingRewards), REWARD_AMOUNT);
         stakingRewards.depositAndDistribute(REWARD_AMOUNT);
         vm.stopPrank();
+
+        // Roll to mature rewards
+        _rollEpoch();
 
         assertEq(stakingRewards.earned(alice), REWARD_AMOUNT);
     }
@@ -406,25 +483,30 @@ contract StakingRewardsConsolidated is Test {
         assertEq(stakingRewards.earned(alice), 0);
     }
 
-    /// @notice Funding methods revert while the contract is paused
-    function testFundingBlockedWhenPaused() public {
+    /// @notice Funding is allowed while paused; with no eligible stake it's a no-op
+    function testFundingAllowedWhilePausedNoOpWithoutEligible() public {
         // Pause contract
         vm.prank(owner);
         stakingRewards.pause();
 
-        // depositAndDistribute should revert
+        // Snapshot state
+        uint256 rptBefore = stakingRewards.rewardPerToken();
+        uint256 unallocBefore = stakingRewards.unallocatedRewards();
+
+        // depositAndDistribute should not revert and should do nothing when eligible == 0
         vm.startPrank(owner);
         hlg.approve(address(stakingRewards), REWARD_AMOUNT);
-        vm.expectRevert();
         stakingRewards.depositAndDistribute(REWARD_AMOUNT);
         vm.stopPrank();
 
-        // addRewards should revert
+        // addRewards should also not revert and be a no-op when eligible == 0
         vm.startPrank(feeRouter);
         hlg.approve(address(stakingRewards), REWARD_AMOUNT);
-        vm.expectRevert();
         stakingRewards.addRewards(REWARD_AMOUNT);
         vm.stopPrank();
+
+        assertEq(stakingRewards.rewardPerToken(), rptBefore);
+        assertEq(stakingRewards.unallocatedRewards(), unallocBefore);
     }
 
     /// @notice Reward accrual amount reflects configured burn percentage
@@ -438,10 +520,13 @@ contract StakingRewardsConsolidated is Test {
         vm.prank(owner);
         stakingRewards.setBurnPercentage(2500);
 
+        // Activate then distribute and mature
+        _rollEpoch();
         vm.startPrank(owner);
         hlg.approve(address(stakingRewards), 100 ether);
         stakingRewards.depositAndDistribute(100 ether);
         vm.stopPrank();
+        _rollEpoch();
 
         assertEq(stakingRewards.earned(alice), 75 ether);
     }
@@ -592,15 +677,21 @@ contract StakingRewardsConsolidated is Test {
         stakingRewards.stake(1000 ether);
         vm.stopPrank();
 
-        // Distribute rewards
+        // Activate then distribute rewards
+        _rollEpoch();
         vm.startPrank(owner);
         hlg.approve(address(stakingRewards), 200 ether);
         stakingRewards.depositAndDistribute(200 ether);
         vm.stopPrank();
+        _rollEpoch();
 
         // Alice emergency exits (forfeits pending rewards)
         vm.prank(alice);
         stakingRewards.emergencyExit();
+        // Finalize next epoch to fully remove active stake
+        _rollEpoch();
+        vm.prank(alice);
+        stakingRewards.finalizeUnstake();
 
         // Now _activeStaked() == 0 but unallocatedRewards > 0
         assertEq(stakingRewards.balanceOf(alice), 0);
@@ -648,6 +739,9 @@ contract StakingRewardsConsolidated is Test {
         stakingRewards.stake(1000000 ether);
         vm.stopPrank();
 
+        // Activate to set eligibleTotal
+        _rollEpoch();
+
         // Try to distribute very small amount that won't move index
         vm.startPrank(owner);
         hlg.approve(address(stakingRewards), 1);
@@ -686,22 +780,30 @@ contract StakingRewardsConsolidated is Test {
         stakingRewards.stake(200 ether);
         vm.stopPrank();
 
-        // Distribute rewards
+        // Activate stakes then distribute rewards
+        _rollEpoch();
         vm.startPrank(owner);
         hlg.approve(address(stakingRewards), 90 ether);
         stakingRewards.depositAndDistribute(90 ether);
         vm.stopPrank();
 
         // Both users compound and exit
+        stakingRewards.updateUser(alice);
+        stakingRewards.updateUser(bob);
         vm.prank(alice);
         stakingRewards.unstake();
         vm.prank(bob);
         stakingRewards.unstake();
 
-        // totalStaked should be 0, but there might be dust in unallocatedRewards
+        // Finalize next epoch and new user stakes - should work normally
+        _rollEpoch();
+        vm.prank(alice);
+        stakingRewards.finalizeUnstake();
+        vm.prank(bob);
+        stakingRewards.finalizeUnstake();
+        // After both finalize, only unallocated should remain in totalStaked
         assertEq(stakingRewards.totalStaked(), stakingRewards.unallocatedRewards());
-
-        // New user stakes - should work normally
+        _rollEpoch();
         vm.startPrank(charlie);
         hlg.approve(address(stakingRewards), 500 ether);
         stakingRewards.stake(500 ether);
@@ -710,12 +812,15 @@ contract StakingRewardsConsolidated is Test {
         assertEq(stakingRewards.balanceOf(charlie), 500 ether);
 
         // System should work normally with new distributions
+        // Activate Charlie then distribute
+        _rollEpoch();
         vm.startPrank(owner);
         hlg.approve(address(stakingRewards), 100 ether);
         stakingRewards.depositAndDistribute(100 ether);
         vm.stopPrank();
 
-        // Charlie should earn rewards normally
+        // Mature and then Charlie should earn rewards normally
+        _rollEpoch();
         uint256 charliePending = stakingRewards.earned(charlie);
         assertEq(charliePending, 50 ether); // 50% of 100 HLG distributed
     }
@@ -777,6 +882,7 @@ contract StakingRewardsConsolidated is Test {
         uint256 rewardAmount = 500; // Tiny reward that would result in index delta == 0
 
         // Should revert with RewardTooSmall since the dust guard prevents it
+        _rollEpoch();
         vm.startPrank(owner);
         hlg.approve(address(stakingRewards), rewardAmount);
         vm.expectRevert(StakingRewards.RewardTooSmall.selector);
@@ -799,11 +905,13 @@ contract StakingRewardsConsolidated is Test {
         uint256 initialUnallocated = stakingRewards.unallocatedRewards();
         uint256 initialSurplus = stakingRewards.getExtraTokens();
 
-        // Distribute rewards
+        // Activate then distribute rewards
+        _rollEpoch();
         vm.startPrank(owner);
         hlg.approve(address(stakingRewards), rewardAmount);
         stakingRewards.depositAndDistribute(rewardAmount);
         vm.stopPrank();
+        _rollEpoch();
 
         // Assert unallocatedRewards increased by full actualReward
         assertEq(
@@ -865,7 +973,10 @@ contract StakingRewardsConsolidated is Test {
                 vm.prank(alice);
                 stakingRewards.unstake();
 
-                // Re-stake something to continue
+                // Finalize next epoch then re-stake to continue
+                _rollEpoch();
+                vm.prank(alice);
+                stakingRewards.finalizeUnstake();
                 vm.startPrank(alice);
                 hlg.approve(address(stakingRewards), 1000 ether);
                 stakingRewards.stake(1000 ether);
@@ -885,11 +996,15 @@ contract StakingRewardsConsolidated is Test {
         stakingRewards.stake(1 ether);
         vm.stopPrank();
 
-        // First distribution: 1 HLG total, 50% rewards -> 0.5 HLG over active=1
+        // Activate Alice
+        _rollEpoch();
+
+        // First distribution: 1 HLG total, 50% rewards -> 0.5 HLG over active=1, then mature
         vm.startPrank(owner);
         hlg.approve(address(stakingRewards), 1 ether);
         stakingRewards.depositAndDistribute(1 ether);
         vm.stopPrank();
+        _rollEpoch();
 
         // Bob stakes 1 HLG after first distribution
         vm.startPrank(bob);
@@ -897,11 +1012,14 @@ contract StakingRewardsConsolidated is Test {
         stakingRewards.stake(1 ether);
         vm.stopPrank();
 
-        // Second distribution: 1 HLG total, 50% rewards -> 0.5 HLG over active=2
+        // Activate Bob
+        _rollEpoch();
+        // Second distribution: 1 HLG total, 50% rewards -> 0.5 HLG over active=2, then mature
         vm.startPrank(owner);
         hlg.approve(address(stakingRewards), 1 ether);
         stakingRewards.depositAndDistribute(1 ether);
         vm.stopPrank();
+        _rollEpoch();
 
         // Expected rewardPerToken index = 0.5e12 + 0.25e12 = 0.75e12
         assertEq(stakingRewards.rewardPerToken(), 750_000_000_000);
@@ -915,11 +1033,13 @@ contract StakingRewardsConsolidated is Test {
         stakingRewards.stake(1 ether);
         vm.stopPrank();
 
-        // First distribution with only Alice active
+        // Activate Alice then distribute and mature
+        _rollEpoch();
         vm.startPrank(owner);
         hlg.approve(address(stakingRewards), 1 ether);
         stakingRewards.depositAndDistribute(1 ether); // 0.5 HLG rewards
         vm.stopPrank();
+        _rollEpoch();
 
         // Bob stakes 1 HLG, then second distribution
         vm.startPrank(bob);
@@ -927,10 +1047,13 @@ contract StakingRewardsConsolidated is Test {
         stakingRewards.stake(1 ether);
         vm.stopPrank();
 
+        // Activate Bob then distribute and mature
+        _rollEpoch();
         vm.startPrank(owner);
         hlg.approve(address(stakingRewards), 1 ether);
         stakingRewards.depositAndDistribute(1 ether); // +0.5 HLG rewards over active=2
         vm.stopPrank();
+        _rollEpoch();
 
         // Alice should have 0.75 HLG pending (0.5 from first, 0.25 from second)
         // Bob should have 0.25 HLG pending (only second distribution share)
@@ -953,11 +1076,13 @@ contract StakingRewardsConsolidated is Test {
         stakingRewards.stake(10 ether);
         vm.stopPrank();
 
-        // Distribute to bump index
+        // Distribute to bump index (activate + distribute + mature)
+        _rollEpoch();
         vm.startPrank(owner);
         hlg.approve(address(stakingRewards), 10 ether);
         stakingRewards.depositAndDistribute(10 ether);
         vm.stopPrank();
+        _rollEpoch();
 
         // Snapshot remains 0 until Alice is updated
         assertEq(stakingRewards.userIndexSnapshot(alice), 0);
@@ -968,10 +1093,13 @@ contract StakingRewardsConsolidated is Test {
         stakingRewards.updateUser(alice);
         assertEq(stakingRewards.userIndexSnapshot(alice), indexBefore);
 
-        // Full exit resets snapshot to 0
+        // Full exit resets snapshot to current index on finalize; next update sets it to global
         vm.prank(alice);
         stakingRewards.unstake();
-        assertEq(stakingRewards.userIndexSnapshot(alice), 0);
+        _rollEpoch();
+        vm.prank(alice);
+        stakingRewards.finalizeUnstake();
+        assertEq(stakingRewards.userIndexSnapshot(alice), stakingRewards.rewardPerToken());
     }
 
     /// @notice addRewards() with zero active stakers does not transfer tokens or change index
@@ -1002,10 +1130,13 @@ contract StakingRewardsConsolidated is Test {
         stakingRewards.stake(100 ether);
         vm.stopPrank();
 
+        // Activate Alice then distribute and mature
+        _rollEpoch();
         vm.startPrank(owner);
         hlg.approve(address(stakingRewards), 50 ether);
         stakingRewards.depositAndDistribute(50 ether); // 25 rewards
         vm.stopPrank();
+        _rollEpoch();
 
         // Bob (third-party) can settle Alice via updateUser
         vm.prank(bob);
@@ -1023,11 +1154,13 @@ contract StakingRewardsConsolidated is Test {
         stakingRewards.stake(1 ether);
         vm.stopPrank();
 
-        // First distribution: 1 HLG total -> 0.5 reward over active=1
+        // Activate Alice then first distribution -> 0.5 reward over active=1, then mature
+        _rollEpoch();
         vm.startPrank(owner);
         hlg.approve(address(stakingRewards), 1 ether);
         stakingRewards.depositAndDistribute(1 ether);
         vm.stopPrank();
+        _rollEpoch();
 
         // Bob stakes 1 HLG
         vm.startPrank(bob);
@@ -1035,11 +1168,13 @@ contract StakingRewardsConsolidated is Test {
         stakingRewards.stake(1 ether);
         vm.stopPrank();
 
-        // Second distribution: 1 HLG total -> 0.5 reward over active=2
+        // Activate Bob then second distribution -> 0.5 reward over active=2, then mature
+        _rollEpoch();
         vm.startPrank(owner);
         hlg.approve(address(stakingRewards), 1 ether);
         stakingRewards.depositAndDistribute(1 ether);
         vm.stopPrank();
+        _rollEpoch();
 
         // Charlie stakes 2 HLG
         vm.startPrank(charlie);
@@ -1047,11 +1182,13 @@ contract StakingRewardsConsolidated is Test {
         stakingRewards.stake(2 ether);
         vm.stopPrank();
 
-        // Third distribution: 2 HLG total -> 1 reward over active=4
+        // Activate Charlie then third distribution -> 1 reward over active=4, then mature
+        _rollEpoch();
         vm.startPrank(owner);
         hlg.approve(address(stakingRewards), 2 ether);
         stakingRewards.depositAndDistribute(2 ether);
         vm.stopPrank();
+        _rollEpoch();
 
         // Expected pendings: Alice 1.0, Bob 0.5, Charlie 0.5
         assertEq(stakingRewards.earned(alice), 1 ether);
@@ -1082,17 +1219,20 @@ contract StakingRewardsConsolidated is Test {
         stakingRewards.stake(2 ether);
         vm.stopPrank();
 
-        // Distribute 2 -> 1 reward over active=4 (Alice 0.5, Bob 0.5)
+        // Activate both then distribute and mature: 2 -> 1 reward over active=4 (Alice 0.5, Bob 0.5)
+        _rollEpoch();
         vm.startPrank(owner);
         hlg.approve(address(stakingRewards), 2 ether);
         stakingRewards.depositAndDistribute(2 ether);
         vm.stopPrank();
+        _rollEpoch();
 
         // Alice settles and exits
         stakingRewards.updateUser(alice);
         vm.prank(alice);
         stakingRewards.unstake();
-        assertEq(stakingRewards.balanceOf(alice), 0);
+        // Balance remains until finalize
+        assertGt(stakingRewards.balanceOf(alice), 0);
 
         // Charlie joins with 2
         vm.startPrank(charlie);
@@ -1100,11 +1240,13 @@ contract StakingRewardsConsolidated is Test {
         stakingRewards.stake(2 ether);
         vm.stopPrank();
 
-        // Distribute 2 -> 1 reward over active=4 (Bob 0.5, Charlie 0.5)
+        // Activate Charlie then distribute and mature: 2 -> 1 reward over active=4 (Bob 0.5, Charlie 0.5)
+        _rollEpoch();
         vm.startPrank(owner);
         hlg.approve(address(stakingRewards), 2 ether);
         stakingRewards.depositAndDistribute(2 ether);
         vm.stopPrank();
+        _rollEpoch();
 
         // Bob total pending 1.0, Charlie 0.5, Alice 0 (exited after settling)
         assertEq(stakingRewards.earned(bob), 1 ether);
@@ -1140,11 +1282,14 @@ contract StakingRewardsConsolidated is Test {
         stakingRewards.stakeFromDistributor(charlie, 1 ether);
         vm.stopPrank();
 
+        // Activate all stakes
+        _rollEpoch();
         // Distribute 2 -> 1 reward over active=4 (Alice 0.25, Bob 0.5, Charlie 0.25)
         vm.startPrank(owner);
         hlg.approve(address(stakingRewards), 2 ether);
         stakingRewards.depositAndDistribute(2 ether);
         vm.stopPrank();
+        _rollEpoch();
 
         // Settle and verify balances
         stakingRewards.updateUser(alice);
@@ -1207,12 +1352,23 @@ contract StakingRewardsConsolidated is Test {
                 rng = uint256(keccak256(abi.encode(rng)));
                 stakingRewards.updateUser(user);
             } else if (action == 3) {
-                // Unstake random user if has balance
+                // Unstake or finalize for a random user, respecting epoch gating
                 address user = [alice, bob, charlie][rng % 3];
                 rng = uint256(keccak256(abi.encode(rng)));
                 if (stakingRewards.balanceOf(user) > 0) {
-                    vm.prank(user);
-                    stakingRewards.unstake();
+                    if (stakingRewards.pendingWithdrawalAmount(user) == 0) {
+                        vm.prank(user);
+                        // Ignore failures
+                        try stakingRewards.unstake() {} catch {}
+                    } else {
+                        // If eligible, finalize; otherwise skip this action
+                        uint256 nowEpoch = stakingRewards.currentEpoch();
+                        uint256 availEpoch = stakingRewards.pendingWithdrawalEpoch(user);
+                        if (nowEpoch >= availEpoch) {
+                            vm.prank(user);
+                            try stakingRewards.finalizeUnstake() {} catch {}
+                        }
+                    }
                 }
             } else if (action == 4) {
                 // Pause/unpause rarely
@@ -1249,12 +1405,11 @@ contract StakingRewardsConsolidated is Test {
         stakingRewards.depositAndDistribute(10 ether);
         vm.stopPrank();
 
-        // Pause; funding should revert, snapshot unchanged
+        // Activate, then pause; funding while paused should not revert (no-op here)
         vm.prank(owner);
         stakingRewards.pause();
         vm.startPrank(owner);
         hlg.approve(address(stakingRewards), 1 ether);
-        vm.expectRevert();
         stakingRewards.depositAndDistribute(1 ether);
         vm.stopPrank();
         assertEq(stakingRewards.userIndexSnapshot(alice), 0);
@@ -1262,10 +1417,12 @@ contract StakingRewardsConsolidated is Test {
         // Unpause and distribute again; then settle
         vm.prank(owner);
         stakingRewards.unpause();
+        // Distribute again and mature, then settle
         vm.startPrank(owner);
         hlg.approve(address(stakingRewards), 10 ether);
         stakingRewards.depositAndDistribute(10 ether);
         vm.stopPrank();
+        _rollEpoch();
 
         uint256 indexNow = stakingRewards.rewardPerToken();
         stakingRewards.updateUser(alice);
@@ -1309,8 +1466,15 @@ contract StakingRewardsConsolidated is Test {
         assertEq(stakingRewards.totalStakers(), 1);
 
         stakingRewards.unstake();
-        assertEq(stakingRewards.totalStakers(), 0);
+        // Count doesn't decrement until finalized
+        assertEq(stakingRewards.totalStakers(), 1);
         vm.stopPrank();
+
+        // Roll epoch and finalize
+        _rollEpoch();
+        vm.prank(alice);
+        stakingRewards.finalizeUnstake();
+        assertEq(stakingRewards.totalStakers(), 0);
     }
 
     /// @notice Staker count decrements on emergency exit
@@ -1321,8 +1485,15 @@ contract StakingRewardsConsolidated is Test {
         assertEq(stakingRewards.totalStakers(), 1);
 
         stakingRewards.emergencyExit();
-        assertEq(stakingRewards.totalStakers(), 0);
+        // Count doesn't decrement until finalized
+        assertEq(stakingRewards.totalStakers(), 1);
         vm.stopPrank();
+
+        // Roll epoch and finalize
+        _rollEpoch();
+        vm.prank(alice);
+        stakingRewards.finalizeUnstake();
+        assertEq(stakingRewards.totalStakers(), 0);
     }
 
     /// @notice Staker count tracks multiple users correctly
@@ -1353,16 +1524,31 @@ contract StakingRewardsConsolidated is Test {
         // Alice exits
         vm.prank(alice);
         stakingRewards.unstake();
+        assertEq(stakingRewards.totalStakers(), 3); // Still 3 until finalized
+
+        _rollEpoch();
+        vm.prank(alice);
+        stakingRewards.finalizeUnstake();
         assertEq(stakingRewards.totalStakers(), 2);
 
         // Bob exits
         vm.prank(bob);
         stakingRewards.emergencyExit();
+        assertEq(stakingRewards.totalStakers(), 2); // Still 2 until finalized
+
+        _rollEpoch();
+        vm.prank(bob);
+        stakingRewards.finalizeUnstake();
         assertEq(stakingRewards.totalStakers(), 1);
 
         // Charlie exits
         vm.prank(charlie);
         stakingRewards.unstake();
+        assertEq(stakingRewards.totalStakers(), 1); // Still 1 until finalized
+
+        _rollEpoch();
+        vm.prank(charlie);
+        stakingRewards.finalizeUnstake();
         assertEq(stakingRewards.totalStakers(), 0);
     }
 
@@ -1391,6 +1577,11 @@ contract StakingRewardsConsolidated is Test {
         // Exit still decrements count
         vm.prank(alice);
         stakingRewards.unstake();
+        assertEq(stakingRewards.totalStakers(), 1); // Still 1 until finalized
+
+        _rollEpoch();
+        vm.prank(alice);
+        stakingRewards.finalizeUnstake();
         assertEq(stakingRewards.totalStakers(), 0);
     }
 
@@ -1420,10 +1611,20 @@ contract StakingRewardsConsolidated is Test {
         // Users can still exit and count decrements
         vm.prank(alice);
         stakingRewards.unstake();
+        assertEq(stakingRewards.totalStakers(), 2); // Still 2 until finalized
+
+        _rollEpoch();
+        vm.prank(alice);
+        stakingRewards.finalizeUnstake();
         assertEq(stakingRewards.totalStakers(), 1);
 
         vm.prank(bob);
         stakingRewards.unstake();
+        assertEq(stakingRewards.totalStakers(), 1); // Still 1 until finalized
+
+        _rollEpoch();
+        vm.prank(bob);
+        stakingRewards.finalizeUnstake();
         assertEq(stakingRewards.totalStakers(), 0);
     }
 
@@ -1489,10 +1690,20 @@ contract StakingRewardsConsolidated is Test {
         // Users can exit normally
         vm.prank(alice);
         stakingRewards.unstake();
+        assertEq(stakingRewards.totalStakers(), 2); // Still 2 until finalized
+
+        _rollEpoch();
+        vm.prank(alice);
+        stakingRewards.finalizeUnstake();
         assertEq(stakingRewards.totalStakers(), 1);
 
         vm.prank(bob);
         stakingRewards.unstake();
+        assertEq(stakingRewards.totalStakers(), 1); // Still 1 until finalized
+
+        _rollEpoch();
+        vm.prank(bob);
+        stakingRewards.finalizeUnstake();
         assertEq(stakingRewards.totalStakers(), 0);
     }
 
@@ -1511,7 +1722,14 @@ contract StakingRewardsConsolidated is Test {
             } else {
                 stakingRewards.emergencyExit();
             }
+            assertEq(stakingRewards.totalStakers(), 1); // Still 1 until finalized
+            vm.stopPrank();
+
+            _rollEpoch();
+            vm.prank(alice);
+            stakingRewards.finalizeUnstake();
             assertEq(stakingRewards.totalStakers(), 0);
+            vm.startPrank(alice); // Resume prank for loop
             vm.stopPrank();
         }
     }
@@ -1529,10 +1747,18 @@ contract StakingRewardsConsolidated is Test {
             assertEq(stakingRewards.totalStakers(), i + 1);
         }
 
-        // Rapid unstakes
+        // Rapid unstakes (need to finalize each)
         for (uint256 i = 0; i < 3; i++) {
             vm.prank(users[i]);
             stakingRewards.unstake();
+            assertEq(stakingRewards.totalStakers(), 3); // Count unchanged until finalized
+        }
+
+        // Roll epoch and finalize all
+        _rollEpoch();
+        for (uint256 i = 0; i < 3; i++) {
+            vm.prank(users[i]);
+            stakingRewards.finalizeUnstake();
             assertEq(stakingRewards.totalStakers(), 2 - i);
         }
     }
@@ -1554,6 +1780,11 @@ contract StakingRewardsConsolidated is Test {
         // Can still exit while paused
         vm.prank(alice);
         stakingRewards.unstake();
+        assertEq(stakingRewards.totalStakers(), 1); // Still 1 until finalized
+
+        _rollEpoch();
+        vm.prank(alice);
+        stakingRewards.finalizeUnstake();
         assertEq(stakingRewards.totalStakers(), 0);
 
         // Use stakeFor while paused
@@ -1562,8 +1793,9 @@ contract StakingRewardsConsolidated is Test {
         stakingRewards.stakeFor(bob, STAKE_AMOUNT);
         assertEq(stakingRewards.totalStakers(), 1);
 
-        // Unpause
+        // Unpause and activate epoch for fair distribution
         stakingRewards.unpause();
+        _rollEpoch();
         vm.stopPrank();
         assertEq(stakingRewards.totalStakers(), 1);
 

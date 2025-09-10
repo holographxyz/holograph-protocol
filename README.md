@@ -10,7 +10,7 @@ Holograph Protocol creates ERC-20 tokens with identical addresses on all support
 
 - **Deterministic Addresses**: CREATE2-based deployment ensures consistent addresses across chains
 - **Doppler Integration**: Authorized token factory for Doppler Airlock launches
-- **Auto-Compounding Staking**: HLG staking rewards with automatic compounding
+- **Auto-Compounding Staking**: Epoch-gated HLG staking; weekly epochs; auto-compounding matured rewards
 - **Cross-Chain Fee Collection**: Automated fee bridging and distribution via LayerZero V2
 - **Configurable Tokenomics**: Adjustable burn/reward split for protocol sustainability
 
@@ -105,7 +105,7 @@ Comprehensive documentation available in the [`docs/`](docs/) directory:
 | [Deployment Guide](docs/DEPLOYMENT.md)         | Step-by-step deployment instructions  |
 | [Contract Architecture](docs/CONTRACTS.md)     | Detailed contract documentation       |
 | [Security](docs/SECURITY.md)                   | Security features and best practices  |
-| [Staking Rewards](docs/STAKING_REWARDS.md)     | StakingRewards contract deep dive     |
+| [Staking Rewards](docs/STAKING_REWARDS.md)     | StakingRewards deep dive (epoch semantics, activation/compounding order) |
 | [Protocol Flow](docs/PROTOCOL_FLOW.md)         | System architecture and flow diagrams |
 | [Operations Guide](docs/OPERATIONS.md)         | Fee operations and monitoring         |
 | [Scripts Overview](docs/SCRIPTS_OVERVIEW.md)   | Deployment and operational scripts    |
