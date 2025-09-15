@@ -349,8 +349,6 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
      * @param rewardAmount Amount of HLG rewards to distribute to stakers
      */
     function _addRewards(uint256 rewardAmount) internal {
-        if (rewardAmount == 0) return;
-
         uint256 staked = _activeStaked();
         // index bump uses active stake
         globalRewardIndex += (rewardAmount * INDEX_PRECISION) / staked;
