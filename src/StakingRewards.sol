@@ -489,6 +489,7 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
     function recoverToken(address token, address to, uint256 amountMinimum) external onlyOwner nonReentrant {
         if (token == address(HLG)) revert CannotRecoverStakeToken();
         if (to == address(0)) revert ZeroAddress();
+        if (amountMinimum == 0) revert ZeroAmount();
 
         uint256 amount = IERC20(token).balanceOf(address(this));
         if (amount < amountMinimum) revert InsufficientToken();
@@ -504,6 +505,7 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
      */
     function recoverExtraHLG(address to, uint256 amount) external onlyOwner nonReentrant {
         if (to == address(0)) revert ZeroAddress();
+        if (amount == 0) revert ZeroAmount();
         uint256 bal = HLG.balanceOf(address(this));
         uint256 free = bal > totalStaked ? bal - totalStaked : 0;
         if (amount > free) revert NotEnoughExtraTokens();
