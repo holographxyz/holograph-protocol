@@ -217,8 +217,8 @@ contract FeeRouterTest is Test {
         // Step 4: Verify proportional reward distribution
 
         // Check that rewards were distributed proportionally based on stake
-        uint256 staker1RewardsHLG = stakingRewards.earned(staker1);
-        uint256 staker2RewardsHLG = stakingRewards.earned(staker2);
+        uint256 staker1RewardsHLG = stakingRewards.pendingRewards(staker1);
+        uint256 staker2RewardsHLG = stakingRewards.pendingRewards(staker2);
 
         // Staker1 has 500/2500 = 20% of total stake
         // Staker2 has 2000/2500 = 80% of total stake
@@ -233,12 +233,14 @@ contract FeeRouterTest is Test {
         // Before any interaction, check that rewards are pending
         assertApproxEqAbs(staker1RewardsHLG, expectedStaker1RewardsHLG, 1e15);
 
-        // Trigger auto-compounding for staker1
-        stakingRewards.updateUser(staker1);
+        // Verify total balance including pending rewards (updateUser is now internal)
+        assertApproxEqAbs(
+            stakingRewards.balanceWithPendingRewards(staker1), staker1StakeAmount + expectedStaker1RewardsHLG, 1e15
+        );
 
-        // Verify rewards were auto-compounded into balance
-        assertApproxEqAbs(stakingRewards.balanceOf(staker1), staker1StakeAmount + expectedStaker1RewardsHLG, 1e15);
-        assertEq(stakingRewards.earned(staker1), 0); // No more pending rewards
+        // Current balance should still be original stake amount until next user action triggers compounding
+        assertEq(stakingRewards.balanceOf(staker1), staker1StakeAmount);
+        assertApproxEqAbs(stakingRewards.pendingRewards(staker1), expectedStaker1RewardsHLG, 1e15); // Pending rewards
     }
 
     function test_MultipleFeeCycles() public {
@@ -265,7 +267,7 @@ contract FeeRouterTest is Test {
         feeRouterBase.bridge(200000, expectedHlgToStakers);
 
         // Check HLG rewards after first cycle
-        uint256 rewardsAfterFirstCycle = stakingRewards.earned(staker1);
+        uint256 rewardsAfterFirstCycle = stakingRewards.pendingRewards(staker1);
 
         // Second fee cycle
 
@@ -277,7 +279,7 @@ contract FeeRouterTest is Test {
         feeRouterBase.bridge(200000, expectedHlgToStakers);
 
         // Check HLG rewards after second cycle
-        uint256 rewardsAfterSecondCycle = stakingRewards.earned(staker1);
+        uint256 rewardsAfterSecondCycle = stakingRewards.pendingRewards(staker1);
 
         // Rewards should have increased from first cycle
         // First cycle: ~249.5 HLG rewards
@@ -370,14 +372,14 @@ contract FeeRouterTest is Test {
 
         // Check pending rewards (50% of what StakingRewards receives, 50% burned)
         uint256 expectedRewards = (rewardAmount * (10000 - stakingRewards.burnPercentage())) / 10000;
-        assertApproxEqAbs(stakingRewards.earned(staker1), expectedRewards, 1);
+        assertApproxEqAbs(stakingRewards.pendingRewards(staker1), expectedRewards, 1);
 
-        // Trigger auto-compounding
-        stakingRewards.updateUser(staker1);
+        // Verify total balance including pending rewards (updateUser is now internal)
+        assertApproxEqAbs(stakingRewards.balanceWithPendingRewards(staker1), stakeAmountHLG + expectedRewards, 1);
 
-        // Verify rewards were compounded into balance
-        assertApproxEqAbs(stakingRewards.balanceOf(staker1), stakeAmountHLG + expectedRewards, 1);
-        assertEq(stakingRewards.earned(staker1), 0); // No more pending rewards
+        // Current balance should still be original stake until next user action triggers compounding
+        assertEq(stakingRewards.balanceOf(staker1), stakeAmountHLG);
+        assertApproxEqAbs(stakingRewards.pendingRewards(staker1), expectedRewards, 1); // Pending rewards
 
         // Full unstake should give original stake + compounded rewards
         uint256 expectedTotal = stakeAmountHLG + expectedRewards;
@@ -450,9 +452,9 @@ contract FeeRouterTest is Test {
         vm.prank(owner);
         feeRouterBase.bridge(200000, expectedRewardAmountHLG);
 
-        // Check actual HLG rewards earned
-        uint256 staker1RewardsHLG = stakingRewards.earned(staker1);
-        uint256 staker2RewardsHLG = stakingRewards.earned(staker2);
+        // Check actual HLG rewards pendingRewards
+        uint256 staker1RewardsHLG = stakingRewards.pendingRewards(staker1);
+        uint256 staker2RewardsHLG = stakingRewards.pendingRewards(staker2);
 
         // Check proportional distribution
         // Staker1: 30% of 35,971.225 HLG = 10,791.375 HLG

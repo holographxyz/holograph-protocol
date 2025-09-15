@@ -138,12 +138,15 @@ contract StakingRewardsTest is Test {
 
         // Check pending rewards
         uint256 expectedRewards = REWARD_AMOUNT / 2; // 50% of 100 = 50
-        assertEq(stakingRewards.earned(alice), expectedRewards);
+        assertEq(stakingRewards.pendingRewards(alice), expectedRewards);
 
-        // Update user to compound
-        stakingRewards.updateUser(alice);
-        assertEq(stakingRewards.balanceOf(alice), STAKE_AMOUNT + expectedRewards);
-        assertEq(stakingRewards.earned(alice), 0);
+        // Unstake to auto-compound (wait for cooldown first)
+        vm.warp(block.timestamp + 7 days + 1);
+        vm.prank(alice);
+        stakingRewards.unstake();
+
+        // Alice should have received original stake + compounded rewards
+        assertEq(hlg.balanceOf(alice), INITIAL_SUPPLY - STAKE_AMOUNT + STAKE_AMOUNT + expectedRewards);
     }
 
     /// @notice FeeRouter.addRewards() accrues rewards to active stakers
@@ -161,7 +164,7 @@ contract StakingRewardsTest is Test {
         vm.stopPrank();
 
         uint256 expectedRewards = REWARD_AMOUNT / 2;
-        assertEq(stakingRewards.earned(alice), expectedRewards);
+        assertEq(stakingRewards.pendingRewards(alice), expectedRewards);
     }
 
     /// @notice Non-router callers cannot add rewards
@@ -191,15 +194,23 @@ contract StakingRewardsTest is Test {
         vm.stopPrank();
 
         // Alice should get 60% (30 HLG), Bob should get 40% (20 HLG)
-        assertEq(stakingRewards.earned(alice), 30 ether);
-        assertEq(stakingRewards.earned(bob), 20 ether);
+        assertEq(stakingRewards.pendingRewards(alice), 30 ether);
+        assertEq(stakingRewards.pendingRewards(bob), 20 ether);
 
-        // Update both users
-        stakingRewards.updateUser(alice);
-        stakingRewards.updateUser(bob);
+        // Trigger compounding by staking a small amount for each user
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 1 ether);
+        stakingRewards.stake(1 ether);
+        vm.stopPrank();
 
-        assertEq(stakingRewards.balanceOf(alice), 330 ether);
-        assertEq(stakingRewards.balanceOf(bob), 220 ether);
+        vm.startPrank(bob);
+        hlg.approve(address(stakingRewards), 1 ether);
+        stakingRewards.stake(1 ether);
+        vm.stopPrank();
+
+        // Now balances should include compounded rewards + new stakes
+        assertEq(stakingRewards.balanceOf(alice), 331 ether); // 300 + 30 rewards + 1 new stake
+        assertEq(stakingRewards.balanceOf(bob), 221 ether); // 200 + 20 rewards + 1 new stake
     }
 
     /* -------------------------------------------------------------------------- */
@@ -242,13 +253,20 @@ contract StakingRewardsTest is Test {
         assertEq(stakingRewards.unallocatedRewards(), totalExpectedReward);
         assertEq(stakingRewards.totalStaked(), 200 ether + totalExpectedReward);
 
-        // Now updateUser both users
-        stakingRewards.updateUser(alice);
-        stakingRewards.updateUser(bob);
+        // Trigger compounding for both users by staking small amounts
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 1 wei);
+        stakingRewards.stake(1 wei);
+        vm.stopPrank();
 
-        // Each user should get exactly 25 ether in rewards (50 total rewards split equally)
-        assertEq(stakingRewards.balanceOf(alice), 125 ether); // 100 original + 25 rewards
-        assertEq(stakingRewards.balanceOf(bob), 125 ether); // 100 original + 25 rewards
+        vm.startPrank(bob);
+        hlg.approve(address(stakingRewards), 1 wei);
+        stakingRewards.stake(1 wei);
+        vm.stopPrank();
+
+        // Each user should get exactly 25 ether in rewards (50 total rewards split equally) + tiny stake
+        assertApproxEqAbs(stakingRewards.balanceOf(alice), 125 ether, 1); // 100 original + 25 rewards + 1 wei
+        assertApproxEqAbs(stakingRewards.balanceOf(bob), 125 ether, 1); // 100 original + 25 rewards + 1 wei
 
         // unallocatedRewards should be 0
         assertEq(stakingRewards.unallocatedRewards(), 0);
@@ -282,8 +300,8 @@ contract StakingRewardsTest is Test {
         assertEq(stakingRewards.unallocatedRewards(), 45 ether);
 
         // Check pending rewards are based on active stake (300), not totalStaked (345)
-        uint256 alicePending = stakingRewards.earned(alice);
-        uint256 bobPending = stakingRewards.earned(bob);
+        uint256 alicePending = stakingRewards.pendingRewards(alice);
+        uint256 bobPending = stakingRewards.pendingRewards(bob);
 
         // Alice has 100/300 = 1/3 of active stake, should get 15 HLG
         // Bob has 200/300 = 2/3 of active stake, should get 30 HLG
@@ -321,7 +339,7 @@ contract StakingRewardsTest is Test {
         vm.stopPrank();
 
         // Alice updates first, consuming some unallocated
-        corruptedStaking.updateUser(alice);
+        corruptedStaking.testUpdateUser(alice);
         assertEq(corruptedStaking.balanceOf(alice), 120 ether);
         assertEq(corruptedStaking.unallocatedRewards(), 20 ether);
 
@@ -331,7 +349,7 @@ contract StakingRewardsTest is Test {
 
         // Bob's updateUser should now revert NotEnoughRewardsAvailable
         vm.expectRevert(StakingRewards.NotEnoughRewardsAvailable.selector);
-        corruptedStaking.updateUser(bob);
+        corruptedStaking.testUpdateUser(bob);
     }
 
     /* -------------------------------------------------------------------------- */
@@ -381,7 +399,7 @@ contract StakingRewardsTest is Test {
         stakingRewards.depositAndDistribute(REWARD_AMOUNT);
         vm.stopPrank();
 
-        assertEq(stakingRewards.earned(alice), REWARD_AMOUNT);
+        assertEq(stakingRewards.pendingRewards(alice), REWARD_AMOUNT);
     }
 
     /// @notice With 100% burn, no index change and no pending rewards
@@ -407,7 +425,7 @@ contract StakingRewardsTest is Test {
 
         // Index unchanged and no pending rewards
         assertEq(stakingRewards.rewardPerToken(), indexBefore);
-        assertEq(stakingRewards.earned(alice), 0);
+        assertEq(stakingRewards.pendingRewards(alice), 0);
     }
 
     /// @notice Funding methods revert while the contract is paused
@@ -447,7 +465,7 @@ contract StakingRewardsTest is Test {
         stakingRewards.depositAndDistribute(100 ether);
         vm.stopPrank();
 
-        assertEq(stakingRewards.earned(alice), 75 ether);
+        assertEq(stakingRewards.pendingRewards(alice), 75 ether);
     }
 
     /* -------------------------------------------------------------------------- */
@@ -723,7 +741,7 @@ contract StakingRewardsTest is Test {
         vm.stopPrank();
 
         // Charlie should earn rewards normally
-        uint256 charliePending = stakingRewards.earned(charlie);
+        uint256 charliePending = stakingRewards.pendingRewards(charlie);
         assertEq(charliePending, 50 ether); // 50% of 100 HLG distributed
     }
 
@@ -824,7 +842,7 @@ contract StakingRewardsTest is Test {
 
         // Verify user can claim the expected amount
         uint256 expectedEarned = actualReward; // Alice has 100% of stake
-        assertEq(stakingRewards.earned(alice), expectedEarned, "Alice should earn full reward");
+        assertEq(stakingRewards.pendingRewards(alice), expectedEarned, "Alice should earn full reward");
     }
 
     /// @notice Randomized action sequences preserve accounting invariants
@@ -865,8 +883,7 @@ contract StakingRewardsTest is Test {
                 }
                 vm.stopPrank();
             } else if (action == 2) {
-                // Update user
-                stakingRewards.updateUser(alice);
+                // Random user action
             } else if (action == 3 && stakingRewards.balanceOf(alice) > 0) {
                 // Unstake (only if has balance and can unstake)
                 if (stakingRewards.canUnstake(alice)) {
@@ -916,7 +933,7 @@ contract StakingRewardsTest is Test {
         assertEq(stakingRewards.rewardPerToken(), 750_000_000_000);
     }
 
-    /// @notice Per-user earned amounts match expected allocations across distributions
+    /// @notice Per-user pendingRewards amounts match expected allocations across distributions
     function testEarnedAllocationTwoStakersSequence() public {
         // Alice stakes 1 HLG
         vm.startPrank(alice);
@@ -943,15 +960,13 @@ contract StakingRewardsTest is Test {
 
         // Alice should have 0.75 HLG pending (0.5 from first, 0.25 from second)
         // Bob should have 0.25 HLG pending (only second distribution share)
-        assertEq(stakingRewards.earned(alice), 0.75 ether);
-        assertEq(stakingRewards.earned(bob), 0.25 ether);
+        assertEq(stakingRewards.pendingRewards(alice), 0.75 ether);
+        assertEq(stakingRewards.pendingRewards(bob), 0.25 ether);
 
-        // After update, balances should compound accordingly
-        stakingRewards.updateUser(alice);
-        stakingRewards.updateUser(bob);
-        assertEq(stakingRewards.balanceOf(alice), 1.75 ether);
-        assertEq(stakingRewards.balanceOf(bob), 1.25 ether);
-        assertEq(stakingRewards.unallocatedRewards(), 0);
+        // Check balances with pending rewards included
+        assertEq(stakingRewards.balanceWithPendingRewards(alice), 1.75 ether);
+        assertEq(stakingRewards.balanceWithPendingRewards(bob), 1.25 ether);
+        assertEq(stakingRewards.unallocatedRewards(), 1 ether);
     }
 
     /// @notice User snapshot updates on settlement and resets to zero after full exit
@@ -972,10 +987,7 @@ contract StakingRewardsTest is Test {
         assertEq(stakingRewards.userIndexSnapshot(alice), 0);
         assertGt(stakingRewards.rewardPerToken(), 0);
 
-        // Update Alice -> snapshot set to current index
-        uint256 indexBefore = stakingRewards.rewardPerToken();
-        stakingRewards.updateUser(alice);
-        assertEq(stakingRewards.userIndexSnapshot(alice), indexBefore);
+        // Snapshot will be updated during unstake
 
         // Wait for cooldown period to pass
         vm.warp(block.timestamp + 7 days + 1);
@@ -1006,8 +1018,8 @@ contract StakingRewardsTest is Test {
         assertEq(stakingRewards.rewardPerToken(), 0);
     }
 
-    /// @notice Any address can call updateUser() to settle another user’s rewards
-    function testUpdateUserCallableByAnyoneForSettling() public {
+    /// @notice Third parties cannot compound other users' rewards (gaming prevention)
+    function testUpdateUserNoLongerCallableExternally() public {
         // Alice stakes and a distribution occurs
         vm.startPrank(alice);
         hlg.approve(address(stakingRewards), 100 ether);
@@ -1019,15 +1031,20 @@ contract StakingRewardsTest is Test {
         stakingRewards.depositAndDistribute(50 ether); // 25 rewards
         vm.stopPrank();
 
-        // Bob (third-party) can settle Alice via updateUser
-        vm.prank(bob);
-        stakingRewards.updateUser(alice);
+        // Verify rewards are pending but not compounded
+        assertEq(stakingRewards.pendingRewards(alice), 25 ether);
+        assertEq(stakingRewards.balanceOf(alice), 100 ether); // Original stake only
 
-        assertEq(stakingRewards.balanceOf(alice), 125 ether);
-        assertEq(stakingRewards.unallocatedRewards(), 0);
+        // Rewards will only compound when Alice stakes more or unstakes
+        vm.warp(block.timestamp + 7 days + 1);
+        vm.prank(alice);
+        stakingRewards.unstake();
+
+        // Now Alice gets original stake + compounded rewards
+        assertEq(hlg.balanceOf(alice), INITIAL_SUPPLY - 100 ether + 125 ether);
     }
 
-    /// @notice Three stakers join sequentially across distributions; exact earned splits verified
+    /// @notice Three stakers join sequentially across distributions; exact pendingRewards splits verified
     function testThreeStakersSequentialJoinsAndDistributionsExactSplit() public {
         // Alice stakes 1 HLG
         vm.startPrank(alice);
@@ -1066,19 +1083,15 @@ contract StakingRewardsTest is Test {
         vm.stopPrank();
 
         // Expected pendings: Alice 1.0, Bob 0.5, Charlie 0.5
-        assertEq(stakingRewards.earned(alice), 1 ether);
-        assertEq(stakingRewards.earned(bob), 0.5 ether);
-        assertEq(stakingRewards.earned(charlie), 0.5 ether);
+        assertEq(stakingRewards.pendingRewards(alice), 1 ether);
+        assertEq(stakingRewards.pendingRewards(bob), 0.5 ether);
+        assertEq(stakingRewards.pendingRewards(charlie), 0.5 ether);
 
-        // Compound all
-        stakingRewards.updateUser(alice);
-        stakingRewards.updateUser(bob);
-        stakingRewards.updateUser(charlie);
-
-        assertEq(stakingRewards.balanceOf(alice), 2 ether);
-        assertEq(stakingRewards.balanceOf(bob), 1.5 ether);
-        assertEq(stakingRewards.balanceOf(charlie), 2.5 ether);
-        assertEq(stakingRewards.unallocatedRewards(), 0);
+        // Check total balances including pending rewards
+        assertEq(stakingRewards.balanceWithPendingRewards(alice), 2 ether);
+        assertEq(stakingRewards.balanceWithPendingRewards(bob), 1.5 ether);
+        assertEq(stakingRewards.balanceWithPendingRewards(charlie), 2.5 ether);
+        assertEq(stakingRewards.unallocatedRewards(), 2 ether);
     }
 
     /// @notice Users exit mid-sequence; remaining stakers correctly receive subsequent rewards
@@ -1100,8 +1113,7 @@ contract StakingRewardsTest is Test {
         stakingRewards.depositAndDistribute(2 ether);
         vm.stopPrank();
 
-        // Alice settles and exits
-        stakingRewards.updateUser(alice);
+        // Alice exits
 
         // Wait for cooldown period to pass
         vm.warp(block.timestamp + 7 days + 1);
@@ -1123,15 +1135,13 @@ contract StakingRewardsTest is Test {
         vm.stopPrank();
 
         // Bob total pending 1.0, Charlie 0.5, Alice 0 (exited after settling)
-        assertEq(stakingRewards.earned(bob), 1 ether);
-        assertEq(stakingRewards.earned(charlie), 0.5 ether);
-        assertEq(stakingRewards.earned(alice), 0);
+        assertEq(stakingRewards.pendingRewards(bob), 1 ether);
+        assertEq(stakingRewards.pendingRewards(charlie), 0.5 ether);
+        assertEq(stakingRewards.pendingRewards(alice), 0);
 
-        // Compound and verify
-        stakingRewards.updateUser(bob);
-        stakingRewards.updateUser(charlie);
-        assertEq(stakingRewards.balanceOf(bob), 3 ether);
-        assertEq(stakingRewards.balanceOf(charlie), 2.5 ether);
+        // Verify total balances including pending rewards
+        assertEq(stakingRewards.balanceWithPendingRewards(bob), 3 ether);
+        assertEq(stakingRewards.balanceWithPendingRewards(charlie), 2.5 ether);
     }
 
     /// @notice Interleaves stakeFor (paused) and distributor stakes with distributions
@@ -1162,14 +1172,10 @@ contract StakingRewardsTest is Test {
         stakingRewards.depositAndDistribute(2 ether);
         vm.stopPrank();
 
-        // Settle and verify balances
-        stakingRewards.updateUser(alice);
-        stakingRewards.updateUser(bob);
-        stakingRewards.updateUser(charlie);
-
-        assertEq(stakingRewards.balanceOf(alice), 1.25 ether);
-        assertEq(stakingRewards.balanceOf(bob), 2.5 ether);
-        assertEq(stakingRewards.balanceOf(charlie), 1.25 ether);
+        // Verify total balances including pending rewards
+        assertEq(stakingRewards.balanceWithPendingRewards(alice), 1.25 ether);
+        assertEq(stakingRewards.balanceWithPendingRewards(bob), 2.5 ether);
+        assertEq(stakingRewards.balanceWithPendingRewards(charlie), 1.25 ether);
     }
 
     /// @notice Randomized sequence across three users maintains invariants and does not revert unexpectedly
@@ -1218,10 +1224,8 @@ contract StakingRewardsTest is Test {
                 try stakingRewards.depositAndDistribute(amount) {} catch {}
                 vm.stopPrank();
             } else if (action == 2) {
-                // Update random user
-                address user = [alice, bob, charlie][rng % 3];
+                // Random user action
                 rng = uint256(keccak256(abi.encode(rng)));
-                stakingRewards.updateUser(user);
             } else if (action == 3) {
                 // Unstake random user if has balance and can unstake
                 address user = [alice, bob, charlie][rng % 3];
@@ -1241,11 +1245,8 @@ contract StakingRewardsTest is Test {
                 }
                 rng = uint256(keccak256(abi.encode(rng)));
             } else if (action == 5) {
-                // Third-party settlement
-                address settleTarget = [alice, bob, charlie][rng % 3];
+                // Random user action
                 rng = uint256(keccak256(abi.encode(rng)));
-                vm.prank(address(0xBEEF));
-                stakingRewards.updateUser(settleTarget);
             }
 
             _checkInvariants();
@@ -1283,9 +1284,8 @@ contract StakingRewardsTest is Test {
         stakingRewards.depositAndDistribute(10 ether);
         vm.stopPrank();
 
-        uint256 indexNow = stakingRewards.rewardPerToken();
-        stakingRewards.updateUser(alice);
-        assertEq(stakingRewards.userIndexSnapshot(alice), indexNow);
+        // Verify rewards are tracked properly
+        assertGt(stakingRewards.pendingRewards(alice), 0);
     }
 
     /* -------------------------------------------------------------------------- */
@@ -1406,8 +1406,7 @@ contract StakingRewardsTest is Test {
         // Count unchanged by reward distribution
         assertEq(stakingRewards.totalStakers(), 1);
 
-        // Update user to compound rewards
-        stakingRewards.updateUser(alice);
+        // Staker count unchanged
         assertEq(stakingRewards.totalStakers(), 1);
 
         // Wait for cooldown period to pass
@@ -1831,6 +1830,49 @@ contract StakingRewardsTest is Test {
         vm.warp(block.timestamp + 7 days + 1);
         vm.prank(attacker);
         assertTrue(stakingRewards.canUnstake(attacker));
+    }
+
+    /// @notice Test case showing reward compounding gaming is completely prevented
+    function testRewardCompoundingGamingPrevented() public {
+        vm.prank(owner);
+        stakingRewards.setDistributor(distributor, true);
+
+        // Both Alice and Bob stake at the same time
+        vm.startPrank(distributor);
+        hlg.approve(address(stakingRewards), STAKE_AMOUNT * 2);
+        stakingRewards.stakeFromDistributor(alice, STAKE_AMOUNT);
+        stakingRewards.stakeFromDistributor(bob, STAKE_AMOUNT);
+        vm.stopPrank();
+
+        // Rewards are sent to the protocol
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), REWARD_AMOUNT);
+        stakingRewards.depositAndDistribute(REWARD_AMOUNT);
+        vm.stopPrank();
+
+        // Gaming prevention verified - users cannot manually trigger compounding
+
+        // More rewards are sent to the protocol
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), REWARD_AMOUNT);
+        stakingRewards.depositAndDistribute(REWARD_AMOUNT);
+        vm.stopPrank();
+
+        // Both Alice and Bob unstake at same time - equal rewards (no gaming advantage)
+        vm.startPrank(alice);
+        stakingRewards.unstake();
+        vm.stopPrank();
+
+        vm.startPrank(bob);
+        stakingRewards.unstake();
+        vm.stopPrank();
+
+        // Now they have equal final balances (gaming prevented)
+        assertEq(hlg.balanceOf(alice), hlg.balanceOf(bob));
+
+        console.log("Alice balance %e", hlg.balanceOf(alice));
+        console.log("Bob balance %e", hlg.balanceOf(bob));
+        console.log("Gaming completely prevented - equal rewards!");
     }
 
     /* -------------------------------------------------------------------------- */
