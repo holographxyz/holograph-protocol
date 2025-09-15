@@ -1000,8 +1000,8 @@ contract StakingRewardsTest is Test {
         assertEq(stakingRewards.userIndexSnapshot(alice), 0);
     }
 
-    /// @notice addRewards() with zero active stakers does not transfer tokens or change index
-    function testAddRewardsNoStakerDoesNotPullTokens() public {
+    /// @notice addRewards() with zero active stakers pulls tokens as extra tokens
+    function testAddRewardsNoStakerPullsTokensAsExtra() public {
         // Ensure no active stakers
         assertEq(stakingRewards.totalStaked(), 0);
         uint256 feeRouterBalanceBefore = hlg.balanceOf(feeRouter);
@@ -1013,11 +1013,16 @@ contract StakingRewardsTest is Test {
         stakingRewards.addRewards(100 ether);
         vm.stopPrank();
 
-        // Tokens should NOT be pulled; balances unchanged; index unchanged
-        assertEq(hlg.balanceOf(feeRouter), feeRouterBalanceBefore);
-        assertEq(hlg.balanceOf(address(stakingRewards)), contractBalanceBefore);
+        // Tokens SHOULD be pulled but no burn/distribution occurs (returns early)
+        assertEq(hlg.balanceOf(feeRouter), feeRouterBalanceBefore - 100 ether);
+        assertEq(hlg.balanceOf(address(stakingRewards)), contractBalanceBefore + 100 ether); // Full amount
+
+        // Index unchanged since no stakers
         assertEq(stakingRewards.unallocatedRewards(), 0);
         assertEq(stakingRewards.rewardPerToken(), 0);
+
+        // Full amount becomes extra tokens (no burn occurred)
+        assertEq(stakingRewards.getExtraTokens(), 100 ether);
     }
 
     /// @notice Third parties cannot compound other users' rewards (gaming prevention)
@@ -1994,6 +1999,94 @@ contract StakingRewardsTest is Test {
         // Should have moved the index
         assertGt(stakingRewards.globalRewardIndex(), 0);
         assertGt(stakingRewards.unallocatedRewards(), 0);
+    }
+
+    /// @notice Rewards sent to contract with no stakers can be recovered by owner
+    function testNoStakerRewardsRecoverable() public {
+        // Ensure no stakers
+        assertEq(stakingRewards.totalStaked(), 0);
+
+        uint256 ownerBalanceBefore = hlg.balanceOf(owner);
+
+        // FeeRouter sends rewards with no stakers
+        vm.startPrank(feeRouter);
+        hlg.approve(address(stakingRewards), 100 ether);
+        stakingRewards.addRewards(100 ether);
+        vm.stopPrank();
+
+        // Verify full amount is extra tokens (no burn occurred)
+        assertEq(stakingRewards.getExtraTokens(), 100 ether);
+
+        // Owner can recover the extra tokens
+        vm.prank(owner);
+        stakingRewards.recoverExtraHLG(owner, 100 ether);
+
+        // Owner receives the full amount
+        assertEq(hlg.balanceOf(owner), ownerBalanceBefore + 100 ether);
+    }
+
+    /// @notice Rewards accumulate as extra tokens when no stakers, then distribute when stakers join
+    function testNoStakerToStakerTransition() public {
+        // Ensure no stakers initially
+        assertEq(stakingRewards.totalStaked(), 0);
+
+        // FeeRouter sends rewards with no stakers (becomes extra tokens)
+        vm.startPrank(feeRouter);
+        hlg.approve(address(stakingRewards), 100 ether);
+        stakingRewards.addRewards(100 ether);
+        vm.stopPrank();
+
+        // Verify extra tokens (full amount, no burn)
+        assertEq(stakingRewards.getExtraTokens(), 100 ether);
+
+        // Alice stakes
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 1000 ether);
+        stakingRewards.stake(1000 ether);
+        vm.stopPrank();
+
+        // Extra tokens should still be there
+        assertEq(stakingRewards.getExtraTokens(), 100 ether);
+
+        // Now FeeRouter sends more rewards with active staker
+        vm.startPrank(feeRouter);
+        hlg.approve(address(stakingRewards), 100 ether);
+        stakingRewards.addRewards(100 ether);
+        vm.stopPrank();
+
+        // This time rewards should be distributed normally (with burn)
+        assertGt(stakingRewards.unallocatedRewards(), 0);
+
+        // Alice should have pending rewards from the second distribution
+        assertGt(stakingRewards.pendingRewards(alice), 0);
+
+        // Original extra tokens should still be recoverable
+        assertEq(stakingRewards.getExtraTokens(), 100 ether);
+    }
+
+    /// @notice Multiple no-staker reward cycles accumulate extra tokens
+    function testMultipleNoStakerCycles() public {
+        // Ensure no stakers
+        assertEq(stakingRewards.totalStaked(), 0);
+
+        // Multiple FeeRouter reward cycles with no stakers
+        for (uint256 i = 0; i < 3; i++) {
+            vm.startPrank(feeRouter);
+            hlg.approve(address(stakingRewards), 100 ether);
+            stakingRewards.addRewards(100 ether);
+            vm.stopPrank();
+        }
+
+        // All amounts should accumulate as extra tokens (no burn)
+        assertEq(stakingRewards.getExtraTokens(), 300 ether); // 3 * 100 ether
+
+        // Owner can recover all at once
+        uint256 ownerBalanceBefore = hlg.balanceOf(owner);
+        vm.prank(owner);
+        stakingRewards.recoverExtraHLG(owner, 300 ether);
+
+        assertEq(hlg.balanceOf(owner), ownerBalanceBefore + 300 ether);
+        assertEq(stakingRewards.getExtraTokens(), 0);
     }
 
     /* -------------------------------------------------------------------------- */

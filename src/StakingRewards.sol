@@ -231,16 +231,17 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
      * @notice Add rewards from FeeRouter (automated flow).
      * @param amount HLG to pull from FeeRouter
      * @dev Splits burn/reward and updates the index. If there are no stakers,
-     *      this call is a no-op.
+     *      rewards become extra tokens recoverable by owner.
      */
     function addRewards(uint256 amount) external nonReentrant whenNotPaused {
         if (msg.sender != feeRouter) revert Unauthorized();
+
+        // Pull tokens first to get the exact received amount
+        uint256 received = _pullHLG(msg.sender, amount);
         uint256 staked = _activeStaked();
         if (staked == 0) return;
         if (amount == 0) revert ZeroAmount();
 
-        // Pull tokens first to get the exact received amount
-        uint256 received = _pullHLG(msg.sender, amount);
         uint256 burnAmount = (received * burnPercentage) / MAX_PERCENTAGE;
         uint256 rewardAmount = received - burnAmount;
 
