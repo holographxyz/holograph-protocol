@@ -645,9 +645,6 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
         balanceOf[user] += amount;
         totalStaked += amount;
 
-        // Record staking timestamp to enforce cooldown
-        lastStakeTimestamp[user] = block.timestamp;
-
         emit Staked(user, amount);
         emit BoostedStake(msg.sender, user, amount);
     }

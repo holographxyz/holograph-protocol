@@ -79,6 +79,9 @@ contract StakingRewardsTest is Test {
         assertEq(stakingRewards.balanceOf(alice), STAKE_AMOUNT);
         assertEq(stakingRewards.totalStaked(), STAKE_AMOUNT);
 
+        // Wait for cooldown period to pass
+        vm.warp(block.timestamp + 7 days + 1);
+
         stakingRewards.unstake();
         assertEq(stakingRewards.balanceOf(alice), 0);
         assertEq(stakingRewards.totalStaked(), 0);
@@ -693,6 +696,9 @@ contract StakingRewardsTest is Test {
         stakingRewards.depositAndDistribute(90 ether);
         vm.stopPrank();
 
+        // Wait for cooldown period to pass
+        vm.warp(block.timestamp + 7 days + 1);
+
         // Both users compound and exit
         vm.prank(alice);
         stakingRewards.unstake();
@@ -862,15 +868,17 @@ contract StakingRewardsTest is Test {
                 // Update user
                 stakingRewards.updateUser(alice);
             } else if (action == 3 && stakingRewards.balanceOf(alice) > 0) {
-                // Unstake (only if has balance)
-                vm.prank(alice);
-                stakingRewards.unstake();
+                // Unstake (only if has balance and can unstake)
+                if (stakingRewards.canUnstake(alice)) {
+                    vm.prank(alice);
+                    stakingRewards.unstake();
 
-                // Re-stake something to continue
-                vm.startPrank(alice);
-                hlg.approve(address(stakingRewards), 1000 ether);
-                stakingRewards.stake(1000 ether);
-                vm.stopPrank();
+                    // Re-stake something to continue
+                    vm.startPrank(alice);
+                    hlg.approve(address(stakingRewards), 1000 ether);
+                    stakingRewards.stake(1000 ether);
+                    vm.stopPrank();
+                }
             }
 
             // Check invariants after each action
@@ -1094,6 +1102,10 @@ contract StakingRewardsTest is Test {
 
         // Alice settles and exits
         stakingRewards.updateUser(alice);
+
+        // Wait for cooldown period to pass
+        vm.warp(block.timestamp + 7 days + 1);
+
         vm.prank(alice);
         stakingRewards.unstake();
         assertEq(stakingRewards.balanceOf(alice), 0);
@@ -1211,10 +1223,10 @@ contract StakingRewardsTest is Test {
                 rng = uint256(keccak256(abi.encode(rng)));
                 stakingRewards.updateUser(user);
             } else if (action == 3) {
-                // Unstake random user if has balance
+                // Unstake random user if has balance and can unstake
                 address user = [alice, bob, charlie][rng % 3];
                 rng = uint256(keccak256(abi.encode(rng)));
-                if (stakingRewards.balanceOf(user) > 0) {
+                if (stakingRewards.balanceOf(user) > 0 && stakingRewards.canUnstake(user)) {
                     vm.prank(user);
                     stakingRewards.unstake();
                 }
@@ -1312,6 +1324,9 @@ contract StakingRewardsTest is Test {
         stakingRewards.stake(STAKE_AMOUNT);
         assertEq(stakingRewards.totalStakers(), 1);
 
+        // Wait for cooldown period to pass
+        vm.warp(block.timestamp + 7 days + 1);
+
         stakingRewards.unstake();
         assertEq(stakingRewards.totalStakers(), 0);
         vm.stopPrank();
@@ -1354,6 +1369,9 @@ contract StakingRewardsTest is Test {
         vm.stopPrank();
         assertEq(stakingRewards.totalStakers(), 3);
 
+        // Wait for cooldown period to pass
+        vm.warp(block.timestamp + 7 days + 1);
+
         // Alice exits
         vm.prank(alice);
         stakingRewards.unstake();
@@ -1392,6 +1410,9 @@ contract StakingRewardsTest is Test {
         stakingRewards.updateUser(alice);
         assertEq(stakingRewards.totalStakers(), 1);
 
+        // Wait for cooldown period to pass
+        vm.warp(block.timestamp + 7 days + 1);
+
         // Exit still decrements count
         vm.prank(alice);
         stakingRewards.unstake();
@@ -1421,7 +1442,7 @@ contract StakingRewardsTest is Test {
         vm.prank(owner);
         stakingRewards.unpause();
 
-        // Users can still exit and count decrements
+        // Users can still exit and count decrements (no cooldown from stakeFor)
         vm.prank(alice);
         stakingRewards.unstake();
         assertEq(stakingRewards.totalStakers(), 1);
@@ -1490,7 +1511,7 @@ contract StakingRewardsTest is Test {
         assertEq(stakingRewards.totalStakers(), 2);
         vm.stopPrank();
 
-        // Users can exit normally
+        // Users can exit normally (no cooldown from distributor staking)
         vm.prank(alice);
         stakingRewards.unstake();
         assertEq(stakingRewards.totalStakers(), 1);
@@ -1511,6 +1532,8 @@ contract StakingRewardsTest is Test {
             assertEq(stakingRewards.totalStakers(), 1);
 
             if (i % 2 == 0) {
+                // Wait for cooldown period to pass
+                vm.warp(block.timestamp + 7 days + 1);
                 stakingRewards.unstake();
             } else {
                 stakingRewards.emergencyExit();
@@ -1533,6 +1556,9 @@ contract StakingRewardsTest is Test {
             assertEq(stakingRewards.totalStakers(), i + 1);
         }
 
+        // Wait for cooldown period to pass
+        vm.warp(block.timestamp + 7 days + 1);
+
         // Rapid unstakes
         for (uint256 i = 0; i < 3; i++) {
             vm.prank(users[i]);
@@ -1554,6 +1580,9 @@ contract StakingRewardsTest is Test {
         vm.prank(owner);
         stakingRewards.pause();
         assertEq(stakingRewards.totalStakers(), 1);
+
+        // Wait for cooldown period to pass before unstaking
+        vm.warp(block.timestamp + 7 days + 1);
 
         // Can still exit while paused
         vm.prank(alice);
@@ -1673,28 +1702,21 @@ contract StakingRewardsTest is Test {
         stakingRewards.unstake();
     }
 
-    /// @notice Distributor staking still sets cooldown timestamp
-    function testDistributorStakeStillSetsTimestamp() public {
+    /// @notice Distributor staking does not set cooldown timestamp
+    function testDistributorStakeNoTimestamp() public {
         vm.prank(owner);
         stakingRewards.setDistributor(distributor, true);
 
-        // Distributor stakes for user (should set timestamp)
+        // Distributor stakes for user (should NOT set timestamp)
         vm.startPrank(distributor);
         hlg.approve(address(stakingRewards), 30 ether);
         stakingRewards.stakeFromDistributor(alice, 30 ether);
         vm.stopPrank();
 
-        // Check that timestamp WAS set
-        assertGt(stakingRewards.lastStakeTimestamp(alice), 0);
-        assertEq(stakingRewards.lastStakeTimestamp(alice), block.timestamp);
+        // Check that timestamp was NOT set (should remain 0)
+        assertEq(stakingRewards.lastStakeTimestamp(alice), 0);
 
-        // User should NOT be able to unstake immediately
-        assertFalse(stakingRewards.canUnstake(alice));
-
-        // Fast forward 7 days
-        vm.warp(block.timestamp + 7 days + 1);
-
-        // Now should be able to unstake
+        // User should be able to unstake immediately (no cooldown)
         assertTrue(stakingRewards.canUnstake(alice));
         vm.prank(alice);
         stakingRewards.unstake();
