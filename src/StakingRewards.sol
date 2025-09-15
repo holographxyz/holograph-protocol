@@ -246,8 +246,9 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
 
         // If there is a positive rewardAmount, ensure it will move the index
         if (rewardAmount > 0) {
-            if ((rewardAmount * INDEX_PRECISION) / staked == 0) revert RewardTooSmall();
-            _addRewards(rewardAmount);
+            if ((rewardAmount * INDEX_PRECISION) / staked != 0) {
+                _addRewards(rewardAmount);
+            }
         }
 
         // Perform burn after validation to avoid partial side effects on revert

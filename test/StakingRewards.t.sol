@@ -673,6 +673,8 @@ contract StakingRewardsTest is Test {
         // Try to distribute very small amount that won't move index
         vm.startPrank(owner);
         hlg.approve(address(stakingRewards), 1);
+
+        // Should revert - depositAndDistribute is not part of LayerZero flow
         vm.expectRevert(StakingRewards.RewardTooSmall.selector);
         stakingRewards.depositAndDistribute(1);
         vm.stopPrank();
@@ -1873,6 +1875,125 @@ contract StakingRewardsTest is Test {
         console.log("Alice balance %e", hlg.balanceOf(alice));
         console.log("Bob balance %e", hlg.balanceOf(bob));
         console.log("Gaming completely prevented - equal rewards!");
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /*                            Small Rewards Tests                            */
+    /* -------------------------------------------------------------------------- */
+
+    /// @notice addRewards should not revert with small amounts that don't move the index
+    function testAddRewardsSmallAmountDoesNotRevert() public {
+        // Alice stakes to create active stake
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 1000 ether);
+        stakingRewards.stake(1000 ether);
+        vm.stopPrank();
+
+        // Try adding tiny reward amount that won't move the index
+        // With INDEX_PRECISION = 1e12 and stake = 1000e18
+        // Minimum needed to move index: (1000e18 * 1) / 1e12 = 1e6 = 1 wei per 1e12
+        // So anything less than 1e6 wei should be silently skipped
+        uint256 tinyAmount = 1000; // Much smaller than threshold
+
+        vm.startPrank(feeRouter);
+        hlg.approve(address(stakingRewards), tinyAmount);
+
+        // This should not revert - should silently skip
+        stakingRewards.addRewards(tinyAmount);
+        vm.stopPrank();
+
+        // Verify no index change occurred
+        assertEq(stakingRewards.globalRewardIndex(), 0);
+        assertEq(stakingRewards.unallocatedRewards(), 0);
+    }
+
+    /// @notice depositAndDistribute should revert with small amounts (owner-only function)
+    function testDepositAndDistributeSmallAmountReverts() public {
+        // Alice stakes to create active stake
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 1000 ether);
+        stakingRewards.stake(1000 ether);
+        vm.stopPrank();
+
+        // Try depositing tiny amount that won't move the index
+        uint256 tinyAmount = 500; // Much smaller than threshold
+
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), tinyAmount);
+
+        // This should revert since depositAndDistribute is not part of LayerZero flow
+        vm.expectRevert(StakingRewards.RewardTooSmall.selector);
+        stakingRewards.depositAndDistribute(tinyAmount);
+        vm.stopPrank();
+    }
+
+    /// @notice Large rewards still work normally after small rewards fix
+    function testNormalRewardsStillWork() public {
+        // Alice stakes
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 1000 ether);
+        stakingRewards.stake(1000 ether);
+        vm.stopPrank();
+
+        // Add normal-sized reward that should move the index
+        uint256 normalAmount = 100 ether;
+
+        vm.startPrank(feeRouter);
+        hlg.approve(address(stakingRewards), normalAmount);
+        stakingRewards.addRewards(normalAmount);
+        vm.stopPrank();
+
+        // Verify index increased
+        assertGt(stakingRewards.globalRewardIndex(), 0);
+        assertGt(stakingRewards.unallocatedRewards(), 0);
+    }
+
+    /// @notice Multiple small rewards in sequence should not revert
+    function testMultipleSmallRewardsDoNotRevert() public {
+        // Alice stakes
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 1000 ether);
+        stakingRewards.stake(1000 ether);
+        vm.stopPrank();
+
+        vm.startPrank(feeRouter);
+
+        // Add multiple tiny rewards - none should revert
+        for (uint256 i = 0; i < 5; i++) {
+            hlg.approve(address(stakingRewards), 100);
+            stakingRewards.addRewards(100);
+        }
+
+        vm.stopPrank();
+
+        // Index should still be 0 (no rewards were actually added)
+        assertEq(stakingRewards.globalRewardIndex(), 0);
+        assertEq(stakingRewards.unallocatedRewards(), 0);
+    }
+
+    /// @notice Edge case: minimum amount that moves index should work
+    function testRewardsAtThresholdWork() public {
+        // Alice stakes 1000 ether
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 1000 ether);
+        stakingRewards.stake(1000 ether);
+        vm.stopPrank();
+
+        // Use an amount that will definitely move the index after burn
+        // We need: (rewardAmount * INDEX_PRECISION) / staked >= 1
+        // staked = 1000e18, INDEX_PRECISION = 1e12
+        // So rewardAmount >= 1000e18 / 1e12 = 1e6
+        // But since half gets burned, we need at least 2e6 input to get 1e6 reward
+        uint256 inputAmount = 2e12; // Large enough to definitely move index
+
+        vm.startPrank(feeRouter);
+        hlg.approve(address(stakingRewards), inputAmount);
+        stakingRewards.addRewards(inputAmount);
+        vm.stopPrank();
+
+        // Should have moved the index
+        assertGt(stakingRewards.globalRewardIndex(), 0);
+        assertGt(stakingRewards.unallocatedRewards(), 0);
     }
 
     /* -------------------------------------------------------------------------- */
