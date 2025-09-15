@@ -11,6 +11,7 @@ The contract implements a configurable burn/reward split: when HLG tokens are re
 - **Auto-Compounding**: Rewards automatically increase stake balances without claiming
 - **O(1) Gas Efficiency**: Constant gas costs regardless of user count
 - **Configurable Tokenomics**: Every HLG token is split between burning (deflationary) and rewards based on owner-configurable percentage
+- **Sandwich Attack Protection**: 7-day configurable cooldown prevents front-running reward distributions
 - **Extra Token Recovery**: Recovers HLG tokens sent directly to contract outside funding operations
 - **Dual Operational Flows**: Supports both bootstrap manual operations and automated integration
 - **Security Features**: Reentrancy protection, emergency functions, and access controls
@@ -283,6 +284,40 @@ emergencyExit();  // Get current balance only, forfeit pending rewards
 The emergency exit is for during a critical incident when you need to exit immediately, even if it means forfeiting pending rewards.
 
 ---
+
+## Sandwich Attack Protection
+
+### Staking Cooldown Mechanism
+
+The contract implements a configurable cooldown period to prevent sandwich attacks on reward distributions. When users stake HLG tokens, they must wait for the cooldown period to pass before they can unstake.
+
+```solidity
+uint256 public stakingCooldown; // Default: 7 days
+mapping(address => uint256) public lastStakeTimestamp;
+```
+
+**How it works:**
+- Every staking action records `block.timestamp` for the user
+- `unstake()` requires `block.timestamp >= lastStakeTimestamp + stakingCooldown`
+- New stakes reset the timestamp, extending the lock period
+- `emergencyExit()` bypasses the cooldown for true emergencies
+
+**Configuration:**
+```solidity
+function setStakingCooldown(uint256 _stakingCooldown) external onlyOwner {
+    // Owner can adjust cooldown period (affects future unstaking)
+}
+
+function canUnstake(address user) external view returns (bool) {
+    // Check if user can currently unstake
+}
+```
+
+**Economic Impact:**
+- Makes sandwich attacks unprofitable (capital locked for days)
+- Encourages genuine long-term staking behavior
+- Minimal impact on legitimate stakers who hold for rewards
+- Preserves emergency exit functionality for safety
 
 ## Security Features
 

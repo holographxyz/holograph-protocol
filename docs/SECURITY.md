@@ -65,9 +65,11 @@ LayerZero V2 endpoint verification for all cross-chain messages:
 - **Fee Limits**: Maximum fee percentages to prevent excessive charges
 
 ### Staking Security
-- **Cooldown Period**: 7-day default withdrawal cooldown prevents staking manipulation
-- **Emergency Exit**: Users can always exit, even when paused
+- **Cooldown Period**: 7-day configurable withdrawal cooldown prevents sandwich attacks and staking manipulation
+- **Sandwich Attack Protection**: Users must wait full cooldown period after any stake before unstaking
+- **Emergency Exit**: Users can always exit via `emergencyExit()`, bypassing cooldown for true emergencies
 - **Auto-Compounding**: Rewards automatically compound, preventing loss
+- **Cooldown Configuration**: Owner can adjust cooldown period; changes affect future unstaking behavior
 
 ### Emergency Controls
 - **Pause Functionality**: Owner can pause all major contract functions

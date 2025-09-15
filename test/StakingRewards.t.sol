@@ -11,16 +11,17 @@ import {MockFeeOnTransfer} from "./mock/MockFeeOnTransfer.sol";
 import {MockCorruptedStaking} from "./mock/MockCorruptedStaking.sol";
 
 /**
- * @title StakingRewardsConsolidated
- * @notice Consolidated test suite for StakingRewards contract covering:
+ * @title StakingRewards Test Suite
+ * @notice Test suite for StakingRewards contract covering:
  * - Basic functionality (stake/unstake/emergency)
  * - Reward distribution and compounding
  * - Virtual compounding model tests
  * - Admin functions and security
  * - Edge cases and error conditions
  * - Fork tests with real HLG token
+ * - Cooldown mechanism tests
  */
-contract StakingRewardsConsolidated is Test {
+contract StakingRewardsTest is Test {
     StakingRewards public stakingRewards;
     MockERC20 public hlg;
 
@@ -968,6 +969,9 @@ contract StakingRewardsConsolidated is Test {
         stakingRewards.updateUser(alice);
         assertEq(stakingRewards.userIndexSnapshot(alice), indexBefore);
 
+        // Wait for cooldown period to pass
+        vm.warp(block.timestamp + 7 days + 1);
+
         // Full exit resets snapshot to 0
         vm.prank(alice);
         stakingRewards.unstake();
@@ -1573,6 +1577,238 @@ contract StakingRewardsConsolidated is Test {
         stakingRewards.stake(STAKE_AMOUNT);
         vm.stopPrank();
         assertEq(stakingRewards.totalStakers(), 2);
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /*                           Cooldown Mechanism Tests                        */
+    /* -------------------------------------------------------------------------- */
+
+    /// @notice Owner staking (stakeFor) does not set cooldown timestamp
+    function testOwnerStakeForDoesNotSetTimestamp() public {
+        vm.prank(owner);
+        stakingRewards.pause();
+
+        // Owner stakes for alice (should NOT set timestamp)
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 50 ether);
+        stakingRewards.stakeFor(alice, 50 ether);
+        vm.stopPrank();
+
+        // Check that alice has balance
+        assertEq(stakingRewards.balanceOf(alice), 50 ether);
+
+        // Check that timestamp was NOT set (should be 0)
+        assertEq(stakingRewards.lastStakeTimestamp(alice), 0);
+
+        // User should be able to unstake immediately (no cooldown from owner staking)
+        assertTrue(stakingRewards.canUnstake(alice));
+
+        vm.prank(alice);
+        stakingRewards.unstake();
+
+        assertEq(stakingRewards.balanceOf(alice), 0);
+    }
+
+    /// @notice Batch owner staking does not set cooldown timestamps
+    function testBatchStakeForDoesNotSetTimestamp() public {
+        vm.prank(owner);
+        stakingRewards.pause();
+
+        address[] memory users = new address[](2);
+        uint256[] memory amounts = new uint256[](2);
+
+        users[0] = alice;
+        users[1] = bob;
+        amounts[0] = 30 ether;
+        amounts[1] = 20 ether;
+
+        // Owner batch stakes (should NOT set timestamps)
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 50 ether);
+        stakingRewards.batchStakeFor(users, amounts, 0, 2);
+        vm.stopPrank();
+
+        // Check balances
+        assertEq(stakingRewards.balanceOf(alice), 30 ether);
+        assertEq(stakingRewards.balanceOf(bob), 20 ether);
+
+        // Check that timestamps were NOT set (should be 0)
+        assertEq(stakingRewards.lastStakeTimestamp(alice), 0);
+        assertEq(stakingRewards.lastStakeTimestamp(bob), 0);
+
+        // Users should be able to unstake immediately
+        assertTrue(stakingRewards.canUnstake(alice));
+        assertTrue(stakingRewards.canUnstake(bob));
+
+        vm.prank(alice);
+        stakingRewards.unstake();
+        vm.prank(bob);
+        stakingRewards.unstake();
+
+        assertEq(stakingRewards.balanceOf(alice), 0);
+        assertEq(stakingRewards.balanceOf(bob), 0);
+    }
+
+    /// @notice User-initiated staking still sets cooldown timestamp
+    function testUserStakeStillSetsTimestamp() public {
+        // User stakes normally (should set timestamp)
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 20 ether);
+        stakingRewards.stake(20 ether);
+        vm.stopPrank();
+
+        // Check that timestamp WAS set
+        assertGt(stakingRewards.lastStakeTimestamp(alice), 0);
+        assertEq(stakingRewards.lastStakeTimestamp(alice), block.timestamp);
+
+        // User should NOT be able to unstake immediately
+        assertFalse(stakingRewards.canUnstake(alice));
+
+        // Fast forward 7 days
+        vm.warp(block.timestamp + 7 days + 1);
+
+        // Now should be able to unstake
+        assertTrue(stakingRewards.canUnstake(alice));
+        vm.prank(alice);
+        stakingRewards.unstake();
+    }
+
+    /// @notice Distributor staking still sets cooldown timestamp
+    function testDistributorStakeStillSetsTimestamp() public {
+        vm.prank(owner);
+        stakingRewards.setDistributor(distributor, true);
+
+        // Distributor stakes for user (should set timestamp)
+        vm.startPrank(distributor);
+        hlg.approve(address(stakingRewards), 30 ether);
+        stakingRewards.stakeFromDistributor(alice, 30 ether);
+        vm.stopPrank();
+
+        // Check that timestamp WAS set
+        assertGt(stakingRewards.lastStakeTimestamp(alice), 0);
+        assertEq(stakingRewards.lastStakeTimestamp(alice), block.timestamp);
+
+        // User should NOT be able to unstake immediately
+        assertFalse(stakingRewards.canUnstake(alice));
+
+        // Fast forward 7 days
+        vm.warp(block.timestamp + 7 days + 1);
+
+        // Now should be able to unstake
+        assertTrue(stakingRewards.canUnstake(alice));
+        vm.prank(alice);
+        stakingRewards.unstake();
+    }
+
+    /// @notice Mixed owner and user staking - cooldown only applies to user-initiated stakes
+    function testMixedOwnerAndUserStaking() public {
+        // First: Owner stakes for user (no timestamp)
+        vm.prank(owner);
+        stakingRewards.pause();
+
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 30 ether);
+        stakingRewards.stakeFor(alice, 30 ether);
+        stakingRewards.unpause();
+        vm.stopPrank();
+
+        // User should be able to unstake immediately
+        assertTrue(stakingRewards.canUnstake(alice));
+
+        // Then: User stakes more (sets timestamp)
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 20 ether);
+        stakingRewards.stake(20 ether);
+        vm.stopPrank();
+
+        // Now user should NOT be able to unstake (cooldown active)
+        assertFalse(stakingRewards.canUnstake(alice));
+
+        // Total balance should be 50 ether
+        assertEq(stakingRewards.balanceOf(alice), 50 ether);
+
+        // Fast forward and unstake
+        vm.warp(block.timestamp + 7 days + 1);
+        assertTrue(stakingRewards.canUnstake(alice));
+
+        vm.prank(alice);
+        stakingRewards.unstake();
+        assertEq(stakingRewards.balanceOf(alice), 0);
+    }
+
+    /// @notice Cooldown can be configured by owner
+    function testCooldownConfiguration() public {
+        vm.startPrank(owner);
+
+        // Set cooldown to 1 day
+        stakingRewards.setStakingCooldown(1 days);
+        assertEq(stakingRewards.stakingCooldown(), 1 days);
+
+        // Set cooldown to 0 (no cooldown)
+        stakingRewards.setStakingCooldown(0);
+        assertEq(stakingRewards.stakingCooldown(), 0);
+
+        vm.stopPrank();
+    }
+
+    /// @notice With zero cooldown, users can unstake immediately
+    function testNoCooldownWhenSetToZero() public {
+        // Set cooldown to 0
+        vm.prank(owner);
+        stakingRewards.setStakingCooldown(0);
+
+        // User stakes and should be able to unstake immediately
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 10 ether);
+        stakingRewards.stake(10 ether);
+
+        assertTrue(stakingRewards.canUnstake(alice));
+        stakingRewards.unstake();
+        vm.stopPrank();
+    }
+
+    /// @notice Emergency exit bypasses cooldown restrictions
+    function testEmergencyExitBypassesCooldown() public {
+        // User stakes
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 10 ether);
+        stakingRewards.stake(10 ether);
+
+        // Check that user cannot unstake immediately
+        assertFalse(stakingRewards.canUnstake(alice));
+
+        // Emergency exit should work even during cooldown
+        stakingRewards.emergencyExit();
+
+        // Check balance is zero
+        assertEq(stakingRewards.balanceOf(alice), 0);
+        vm.stopPrank();
+    }
+
+    /// @notice Cooldown prevents sandwich attacks on reward distributions
+    function testCooldownPreventsSandwichAttacks() public {
+        address attacker = makeAddr("attacker");
+        hlg.mint(attacker, 1000 ether);
+
+        // Attacker tries to front-run a reward distribution
+        vm.startPrank(attacker);
+        hlg.approve(address(stakingRewards), 1000 ether);
+        stakingRewards.stake(1000 ether);
+
+        // Even if rewards are distributed immediately after
+        vm.stopPrank();
+
+        // Attacker cannot unstake immediately to capture rewards
+        vm.startPrank(attacker);
+        assertFalse(stakingRewards.canUnstake(attacker));
+        vm.expectRevert(StakingRewards.StakingCooldownNotMet.selector);
+        stakingRewards.unstake();
+        vm.stopPrank();
+
+        // Attacker would need to wait 7 days to unstake
+        vm.warp(block.timestamp + 7 days + 1);
+        vm.prank(attacker);
+        assertTrue(stakingRewards.canUnstake(attacker));
     }
 
     /* -------------------------------------------------------------------------- */
