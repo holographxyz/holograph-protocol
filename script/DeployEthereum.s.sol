@@ -19,6 +19,7 @@ import "../src/FeeRouter.sol";
 import "../src/StakingRewards.sol";
 import "./DeploymentBase.sol";
 import "./DeploymentConfig.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract DeployEthereum is DeploymentBase {
     /* -------------------------------------------------------------------------- */
@@ -67,23 +68,39 @@ contract DeployEthereum is DeploymentBase {
 
         // Get deployment salts - use EOA address as msg.sender for HolographDeployer
         // Generate deployment salts
-        bytes32 stakingSalt = DeploymentConfig.generateSalt(config.deployer, 6);
+        bytes32 stakingImplSalt = DeploymentConfig.generateSalt(config.deployer, 6);
+        bytes32 stakingProxySalt = DeploymentConfig.generateSalt(config.deployer, 7);
         bytes32 feeRouterSalt = DeploymentConfig.generateSalt(config.deployer, 4);
 
         // Initialize addresses struct
         ContractAddresses memory addresses;
         addresses.holographDeployer = address(holographDeployer);
 
-        /* ---------------------- Deploy StakingRewards ---------------------- */
-        console.log("\nDeploying StakingRewards...");
+        /* ---------------------- Deploy StakingRewards (UUPS Proxy) ---------------------- */
+        console.log("\nDeploying StakingRewards implementation...");
         uint256 gasStart = gasleft();
-        // Deploy with temporary feeRouter = deployer
-        bytes memory stakingBytecode =
-            abi.encodePacked(type(StakingRewards).creationCode, abi.encode(hlg, config.deployer));
-        address stakingRewards = holographDeployer.deploy(stakingBytecode, stakingSalt);
-        uint256 gasStaking = gasStart - gasleft();
-        console.log("StakingRewards deployed at:", stakingRewards);
-        console.log("Gas used:", gasStaking);
+
+        // Deploy implementation (no constructor args needed)
+        bytes memory stakingImplBytecode = abi.encodePacked(type(StakingRewards).creationCode);
+        address stakingImpl = holographDeployer.deploy(stakingImplBytecode, stakingImplSalt);
+        uint256 gasImpl = gasStart - gasleft();
+        console.log("StakingRewards implementation deployed at:", stakingImpl);
+        console.log("Gas used for implementation:", gasImpl);
+
+        console.log("\nDeploying StakingRewards proxy...");
+        gasStart = gasleft();
+
+        // Deploy proxy with initialization data
+        bytes memory proxyBytecode = abi.encodePacked(
+            type(ERC1967Proxy).creationCode,
+            abi.encode(stakingImpl, abi.encodeCall(StakingRewards.initialize, (hlg, config.deployer)))
+        );
+        address stakingProxy = holographDeployer.deploy(proxyBytecode, stakingProxySalt);
+        uint256 gasProxy = gasStart - gasleft();
+        address stakingRewards = stakingProxy; // Use proxy as the main contract address
+        console.log("StakingRewards proxy deployed at:", stakingRewards);
+        console.log("Gas used for proxy:", gasProxy);
+        console.log("Total StakingRewards gas:", gasImpl + gasProxy);
 
         /* ---------------------- Deploy FeeRouter ---------------------- */
         console.log("\nDeploying FeeRouter...");

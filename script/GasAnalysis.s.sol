@@ -4,6 +4,7 @@ pragma solidity ^0.8.30;
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 import {StakingRewards} from "../src/StakingRewards.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
 
@@ -90,8 +91,12 @@ contract GasAnalysis is Script {
         uint256 mainnetFork = vm.createFork("https://ethereum-rpc.publicnode.com");
         vm.selectFork(mainnetFork);
 
-        // Deploy test contract
-        StakingRewards testStaking = new StakingRewards(MAINNET_HLG, address(this));
+        // Deploy test contract using proxy pattern
+        StakingRewards testStakingImpl = new StakingRewards();
+        ERC1967Proxy testProxy = new ERC1967Proxy(
+            address(testStakingImpl), abi.encodeCall(StakingRewards.initialize, (MAINNET_HLG, address(this)))
+        );
+        StakingRewards testStaking = StakingRewards(payable(address(testProxy)));
 
         // Create test data
         address[] memory testUsers = new address[](100);

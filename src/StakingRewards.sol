@@ -16,11 +16,19 @@ pragma solidity ^0.8.30;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-import "@openzeppelin/contracts/access/Ownable2Step.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/Pausable.sol";
+import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
+contract StakingRewards is
+    Initializable,
+    Ownable2StepUpgradeable,
+    ReentrancyGuardUpgradeable,
+    PausableUpgradeable,
+    UUPSUpgradeable
+{
     using SafeERC20 for IERC20;
 
     /* -------------------------------------------------------------------------- */
@@ -60,7 +68,7 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
     uint256 public constant MAX_PERCENTAGE = 10000;
 
     /// @notice HLG token that users stake and receive as rewards
-    IERC20 public immutable HLG;
+    IERC20 public HLG;
 
     /// @notice Total HLG staked in the contract (includes compounded rewards)
     uint256 public totalStaked;
@@ -118,11 +126,29 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
     /* -------------------------------------------------------------------------- */
     /*                               Constructor                                  */
     /* -------------------------------------------------------------------------- */
-    constructor(address _hlg, address _owner) Ownable(_owner) {
+    constructor() {
+        _disableInitializers();
+    }
+
+    /**
+     * @notice Initialize the upgradeable StakingRewards contract
+     * @param _hlg HLG token address
+     * @param _owner Initial owner address
+     */
+    function initialize(address _hlg, address _owner) external initializer {
+        __ReentrancyGuard_init();
+        __Pausable_init();
+        __UUPSUpgradeable_init();
+        __Ownable2Step_init();
+
         if (_hlg == address(0)) revert ZeroAddress();
+        if (_owner == address(0)) revert ZeroAddress();
+
         HLG = IERC20(_hlg);
         burnPercentage = 5000; // Default to 50% burn, 50% rewards
         stakingCooldown = 7 days; // Default to 7-day cooldown
+
+        _transferOwnership(_owner);
         _pause(); // Start paused until ready
     }
 
@@ -684,6 +710,17 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
         emit Staked(user, amount);
         emit BoostedStake(msg.sender, user, amount);
     }
+
+    /* -------------------------------------------------------------------------- */
+    /*                                 Upgrades                                   */
+    /* -------------------------------------------------------------------------- */
+
+    /**
+     * @notice Authorize contract upgrades (UUPS pattern)
+     * @param newImplementation Address of the new implementation
+     * @dev Only the owner can authorize upgrades
+     */
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     /* -------------------------------------------------------------------------- */
     /*                                    Fallback                                */

@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import {StakingRewards} from "../src/StakingRewards.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {MockERC20} from "./mock/MockERC20.sol";
 import {MockZeroSinkNoBurn} from "./mock/MockZeroSinkNoBurn.sol";
 import {MockFeeOnTransfer} from "./mock/MockFeeOnTransfer.sol";
@@ -54,8 +55,15 @@ contract StakingRewardsTest is Test {
         // Deploy mock HLG token
         hlg = new MockERC20("Test HLG", "HLG");
 
-        // Deploy staking contract
-        stakingRewards = new StakingRewards(address(hlg), owner);
+        // Deploy StakingRewards implementation
+        StakingRewards stakingImpl = new StakingRewards();
+
+        // Deploy proxy and initialize
+        ERC1967Proxy proxy =
+            new ERC1967Proxy(address(stakingImpl), abi.encodeCall(StakingRewards.initialize, (address(hlg), owner)));
+
+        // Cast proxy to StakingRewards interface
+        stakingRewards = StakingRewards(payable(address(proxy)));
         stakingRewards.setFeeRouter(feeRouter);
         stakingRewards.unpause();
 
@@ -319,7 +327,12 @@ contract StakingRewardsTest is Test {
     /// @notice updateUser() reverts if unallocated rewards are corrupted below what is owed
     function testInsufficientUnallocatedReverts() public {
         // Deploy corrupted staking contract for this test
-        MockCorruptedStaking corruptedStaking = new MockCorruptedStaking(address(hlg), owner);
+        MockCorruptedStaking corruptedStakingImpl = new MockCorruptedStaking();
+        ERC1967Proxy corruptedProxy = new ERC1967Proxy(
+            address(corruptedStakingImpl), abi.encodeCall(StakingRewards.initialize, (address(hlg), owner))
+        );
+        MockCorruptedStaking corruptedStaking = MockCorruptedStaking(payable(address(corruptedProxy)));
+
         vm.prank(owner);
         corruptedStaking.setFeeRouter(feeRouter);
         vm.prank(owner);
@@ -364,7 +377,13 @@ contract StakingRewardsTest is Test {
     function testBurnHelperRevertsIfTransferToZeroDoesNotBurn() public {
         // Deploy zero-sink token that doesn't actually burn
         MockZeroSinkNoBurn noburn = new MockZeroSinkNoBurn();
-        StakingRewards noBurnStaking = new StakingRewards(address(noburn), owner);
+
+        // Deploy implementation and proxy
+        StakingRewards noBurnStakingImpl = new StakingRewards();
+        ERC1967Proxy noBurnProxy = new ERC1967Proxy(
+            address(noBurnStakingImpl), abi.encodeCall(StakingRewards.initialize, (address(noburn), owner))
+        );
+        StakingRewards noBurnStaking = StakingRewards(payable(address(noBurnProxy)));
 
         noburn.mint(owner, 1000 ether);
 
@@ -480,7 +499,13 @@ contract StakingRewardsTest is Test {
     function testFeeOnTransferRejection() public {
         // Deploy fee-on-transfer token
         MockFeeOnTransfer feeToken = new MockFeeOnTransfer();
-        StakingRewards feeStaking = new StakingRewards(address(feeToken), owner);
+
+        // Deploy implementation and proxy
+        StakingRewards feeStakingImpl = new StakingRewards();
+        ERC1967Proxy feeProxy = new ERC1967Proxy(
+            address(feeStakingImpl), abi.encodeCall(StakingRewards.initialize, (address(feeToken), owner))
+        );
+        StakingRewards feeStaking = StakingRewards(payable(address(feeProxy)));
 
         vm.prank(owner);
         feeStaking.unpause();
@@ -763,7 +788,12 @@ contract StakingRewardsTest is Test {
         vm.createSelectFork("https://mainnet.base.org", 22_500_000);
 
         IERC20 realHLG = IERC20(HLG_ADDRESS);
-        StakingRewards forkStaking = new StakingRewards(HLG_ADDRESS, owner);
+
+        // Deploy implementation and proxy for fork test
+        StakingRewards forkStakingImpl = new StakingRewards();
+        ERC1967Proxy forkProxy =
+            new ERC1967Proxy(address(forkStakingImpl), abi.encodeCall(StakingRewards.initialize, (HLG_ADDRESS, owner)));
+        StakingRewards forkStaking = StakingRewards(payable(address(forkProxy)));
 
         vm.startPrank(owner);
         forkStaking.setFeeRouter(feeRouter);
@@ -2329,5 +2359,73 @@ contract StakingRewardsTest is Test {
 
         uint256 balanceAfter = testToken.balanceOf(alice);
         assertEq(balanceAfter - balanceBefore, tokenAmount, "Alice should receive the test tokens");
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /*                              Upgrade Tests                                */
+    /* -------------------------------------------------------------------------- */
+
+    function testUpgradeStakingRewards() public {
+        // Set up initial state with some stakes and rewards
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 100 ether);
+        stakingRewards.stake(100 ether);
+        vm.stopPrank();
+
+        vm.startPrank(bob);
+        hlg.approve(address(stakingRewards), 200 ether);
+        stakingRewards.stake(200 ether);
+        vm.stopPrank();
+
+        // Add some rewards (need to call as feeRouter, which is address(0x2))
+        hlg.mint(feeRouter, 50 ether);
+        vm.startPrank(feeRouter);
+        hlg.approve(address(stakingRewards), 50 ether);
+        stakingRewards.addRewards(50 ether);
+        vm.stopPrank();
+
+        // Record state before upgrade
+        uint256 aliceBalanceBefore = stakingRewards.balanceOf(alice);
+        uint256 bobBalanceBefore = stakingRewards.balanceOf(bob);
+        uint256 totalStakedBefore = stakingRewards.totalStaked();
+        uint256 totalStakersBefore = stakingRewards.totalStakers();
+        uint256 unallocatedBefore = stakingRewards.unallocatedRewards();
+        address hlgTokenBefore = address(stakingRewards.HLG());
+        address ownerBefore = stakingRewards.owner();
+
+        // Deploy new implementation
+        StakingRewards newImpl = new StakingRewards();
+
+        // Perform upgrade (only owner can do this)
+        vm.prank(owner);
+        stakingRewards.upgradeToAndCall(address(newImpl), "");
+
+        // Verify state preservation after upgrade
+        assertEq(stakingRewards.balanceOf(alice), aliceBalanceBefore, "Alice balance should be preserved");
+        assertEq(stakingRewards.balanceOf(bob), bobBalanceBefore, "Bob balance should be preserved");
+        assertEq(stakingRewards.totalStaked(), totalStakedBefore, "Total staked should be preserved");
+        assertEq(stakingRewards.totalStakers(), totalStakersBefore, "Total stakers should be preserved");
+        assertEq(stakingRewards.unallocatedRewards(), unallocatedBefore, "Unallocated rewards should be preserved");
+        assertEq(address(stakingRewards.HLG()), hlgTokenBefore, "HLG token address should be preserved");
+        assertEq(stakingRewards.owner(), ownerBefore, "Owner should be preserved");
+
+        // Verify functionality still works after upgrade
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 50 ether);
+        stakingRewards.stake(50 ether);
+        vm.stopPrank();
+
+        // Verify the stake worked (Alice should have more than before due to potential reward distribution)
+        assertGe(
+            stakingRewards.balanceOf(alice),
+            aliceBalanceBefore + 50 ether,
+            "Alice should have at least the additional stake"
+        );
+
+        // Test that upgrade is owner-only
+        StakingRewards anotherImpl = new StakingRewards();
+        vm.prank(alice);
+        vm.expectRevert(); // Should revert due to unauthorized access
+        stakingRewards.upgradeToAndCall(address(anotherImpl), "");
     }
 }
