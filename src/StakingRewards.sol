@@ -416,6 +416,18 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
         return block.timestamp >= lastStakeTimestamp[user] + stakingCooldown;
     }
 
+    /**
+     * @notice Get remaining cooldown time for a user in seconds
+     * @param user Address to check
+     * @return seconds remaining in cooldown period (0 if can unstake)
+     */
+    function getCooldownTimeRemaining(address user) external view returns (uint256) {
+        if (balanceOf[user] == 0 || lastStakeTimestamp[user] == 0) return 0;
+
+        uint256 cooldownEndTime = lastStakeTimestamp[user] + stakingCooldown;
+        return block.timestamp >= cooldownEndTime ? 0 : cooldownEndTime - block.timestamp;
+    }
+
     /* -------------------------------------------------------------------------- */
     /*                                    Admin                                   */
     /* -------------------------------------------------------------------------- */
