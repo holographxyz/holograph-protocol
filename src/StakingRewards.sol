@@ -139,7 +139,7 @@ contract StakingRewards is
         __ReentrancyGuard_init();
         __Pausable_init();
         __UUPSUpgradeable_init();
-        __Ownable2Step_init();
+        __Ownable_init(_owner);
 
         if (_hlg == address(0)) revert ZeroAddress();
         if (_owner == address(0)) revert ZeroAddress();
@@ -148,7 +148,6 @@ contract StakingRewards is
         burnPercentage = 5000; // Default to 50% burn, 50% rewards
         stakingCooldown = 7 days; // Default to 7-day cooldown
 
-        _transferOwnership(_owner);
         _pause(); // Start paused until ready
     }
 

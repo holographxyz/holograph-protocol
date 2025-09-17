@@ -2428,4 +2428,47 @@ contract StakingRewardsTest is Test {
         vm.expectRevert(); // Should revert due to unauthorized access
         stakingRewards.upgradeToAndCall(address(anotherImpl), "");
     }
+
+    function testOwnershipInitializationAtomic() public {
+        // Deploy implementation
+        StakingRewards impl = new StakingRewards();
+
+        // Deploy proxy with initialization - owner should be set atomically
+        ERC1967Proxy proxy =
+            new ERC1967Proxy(address(impl), abi.encodeCall(StakingRewards.initialize, (address(hlg), alice)));
+        StakingRewards stakingContract = StakingRewards(payable(address(proxy)));
+
+        // Owner should be set immediately
+        assertEq(stakingContract.owner(), alice);
+        assertEq(stakingContract.pendingOwner(), address(0));
+    }
+
+    function testCannotReinitializeProxy() public {
+        vm.expectRevert(abi.encodeWithSignature("InvalidInitialization()"));
+        stakingRewards.initialize(address(hlg), alice);
+    }
+
+    function testDirectImplementationCannotBeInitialized() public {
+        StakingRewards impl = new StakingRewards();
+        vm.expectRevert(abi.encodeWithSignature("InvalidInitialization()"));
+        impl.initialize(address(hlg), alice);
+    }
+
+    function testTwoStepOwnershipTransferStillWorks() public {
+        // Transfer ownership using two-step process
+        vm.prank(owner);
+        stakingRewards.transferOwnership(alice);
+
+        // Owner unchanged until accepted
+        assertEq(stakingRewards.owner(), owner);
+        assertEq(stakingRewards.pendingOwner(), alice);
+
+        // Alice accepts ownership
+        vm.prank(alice);
+        stakingRewards.acceptOwnership();
+
+        // Ownership transferred
+        assertEq(stakingRewards.owner(), alice);
+        assertEq(stakingRewards.pendingOwner(), address(0));
+    }
 }
