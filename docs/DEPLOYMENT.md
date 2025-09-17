@@ -221,12 +221,13 @@ forge script script/ProcessReferralCSV.s.sol --broadcast --private-key $PRIVATE_
 ### Phase 2: Ownership Transfer (EOA → Multisig)
 
 ```bash
-# 1. Initiate two-step ownership transfer
-export MULTISIG_ADDRESS=0x...
-cast send $STAKING_REWARDS "transferOwnership(address)" $MULTISIG_ADDRESS --private-key $PRIVATE_KEY
+# 1. Get transfer instructions and initiate transfer
+npx tsx script/ts/multisig-cli.ts transfer-ownership
+# This provides cast command for current owner to execute
 
-# 2. Multisig accepts ownership (via Safe UI/SDK)
-# Multisig calls: acceptOwnership()
+# 2. Accept ownership via multisig-cli
+npx tsx script/ts/multisig-cli.ts accept-ownership
+# Generates Safe Transaction Builder JSON for multisig execution
 
 # 3. Verify ownership transferred
 cast call $STAKING_REWARDS "owner()" --rpc-url $ETHEREUM_RPC_URL
@@ -235,18 +236,22 @@ cast call $STAKING_REWARDS "owner()" --rpc-url $ETHEREUM_RPC_URL
 
 ### Phase 3: Operational Phase (Multisig)
 
-After ownership transfer, all admin operations require multisig execution:
+After ownership transfer, use multisig-cli for admin operations:
 
 ```bash
-# Unpause contract to activate staking (multisig only)
-# Execute via Safe UI: stakingRewards.unpause()
+# Unpause contract to activate staking
+npx tsx script/ts/multisig-cli.ts unpause
 
-# All subsequent admin operations via Safe UI/SDK:
-# - Pause/unpause
-# - Fee router updates
-# - Burn percentage adjustments
-# - Emergency recovery
-# - Contract upgrades
+# Emergency controls
+npx tsx script/ts/multisig-cli.ts pause          # Emergency pause
+npx tsx script/ts/multisig-cli.ts unpause        # Resume operations
+
+# Fee distribution (ongoing operations)
+npx tsx script/ts/multisig-cli.ts batch --eth 0.5    # Convert ETH to HLG and stake
+npx tsx script/ts/multisig-cli.ts deposit --hlg 1000  # Direct HLG deposit
+
+# Note: Administrative functions (setBurnPercentage, setFeeRouter, recovery)
+# currently require cast commands - see OPERATIONS.md for details
 ```
 
 ### Important Notes

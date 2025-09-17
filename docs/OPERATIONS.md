@@ -1,4 +1,4 @@
-# Holograph Protocol Operations
+# HOLOGRAPH PROTOCOL OPERATIONS
 
 Technical guide for operating deployed Holograph contracts.
 
@@ -16,6 +16,22 @@ Base Chain                  LayerZero V2               Ethereum Chain
 ```
 
 **Fee Flow**: Doppler → Airlock → FeeRouter (50% protocol, 50% treasury) → LayerZero → Ethereum → WETH/HLG swap → configurable burn/stake split
+
+## Bootstrap Strategy
+
+For initial launch, use manual operations instead of automated cross-chain infrastructure. This gets to market faster with same economic outcomes.
+
+### Process Flow
+1. **Base Chain**: Multisig collects 0x Protocol trading fees weekly
+2. **Split**: 50% treasury, 50% bridge to Ethereum
+3. **Ethereum**: Multisig swaps ETH → HLG on Uniswap V3
+4. **Distribute**: Call `depositAndDistribute()` on StakingRewards
+5. **Outcome**: Configurable burn/stake split (default 50/50)
+
+**Time Required**: ~30 minutes per week
+
+### Bootstrap to Full Protocol Migration
+Once validated, deploy full automated protocol while preserving all staking history and balances.
 
 ## Fee Collection (Owner Operations)
 
@@ -43,6 +59,61 @@ cast send $FEE_ROUTER "collectAirlockFees(address,address,uint256)" \
 cast send $FEE_ROUTER "bridge(uint256,uint256)" 200000 0 \
   --private-key $PRIVATE_KEY --rpc-url $BASE_RPC
 ```
+
+## Manual Multisig Fee Flow (Bootstrap)
+
+### Step 1: Bridge ETH from Base to Ethereum
+
+**Recommended**: Use Superbridge (https://superbridge.app)
+- Connect multisig via WalletConnect
+- Select Base → Ethereum, enter amount
+- Bridge fees: ~$2-5, arrival: ~10-20 minutes
+
+**Alternative Bridges**:
+- Official Base Bridge (bridge.base.org): 7 days, most secure
+- Relay Bridge (relay.link): 2-3 min, higher fees
+
+### Step 2: Convert ETH to HLG
+
+**Option A**: Use multisig CLI (generates Transaction Builder JSON)
+```bash
+npx tsx script/ts/multisig-cli.ts batch --eth 0.5
+```
+
+**Option B**: Manual via Uniswap
+1. Wrap ETH → WETH at app.uniswap.org
+2. Swap WETH → HLG (check slippage)
+3. Call `depositAndDistribute()` on StakingRewards
+
+## Referral Batch Operations
+
+### Pre-Execution Setup
+```bash
+# Environment variables
+PRIVATE_KEY=0x...
+STAKING_REWARDS=0x...
+HLG_TOKEN=0x...
+REFERRAL_CSV_PATH=./referral_data.csv
+REFERRAL_RESUME_INDEX=0    # Resume from specific index if needed
+```
+
+### Gas Cost Analysis
+```bash
+# Run before execution for current costs
+make gas-analysis
+```
+
+### Execution
+```bash
+# Dry run validation
+forge script script/ProcessReferralCSV.s.sol --fork-url $ETH_RPC_URL -vv
+
+# Execute (monitor gas prices first)
+BROADCAST=true forge script script/ProcessReferralCSV.s.sol --broadcast --private-key $PRIVATE_KEY
+```
+
+**CSV Format**: `address,amount` (amounts in whole HLG, no decimals)
+**Constraints**: No duplicates, max 780K HLG per user, max 250M total
 
 ## System Monitoring
 
@@ -76,21 +147,17 @@ cast call $BASE_FEE_ROUTER "trustedAirlocks(address)" $AIRLOCK --rpc-url $BASE_R
 ### Owner Actions
 
 ```bash
-# NOTE: These operations require multisig execution after bootstrap phase
-# During bootstrap: use PRIVATE_KEY with EOA
-# After handoff: execute via Safe UI/SDK with multisig
+# NOTE: During bootstrap phase, use EOA with PRIVATE_KEY
+# After multisig handoff, use multisig-cli for Safe transactions
 
-# Pause/unpause staking (emergency control)
-cast send $STAKING_REWARDS "pause()" --private-key $PRIVATE_KEY --rpc-url $ETH_RPC
-cast send $STAKING_REWARDS "unpause()" --private-key $PRIVATE_KEY --rpc-url $ETH_RPC
+# Emergency controls (available via multisig-cli)
+npx tsx script/ts/multisig-cli.ts pause           # Pause staking operations
+npx tsx script/ts/multisig-cli.ts unpause         # Resume staking operations
 
-# Update fee router (changes reward source)
+# Administrative functions (currently require cast)
+# TODO: Add these to multisig-cli for post-handoff operations
 cast send $STAKING_REWARDS "setFeeRouter(address)" $NEW_FEE_ROUTER --private-key $PRIVATE_KEY --rpc-url $ETH_RPC
-
-# Adjust burn percentage (basis points, 5000 = 50%)
 cast send $STAKING_REWARDS "setBurnPercentage(uint256)" 5000 --private-key $PRIVATE_KEY --rpc-url $ETH_RPC
-
-# Adjust staking cooldown (seconds, 604800 = 7 days)
 cast send $STAKING_REWARDS "setStakingCooldown(uint256)" 604800 --private-key $PRIVATE_KEY --rpc-url $ETH_RPC
 ```
 
@@ -119,6 +186,7 @@ cast call $STAKING_REWARDS "getExtraTokens()" --rpc-url $ETH_RPC         # Surpl
 
 ```bash
 # NOTE: Recovery operations require multisig execution after bootstrap
+# TODO: Add these recovery functions to multisig-cli for post-handoff operations
 
 # Recover surplus HLG tokens (not part of staking accounting)
 cast send $STAKING_REWARDS "recoverExtraHLG(address,uint256)" $RECIPIENT $AMOUNT --private-key $PRIVATE_KEY --rpc-url $ETH_RPC
@@ -134,8 +202,9 @@ cast send $STAKING_REWARDS "reclaimUnallocatedRewards(address)" $RECIPIENT --pri
 
 ```bash
 # Emergency pause (stops new staking, allows unstaking)
-# NOTE: Emergency operations require multisig execution after bootstrap
-cast send $STAKING_REWARDS "pause()" --private-key $PRIVATE_KEY --rpc-url $ETH_RPC
+# During bootstrap: use PRIVATE_KEY with EOA
+# After handoff: use multisig-cli for Safe transactions
+npx tsx script/ts/multisig-cli.ts pause
 
 # Users can still emergency exit even when paused
 # (Users call: cast send $STAKING_REWARDS "emergencyExit()" --private-key $USER_PK)
@@ -150,6 +219,7 @@ BROADCAST=true forge script script/UpgradeStakingRewards.s.sol --broadcast --pri
 
 # Manual upgrade (if script fails)
 # NOTE: Upgrade operations require multisig execution after bootstrap
+# TODO: Add upgrade functionality to multisig-cli for post-handoff operations
 cast send $STAKING_REWARDS "upgradeToAndCall(address,bytes)" $NEW_IMPL "0x" --private-key $PRIVATE_KEY --rpc-url $ETH_RPC
 ```
 
