@@ -29,8 +29,12 @@ contract UpgradeStakingRewards is Script {
 
     function run() external {
         // Initialize deployment configuration
-        address deployer = vm.addr(vm.envUint("PRIVATE_KEY"));
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+        address deployer = vm.addr(privateKey);
         console.log("Upgrader:", deployer);
+
+        // NOTE: For multisig ownership scenarios, this script will fail at the owner check
+        // unless the broadcaster is the current owner. Use a multisig transaction instead.
 
         // Get existing proxy address from environment or deployment file
         address stakingProxy = vm.envOr("STAKING_REWARDS_PROXY", address(0));
@@ -52,8 +56,8 @@ contract UpgradeStakingRewards is Script {
         // Safety checks
         if (stakingProxy == address(0)) revert InvalidProxyAddress();
 
-        // Start broadcasting
-        vm.startBroadcast();
+        // Start broadcasting with the private key
+        vm.startBroadcast(privateKey);
 
         // Deploy new implementation
         console.log("\nDeploying new StakingRewards implementation...");
@@ -124,7 +128,7 @@ contract UpgradeStakingRewards is Script {
     function _loadProxyFromDeployment() internal view returns (address) {
         // Try to read from deployments directory based on current chain
         string memory chainName = _getChainName(block.chainid);
-        string memory deploymentPath = string(abi.encodePacked("deployments/", chainName, "/addresses.json"));
+        string memory deploymentPath = string(abi.encodePacked("deployments/", chainName, "/deployment.json"));
 
         try vm.readFile(deploymentPath) returns (string memory deploymentData) {
             // Parse JSON to extract StakingRewards address

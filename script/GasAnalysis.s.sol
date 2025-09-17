@@ -125,7 +125,7 @@ contract GasAnalysis is Script {
         uint256 maxSafeGasPerTx = 25_000_000; // 25M gas (safety margin from 30M block limit)
         uint256 maxUsersPerTx = maxSafeGasPerTx / gasPerUser;
 
-        // Cap at reasonable batch size for operational safety
+        // Cap at conservative batch size for bootstrap operational safety
         if (maxUsersPerTx > 500) return 500;
         if (maxUsersPerTx < 50) return 50;
 

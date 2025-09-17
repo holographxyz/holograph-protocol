@@ -86,6 +86,8 @@ PRIVATE_KEY=0x...
 STAKING_REWARDS=0x...
 HLG_TOKEN=0x...
 REFERRAL_CSV_PATH=./referral_data.csv
+BATCH_SIZE=500                    # Optional, defaults to 500 users per batch
+REFERRAL_RESUME_INDEX=0           # Optional, resume from specific user index
 ```
 
 ## Execution Procedures
@@ -170,10 +172,27 @@ For 5,000 users (with dynamically optimized batch size):
 ## Emergency Procedures
 
 ### If Batch Fails
-1. Note the last successful batch index
+1. Note the last successful user index from console output
 2. Fix the issue (gas price spike, network congestion)
-3. Resume from the failed batch using startIndex parameter
+3. Resume from the failed point using REFERRAL_RESUME_INDEX
 4. Verify no users were double-initialized
+
+**Resume Example:**
+```bash
+# If execution fails at user index 2500
+export REFERRAL_RESUME_INDEX=2500
+forge script script/ProcessReferralCSV.s.sol:ProcessReferralCSV \
+  --sig "run()" \
+  --fork-url $ETH_RPC_URL \
+  --broadcast \
+  --private-key $PRIVATE_KEY \
+  -vvv
+
+# The script will:
+# - Skip users 0-2499 (already processed)
+# - Only approve HLG for users 2500+
+# - Continue batch processing from user 2500
+```
 
 ### If Wrong Amounts Distributed
 1. Contract is paused - users cannot unstake yet

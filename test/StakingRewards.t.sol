@@ -2471,4 +2471,136 @@ contract StakingRewardsTest is Test {
         assertEq(stakingRewards.owner(), alice);
         assertEq(stakingRewards.pendingOwner(), address(0));
     }
+
+    function testUpgradeToNonUUPSImplementation() public {
+        // Deploy a non-UUPS implementation (MockERC20 as example)
+        MockERC20 nonUUPSImpl = new MockERC20("Test", "TEST");
+
+        // Attempt to upgrade to non-UUPS implementation should fail
+        vm.prank(owner);
+        vm.expectRevert(); // OpenZeppelin will revert with ERC1967InvalidImplementation or similar
+        stakingRewards.upgradeToAndCall(address(nonUUPSImpl), "");
+    }
+
+    function testDirectUpgradeOnImplementationFails() public {
+        // Deploy a new implementation
+        StakingRewards newImpl = new StakingRewards();
+
+        // Attempting to call upgradeToAndCall directly on implementation should fail
+        vm.expectRevert(); // Should revert with UUPSUnauthorizedCallContext
+        newImpl.upgradeToAndCall(address(newImpl), "");
+    }
+
+    function testInitializerIdempotenceFreshProxy() public {
+        // Deploy fresh implementation and proxy
+        StakingRewards freshImpl = new StakingRewards();
+        ERC1967Proxy freshProxy =
+            new ERC1967Proxy(address(freshImpl), abi.encodeCall(StakingRewards.initialize, (address(hlg), alice)));
+        StakingRewards freshStaking = StakingRewards(payable(address(freshProxy)));
+
+        // Verify initialization worked
+        assertEq(freshStaking.owner(), alice);
+        assertEq(address(freshStaking.HLG()), address(hlg));
+
+        // Second initialization should fail
+        vm.expectRevert(abi.encodeWithSignature("InvalidInitialization()"));
+        freshStaking.initialize(address(hlg), bob);
+    }
+
+    /// @notice batchStakeFor only works when paused (bootstrap phase)
+    function testBatchStakeForOnlyWhenPaused() public {
+        // Prepare test data
+        address[] memory users = new address[](2);
+        uint256[] memory amounts = new uint256[](2);
+        users[0] = alice;
+        users[1] = bob;
+        amounts[0] = 100 ether;
+        amounts[1] = 200 ether;
+
+        // Fund owner with HLG
+        hlg.mint(owner, 300 ether);
+
+        // Test 1: batchStakeFor fails when unpaused
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 300 ether);
+        vm.expectRevert(); // Reverts with ExpectedPause() from whenPaused modifier
+        stakingRewards.batchStakeFor(users, amounts, 0, 2);
+        vm.stopPrank();
+
+        // Test 2: batchStakeFor works when paused
+        vm.prank(owner);
+        stakingRewards.pause();
+
+        vm.startPrank(owner);
+        stakingRewards.batchStakeFor(users, amounts, 0, 2);
+        vm.stopPrank();
+
+        // Verify balances
+        assertEq(stakingRewards.balanceOf(alice), 100 ether);
+        assertEq(stakingRewards.balanceOf(bob), 200 ether);
+        assertEq(stakingRewards.totalStaked(), 300 ether);
+        assertEq(stakingRewards.totalStakers(), 2);
+
+        // Test 3: Users can't use batchStakeFor even when paused
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", alice));
+        stakingRewards.batchStakeFor(users, amounts, 0, 1);
+    }
+
+    /// @notice Test resume functionality by processing in two segments
+    function testBatchStakeForResumeScenario() public {
+        // Prepare test data for 6 users
+        address[] memory users = new address[](6);
+        uint256[] memory amounts = new uint256[](6);
+        for (uint256 i = 0; i < 6; i++) {
+            users[i] = address(uint160(0x1000 + i));
+            amounts[i] = (i + 1) * 100 ether; // 100, 200, 300, 400, 500, 600 HLG
+        }
+
+        // Fund owner with total HLG needed
+        uint256 totalHLG = 2100 ether; // Sum of all amounts
+        hlg.mint(owner, totalHLG);
+
+        // Pause contract for batch operations
+        vm.prank(owner);
+        stakingRewards.pause();
+
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), totalHLG);
+
+        // Segment 1: Process users 0-2 (first 3 users)
+        stakingRewards.batchStakeFor(users, amounts, 0, 3);
+
+        // Verify first segment
+        assertEq(stakingRewards.balanceOf(users[0]), 100 ether);
+        assertEq(stakingRewards.balanceOf(users[1]), 200 ether);
+        assertEq(stakingRewards.balanceOf(users[2]), 300 ether);
+        assertEq(stakingRewards.totalStaked(), 600 ether);
+        assertEq(stakingRewards.totalStakers(), 3);
+
+        // Segment 2: Process users 3-5 (resume from index 3)
+        stakingRewards.batchStakeFor(users, amounts, 3, 6);
+
+        // Verify second segment
+        assertEq(stakingRewards.balanceOf(users[3]), 400 ether);
+        assertEq(stakingRewards.balanceOf(users[4]), 500 ether);
+        assertEq(stakingRewards.balanceOf(users[5]), 600 ether);
+
+        // Verify total after both segments
+        assertEq(stakingRewards.totalStaked(), 2100 ether);
+        assertEq(stakingRewards.totalStakers(), 6);
+
+        vm.stopPrank();
+
+        // Verify no user was processed twice
+        for (uint256 i = 0; i < 6; i++) {
+            assertEq(stakingRewards.balanceOf(users[i]), (i + 1) * 100 ether);
+        }
+    }
+
+    /// @notice Test contract version returns correct semver string
+    function testContractVersion() public view {
+        string memory version = stakingRewards.contractVersion();
+        assertEq(version, "1.0.0");
+    }
 }

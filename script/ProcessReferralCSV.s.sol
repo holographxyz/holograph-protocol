@@ -16,8 +16,8 @@ contract ProcessReferralCSV is Script {
     uint256 constant MAX_REWARD_PER_USER = 780_000 ether;
     // Maximum total allocation for program
     uint256 constant MAX_TOTAL_ALLOCATION = 250_000_000 ether;
-    // Optimal batch size from gas analysis
-    uint256 constant BATCH_SIZE = 700;
+    // Default batch size (can be overridden via BATCH_SIZE environment variable)
+    uint256 constant DEFAULT_BATCH_SIZE = 500;
 
     struct ReferralData {
         address user;
@@ -30,6 +30,15 @@ contract ProcessReferralCSV is Script {
         address stakingRewardsAddress = vm.envAddress("STAKING_REWARDS");
         address hlgAddress = vm.envAddress("HLG_TOKEN");
         string memory csvPath = vm.envString("REFERRAL_CSV_PATH");
+        uint256 batchSize = vm.envOr("BATCH_SIZE", DEFAULT_BATCH_SIZE);
+        uint256 referralResumeIndex = vm.envOr("REFERRAL_RESUME_INDEX", uint256(0));
+
+        console.log("\n== BOOTSTRAP REFERRAL PROCESSING ==");
+        console.log("CRITICAL: This script is for bootstrap phase only");
+        console.log("Contract must be paused and owned by EOA before multisig handoff");
+
+        // Safety preconditions
+        validateBootstrapConditions(deployerKey, stakingRewardsAddress, batchSize, referralResumeIndex);
 
         // Read and parse CSV
         ReferralData[] memory referrals = parseCSV(csvPath);
@@ -38,7 +47,49 @@ contract ProcessReferralCSV is Script {
         validateReferralData(referrals);
 
         // Execute batch staking
-        executeBatchStaking(deployerKey, stakingRewardsAddress, hlgAddress, referrals);
+        executeBatchStaking(deployerKey, stakingRewardsAddress, hlgAddress, referrals, batchSize, referralResumeIndex);
+    }
+
+    /**
+     * @notice Validate bootstrap conditions before processing
+     * @param deployerKey Private key of deployer
+     * @param stakingRewardsAddress Address of StakingRewards contract
+     * @param batchSize Batch size to use
+     * @param referralResumeIndex Index to resume from (0 for fresh start)
+     */
+    function validateBootstrapConditions(
+        uint256 deployerKey,
+        address stakingRewardsAddress,
+        uint256 batchSize,
+        uint256 referralResumeIndex
+    ) internal view {
+        address deployer = vm.addr(deployerKey);
+        StakingRewards stakingRewards = StakingRewards(payable(stakingRewardsAddress));
+
+        console.log("\n== BOOTSTRAP SAFETY CHECKS ==");
+        console.log("Deployer address:", deployer);
+        console.log("Batch size:", batchSize);
+        if (referralResumeIndex > 0) {
+            console.log("[RESUME MODE] Starting referral distribution from user index:", referralResumeIndex);
+        }
+
+        // Check 1: Contract must be paused
+        require(stakingRewards.paused(), "Contract must be paused for bootstrap operations");
+        console.log("[OK] Contract is paused");
+
+        // Check 2: Deployer must be the owner
+        require(stakingRewards.owner() == deployer, "Deployer must be contract owner");
+        console.log("[OK] Deployer is contract owner");
+
+        // Check 3: Owner should be EOA (not multisig yet)
+        require(deployer.code.length == 0, "Owner should be EOA during bootstrap phase");
+        console.log("[OK] Owner is EOA (not multisig)");
+
+        // Check 4: Validate batch size
+        require(batchSize >= 50 && batchSize <= 1000, "Batch size must be between 50 and 1000");
+        console.log("[OK] Batch size is within safe range");
+
+        console.log("All bootstrap safety checks passed");
     }
 
     /**
@@ -132,12 +183,16 @@ contract ProcessReferralCSV is Script {
      * @param stakingRewardsAddress Address of StakingRewards contract
      * @param hlgAddress Address of HLG token
      * @param referrals Array of referral data
+     * @param batchSize Number of users to process per batch
+     * @param referralResumeIndex Index to resume from (0 for fresh start)
      */
     function executeBatchStaking(
         uint256 deployerKey,
         address stakingRewardsAddress,
         address hlgAddress,
-        ReferralData[] memory referrals
+        ReferralData[] memory referrals,
+        uint256 batchSize,
+        uint256 referralResumeIndex
     ) internal {
         address deployer = vm.addr(deployerKey);
         StakingRewards stakingRewards = StakingRewards(payable(stakingRewardsAddress));
@@ -148,13 +203,22 @@ contract ProcessReferralCSV is Script {
         console.log("StakingRewards:", stakingRewardsAddress);
         console.log("HLG Token:", hlgAddress);
 
-        // Calculate total HLG needed
+        // Validate resume index
+        require(referralResumeIndex <= referrals.length, "Resume index exceeds total users");
+
+        // Calculate total HLG needed (only from resume point onwards)
         uint256 totalHLG;
-        for (uint256 i = 0; i < referrals.length; i++) {
+        for (uint256 i = referralResumeIndex; i < referrals.length; i++) {
             totalHLG += referrals[i].amount;
         }
 
         console.log("Total HLG needed:", totalHLG / 1e18);
+        if (referralResumeIndex > 0) {
+            console.log("Users to process:", referrals.length - referralResumeIndex);
+            console.log("Total users in CSV:", referrals.length);
+        } else {
+            console.log("Users to process:", referrals.length, "(fresh start)");
+        }
 
         // Check deployer balance
         uint256 deployerBalance = hlg.balanceOf(deployer);
@@ -168,18 +232,19 @@ contract ProcessReferralCSV is Script {
         hlg.approve(stakingRewardsAddress, totalHLG);
         console.log("Approved StakingRewards to spend", totalHLG / 1e18, "HLG");
 
-        // Prepare arrays for batch operations
-        uint256 batches = (referrals.length + BATCH_SIZE - 1) / BATCH_SIZE;
-        console.log("\nProcessing", batches, "batches...");
+        // Prepare arrays for batch operations starting from resume index
+        uint256 remainingUsers = referrals.length - referralResumeIndex;
+        uint256 batches = (remainingUsers + batchSize - 1) / batchSize;
+        console.log("\nProcessing", batches, "batches with batch size", batchSize);
 
         for (uint256 batchIndex = 0; batchIndex < batches; batchIndex++) {
-            uint256 startIdx = batchIndex * BATCH_SIZE;
-            uint256 endIdx = startIdx + BATCH_SIZE;
+            uint256 startIdx = referralResumeIndex + (batchIndex * batchSize);
+            uint256 endIdx = startIdx + batchSize;
             if (endIdx > referrals.length) {
                 endIdx = referrals.length;
             }
 
-            uint256 batchSize = endIdx - startIdx;
+            uint256 currentBatchSize = endIdx - startIdx;
             address[] memory users = new address[](referrals.length);
             uint256[] memory amounts = new uint256[](referrals.length);
 
@@ -192,7 +257,7 @@ contract ProcessReferralCSV is Script {
             // Execute batch
             console.log("\nBatch", batchIndex + 1, "of", batches);
             console.log("- Processing users", startIdx, "to", endIdx - 1);
-            console.log("- Batch size:", batchSize);
+            console.log("- Batch size:", currentBatchSize);
 
             stakingRewards.batchStakeFor(users, amounts, startIdx, endIdx);
 
@@ -202,11 +267,18 @@ contract ProcessReferralCSV is Script {
         vm.stopBroadcast();
 
         console.log("\n== EXECUTION COMPLETE ==");
-        console.log("All", referrals.length, "users have been initialized with staked HLG");
+        if (referralResumeIndex > 0) {
+            console.log("Processed", referrals.length - referralResumeIndex, "users in resume mode");
+            console.log("Total users now processed:", referrals.length);
+        } else {
+            console.log("All", referrals.length, "users have been initialized with staked HLG");
+        }
 
-        // Verify a few random users
+        // Verify a few users from the processed range
         console.log("\n== VERIFICATION ==");
-        for (uint256 i = 0; i < 3 && i < referrals.length; i++) {
+        uint256 verifyStart = referralResumeIndex;
+        uint256 verifyEnd = referrals.length;
+        for (uint256 i = verifyStart; i < verifyEnd && i < verifyStart + 3; i++) {
             uint256 balance = stakingRewards.balanceOf(referrals[i].user);
             console.log(
                 string(

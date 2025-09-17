@@ -534,21 +534,57 @@ user.stake(100 ether);  // Reverts: contract paused
 
 ## Deployment & Operations
 
-### Deployment
+### UUPS Proxy Deployment
+
+The StakingRewards contract uses UUPS (Universal Upgradeable Proxy Standard) for future upgrades:
 
 ```solidity
-constructor(address _hlg, address _owner) {
+// 1. Deploy implementation
+StakingRewards impl = new StakingRewards();
+
+// 2. Deploy proxy with initialization
+ERC1967Proxy proxy = new ERC1967Proxy(
+    address(impl),
+    abi.encodeCall(StakingRewards.initialize, (hlgToken, owner))
+);
+
+// 3. Use proxy address for all interactions
+StakingRewards stakingRewards = StakingRewards(payable(address(proxy)));
+```
+
+**Initialization pattern:**
+
+```solidity
+function initialize(address _hlg, address _owner) external initializer {
+    __ReentrancyGuard_init();
+    __Pausable_init();      // Starts paused for safety
+    __UUPSUpgradeable_init();
+    __Ownable_init(_owner); // Sets owner atomically
+
     HLG = IERC20(_hlg);
-    _pause();  // Starts paused for safety
+    burnPercentage = 5000;  // 50% default
+    stakingCooldown = 7 days;
 }
 ```
 
 **Setup steps:**
 
-1. Deploy with HLG token address and owner
+1. Deploy implementation + proxy via `script/DeployEthereum.s.sol`
 2. `setFeeRouter(address)` if using automated flow
 3. `unpause()` when ready to accept staking
 4. Transfer ownership to multisig (two-step process)
+
+**Address registry schema:**
+
+```json
+{
+  "stakingRewards": "0x...",      // Proxy address (use this for all calls)
+  "stakingRewardsImpl": "0x...",  // Implementation address (for verification)
+  "feeRouter": "0x...",
+  "chainId": 1,
+  "deployer": "0x..."
+}
+```
 
 ### Operations
 
@@ -583,12 +619,54 @@ uint256 extraTokens = stakingRewards.getExtraTokens();
 
 ### Future Upgrades
 
-Contract is not upgradeable (by design). To upgrade:
+The contract uses UUPS proxy pattern enabling safe upgrades while preserving all state:
 
-1. **Deploy New Contract**: With enhanced features
-2. **Migrate State**: Transfer all user balances and rewards
-3. **Update Integrations**: Point FeeRouter to new contract
-4. **Preserve History**: Maintain all staking and reward history
+**Upgrade procedure:**
+
+1. **Deploy New Implementation**: Contains enhanced features
+2. **Test on Fork**: Verify upgrade preserves state and functionality
+3. **Owner-Only Upgrade**: `upgradeToAndCall(newImpl, "")`
+4. **State Preservation**: All user balances, rewards, and contract state maintained
+
+**Via upgrade script:**
+
+```bash
+# Dry run
+forge script script/UpgradeStakingRewards.s.sol --fork-url $ETH_RPC
+
+# Execute upgrade (owner key required)
+# NOTE: After bootstrap, upgrades require multisig execution
+BROADCAST=true forge script script/UpgradeStakingRewards.s.sol --broadcast --private-key $PRIVATE_KEY
+```
+
+**Manual upgrade:**
+
+```bash
+# Deploy new implementation
+StakingRewards newImpl = new StakingRewards();
+
+# Upgrade proxy (owner only)
+# NOTE: After bootstrap, upgrades require multisig execution
+cast send $STAKING_REWARDS "upgradeToAndCall(address,bytes)" $NEW_IMPL "0x" --private-key $PRIVATE_KEY
+```
+
+**Append-only storage evolution:**
+
+For major version upgrades requiring new state variables, use `reinitializer(n)`:
+
+```solidity
+function initializeV2(uint256 newParam) external reinitializer(2) {
+    // Add new state variables here
+    // Never modify existing storage slots
+}
+```
+
+**Best practices:**
+
+- Always append new storage variables (never modify existing slots)
+- Test upgrades extensively on mainnet fork
+- Verify implementation address via EIP-1967 slot after upgrade
+- Monitor key metrics post-upgrade: `totalStaked`, `unallocatedRewards`, `globalRewardIndex`
 
 ---
 

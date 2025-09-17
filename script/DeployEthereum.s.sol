@@ -126,8 +126,12 @@ contract DeployEthereum is DeploymentBase {
         // Update stakingRewards to use actual FeeRouter address
         StakingRewards(payable(stakingRewards)).setFeeRouter(feeRouter);
 
+        // NOTE: StakingRewards remains paused after deployment
+        // Run `cast send <stakingRewards> "unpause()" --private-key <owner_key>` to activate
+
         // Store final addresses
-        addresses.stakingRewards = stakingRewards;
+        addresses.stakingRewards = stakingRewards; // This is the proxy address
+        addresses.stakingRewardsImpl = stakingImpl; // Store implementation address separately
         addresses.feeRouter = feeRouter;
 
         vm.stopBroadcast();

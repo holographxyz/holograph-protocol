@@ -454,6 +454,14 @@ contract StakingRewards is
         return block.timestamp >= lastStakeTimestamp[user] + stakingCooldown;
     }
 
+    /**
+     * @notice The version of the contract
+     * @return Semantic version string
+     */
+    function contractVersion() external pure returns (string memory) {
+        return "1.0.0";
+    }
+
     /* -------------------------------------------------------------------------- */
     /*                                    Admin                                   */
     /* -------------------------------------------------------------------------- */
