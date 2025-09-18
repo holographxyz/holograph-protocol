@@ -15,10 +15,10 @@ pragma solidity ^0.8.30;
  *       --broadcast \
  *       --private-key $DEPLOYER_PK
  */
-import "../src/FeeRouter.sol";
-import "../src/StakingRewards.sol";
-import "./DeploymentBase.sol";
-import "./DeploymentConfig.sol";
+import "../../src/FeeRouter.sol";
+import "../../src/StakingRewards.sol";
+import "../DeploymentBase.sol";
+import "../DeploymentConfig.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract DeployEthereum is DeploymentBase {

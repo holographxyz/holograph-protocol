@@ -3,7 +3,7 @@ pragma solidity ^0.8.30;
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
-import {StakingRewards} from "../src/StakingRewards.sol";
+import {StakingRewards} from "../../src/StakingRewards.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
@@ -15,7 +15,7 @@ contract ProcessReferralCSV is Script {
     // Maximum referral reward per user
     uint256 constant MAX_REWARD_PER_USER = 780_000 ether;
     // Maximum total allocation for program
-    uint256 constant MAX_TOTAL_ALLOCATION = 520_000_000 ether;
+    uint256 constant MAX_TOTAL_ALLOCATION = 258140000 ether;
     // Default batch size (can be overridden via BATCH_SIZE environment variable)
     uint256 constant DEFAULT_BATCH_SIZE = 100;
 
@@ -235,13 +235,13 @@ contract ProcessReferralCSV is Script {
         console.log("== DETAILED VALIDATION RESULTS ==");
         console.log("[OK] CSV structure: Valid header detected");
         console.log("[OK] Address format: All addresses valid 0x format");
-        console.log("[OK] Amount limits: All amounts <= 780,000 HLG per user");
-        console.log("[OK] Total cap check: Total allocation <= 520,000,000 HLG");
+        console.log("[OK] Amount limits: All amounts <=", MAX_REWARD_PER_USER / 1e18, "HLG per user");
+        console.log("[OK] Total cap check: Total allocation <=", MAX_TOTAL_ALLOCATION / 1e18, "HLG");
         console.log("[OK] No zero amounts: All users have positive allocations");
         console.log("[OK] Memory efficiency: Using optimized parsing");
 
-        if (totalAllocation > 500_000_000 ether) {
-            console.log("[WARN] High allocation (>500M HLG) - ensure sufficient balance");
+        if (totalAllocation > MAX_TOTAL_ALLOCATION * 95 / 100) {
+            console.log("[WARN] High allocation (>95% of cap) - ensure sufficient balance");
         }
 
         console.log("");

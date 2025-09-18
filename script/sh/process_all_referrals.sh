@@ -37,7 +37,7 @@ echo ""
 # Run validation-only function to verify CSV is valid
 echo "Validating CSV structure and content..."
 VALIDATION_OUTPUT=$(REFERRAL_CSV_PATH="$CSV_PATH" \
-   forge script script/ProcessReferralCSV.s.sol \
+   forge script script/admin/ProcessReferralCSV.s.sol \
    --tc ProcessReferralCSV \
    --sig "validateOnly(uint256,uint256)" \
    0 1 \
@@ -86,7 +86,7 @@ for ((chunk=0; chunk<TOTAL_CHUNKS; chunk++)); do
        REFERRAL_RESUME_INDEX="$start_index" \
        BATCH_SIZE="50" \
        DRY_RUN="$DRY_RUN" \
-       forge script script/ProcessReferralCSV.s.sol \
+       forge script script/admin/ProcessReferralCSV.s.sol \
        --tc ProcessReferralCSV \
        --sig "runRange(uint256,uint256)" \
        $start_index $users_in_chunk \

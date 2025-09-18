@@ -3,7 +3,7 @@ pragma solidity ^0.8.30;
 
 import "forge-std/Script.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {UniswapV3TickMath} from "../src/lib/UniswapV3TickMath.sol";
+import {UniswapV3TickMath} from "../../src/lib/UniswapV3TickMath.sol";
 
 interface IUniswapV3Factory {
     function getPool(address tokenA, address tokenB, uint24 fee) external view returns (address pool);

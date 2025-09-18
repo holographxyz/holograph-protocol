@@ -3,7 +3,7 @@ pragma solidity ^0.8.30;
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
-import {StakingRewards} from "../src/StakingRewards.sol";
+import {StakingRewards} from "../../src/StakingRewards.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";

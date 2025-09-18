@@ -2,36 +2,38 @@
 pragma solidity ^0.8.30;
 
 /**
- * @title DeployUnichain
- * @notice Foundry script to deploy HolographFactory on Unichain
- * @dev Deploys factory with proxy pattern for token creation
+ * @title DeployBase
+ * @notice Foundry script to deploy FeeRouter and HolographFactory on Base chain
  *
  * Usage examples (from repository root):
  *   // Dry-run against a live fork
- *   forge script script/DeployUnichain.s.sol \
- *       --fork-url $UNICHAIN_RPC
+ *   forge script script/DeployBase.s.sol \
+ *       --fork-url $BASE_RPC
  *
  *   // Broadcast real transactions (requires DEPLOYER_PK)
- *   forge script script/DeployUnichain.s.sol \
- *       --rpc-url $UNICHAIN_RPC \
+ *   forge script script/DeployBase.s.sol \
+ *       --rpc-url $BASE_RPC \
  *       --broadcast \
  *       --private-key $DEPLOYER_PK
  *
- *   // Verify on explorer (after propagation)
+ *   // Verify on Etherscan-style explorer (after propagation)
+ *   # fee router
+ *   forge verify-contract --chain-id 8453 $(cat deployments/base/FeeRouter.txt) src/FeeRouter.sol:FeeRouter $ETHERSCAN_API_KEY
  *   # erc20 implementation
- *   forge verify-contract --chain-id 1301 $(cat deployments/unichain/HolographERC20.txt) src/HolographERC20.sol:HolographERC20 $UNISCAN_API_KEY
+ *   forge verify-contract --chain-id 8453 $(cat deployments/base/HolographERC20.txt) src/HolographERC20.sol:HolographERC20 $ETHERSCAN_API_KEY
  *   # factory implementation
- *   forge verify-contract --chain-id 1301 $(cat deployments/unichain/HolographFactory.txt) src/HolographFactory.sol:HolographFactory --constructor-args $(cast abi-encode "constructor(address)" $(cat deployments/unichain/HolographERC20.txt)) $UNISCAN_API_KEY
+ *   forge verify-contract --chain-id 8453 $(cat deployments/base/HolographFactory.txt) src/HolographFactory.sol:HolographFactory --constructor-args $(cast abi-encode "constructor(address)" $(cat deployments/base/HolographERC20.txt)) $ETHERSCAN_API_KEY
  *   # factory proxy
- *   forge verify-contract --chain-id 1301 $(cat deployments/unichain/HolographFactoryProxy.txt) src/HolographFactoryProxy.sol:HolographFactoryProxy --constructor-args $(cast abi-encode "constructor(address)" $(cat deployments/unichain/HolographFactory.txt)) $UNISCAN_API_KEY
+ *   forge verify-contract --chain-id 8453 $(cat deployments/base/HolographFactoryProxy.txt) src/HolographFactoryProxy.sol:HolographFactoryProxy --constructor-args $(cast abi-encode "constructor(address)" $(cat deployments/base/HolographFactory.txt)) $ETHERSCAN_API_KEY
  */
-import "../src/HolographFactory.sol";
-import "../src/HolographFactoryProxy.sol";
-import "../src/HolographERC20.sol";
-import "./DeploymentBase.sol";
-import "./DeploymentConfig.sol";
+import "../../src/FeeRouter.sol";
+import "../../src/HolographFactory.sol";
+import "../../src/HolographFactoryProxy.sol";
+import "../../src/HolographERC20.sol";
+import "../DeploymentBase.sol";
+import "../DeploymentConfig.sol";
 
-contract DeployUnichain is DeploymentBase {
+contract DeployBase is DeploymentBase {
     /* -------------------------------------------------------------------------- */
     /*                                Constants                                   */
     /* -------------------------------------------------------------------------- */
@@ -42,12 +44,37 @@ contract DeployUnichain is DeploymentBase {
     /* -------------------------------------------------------------------------- */
     function run() external {
         /* ----------------------------- Chain guard ---------------------------- */
-        if (block.chainid != DeploymentConfig.UNICHAIN_MAINNET) {
-            console.log("[WARNING] Chain ID does not match known Unichain chains");
+        if (block.chainid != DeploymentConfig.BASE_MAINNET && block.chainid != DeploymentConfig.BASE_SEPOLIA) {
+            console.log("[WARNING] Chain ID does not match known Base chains");
+        }
+
+        // Mainnet safety check
+        if (DeploymentConfig.isMainnet(block.chainid)) {
+            console.log("WARNING: You are about to deploy to MAINNET!");
+            console.log("Chain ID:", block.chainid);
+            require(vm.envOr("MAINNET", false), "Set MAINNET=true to deploy to mainnet");
         }
 
         // Initialize deployment configuration
         BaseDeploymentConfig memory config = initializeDeployment();
+
+        // Environment variables
+        address lzEndpoint = vm.envAddress("LZ_ENDPOINT");
+        address dopplerAirlock = vm.envAddress("DOPPLER_AIRLOCK");
+        address treasury = vm.envAddress("TREASURY");
+        uint32 ethEid = uint32(vm.envUint("ETH_EID"));
+
+        // Validate env variables
+        DeploymentConfig.validateNonZeroAddress(lzEndpoint, "LZ_ENDPOINT");
+        DeploymentConfig.validateNonZeroAddress(dopplerAirlock, "DOPPLER_AIRLOCK");
+        DeploymentConfig.validateNonZeroAddress(treasury, "TREASURY");
+        require(ethEid != 0, "ETH_EID not set");
+
+        // Validate deployment account has sufficient gas
+        require(gasleft() >= DeploymentConfig.MIN_DEPLOYMENT_GAS, "Insufficient gas for deployment");
+
+        // Gas tracking variable
+        uint256 gasStart;
 
         // Deploy HolographDeployer using base functionality
         HolographDeployer holographDeployer = deployHolographDeployer();
@@ -57,6 +84,7 @@ contract DeployUnichain is DeploymentBase {
         bytes32 erc20Salt = DeploymentConfig.generateSalt(config.deployer, 5);
         bytes32 factorySalt = DeploymentConfig.generateSalt(config.deployer, 3);
         bytes32 factoryProxySalt = DeploymentConfig.generateSalt(config.deployer, 6);
+        bytes32 feeRouterSalt = DeploymentConfig.generateSalt(config.deployer, 4);
 
         // Initialize addresses struct
         ContractAddresses memory addresses;
@@ -64,7 +92,7 @@ contract DeployUnichain is DeploymentBase {
 
         /* ---------------------- Deploy HolographERC20 Implementation ---------------------- */
         console.log("\nDeploying HolographERC20 implementation...");
-        uint256 gasStart = gasleft();
+        gasStart = gasleft();
         bytes memory erc20Bytecode = type(HolographERC20).creationCode;
         address erc20Implementation = holographDeployer.deploy(erc20Bytecode, erc20Salt);
         uint256 gasERC20 = gasStart - gasleft();
@@ -100,10 +128,32 @@ contract DeployUnichain is DeploymentBase {
         uint256 gasInitialize = gasStart - gasleft();
         console.log("Factory initialized, gas used:", gasInitialize);
 
+        /* ---------------------- Deploy FeeRouter ---------------------- */
+        console.log("\nDeploying FeeRouter...");
+        gasStart = gasleft();
+        bytes memory feeRouterBytecode = abi.encodePacked(
+            type(FeeRouter).creationCode,
+            abi.encode(
+                lzEndpoint, // LayerZero endpoint for fee bridging
+                ethEid,
+                address(0), // stakingRewards (none on Base)
+                address(0), // HLG token (none on Base)
+                address(0), // WETH (unused on Base for this contract)
+                address(0), // SwapRouter (unused)
+                treasury,
+                config.deployer // Set deployer as owner
+            )
+        );
+        address feeRouter = holographDeployer.deploy(feeRouterBytecode, feeRouterSalt);
+        uint256 gasFeeRouter = gasStart - gasleft();
+        console.log("FeeRouter deployed at:", feeRouter);
+        console.log("Gas used:", gasFeeRouter);
+
         // Store final addresses
         addresses.holographERC20 = erc20Implementation;
         addresses.holographFactory = factoryImpl;
         addresses.holographFactoryProxy = factoryProxy;
+        addresses.feeRouter = feeRouter;
 
         vm.stopBroadcast();
 
