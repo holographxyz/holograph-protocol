@@ -462,6 +462,18 @@ contract StakingRewards is
         return "1.0.0";
     }
 
+    /**
+     * @notice Get remaining cooldown time for a user in seconds
+     * @param user Address to check
+     * @return seconds remaining in cooldown period (0 if can unstake)
+     */
+    function getCooldownTimeRemaining(address user) external view returns (uint256) {
+        if (balanceOf[user] == 0 || lastStakeTimestamp[user] == 0) return 0;
+
+        uint256 cooldownEndTime = lastStakeTimestamp[user] + stakingCooldown;
+        return block.timestamp >= cooldownEndTime ? 0 : cooldownEndTime - block.timestamp;
+    }
+
     /* -------------------------------------------------------------------------- */
     /*                                    Admin                                   */
     /* -------------------------------------------------------------------------- */

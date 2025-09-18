@@ -1983,6 +1983,7 @@ contract StakingRewardsTest is Test {
         vm.stopPrank();
 
         // Both Alice and Bob unstake at same time - equal rewards (no gaming advantage)
+        vm.warp(block.timestamp + 7 days + 1); // Wait for cooldown
         vm.startPrank(alice);
         stakingRewards.unstake();
         vm.stopPrank();
@@ -2393,6 +2394,50 @@ contract StakingRewardsTest is Test {
         stakingRewards.reclaimUnallocatedRewards(owner);
 
         assertEq(stakingRewards.forfeitedRewards(), 0);
+    }
+
+    /// @notice Test getCooldownTimeRemaining function returns correct values
+    function testGetCooldownTimeRemaining() public {
+        // Test 1: User with no stake should return 0
+        assertEq(stakingRewards.getCooldownTimeRemaining(alice), 0);
+
+        // Test 2: User stakes and should have cooldown time remaining
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 10 ether);
+        stakingRewards.stake(10 ether);
+        vm.stopPrank();
+
+        // Should have full cooldown remaining (7 days)
+        assertEq(stakingRewards.getCooldownTimeRemaining(alice), 7 days);
+
+        // Test 3: Advance time partially and check remaining time
+        vm.warp(block.timestamp + 3 days);
+        assertEq(stakingRewards.getCooldownTimeRemaining(alice), 4 days);
+
+        // Test 4: Advance to just before cooldown ends
+        vm.warp(block.timestamp + 4 days - 1);
+        assertEq(stakingRewards.getCooldownTimeRemaining(alice), 1);
+
+        // Test 5: Advance past cooldown period, should return 0
+        vm.warp(block.timestamp + 2);
+        assertEq(stakingRewards.getCooldownTimeRemaining(alice), 0);
+
+        // Test 6: Owner staking should not set cooldown
+        vm.prank(owner);
+        stakingRewards.pause();
+
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 10 ether);
+        stakingRewards.stakeFor(bob, 10 ether);
+        vm.stopPrank();
+
+        // Bob should have 0 cooldown remaining (owner staking)
+        assertEq(stakingRewards.getCooldownTimeRemaining(bob), 0);
+
+        // Test 7: After unstaking, should return 0
+        vm.prank(alice);
+        stakingRewards.unstake();
+        assertEq(stakingRewards.getCooldownTimeRemaining(alice), 0);
     }
 
     /* -------------------------------------------------------------------------- */
