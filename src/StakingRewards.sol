@@ -163,7 +163,7 @@ contract StakingRewards is
         if (amount == 0) revert ZeroAmount();
 
         uint256 actualAmount = _pullHLG(msg.sender, amount);
-        updateUser(msg.sender);
+        _updateUser(msg.sender);
 
         // Track new staker
         if (balanceOf[msg.sender] == 0) {
@@ -184,7 +184,7 @@ contract StakingRewards is
      * @dev Auto-compounds first, then transfers full balance. Can be called while paused.
      */
     function unstake() external nonReentrant {
-        updateUser(msg.sender);
+        _updateUser(msg.sender);
 
         uint256 userBalance = balanceOf[msg.sender];
         if (userBalance == 0) revert NoStake();
@@ -209,7 +209,7 @@ contract StakingRewards is
      * @notice Emergency exit without compounding pending rewards
      * @dev Does not call updateUser; returns current recorded balance. Can be called while paused.
      */
-    function emergencyExit() external nonReentrant {
+    function emergencyExit() external nonReentrant whenPaused {
         uint256 userBalance = balanceOf[msg.sender];
         if (userBalance == 0) revert NoStake();
 
@@ -269,7 +269,7 @@ contract StakingRewards is
      * @dev Splits burn/reward and updates the index. If there are no stakers,
      *      rewards become extra tokens recoverable by owner.
      */
-    function addRewards(uint256 amount) external nonReentrant whenNotPaused {
+    function addRewards(uint256 amount) external nonReentrant {
         if (msg.sender != feeRouter) revert Unauthorized();
 
         // Pull tokens first to get the exact received amount
@@ -327,7 +327,7 @@ contract StakingRewards is
      * @dev Sets the snapshot to the current index after compounding.
      * @param account Address to update rewards for
      */
-    function updateUser(address account) internal {
+    function _updateUser(address account) internal {
         uint256 userBalance = balanceOf[account];
         uint256 currentIndex = globalRewardIndex;
         uint256 snapshot = userIndexSnapshot[account];
@@ -613,7 +613,7 @@ contract StakingRewards is
         if (amount == 0) revert ZeroAmount();
 
         _pullHLG(msg.sender, amount);
-        updateUser(user);
+        _updateUser(user);
 
         // Track new staker
         if (balanceOf[user] == 0) {
@@ -661,7 +661,7 @@ contract StakingRewards is
             address user = users[i];
             uint256 amount = amounts[i];
 
-            updateUser(user);
+            _updateUser(user);
 
             // Track new staker
             if (balanceOf[user] == 0) {
@@ -704,7 +704,7 @@ contract StakingRewards is
         if (amount == 0) revert ZeroAmount();
 
         _pullHLG(msg.sender, amount);
-        updateUser(user);
+        _updateUser(user);
 
         // Track new staker
         if (balanceOf[user] == 0) {

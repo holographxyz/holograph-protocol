@@ -105,12 +105,30 @@ contract StakingRewardsTest is Test {
         vm.startPrank(alice);
         hlg.approve(address(stakingRewards), STAKE_AMOUNT);
         stakingRewards.stake(STAKE_AMOUNT);
+        vm.stopPrank();
 
+        // Pause contract so emergency exit can be called
+        vm.prank(owner);
+        stakingRewards.pause();
+
+        vm.startPrank(alice);
         uint256 balanceBefore = hlg.balanceOf(alice);
         stakingRewards.emergencyExit();
 
         assertEq(stakingRewards.balanceOf(alice), 0);
         assertEq(hlg.balanceOf(alice), balanceBefore + STAKE_AMOUNT);
+        vm.stopPrank();
+    }
+
+    /// @notice Emergency exit reverts when contract is not paused (audit security requirement)
+    function testEmergencyExitRevertsWhenNotPaused() public {
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), STAKE_AMOUNT);
+        stakingRewards.stake(STAKE_AMOUNT);
+
+        // emergencyExit should revert when not paused
+        vm.expectRevert(); // EnforcedPause
+        stakingRewards.emergencyExit();
         vm.stopPrank();
     }
 
@@ -464,12 +482,48 @@ contract StakingRewardsTest is Test {
         stakingRewards.depositAndDistribute(REWARD_AMOUNT);
         vm.stopPrank();
 
-        // addRewards should revert
+        // addRewards should NOT revert when paused (audit change allows FeeRouter to work while paused)
         vm.startPrank(feeRouter);
         hlg.approve(address(stakingRewards), REWARD_AMOUNT);
-        vm.expectRevert();
+        // This should work (no expectRevert) since addRewards can be called while paused
         stakingRewards.addRewards(REWARD_AMOUNT);
         vm.stopPrank();
+    }
+
+    /// @notice addRewards distributes rewards correctly while paused (audit operational continuity)
+    function testAddRewardsDistributesCorrectlyWhilePaused() public {
+        // Set up staker first
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), STAKE_AMOUNT);
+        stakingRewards.stake(STAKE_AMOUNT);
+        vm.stopPrank();
+
+        // Pause contract
+        vm.prank(owner);
+        stakingRewards.pause();
+
+        // FeeRouter adds rewards while paused
+        uint256 rewardAmount = 200 ether;
+        vm.startPrank(feeRouter);
+        hlg.approve(address(stakingRewards), rewardAmount);
+        stakingRewards.addRewards(rewardAmount);
+        vm.stopPrank();
+
+        // Verify rewards were properly distributed (50% after burn)
+        uint256 expectedRewards = (rewardAmount * (10000 - stakingRewards.burnPercentage())) / 10000;
+        assertEq(stakingRewards.pendingRewards(alice), expectedRewards);
+
+        // User should be able to claim rewards after unpause
+        vm.prank(owner);
+        stakingRewards.unpause();
+
+        vm.warp(block.timestamp + 7 days + 1);
+        vm.prank(alice);
+        stakingRewards.unstake();
+
+        // Alice should receive original stake + compounded rewards
+        assertEq(stakingRewards.balanceOf(alice), 0);
+        assertGt(hlg.balanceOf(alice), STAKE_AMOUNT); // More than original stake due to rewards
     }
 
     /// @notice Reward accrual amount reflects configured burn percentage
@@ -648,6 +702,10 @@ contract StakingRewardsTest is Test {
         hlg.approve(address(stakingRewards), 200 ether);
         stakingRewards.depositAndDistribute(200 ether);
         vm.stopPrank();
+
+        // Pause contract so emergency exit can be called
+        vm.prank(owner);
+        stakingRewards.pause();
 
         // Alice emergency exits (forfeits pending rewards)
         vm.prank(alice);
@@ -1379,7 +1437,13 @@ contract StakingRewardsTest is Test {
         hlg.approve(address(stakingRewards), STAKE_AMOUNT);
         stakingRewards.stake(STAKE_AMOUNT);
         assertEq(stakingRewards.totalStakers(), 1);
+        vm.stopPrank();
 
+        // Pause contract so emergency exit can be called
+        vm.prank(owner);
+        stakingRewards.pause();
+
+        vm.startPrank(alice);
         stakingRewards.emergencyExit();
         assertEq(stakingRewards.totalStakers(), 0);
         vm.stopPrank();
@@ -1417,6 +1481,10 @@ contract StakingRewardsTest is Test {
         vm.prank(alice);
         stakingRewards.unstake();
         assertEq(stakingRewards.totalStakers(), 2);
+
+        // Pause contract so emergency exit can be called
+        vm.prank(owner);
+        stakingRewards.pause();
 
         // Bob exits
         vm.prank(bob);
@@ -1576,7 +1644,16 @@ contract StakingRewardsTest is Test {
                 vm.warp(block.timestamp + 7 days + 1);
                 stakingRewards.unstake();
             } else {
+                vm.stopPrank();
+                // Pause contract so emergency exit can be called
+                vm.prank(owner);
+                stakingRewards.pause();
+                vm.prank(alice);
                 stakingRewards.emergencyExit();
+
+                // Unpause for next iteration
+                vm.prank(owner);
+                stakingRewards.unpause();
             }
             assertEq(stakingRewards.totalStakers(), 0);
             vm.stopPrank();
@@ -1838,8 +1915,14 @@ contract StakingRewardsTest is Test {
 
         // Check that user cannot unstake immediately
         assertFalse(stakingRewards.canUnstake(alice));
+        vm.stopPrank();
+
+        // Pause contract so emergency exit can be called
+        vm.prank(owner);
+        stakingRewards.pause();
 
         // Emergency exit should work even during cooldown
+        vm.prank(alice);
         stakingRewards.emergencyExit();
 
         // Check balance is zero
@@ -2145,6 +2228,10 @@ contract StakingRewardsTest is Test {
         uint256 pendingBefore = stakingRewards.pendingRewards(alice);
         assertGt(pendingBefore, 0);
 
+        // Pause contract so emergency exit can be called
+        vm.prank(owner);
+        stakingRewards.pause();
+
         // Emergency exit should track forfeited rewards
         vm.expectEmit(true, false, false, true);
         emit RewardsForfeited(alice, pendingBefore);
@@ -2174,6 +2261,10 @@ contract StakingRewardsTest is Test {
         hlg.approve(address(stakingRewards), 300 ether);
         stakingRewards.depositAndDistribute(300 ether);
         vm.stopPrank();
+
+        // Pause contract so emergency exit can be called
+        vm.prank(owner);
+        stakingRewards.pause();
 
         // Alice emergency exits (forfeits pending rewards)
         uint256 alicePending = stakingRewards.pendingRewards(alice);
@@ -2225,6 +2316,10 @@ contract StakingRewardsTest is Test {
         uint256 alicePending = stakingRewards.pendingRewards(alice);
         uint256 bobPending = stakingRewards.pendingRewards(bob);
 
+        // Pause contract so emergency exit can be called
+        vm.prank(owner);
+        stakingRewards.pause();
+
         vm.prank(alice);
         stakingRewards.emergencyExit();
 
@@ -2249,8 +2344,14 @@ contract StakingRewardsTest is Test {
         vm.startPrank(alice);
         hlg.approve(address(stakingRewards), 1000 ether);
         stakingRewards.stake(1000 ether);
-        stakingRewards.emergencyExit(); // No pending rewards to forfeit
         vm.stopPrank();
+
+        // Pause contract so emergency exit can be called
+        vm.prank(owner);
+        stakingRewards.pause();
+
+        vm.prank(alice);
+        stakingRewards.emergencyExit(); // No pending rewards to forfeit
 
         // No forfeited rewards
         assertEq(stakingRewards.forfeitedRewards(), 0);
@@ -2277,6 +2378,10 @@ contract StakingRewardsTest is Test {
 
         // Manually reduce unallocated to simulate edge case
         uint256 pendingBefore = stakingRewards.pendingRewards(alice);
+
+        // Pause contract so emergency exit can be called
+        vm.prank(owner);
+        stakingRewards.pause();
 
         // Emergency exit
         vm.prank(alice);
