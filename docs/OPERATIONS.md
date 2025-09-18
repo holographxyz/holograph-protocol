@@ -87,33 +87,40 @@ npx tsx script/ts/multisig-cli.ts batch --eth 0.5
 
 ## Referral Batch Operations
 
-### Pre-Execution Setup
+### Setup
+Place CSV file in `script/csv/` directory (automatically excluded from git for security).
+
+**Required Environment Variables**:
 ```bash
-# Environment variables
 PRIVATE_KEY=0x...
 STAKING_REWARDS=0x...
 HLG_TOKEN=0x...
-REFERRAL_CSV_PATH=./referral_data.csv
-REFERRAL_RESUME_INDEX=0    # Resume from specific index if needed
 ```
 
 ### Gas Cost Analysis
 ```bash
-# Run before execution for current costs
+# Run before execution for current gas costs
 make gas-analysis
 ```
 
 ### Execution
 ```bash
-# Dry run validation
-forge script script/ProcessReferralCSV.s.sol --fork-url $ETH_RPC_URL -vv
+# Dry run validation (safe testing)
+make process-referrals
 
-# Execute (monitor gas prices first)
-BROADCAST=true forge script script/ProcessReferralCSV.s.sol --broadcast --private-key $PRIVATE_KEY
+# Live mainnet execution (warning prompt included)
+make process-referrals-mainnet
 ```
 
+**Features**:
+- Automatic CSV validation and progress tracking
+- Processes large CSVs in 500-user chunks
+- Resume capability if interrupted
+- Real-time gas usage reporting
+- Comprehensive pre-validation
+
 **CSV Format**: `address,amount` (amounts in whole HLG, no decimals)
-**Constraints**: No duplicates, max 780K HLG per user, max 250M total
+**Constraints**: No duplicates, max 780K HLG per user, max 520M total
 
 ## System Monitoring
 

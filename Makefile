@@ -30,7 +30,7 @@ print-step    = @echo "$(YELLOW)$1$(NC)"
 # ---------------------------------------------------------------------------- #
 #                                   Targets                                   #
 # ---------------------------------------------------------------------------- #
-.PHONY: all help install-hooks fmt build clean test deploy-base deploy-base-sepolia deploy-eth deploy-eth-sepolia deploy-unichain deploy-unichain-sepolia configure-base configure-eth configure-unichain configure-dvn-base configure-dvn-eth fee-ops abi verify-addresses gas-analysis
+.PHONY: all help install-hooks fmt build clean test deploy-base deploy-base-sepolia deploy-eth deploy-eth-sepolia deploy-unichain deploy-unichain-sepolia configure-base configure-eth configure-unichain configure-dvn-base configure-dvn-eth fee-ops abi verify-addresses gas-analysis process-referrals process-referrals-mainnet
 
 ## all: Build and test (default target)
 all: build test
@@ -225,4 +225,19 @@ gas-analysis:
 deploy-merkle-distributor:
 	$(call print-step,Deploying MerkleDistributor for campaign…)
 	forge script script/DeployMerkleDistributor.s.sol:DeployMerkleDistributor --fork-url $(ETHEREUM_RPC_URL) $(BROADCAST_FLAG) --verify
-	$(call print-success,MerkleDistributor deployment) 
+	$(call print-success,MerkleDistributor deployment)
+
+## process-referrals: Process referral CSV in DRY RUN mode (safe testing).
+process-referrals:
+	$(call print-step,Processing referral CSV (DRY RUN)…)
+	@./script/sh/process_all_referrals.sh
+	$(call print-success,Referral processing (DRY RUN))
+
+## process-referrals-mainnet: Process referral CSV on MAINNET (LIVE execution).
+process-referrals-mainnet:
+	$(call print-step,WARNING: Processing referral CSV on MAINNET…)
+	@echo "$(RED)⚠️  MAINNET EXECUTION - This will use real funds!$(NC)"
+	@echo "$(YELLOW)Press Ctrl+C to cancel, or Enter to continue...$(NC)"
+	@read
+	@DRY_RUN=false ./script/sh/process_all_referrals.sh
+	$(call print-success,Referral processing (MAINNET)) 
