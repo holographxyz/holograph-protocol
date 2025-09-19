@@ -15,4 +15,11 @@ contract MockCorruptedStaking is StakingRewards {
     function corruptUnallocatedRewards(uint256 newAmount) external {
         unallocatedRewards = newAmount;
     }
+
+    /**
+     * @notice Test-only public wrapper for updateUser function
+     */
+    function testUpdateUser(address account) public {
+        updateUser(account);
+    }
 }

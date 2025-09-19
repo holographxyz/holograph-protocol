@@ -289,7 +289,7 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
      * @dev Sets the snapshot to the current index after compounding.
      * @param account Address to update rewards for
      */
-    function updateUser(address account) public {
+    function updateUser(address account) internal {
         uint256 userBalance = balanceOf[account];
         uint256 currentIndex = globalRewardIndex;
         uint256 snapshot = userIndexSnapshot[account];
@@ -297,15 +297,15 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
         if (userBalance > 0) {
             uint256 indexDelta = currentIndex - snapshot;
             if (indexDelta != 0) {
-                uint256 pendingRewards = (userBalance * indexDelta) / INDEX_PRECISION;
-                if (pendingRewards > 0) {
+                uint256 rewardAmount = (userBalance * indexDelta) / INDEX_PRECISION;
+                if (rewardAmount > 0) {
                     // Make sure we have enough rewards available to give to the user
                     uint256 unallocated = unallocatedRewards;
-                    if (pendingRewards > unallocated) revert NotEnoughRewardsAvailable();
+                    if (rewardAmount > unallocated) revert NotEnoughRewardsAvailable();
 
-                    balanceOf[account] = userBalance + pendingRewards;
-                    unallocatedRewards = unallocated - pendingRewards;
-                    emit RewardsCompounded(account, pendingRewards);
+                    balanceOf[account] = userBalance + rewardAmount;
+                    unallocatedRewards = unallocated - rewardAmount;
+                    emit RewardsCompounded(account, rewardAmount);
                 }
             }
         }
@@ -362,7 +362,7 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
      * @param account Address to check pending rewards for
      * @return Amount of pending auto-compound rewards
      */
-    function earned(address account) external view returns (uint256) {
+    function pendingRewards(address account) external view returns (uint256) {
         return _pendingRewards(account);
     }
 

@@ -136,18 +136,6 @@ contract StakingRewardsHandler is Test {
         stakingRewards.addRewards(amount);
     }
 
-    /// @notice Update rewards for a random user
-    function updateUser(uint256 userSeed) public {
-        if (users.length == 0) return;
-
-        address user = users[userSeed % users.length];
-
-        // Record state before
-        lastGlobalRewardIndex = stakingRewards.globalRewardIndex();
-
-        stakingRewards.updateUser(user);
-    }
-
     /// @notice Emergency exit for a random user
     function emergencyExit(uint256 userSeed) public {
         if (users.length == 0) return;
