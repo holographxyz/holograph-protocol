@@ -32,9 +32,8 @@ contract DeployEthereumStakingRewards is DeploymentBase {
         // Deploy HolographDeployer using base functionality
         HolographDeployer holographDeployer = deployHolographDeployer();
 
-        // Generate deployment salts
-        bytes32 stakingImplSalt = DeploymentConfig.generateSalt(config.deployer, 16); // Use different salt
-        bytes32 stakingProxySalt = DeploymentConfig.generateSalt(config.deployer, 17);
+        // Generate universal deployment salt
+        bytes32 salt = DeploymentConfig.generateSalt(config.deployer);
 
         /* ---------------------- Deploy StakingRewards (UUPS Proxy) ---------------------- */
         console.log("\nDeploying StakingRewards implementation...");
@@ -42,7 +41,7 @@ contract DeployEthereumStakingRewards is DeploymentBase {
 
         // Deploy implementation
         bytes memory stakingImplBytecode = abi.encodePacked(type(StakingRewards).creationCode);
-        address stakingImpl = holographDeployer.deploy(stakingImplBytecode, stakingImplSalt);
+        address stakingImpl = holographDeployer.deploy(stakingImplBytecode, salt);
         uint256 gasImpl = gasStart - gasleft();
         console.log("StakingRewards implementation deployed at:", stakingImpl);
         console.log("Gas used for implementation:", gasImpl);
@@ -55,7 +54,7 @@ contract DeployEthereumStakingRewards is DeploymentBase {
             type(ERC1967Proxy).creationCode,
             abi.encode(stakingImpl, abi.encodeCall(StakingRewards.initialize, (hlg, config.deployer)))
         );
-        address stakingProxy = holographDeployer.deploy(proxyBytecode, stakingProxySalt);
+        address stakingProxy = holographDeployer.deploy(proxyBytecode, salt);
         uint256 gasProxy = gasStart - gasleft();
         address stakingRewards = stakingProxy;
         console.log("StakingRewards proxy deployed at:", stakingRewards);

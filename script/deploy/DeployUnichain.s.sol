@@ -54,9 +54,7 @@ contract DeployUnichain is DeploymentBase {
 
         // Get deployment salts - use EOA address as msg.sender for HolographDeployer
         // Generate deployment salts
-        bytes32 erc20Salt = DeploymentConfig.generateSalt(config.deployer, 5);
-        bytes32 factorySalt = DeploymentConfig.generateSalt(config.deployer, 3);
-        bytes32 factoryProxySalt = DeploymentConfig.generateSalt(config.deployer, 6);
+        bytes32 salt = DeploymentConfig.generateSalt(config.deployer);
 
         // Initialize addresses struct
         ContractAddresses memory addresses;
@@ -66,7 +64,7 @@ contract DeployUnichain is DeploymentBase {
         console.log("\nDeploying HolographERC20 implementation...");
         uint256 gasStart = gasleft();
         bytes memory erc20Bytecode = type(HolographERC20).creationCode;
-        address erc20Implementation = holographDeployer.deploy(erc20Bytecode, erc20Salt);
+        address erc20Implementation = holographDeployer.deploy(erc20Bytecode, salt);
         uint256 gasERC20 = gasStart - gasleft();
         console.log("HolographERC20 deployed at:", erc20Implementation);
         console.log("Gas used:", gasERC20);
@@ -76,7 +74,7 @@ contract DeployUnichain is DeploymentBase {
         gasStart = gasleft();
         bytes memory factoryBytecode =
             abi.encodePacked(type(HolographFactory).creationCode, abi.encode(erc20Implementation));
-        address factoryImpl = holographDeployer.deploy(factoryBytecode, factorySalt);
+        address factoryImpl = holographDeployer.deploy(factoryBytecode, salt);
         uint256 gasFactoryImpl = gasStart - gasleft();
         console.log("HolographFactory deployed at:", factoryImpl);
         console.log("Gas used:", gasFactoryImpl);
@@ -86,7 +84,7 @@ contract DeployUnichain is DeploymentBase {
         gasStart = gasleft();
         // Use a different salt for proxy to get different address
         bytes memory proxyBytecode = abi.encodePacked(type(HolographFactoryProxy).creationCode, abi.encode(factoryImpl));
-        address factoryProxy = holographDeployer.deploy(proxyBytecode, factoryProxySalt);
+        address factoryProxy = holographDeployer.deploy(proxyBytecode, salt);
         uint256 gasFactoryProxy = gasStart - gasleft();
         console.log("HolographFactory proxy deployed at:", factoryProxy);
         console.log("Gas used:", gasFactoryProxy);

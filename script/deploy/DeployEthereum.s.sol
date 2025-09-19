@@ -67,10 +67,8 @@ contract DeployEthereum is DeploymentBase {
         HolographDeployer holographDeployer = deployHolographDeployer();
 
         // Get deployment salts - use EOA address as msg.sender for HolographDeployer
-        // Generate deployment salts
-        bytes32 stakingImplSalt = DeploymentConfig.generateSalt(config.deployer, 6);
-        bytes32 stakingProxySalt = DeploymentConfig.generateSalt(config.deployer, 7);
-        bytes32 feeRouterSalt = DeploymentConfig.generateSalt(config.deployer, 4);
+        // Generate universal deployment salt
+        bytes32 salt = DeploymentConfig.generateSalt(config.deployer);
 
         // Initialize addresses struct
         ContractAddresses memory addresses;
@@ -82,7 +80,7 @@ contract DeployEthereum is DeploymentBase {
 
         // Deploy implementation (no constructor args needed)
         bytes memory stakingImplBytecode = abi.encodePacked(type(StakingRewards).creationCode);
-        address stakingImpl = holographDeployer.deploy(stakingImplBytecode, stakingImplSalt);
+        address stakingImpl = holographDeployer.deploy(stakingImplBytecode, salt);
         uint256 gasImpl = gasStart - gasleft();
         console.log("StakingRewards implementation deployed at:", stakingImpl);
         console.log("Gas used for implementation:", gasImpl);
@@ -95,7 +93,7 @@ contract DeployEthereum is DeploymentBase {
             type(ERC1967Proxy).creationCode,
             abi.encode(stakingImpl, abi.encodeCall(StakingRewards.initialize, (hlg, config.deployer)))
         );
-        address stakingProxy = holographDeployer.deploy(proxyBytecode, stakingProxySalt);
+        address stakingProxy = holographDeployer.deploy(proxyBytecode, salt);
         uint256 gasProxy = gasStart - gasleft();
         address stakingRewards = stakingProxy; // Use proxy as the main contract address
         console.log("StakingRewards proxy deployed at:", stakingRewards);
@@ -118,7 +116,7 @@ contract DeployEthereum is DeploymentBase {
                 config.deployer // Set deployer as owner
             )
         );
-        address feeRouter = holographDeployer.deploy(feeRouterBytecode, feeRouterSalt);
+        address feeRouter = holographDeployer.deploy(feeRouterBytecode, salt);
         uint256 gasFeeRouter = gasStart - gasleft();
         console.log("FeeRouter deployed at:", feeRouter);
         console.log("Gas used:", gasFeeRouter);

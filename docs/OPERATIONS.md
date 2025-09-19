@@ -90,37 +90,34 @@ npx tsx script/ts/multisig-cli.ts batch --eth 0.5
 ### Setup
 Place CSV file in `script/csv/` directory (automatically excluded from git for security).
 
-**Required Environment Variables**:
+**Environment Variables** (all optional with smart defaults):
 ```bash
-PRIVATE_KEY=0x...
-STAKING_REWARDS=0x...
-HLG_TOKEN=0x...
+DRY_RUN=true                 # Default: simulation mode
+REFERRAL_CSV_PATH=path.csv   # Optional: auto-detects default file
+STAKING_REWARDS=0x...        # Optional: auto-detects from chain
+DEPLOYER_PK=0x...            # Required only for real execution
 ```
 
-### Gas Cost Analysis
+### Unified Commands
 ```bash
-# Run before execution for current gas costs
-make gas-analysis
+# Test on Sepolia (safe default)
+make process-referrals                    # Sepolia dry run
+make process-referrals-sepolia            # Sepolia execution
+
+# Deploy to Mainnet
+make process-referrals-mainnet            # Mainnet dry run
+make process-referrals-mainnet-execute    # Mainnet execution (requires confirmation)
 ```
 
-### Execution
-```bash
-# Dry run validation (safe testing)
-make process-referrals
-
-# Live mainnet execution (warning prompt included)
-make process-referrals-mainnet
-```
-
-**Features**:
-- Automatic CSV validation and progress tracking
-- Processes large CSVs in 500-user chunks
-- Resume capability if interrupted
-- Real-time gas usage reporting
-- Comprehensive pre-validation
+**System Features**:
+- Smart contract address detection (no manual configuration)
+- Automatic CSV validation and gas estimation
+- Two-tier processing: 500-user memory chunks, 50-user transaction batches
+- Real-time progress tracking and gas reporting
+- Professional output (no shell script redundancy)
 
 **CSV Format**: `address,amount` (amounts in whole HLG, no decimals)
-**Constraints**: No duplicates, max 780K HLG per user, max 520M total
+**Constraints**: Max 780K HLG per user, max 258.14M total allocation
 
 ## System Monitoring
 

@@ -243,17 +243,47 @@ deploy-staking-mainnet:
 	forge script script/deploy/DeployEthereumStakingRewards.s.sol --rpc-url $(ETHEREUM_RPC_URL) $(FORGE_FLAGS) --verify --verifier-url https://api.etherscan.io/api --delay 30 --retries 10 --etherscan-api-key $(ETHERSCAN_API_KEY)
 	$(call print-success,StakingRewards mainnet deploy)
 
-## process-referrals: Process referral CSV in DRY RUN mode (safe testing).
+## process-referrals: Simulate referral processing on Sepolia testnet (dry run).
 process-referrals:
-	$(call print-step,Processing referral CSV (DRY RUN)…)
-	@./script/sh/process_all_referrals.sh
-	$(call print-success,Referral processing (DRY RUN))
+	$(call print-step,Simulating referral processing on Sepolia testnet)
+	@forge script script/admin/ProcessReferralCSV.s.sol \
+		--rpc-url $(ETHEREUM_SEPOLIA_RPC_URL) \
+		--ffi \
+		-vvv
+	$(call print-success,Sepolia simulation complete)
 
-## process-referrals-mainnet: Process referral CSV on MAINNET (LIVE execution).
+## process-referrals-sepolia: Execute referral processing on Sepolia testnet (real transactions).
+process-referrals-sepolia:
+	$(call print-step,Executing referral processing on Sepolia testnet)
+	@echo "$(YELLOW)This will execute real transactions on Sepolia testnet$(NC)"
+	@DRY_RUN=false forge script script/admin/ProcessReferralCSV.s.sol \
+		--rpc-url $(ETHEREUM_SEPOLIA_RPC_URL) \
+		--broadcast \
+		--private-key $(DEPLOYER_PK) \
+		--ffi \
+		-vvv
+	$(call print-success,Sepolia execution complete)
+
+## process-referrals-mainnet: Simulate referral processing on mainnet (dry run).
 process-referrals-mainnet:
-	$(call print-step,WARNING: Processing referral CSV on MAINNET…)
-	@echo "$(RED)⚠️  MAINNET EXECUTION - This will use real funds!$(NC)"
-	@echo "$(YELLOW)Press Ctrl+C to cancel, or Enter to continue...$(NC)"
-	@read
-	@DRY_RUN=false ./script/sh/process_all_referrals.sh
-	$(call print-success,Referral processing (MAINNET)) 
+	$(call print-step,Simulating referral processing on mainnet)
+	@echo "$(YELLOW)Mainnet dry run - no transactions will be executed$(NC)"
+	@forge script script/admin/ProcessReferralCSV.s.sol \
+		--rpc-url $(ETHEREUM_RPC_URL) \
+		--ffi \
+		-vvv
+	$(call print-success,Mainnet simulation complete)
+
+## process-referrals-mainnet-execute: Execute referral processing on MAINNET (LIVE HLG distribution).
+process-referrals-mainnet-execute:
+	$(call print-step,WARNING: MAINNET EXECUTION!)
+	@echo "$(RED)WARNING: This will distribute real HLG tokens on mainnet!$(NC)"
+	@echo "$(YELLOW)Type 'CONFIRM' to proceed or Ctrl+C to abort:$(NC)"
+	@read confirm && [ "$$confirm" = "CONFIRM" ] || (echo "Aborted" && exit 1)
+	@DRY_RUN=false forge script script/admin/ProcessReferralCSV.s.sol \
+		--rpc-url $(ETHEREUM_RPC_URL) \
+		--broadcast \
+		--private-key $(DEPLOYER_PK) \
+		--ffi \
+		-vvv
+	$(call print-success,MAINNET execution complete) 
