@@ -195,15 +195,14 @@ library DeploymentConfig {
     }
 
     /**
-     * @notice Generate deterministic salts for deployment
+     * @notice Generate universal deterministic salt for deployment
      * @dev First 20 bytes must be the deployer address for HolographDeployer validation
      * @param deployer The deployer address
-     * @param index The contract index (unique identifier)
-     * @return salt The generated salt
+     * @return salt The universal salt (deployer address + zeros)
      */
-    function generateSalt(address deployer, uint96 index) internal pure returns (bytes32 salt) {
+    function generateSalt(address deployer) internal pure returns (bytes32 salt) {
         // First 20 bytes: deployer address (left-aligned)
-        // Last 12 bytes: contract index
-        salt = bytes32(uint256(uint160(deployer)) << 96) | bytes32(uint256(index));
+        // Last 12 bytes: zeros (consistent for all contracts)
+        salt = bytes32(uint256(uint160(deployer)) << 96);
     }
 }

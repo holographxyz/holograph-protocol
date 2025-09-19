@@ -26,9 +26,9 @@ pragma solidity ^0.8.30;
  *   DOPPLER_AIRLOCK     – address of trusted Doppler Airlock contract (add more via code)
  */
 import "forge-std/Script.sol";
-import "../src/FeeRouter.sol";
-import "../src/HolographFactory.sol";
-import "./DeploymentConfig.sol";
+import "../../src/FeeRouter.sol";
+import "../../src/HolographFactory.sol";
+import "../DeploymentConfig.sol";
 import "forge-std/console.sol";
 
 contract Configure is Script {

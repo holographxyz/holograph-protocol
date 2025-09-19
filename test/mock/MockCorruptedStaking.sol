@@ -7,7 +7,7 @@ import "../../src/StakingRewards.sol";
  * @notice Mock staking contract that allows direct manipulation of unallocatedRewards for testing
  */
 contract MockCorruptedStaking is StakingRewards {
-    constructor(address _hlg, address _owner) StakingRewards(_hlg, _owner) {}
+    constructor() StakingRewards() {}
 
     /**
      * @notice Allows direct manipulation of unallocatedRewards for testing error conditions
@@ -20,6 +20,6 @@ contract MockCorruptedStaking is StakingRewards {
      * @notice Test-only public wrapper for updateUser function
      */
     function testUpdateUser(address account) public {
-        updateUser(account);
+        _updateUser(account);
     }
 }

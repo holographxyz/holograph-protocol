@@ -30,11 +30,11 @@ pragma solidity ^0.8.30;
  */
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
-import "../src/FeeRouter.sol";
-import "./DeploymentConfig.sol";
+import "../../src/FeeRouter.sol";
+import "../DeploymentConfig.sol";
 
 // Import LayerZero V2 endpoint interface
-import "../lib/LayerZero-v2/packages/layerzero-v2/evm/protocol/contracts/interfaces/ILayerZeroEndpointV2.sol";
+import "../../lib/LayerZero-v2/packages/layerzero-v2/evm/protocol/contracts/interfaces/ILayerZeroEndpointV2.sol";
 
 // Additional LayerZero V2 interfaces for configuration
 interface ILayerZeroEndpointV2Config {

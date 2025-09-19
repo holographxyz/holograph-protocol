@@ -184,7 +184,7 @@ Abstract base contract located in the `script/` directory providing:
 All scripts support:
 - `BROADCAST=true` - Execute real transactions (default: dry-run)
 - `DEPLOYER_PK` - Private key for deployments
-- `OWNER_PK` - Private key for configuration
+- `PRIVATE_KEY` - Private key for configuration (bootstrap phase)
 - `MAINNET=true` - Required for mainnet deployments
 
 ### Safety Features

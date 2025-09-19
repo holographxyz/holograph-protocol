@@ -6,6 +6,7 @@ import "forge-std/console.sol";
 
 import {FeeRouter} from "../../src/FeeRouter.sol";
 import {StakingRewards} from "../../src/StakingRewards.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {MockERC20} from "../mock/MockERC20.sol";
 import {MockHLG} from "../mock/MockHLG.sol";
 import {MockLZEndpoint} from "../mock/MockLZEndpoint.sol";
@@ -80,8 +81,11 @@ contract FeeRouterTest is Test {
             owner // owner address
         );
 
-        // Deploy StakingRewards
-        stakingRewards = new StakingRewards(address(hlg), owner); // owner will set fee router later
+        // Deploy StakingRewards implementation and proxy
+        StakingRewards stakingImpl = new StakingRewards();
+        ERC1967Proxy stakingProxy =
+            new ERC1967Proxy(address(stakingImpl), abi.encodeCall(StakingRewards.initialize, (address(hlg), owner)));
+        stakingRewards = StakingRewards(payable(address(stakingProxy)));
 
         // Deploy FeeRouter for Ethereum (with swap functionality)
         feeRouterEth = new FeeRouter(

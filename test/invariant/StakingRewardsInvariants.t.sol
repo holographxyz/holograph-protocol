@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import "forge-std/StdInvariant.sol";
 import {StakingRewards} from "../../src/StakingRewards.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {MockERC20} from "../mock/MockERC20.sol";
 
 /// @title StakingRewardsInvariants
@@ -19,7 +20,13 @@ contract StakingRewardsInvariants is StdInvariant, Test {
     function setUp() public {
         // Deploy contracts
         hlg = new MockERC20("HLG", "HLG");
-        stakingRewards = new StakingRewards(address(hlg), address(this));
+
+        // Deploy StakingRewards implementation and proxy
+        StakingRewards stakingImpl = new StakingRewards();
+        ERC1967Proxy proxy = new ERC1967Proxy(
+            address(stakingImpl), abi.encodeCall(StakingRewards.initialize, (address(hlg), address(this)))
+        );
+        stakingRewards = StakingRewards(payable(address(proxy)));
 
         // Set up staking rewards (feeRouter will be the handler once deployed)
         stakingRewards.unpause();

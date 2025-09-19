@@ -105,13 +105,16 @@ Comprehensive documentation available in the [`docs/`](docs/) directory:
 | [Deployment Guide](docs/DEPLOYMENT.md)         | Step-by-step deployment instructions  |
 | [Contract Architecture](docs/CONTRACTS.md)     | Detailed contract documentation       |
 | [Security](docs/SECURITY.md)                   | Security features and best practices  |
-| [Staking Rewards](docs/STAKING_REWARDS.md)     | StakingRewards contract deep dive     |
+| [Staking Rewards](docs/STAKING_REWARDS.md)     | StakingRewards contract guide     |
 | [Protocol Flow](docs/PROTOCOL_FLOW.md)         | System architecture and flow diagrams |
-| [Operations Guide](docs/OPERATIONS.md)         | Fee operations and monitoring         |
+| [Operations Guide](docs/OPERATIONS.md)         | Fee operations, bootstrap flow, and referral batching         |
 | [Scripts Overview](docs/SCRIPTS_OVERVIEW.md)   | Deployment and operational scripts    |
 | [Token Creation](docs/CREATE_TOKEN.md)         | Token creation utility guide          |
-| [Multisig CLI](docs/multisig-cli.md)           | Safe transaction generator docs       |
+| [Multisig CLI](docs/MULTISIG_CLI.md)           | Safe transaction generator docs       |
 | [DVN Configuration](docs/DVN_CONFIGURATION.md) | LayerZero V2 security setup           |
+| [Upgrade Guide](docs/UPGRADE_GUIDE.md)         | Contract upgrade procedures           |
+| [Audit Reports](docs/audits/)                  | Security audit documentation         |
+| [Archive](docs/archive/)                       | Outdated/future work documentation   |
 
 ## Testing
 

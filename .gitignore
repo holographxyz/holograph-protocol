@@ -82,6 +82,10 @@ private.key
 *.pem
 wallet.json
 
+# CSV files - may contain sensitive user data
+script/csv/*.csv
+*.csv
+
 # foundry test compilation files
 out
 cache/

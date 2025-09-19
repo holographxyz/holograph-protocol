@@ -3,8 +3,8 @@ pragma solidity ^0.8.30;
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
-import {MerkleDistributor} from "../src/MerkleDistributor.sol";
-import {StakingRewards} from "../src/StakingRewards.sol";
+import {MerkleDistributor} from "../../src/MerkleDistributor.sol";
+import {StakingRewards} from "../../src/StakingRewards.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**

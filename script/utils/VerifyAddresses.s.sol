@@ -11,8 +11,8 @@ pragma solidity ^0.8.30;
  */
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
-import "../src/deployment/HolographDeployer.sol";
-import "./DeploymentConfig.sol";
+import "../../src/deployment/HolographDeployer.sol";
+import "../DeploymentConfig.sol";
 
 contract VerifyAddresses is Script {
     /* -------------------------------------------------------------------------- */
