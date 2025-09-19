@@ -2328,4 +2328,50 @@ contract StakingRewardsTest is Test {
         uint256 expectedExtra = contractBalance > totalStaked ? contractBalance - totalStaked : 0;
         assertEq(extraTokens, expectedExtra, "Extra tokens should be contractBalance - totalStaked");
     }
+
+    function testRecoverExtraHLGZeroAmount() public {
+        // Should revert when trying to recover zero amount
+        vm.expectRevert(StakingRewards.ZeroAmount.selector);
+        vm.prank(owner);
+        stakingRewards.recoverExtraHLG(alice, 0);
+    }
+
+    function testRecoverTokenZeroAmount() public {
+        MockERC20 testToken = new MockERC20("Test", "TEST");
+
+        // Should revert when trying to recover with zero minimum amount
+        vm.expectRevert(StakingRewards.ZeroAmount.selector);
+        vm.prank(owner);
+        stakingRewards.recoverToken(address(testToken), alice, 0);
+    }
+
+    function testRecoverExtraHLGValidAmount() public {
+        // Send extra HLG to the contract
+        uint256 extraAmount = 100 ether;
+        hlg.mint(address(stakingRewards), extraAmount);
+
+        uint256 balanceBefore = hlg.balanceOf(alice);
+
+        vm.prank(owner);
+        stakingRewards.recoverExtraHLG(alice, extraAmount);
+
+        uint256 balanceAfter = hlg.balanceOf(alice);
+        assertEq(balanceAfter - balanceBefore, extraAmount, "Alice should receive the extra HLG");
+    }
+
+    function testRecoverTokenValidAmount() public {
+        MockERC20 testToken = new MockERC20("Test", "TEST");
+        uint256 tokenAmount = 50 ether;
+
+        // Send test tokens to the contract
+        testToken.mint(address(stakingRewards), tokenAmount);
+
+        uint256 balanceBefore = testToken.balanceOf(alice);
+
+        vm.prank(owner);
+        stakingRewards.recoverToken(address(testToken), alice, tokenAmount);
+
+        uint256 balanceAfter = testToken.balanceOf(alice);
+        assertEq(balanceAfter - balanceBefore, tokenAmount, "Alice should receive the test tokens");
+    }
 }
