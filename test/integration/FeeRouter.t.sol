@@ -381,6 +381,10 @@ contract FeeRouterTest is Test {
 
         // Full unstake should give original stake + compounded rewards
         uint256 expectedTotal = stakeAmountHLG + expectedRewards;
+
+        // Wait for cooldown period to pass
+        vm.warp(block.timestamp + 7 days + 1);
+
         vm.prank(staker1);
         stakingRewards.unstake();
 

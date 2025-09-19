@@ -47,6 +47,7 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
     error NotEnoughRewardsAvailable();
     error ActiveStakeExists();
     error RewardTooSmall();
+    error StakingCooldownNotMet();
 
     /* -------------------------------------------------------------------------- */
     /*                                  Storage                                   */
@@ -88,6 +89,12 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
     /// @notice Registry of approved distributors (Merkle drop contracts, quest engines, etc.)
     mapping(address => bool) public isDistributor;
 
+    /// @notice Cooldown period before users can unstake (default: 7 days)
+    uint256 public stakingCooldown;
+
+    /// @notice Tracks when each user last staked tokens
+    mapping(address => uint256) public lastStakeTimestamp;
+
     /* -------------------------------------------------------------------------- */
     /*                                  Events                                    */
     /* -------------------------------------------------------------------------- */
@@ -102,6 +109,7 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
     event EthSwept(uint256 amount, address indexed to);
     event DistributorUpdated(address indexed distributor, bool status);
     event BoostedStake(address indexed distributor, address indexed user, uint256 amount);
+    event StakingCooldownUpdated(uint256 oldCooldown, uint256 newCooldown);
 
     /* -------------------------------------------------------------------------- */
     /*                               Constructor                                  */
@@ -110,6 +118,7 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
         if (_hlg == address(0)) revert ZeroAddress();
         HLG = IERC20(_hlg);
         burnPercentage = 5000; // Default to 50% burn, 50% rewards
+        stakingCooldown = 7 days; // Default to 7-day cooldown
         _pause(); // Start paused until ready
     }
 
@@ -135,6 +144,9 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
         balanceOf[msg.sender] += actualAmount;
         totalStaked += actualAmount;
 
+        // Record staking timestamp to enforce cooldown
+        lastStakeTimestamp[msg.sender] = block.timestamp;
+
         emit Staked(msg.sender, actualAmount);
     }
 
@@ -148,8 +160,14 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
         uint256 userBalance = balanceOf[msg.sender];
         if (userBalance == 0) revert NoStake();
 
+        // Check if cooldown period has passed since last stake (skip if no timestamp set)
+        if (lastStakeTimestamp[msg.sender] != 0 && block.timestamp < lastStakeTimestamp[msg.sender] + stakingCooldown) {
+            revert StakingCooldownNotMet();
+        }
+
         balanceOf[msg.sender] = 0;
         userIndexSnapshot[msg.sender] = 0;
+        lastStakeTimestamp[msg.sender] = 0; // Reset timestamp on unstake
         totalStaked -= userBalance;
         unchecked {
             totalStakers -= 1;
@@ -168,6 +186,7 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
 
         balanceOf[msg.sender] = 0;
         userIndexSnapshot[msg.sender] = 0;
+        lastStakeTimestamp[msg.sender] = 0; // Reset timestamp on emergency exit
         totalStaked -= userBalance;
         unchecked {
             totalStakers -= 1;
@@ -385,6 +404,30 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
         return contractBalance > totalStaked ? contractBalance - totalStaked : 0;
     }
 
+    /**
+     * @notice Check if a user can unstake (cooldown period passed)
+     * @param user Address to check
+     * @return true if user can unstake, false if still in cooldown
+     */
+    function canUnstake(address user) external view returns (bool) {
+        if (balanceOf[user] == 0) return false;
+        // If no timestamp set (owner staking), user can unstake immediately
+        if (lastStakeTimestamp[user] == 0) return true;
+        return block.timestamp >= lastStakeTimestamp[user] + stakingCooldown;
+    }
+
+    /**
+     * @notice Get remaining cooldown time for a user in seconds
+     * @param user Address to check
+     * @return seconds remaining in cooldown period (0 if can unstake)
+     */
+    function getCooldownTimeRemaining(address user) external view returns (uint256) {
+        if (balanceOf[user] == 0 || lastStakeTimestamp[user] == 0) return 0;
+
+        uint256 cooldownEndTime = lastStakeTimestamp[user] + stakingCooldown;
+        return block.timestamp >= cooldownEndTime ? 0 : cooldownEndTime - block.timestamp;
+    }
+
     /* -------------------------------------------------------------------------- */
     /*                                    Admin                                   */
     /* -------------------------------------------------------------------------- */
@@ -424,6 +467,16 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
      */
     function unpause() external onlyOwner {
         _unpause();
+    }
+
+    /**
+     * @notice Set staking cooldown period to prevent sandwich attacks
+     * @param _stakingCooldown New cooldown period in seconds
+     */
+    function setStakingCooldown(uint256 _stakingCooldown) external onlyOwner {
+        uint256 oldCooldown = stakingCooldown;
+        stakingCooldown = _stakingCooldown;
+        emit StakingCooldownUpdated(oldCooldown, _stakingCooldown);
     }
 
     /**
