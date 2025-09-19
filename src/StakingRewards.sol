@@ -95,12 +95,16 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
     /// @notice Tracks when each user last staked tokens
     mapping(address => uint256) public lastStakeTimestamp;
 
+    /// @notice Total rewards forfeited via emergency exits (reclaimable by owner)
+    uint256 public forfeitedRewards;
+
     /* -------------------------------------------------------------------------- */
     /*                                  Events                                    */
     /* -------------------------------------------------------------------------- */
     event Staked(address indexed user, uint256 amount);
     event Unstaked(address indexed user, uint256 amount);
     event EmergencyExit(address indexed user, uint256 amount);
+    event RewardsForfeited(address indexed user, uint256 forfeitedAmount);
     event RewardsCompounded(address indexed user, uint256 rewardAmount);
     event RewardsDistributed(uint256 totalAmount, uint256 burnAmount, uint256 rewardAmount);
     event FeeRouterUpdated(address indexed newFeeRouter);
@@ -183,6 +187,13 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
     function emergencyExit() external nonReentrant {
         uint256 userBalance = balanceOf[msg.sender];
         if (userBalance == 0) revert NoStake();
+
+        // Calculate forfeited pending rewards
+        uint256 pendingRewardsAmount = _pendingRewards(msg.sender);
+        if (pendingRewardsAmount > 0) {
+            forfeitedRewards += pendingRewardsAmount;
+            emit RewardsForfeited(msg.sender, pendingRewardsAmount);
+        }
 
         balanceOf[msg.sender] = 0;
         userIndexSnapshot[msg.sender] = 0;
@@ -513,23 +524,44 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
     }
 
     /**
-     * @notice Reclaim unallocated rewards when there are no active stakers
-     * @param to Address to send unallocated rewards to
+     * @notice Reclaim unallocated rewards, prioritizing forfeited rewards
+     * @param to Address to send rewards to
+     * @dev Can reclaim forfeited rewards even with active stakers, but requires no active stakers for full unallocated rewards
      */
     function reclaimUnallocatedRewards(address to) external onlyOwner nonReentrant {
         if (to == address(0)) revert ZeroAddress();
-        if (_activeStaked() != 0) revert ActiveStakeExists();
 
-        uint256 unallocated = unallocatedRewards;
-        if (unallocated == 0) revert ZeroAmount();
+        uint256 forfeited = forfeitedRewards;
+        uint256 activeStake = _activeStaked();
+        uint256 reclaimAmount;
 
-        unallocatedRewards = 0;
-        unchecked {
-            totalStaked -= unallocated;
+        if (forfeited > 0) {
+            // Can always reclaim forfeited rewards up to total forfeited amount
+            reclaimAmount = forfeited;
+            forfeitedRewards = 0;
+        } else if (activeStake == 0) {
+            // Can only reclaim full unallocated when no active stakers
+            uint256 unallocated = unallocatedRewards;
+            if (unallocated == 0) revert ZeroAmount();
+            reclaimAmount = unallocated;
+            unallocatedRewards = 0;
+        } else {
+            revert ActiveStakeExists();
         }
-        HLG.safeTransfer(to, unallocated);
 
-        emit TokensRecovered(address(HLG), unallocated, to);
+        if (reclaimAmount == 0) revert ZeroAmount();
+
+        // Only subtract from unallocated if we're not resetting it to 0
+        if (forfeited > 0) {
+            unallocatedRewards -= reclaimAmount;
+        }
+
+        unchecked {
+            totalStaked -= reclaimAmount;
+        }
+        HLG.safeTransfer(to, reclaimAmount);
+
+        emit TokensRecovered(address(HLG), reclaimAmount, to);
     }
 
     /**

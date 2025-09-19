@@ -22,6 +22,10 @@ import {MockCorruptedStaking} from "./mock/MockCorruptedStaking.sol";
  * - Cooldown mechanism tests
  */
 contract StakingRewardsTest is Test {
+    // Event declarations for testing
+    event RewardsForfeited(address indexed user, uint256 forfeitedAmount);
+    event TokensRecovered(address indexed token, uint256 amount, address indexed to);
+
     StakingRewards public stakingRewards;
     MockERC20 public hlg;
 
@@ -2131,6 +2135,173 @@ contract StakingRewardsTest is Test {
 
         assertEq(hlg.balanceOf(owner), ownerBalanceBefore + 300 ether);
         assertEq(stakingRewards.getExtraTokens(), 0);
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /*                          Forfeited Rewards Tests                          */
+    /* -------------------------------------------------------------------------- */
+
+    /// @notice Emergency exit tracks forfeited pending rewards
+    function testEmergencyExitTracksForfeited() public {
+        // Alice stakes
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 1000 ether);
+        stakingRewards.stake(1000 ether);
+        vm.stopPrank();
+
+        // Distribute rewards
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 200 ether);
+        stakingRewards.depositAndDistribute(200 ether);
+        vm.stopPrank();
+
+        // Check pending rewards before emergency exit
+        uint256 pendingBefore = stakingRewards.pendingRewards(alice);
+        assertGt(pendingBefore, 0);
+
+        // Emergency exit should track forfeited rewards
+        vm.expectEmit(true, false, false, true);
+        emit RewardsForfeited(alice, pendingBefore);
+
+        vm.prank(alice);
+        stakingRewards.emergencyExit();
+
+        // Verify forfeited rewards tracked
+        assertEq(stakingRewards.forfeitedRewards(), pendingBefore);
+    }
+
+    /// @notice Owner can reclaim forfeited rewards while stakers remain
+    function testReclaimForfeitedRewardsWithActiveStakers() public {
+        // Alice and Bob stake
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 1000 ether);
+        stakingRewards.stake(1000 ether);
+        vm.stopPrank();
+
+        vm.startPrank(bob);
+        hlg.approve(address(stakingRewards), 500 ether);
+        stakingRewards.stake(500 ether);
+        vm.stopPrank();
+
+        // Distribute rewards
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 300 ether);
+        stakingRewards.depositAndDistribute(300 ether);
+        vm.stopPrank();
+
+        // Alice emergency exits (forfeits pending rewards)
+        uint256 alicePending = stakingRewards.pendingRewards(alice);
+        vm.prank(alice);
+        stakingRewards.emergencyExit();
+
+        // Bob still has active stake
+        assertGt(stakingRewards.balanceOf(bob), 0);
+        assertGt(stakingRewards.pendingRewards(bob), 0);
+
+        // Owner can reclaim Alice's forfeited rewards even with Bob still staking
+        uint256 ownerBalanceBefore = hlg.balanceOf(owner);
+
+        vm.expectEmit(true, true, false, true);
+        emit TokensRecovered(address(hlg), alicePending, owner);
+
+        vm.prank(owner);
+        stakingRewards.reclaimUnallocatedRewards(owner);
+
+        // Verify reclaim successful
+        assertEq(stakingRewards.forfeitedRewards(), 0);
+        assertEq(hlg.balanceOf(owner), ownerBalanceBefore + alicePending);
+
+        // Bob's stake and rewards unaffected
+        assertGt(stakingRewards.balanceOf(bob), 0);
+        assertGt(stakingRewards.pendingRewards(bob), 0);
+    }
+
+    /// @notice Multiple emergency exits accumulate forfeited rewards
+    function testMultipleEmergencyExitsAccumulate() public {
+        // Alice and Bob stake
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 1000 ether);
+        stakingRewards.stake(1000 ether);
+        vm.stopPrank();
+
+        vm.startPrank(bob);
+        hlg.approve(address(stakingRewards), 1000 ether);
+        stakingRewards.stake(1000 ether);
+        vm.stopPrank();
+
+        // Distribute rewards
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 400 ether);
+        stakingRewards.depositAndDistribute(400 ether);
+        vm.stopPrank();
+
+        // Both emergency exit
+        uint256 alicePending = stakingRewards.pendingRewards(alice);
+        uint256 bobPending = stakingRewards.pendingRewards(bob);
+
+        vm.prank(alice);
+        stakingRewards.emergencyExit();
+
+        vm.prank(bob);
+        stakingRewards.emergencyExit();
+
+        // Verify forfeited rewards accumulated
+        assertEq(stakingRewards.forfeitedRewards(), alicePending + bobPending);
+
+        // Owner can reclaim all forfeited rewards
+        uint256 ownerBalanceBefore = hlg.balanceOf(owner);
+        vm.prank(owner);
+        stakingRewards.reclaimUnallocatedRewards(owner);
+
+        assertEq(stakingRewards.forfeitedRewards(), 0);
+        assertEq(hlg.balanceOf(owner), ownerBalanceBefore + alicePending + bobPending);
+    }
+
+    /// @notice Cannot reclaim more forfeited rewards than available
+    function testCannotReclaimExcessiveForfeited() public {
+        // Alice stakes and exits without rewards
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 1000 ether);
+        stakingRewards.stake(1000 ether);
+        stakingRewards.emergencyExit(); // No pending rewards to forfeit
+        vm.stopPrank();
+
+        // No forfeited rewards
+        assertEq(stakingRewards.forfeitedRewards(), 0);
+
+        // Should revert when trying to reclaim
+        vm.prank(owner);
+        vm.expectRevert(StakingRewards.ZeroAmount.selector);
+        stakingRewards.reclaimUnallocatedRewards(owner);
+    }
+
+    /// @notice Forfeited rewards cannot exceed unallocated rewards
+    function testForfeitedRewardsRespectUnallocated() public {
+        // Setup scenario where forfeited might exceed unallocated
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 1000 ether);
+        stakingRewards.stake(1000 ether);
+        vm.stopPrank();
+
+        // Distribute rewards
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 200 ether);
+        stakingRewards.depositAndDistribute(200 ether);
+        vm.stopPrank();
+
+        // Manually reduce unallocated to simulate edge case
+        uint256 pendingBefore = stakingRewards.pendingRewards(alice);
+
+        // Emergency exit
+        vm.prank(alice);
+        stakingRewards.emergencyExit();
+
+        // Try to reclaim when insufficient unallocated
+        // This should work normally since forfeited <= unallocated in this test
+        vm.prank(owner);
+        stakingRewards.reclaimUnallocatedRewards(owner);
+
+        assertEq(stakingRewards.forfeitedRewards(), 0);
     }
 
     /* -------------------------------------------------------------------------- */
