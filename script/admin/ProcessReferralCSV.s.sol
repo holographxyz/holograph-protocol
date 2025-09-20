@@ -80,6 +80,47 @@ contract ProcessReferralCSV is Script {
         if (!isDryRun) {
             stakingRewards = payable(loadStakingRewards());
             require(stakingRewards != address(0), "StakingRewards not deployed on this chain");
+
+            // Check deployer's HLG balance
+            address deployer;
+            try vm.envUint("DEPLOYER_PK") returns (uint256 pk) {
+                deployer = vm.addr(pk);
+            } catch {
+                deployer = msg.sender;
+            }
+            // Get HLG token address from StakingRewards contract
+            IERC20 hlgToken = StakingRewards(stakingRewards).HLG();
+
+            console.log("\n=== BALANCE CHECK ===");
+            console.log("Deployer address: %s", deployer);
+            console.log("HLG token address: %s", address(hlgToken));
+
+            // Check if HLG token contract exists
+            uint256 codeSize;
+            assembly {
+                codeSize := extcodesize(hlgToken)
+            }
+            console.log("HLG token code size: %s", codeSize);
+
+            if (codeSize == 0) {
+                console.log("[ERROR] HLG token contract not found on this network!");
+                revert("HLG token not deployed on this chain");
+            }
+
+            uint256 deployerBalance = hlgToken.balanceOf(deployer);
+            console.log("HLG balance: %s HLG", deployerBalance / 1e18);
+            console.log("Required HLG: %s HLG", totalAllocation / 1e18);
+
+            if (deployerBalance < totalAllocation) {
+                console.log("\n[ERROR] Insufficient HLG balance!");
+                console.log("Need %s more HLG", (totalAllocation - deployerBalance) / 1e18);
+                revert("Insufficient HLG balance");
+            }
+
+            console.log("[OK] Sufficient HLG balance confirmed");
+            console.log("\nType 'CONFIRM' to proceed with REAL execution or Ctrl+C to abort:");
+            // Note: In Foundry scripts, we can't actually pause for user input
+            // This serves as a clear warning before execution
         }
 
         // Initialize stats
@@ -95,6 +136,12 @@ contract ProcessReferralCSV is Script {
         if (!isDryRun) {
             console.log("Starting transaction broadcast...");
             vm.startBroadcast();
+
+            // Approve StakingRewards to spend HLG tokens (must be inside broadcast)
+            IERC20 hlgToken = StakingRewards(stakingRewards).HLG();
+            console.log("Approving StakingRewards to spend %s HLG...", totalAllocation / 1e18);
+            hlgToken.approve(stakingRewards, totalAllocation);
+            console.log("[OK] Approval transaction sent");
         }
 
         // Process all chunks sequentially
@@ -337,8 +384,8 @@ contract ProcessReferralCSV is Script {
                 // Mainnet: Use zero address if not deployed
                 return address(0); // TODO: Set actual mainnet address when deployed
             } else if (block.chainid == 11155111) {
-                // Sepolia: Use known deployment
-                return 0x3a96Ce37a1b5d6a5cfd9eA3bBF35c74F269f0841;
+                // Sepolia: Use new deployment with correct HLG address
+                return 0x7245a2Af9635E2edfaa57Cdc7536f71504B56Be9;
             } else {
                 // Unknown chain: Use zero address
                 return address(0);

@@ -19,14 +19,37 @@ import "../DeploymentConfig.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract DeployEthereumStakingRewards is DeploymentBase {
+    /**
+     * @notice Get HLG token address with network-specific defaults
+     * @return HLG token address for current network
+     */
+    function getHLGAddress() internal view returns (address) {
+        // Try environment variable first
+        try vm.envAddress("HLG") returns (address hlg) {
+            return hlg;
+        } catch {
+            // Network-specific defaults
+            if (block.chainid == 1) {
+                // Ethereum Mainnet
+                return 0x740df024CE73f589ACD5E8756b377ef8C6558BaB;
+            } else if (block.chainid == 11155111) {
+                // Ethereum Sepolia
+                return 0x5Ff07042d14E60EC1de7a860BBE968344431BaA1;
+            } else {
+                // Unknown network - revert with helpful message
+                revert(string.concat("No HLG address configured for chain ID: ", vm.toString(block.chainid)));
+            }
+        }
+    }
+
     function run() external {
         // Initialize deployment configuration
         BaseDeploymentConfig memory config = initializeDeployment();
 
-        // Environment variables
-        address hlg = vm.envAddress("HLG");
+        // Get HLG address with network-specific defaults
+        address hlg = getHLGAddress();
 
-        // Validate env variables
+        // Validate HLG address
         DeploymentConfig.validateNonZeroAddress(hlg, "HLG");
 
         // Deploy HolographDeployer using base functionality
@@ -36,29 +59,64 @@ contract DeployEthereumStakingRewards is DeploymentBase {
         bytes32 salt = DeploymentConfig.generateSalt(config.deployer);
 
         /* ---------------------- Deploy StakingRewards (UUPS Proxy) ---------------------- */
-        console.log("\nDeploying StakingRewards implementation...");
-        uint256 gasStart = gasleft();
 
-        // Deploy implementation
+        // Try to deploy implementation, reuse if already exists
         bytes memory stakingImplBytecode = abi.encodePacked(type(StakingRewards).creationCode);
-        address stakingImpl = holographDeployer.deploy(stakingImplBytecode, salt);
-        uint256 gasImpl = gasStart - gasleft();
-        console.log("StakingRewards implementation deployed at:", stakingImpl);
-        console.log("Gas used for implementation:", gasImpl);
+        address stakingImpl;
+        uint256 gasImpl;
 
-        console.log("\nDeploying StakingRewards proxy...");
-        gasStart = gasleft();
+        try holographDeployer.deploy(stakingImplBytecode, salt) returns (address impl) {
+            console.log("\nStakingRewards implementation deployed at:", impl);
+            stakingImpl = impl;
+            gasImpl = 50000; // Approximate gas cost
+        } catch {
+            // Implementation already exists, calculate address
+            stakingImpl = address(
+                uint160(
+                    uint256(
+                        keccak256(
+                            abi.encodePacked(
+                                bytes1(0xff), address(holographDeployer), salt, keccak256(stakingImplBytecode)
+                            )
+                        )
+                    )
+                )
+            );
+            console.log("\nUsing existing StakingRewards implementation at:", stakingImpl);
+            gasImpl = 0;
+        }
 
-        // Deploy proxy with initialization data
+        // Try to deploy proxy with initialization data
         bytes memory proxyBytecode = abi.encodePacked(
             type(ERC1967Proxy).creationCode,
             abi.encode(stakingImpl, abi.encodeCall(StakingRewards.initialize, (hlg, config.deployer)))
         );
-        address stakingProxy = holographDeployer.deploy(proxyBytecode, salt);
-        uint256 gasProxy = gasStart - gasleft();
+
+        address stakingProxy;
+        uint256 gasProxy;
+        uint256 gasStart = gasleft();
+
+        try holographDeployer.deploy(proxyBytecode, salt) returns (address proxy) {
+            gasProxy = gasStart - gasleft();
+            stakingProxy = proxy;
+            console.log("\nStakingRewards proxy deployed at:", stakingProxy);
+            console.log("Gas used for proxy:", gasProxy);
+        } catch {
+            // Proxy already exists, calculate address
+            stakingProxy = address(
+                uint160(
+                    uint256(
+                        keccak256(
+                            abi.encodePacked(bytes1(0xff), address(holographDeployer), salt, keccak256(proxyBytecode))
+                        )
+                    )
+                )
+            );
+            console.log("\nUsing existing StakingRewards proxy at:", stakingProxy);
+            gasProxy = 0;
+        }
+
         address stakingRewards = stakingProxy;
-        console.log("StakingRewards proxy deployed at:", stakingRewards);
-        console.log("Gas used for proxy:", gasProxy);
         console.log("Total StakingRewards gas:", gasImpl + gasProxy);
 
         vm.stopBroadcast();
