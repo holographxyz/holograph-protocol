@@ -119,8 +119,6 @@ contract ProcessReferralCSV is Script {
 
             console.log("[OK] Sufficient HLG balance confirmed");
             console.log("\nType 'CONFIRM' to proceed with REAL execution or Ctrl+C to abort:");
-            // Note: In Foundry scripts, we can't actually pause for user input
-            // This serves as a clear warning before execution
         }
 
         // Initialize stats
@@ -367,7 +365,7 @@ contract ProcessReferralCSV is Script {
             return path;
         } catch {
             // Default to the known CSV file
-            return "./script/csv/rewards-allocation-simple.csv";
+            return "./script/csv/rewards-allocation-simple-final.csv";
         }
     }
 
@@ -381,10 +379,8 @@ contract ProcessReferralCSV is Script {
         } catch {
             // Chain-specific fallbacks
             if (block.chainid == 1) {
-                // Mainnet: Use zero address if not deployed
-                return address(0); // TODO: Set actual mainnet address when deployed
+                return 0x39F2750A754aDe33CE1786dA1419cD17a41E6900;
             } else if (block.chainid == 11155111) {
-                // Sepolia: Use new deployment with correct HLG address
                 return 0x7245a2Af9635E2edfaa57Cdc7536f71504B56Be9;
             } else {
                 // Unknown chain: Use zero address

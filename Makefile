@@ -240,7 +240,7 @@ deploy-staking-mainnet:
 	@if [ -z "$(ETHEREUM_RPC_URL)" ]; then echo "$(RED)ETHEREUM_RPC_URL not set$(NC)"; exit 1; fi
 	@if [ -z "$(ETHERSCAN_API_KEY)" ]; then echo "$(RED)ETHERSCAN_API_KEY not set$(NC)"; exit 1; fi
 	$(call print-step,Deploying StakingRewards to Ethereum mainnet…)
-	forge script script/deploy/DeployEthereumStakingRewards.s.sol --rpc-url $(ETHEREUM_RPC_URL) $(FORGE_FLAGS) --verify --verifier-url https://api.etherscan.io/api --delay 30 --retries 10 --etherscan-api-key $(ETHERSCAN_API_KEY)
+	forge script script/deploy/DeployEthereumStakingRewards.s.sol --rpc-url $(ETHEREUM_RPC_URL) $(FORGE_FLAGS) --verify --verifier-url https://api.etherscan.io/api --delay 30 --retries 10 --etherscan-api-key $(ETHERSCAN_API_KEY) --gas-limit 8000000 --with-gas-price 400000000 --priority-gas-price 100000000
 	$(call print-success,StakingRewards mainnet deploy)
 
 ## process-referrals: Simulate referral processing on Sepolia testnet (dry run).

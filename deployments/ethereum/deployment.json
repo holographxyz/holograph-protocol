@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "chainId": 1,
+  "chainName": "Ethereum Mainnet",
+  "deployer": "0x5f5C3548f96C7DA33A18E5F2F2f13519e1c8bD0d",
+  "deployedAt": 1737486000,
+  "blockNumber": 23413221,
+  "holographDeployer": "0x17BCb0F2Cf18db1abd2D774C73F3B7343132043c",
+  "stakingRewards": "0x39F2750A754aDe33CE1786dA1419cD17a41E6900",
+  "stakingRewardsImpl": "0xA43a8a1c9FFbDa4A1786b410CCB723c8c3dF6EdA"
+}

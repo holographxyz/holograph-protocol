@@ -132,17 +132,17 @@ contract DeployEthereumStakingRewards is DeploymentBase {
         console.log("\nNOTE: Contract starts PAUSED. Use 'unpause()' when ready.");
         console.log("NOTE: No FeeRouter set. Use 'setFeeRouter()' if needed later.");
 
-        // Save deployment info
-        string memory deploymentDir = getDeploymentDir(block.chainid);
+        // Save deployment info using proper base class functionality
+        ContractAddresses memory addresses = ContractAddresses({
+            holographDeployer: address(holographDeployer),
+            holographERC20: address(0),
+            holographFactory: address(0),
+            holographFactoryProxy: address(0),
+            feeRouter: address(0),
+            stakingRewards: stakingRewards,
+            stakingRewardsImpl: stakingImpl
+        });
 
-        // Create directory and save addresses
-        string[] memory createDirCmd = new string[](3);
-        createDirCmd[0] = "mkdir";
-        createDirCmd[1] = "-p";
-        createDirCmd[2] = deploymentDir;
-        vm.ffi(createDirCmd);
-
-        vm.writeFile(string.concat(deploymentDir, "/StakingRewards.txt"), vm.toString(stakingRewards));
-        vm.writeFile(string.concat(deploymentDir, "/StakingRewardsImpl.txt"), vm.toString(stakingImpl));
+        saveDeployment(config, addresses);
     }
 }
