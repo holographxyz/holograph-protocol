@@ -34,7 +34,7 @@ export UNICHAIN_RPC_URL="https://mainnet.unichain.org"
 
 # Private Keys
 export DEPLOYER_PK="0x..."      # Contract deployment
-export OWNER_PK="0x..."         # Contract administration and operations
+export PRIVATE_KEY="0x..."       # Contract administration (bootstrap phase)
 
 # API Keys for Verification
 export BASESCAN_API_KEY="your_basescan_key"
@@ -78,11 +78,71 @@ export ETH_SEPOLIA_EID=40161
 | ------------------- | ---------------------- | ------------------------------------------- |
 | `BROADCAST`         | Live deployments       | Set to `true` to send real transactions    |
 | `DEPLOYER_PK`       | `deploy-*` commands    | Private key for contract deployment        |
-| `OWNER_PK`          | `configure-*` commands | Private key for contract administration    |
+| `PRIVATE_KEY`       | `configure-*` commands | Private key for contract administration    |
 | `BASE_RPC_URL`      | Base operations        | RPC endpoint for Base network              |
 | `ETHEREUM_RPC_URL`  | Ethereum operations    | RPC endpoint for Ethereum network          |
 | `BASESCAN_API_KEY`  | Base verification      | API key for Basescan contract verification |
 | `ETHERSCAN_API_KEY` | Ethereum verification  | API key for Etherscan contract verification|
+
+## StakingRewards Deployment (Ethereum Only)
+
+The StakingRewards contract uses a UUPS (Universal Upgradeable Proxy Standard) proxy pattern for future upgrades.
+
+### Required Environment Variables
+
+```bash
+export HLG="0x740df024CE73f589ACD5E8756b377ef8C6558BaB"    # HLG token address
+export TREASURY="0x..."                                     # Treasury multisig address
+export LZ_ENDPOINT="0x1a44076050125825900e736c501f859c50fE728c" # LayerZero V2 endpoint
+export WETH="0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"      # WETH address
+export SWAP_ROUTER="0xE592427A0AEce92De3Edee1F18E0157C05861564"  # Uniswap V3 SwapRouter
+export BASE_EID=30184                                       # Base chain EID
+```
+
+### Deployment Steps
+
+1. **Deploy Implementation + Proxy**:
+```bash
+forge script script/DeployEthereum.s.sol --fork-url $ETHEREUM_RPC_URL  # Dry run
+BROADCAST=true forge script script/DeployEthereum.s.sol --broadcast --private-key $DEPLOYER_PK
+```
+
+2. **Verify Deployment**:
+```bash
+# Check proxy address
+cast call <PROXY_ADDRESS> "owner()" --rpc-url $ETHEREUM_RPC_URL
+
+# Check implementation via EIP-1967 slot
+cast storage <PROXY_ADDRESS> 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc --rpc-url $ETHEREUM_RPC_URL
+
+# Verify paused state (should be true after deployment)
+cast call <PROXY_ADDRESS> "paused()" --rpc-url $ETHEREUM_RPC_URL
+```
+
+3. **Post-Deploy Actions**:
+```bash
+# NOTE: Post-deploy actions for bootstrap phase only
+# After multisig handoff, use Safe UI/SDK instead
+
+# Unpause the contract to activate staking (after referral seeding and multisig handoff)
+cast send <PROXY_ADDRESS> "unpause()" --private-key $PRIVATE_KEY --rpc-url $ETHEREUM_RPC_URL
+
+# Optional: Adjust burn percentage (default 50%)
+cast send <PROXY_ADDRESS> "setBurnPercentage(uint256)" 5000 --private-key $PRIVATE_KEY --rpc-url $ETHEREUM_RPC_URL
+```
+
+### Deployment Output
+
+The script saves addresses to `deployments/ethereum/deployment.json`:
+```json
+{
+  "stakingRewards": "0x...",      // Proxy address (use this)
+  "stakingRewardsImpl": "0x...",  // Implementation address
+  "feeRouter": "0x...",
+  "chainId": 1,
+  "deployer": "0x..."
+}
+```
 
 ## Deployment Commands
 
@@ -122,6 +182,85 @@ make deploy-unichain-sepolia
 make configure-unichain-sepolia
 ```
 
+## Bootstrap and Multisig Handoff Flow
+
+### Overview
+
+The deployment follows a three-phase approach:
+
+1. **Bootstrap Phase**: EOA deployment and referral seeding while paused
+2. **Ownership Transfer**: Two-step transfer to multisig
+3. **Operational Phase**: Multisig unpauses and manages ongoing operations
+
+### Phase 1: Bootstrap Deployment (EOA)
+
+All initial operations use `PRIVATE_KEY` with an EOA for speed and simplicity:
+
+```bash
+# 1. Deploy contracts (EOA deploys, remains paused)
+export DEPLOYER_PK=0x...
+export PRIVATE_KEY=0x...  # Same EOA for bootstrap admin operations
+make deploy-eth configure-eth
+
+# 2. Process referral CSV while paused (bootstrap only)
+export STAKING_REWARDS=0x...
+export HLG_TOKEN=0x...
+export REFERRAL_CSV_PATH=./referral_data.csv
+export BATCH_SIZE=500                # Optional, defaults to 500
+export REFERRAL_RESUME_INDEX=0       # Optional, resume from specific user index
+
+forge script script/ProcessReferralCSV.s.sol --broadcast --private-key $PRIVATE_KEY
+
+# If processing fails mid-way, resume with:
+# export REFERRAL_RESUME_INDEX=2500  # Resume from user 2500
+# forge script script/ProcessReferralCSV.s.sol --broadcast --private-key $PRIVATE_KEY
+
+# Contract remains paused throughout referral processing
+```
+
+### Phase 2: Ownership Transfer (EOA → Multisig)
+
+```bash
+# 1. Get transfer instructions and initiate transfer
+npx tsx script/ts/multisig-cli.ts transfer-ownership
+# This provides cast command for current owner to execute
+
+# 2. Accept ownership via multisig-cli
+npx tsx script/ts/multisig-cli.ts accept-ownership
+# Generates Safe Transaction Builder JSON for multisig execution
+
+# 3. Verify ownership transferred
+cast call $STAKING_REWARDS "owner()" --rpc-url $ETHEREUM_RPC_URL
+# Should return multisig address
+```
+
+### Phase 3: Operational Phase (Multisig)
+
+After ownership transfer, use multisig-cli for admin operations:
+
+```bash
+# Unpause contract to activate staking
+npx tsx script/ts/multisig-cli.ts unpause
+
+# Emergency controls
+npx tsx script/ts/multisig-cli.ts pause          # Emergency pause
+npx tsx script/ts/multisig-cli.ts unpause        # Resume operations
+
+# Fee distribution (ongoing operations)
+npx tsx script/ts/multisig-cli.ts batch --eth 0.5    # Convert ETH to HLG and stake
+npx tsx script/ts/multisig-cli.ts deposit --hlg 1000  # Direct HLG deposit
+
+# Note: Administrative functions (setBurnPercentage, setFeeRouter, recovery)
+# currently require cast commands - see OPERATIONS.md for details
+```
+
+### Important Notes
+
+- **Bootstrap Commands**: All `cast send` examples in docs are for bootstrap phase only
+- **Multisig Operations**: After handoff, use Safe UI or Safe SDK for all admin functions
+- **Emergency Access**: Multisig retains full admin control for emergencies
+- **Referral Timing**: Must process referrals while paused and owned by EOA
+
 ## Complete Deployment Flow
 
 ### 1. Test in Dry-Run Mode
@@ -151,8 +290,8 @@ make verify-addresses
 ### 3. Configure Contracts
 
 ```bash
-# Switch to owner key for configuration
-export OWNER_PK=0x...
+# Switch to admin key for configuration (bootstrap phase)
+export PRIVATE_KEY=0x...
 
 # Configure deployed contracts
 make configure-base configure-eth

@@ -51,7 +51,8 @@ abstract contract DeploymentBase is Script {
         address holographFactory;
         address holographFactoryProxy;
         address feeRouter;
-        address stakingRewards; // Ethereum only
+        address stakingRewards; // Ethereum only (proxy address)
+        address stakingRewardsImpl; // Ethereum only (implementation address)
     }
 
     /* -------------------------------------------------------------------------- */
@@ -159,6 +160,9 @@ abstract contract DeploymentBase is Script {
         if (addresses.stakingRewards != address(0)) {
             vm.serializeAddress(json, "stakingRewards", addresses.stakingRewards);
         }
+        if (addresses.stakingRewardsImpl != address(0)) {
+            vm.serializeAddress(json, "stakingRewardsImpl", addresses.stakingRewardsImpl);
+        }
 
         string memory finalJson = vm.serializeString(json, "version", "1.0");
 
@@ -191,6 +195,9 @@ abstract contract DeploymentBase is Script {
         }
         if (addresses.stakingRewards != address(0)) {
             vm.writeFile(string.concat(dir, "/StakingRewards.txt"), vm.toString(addresses.stakingRewards));
+        }
+        if (addresses.stakingRewardsImpl != address(0)) {
+            vm.writeFile(string.concat(dir, "/StakingRewardsImpl.txt"), vm.toString(addresses.stakingRewardsImpl));
         }
     }
 

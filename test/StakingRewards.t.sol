@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import {StakingRewards} from "../src/StakingRewards.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {MockERC20} from "./mock/MockERC20.sol";
 import {MockZeroSinkNoBurn} from "./mock/MockZeroSinkNoBurn.sol";
 import {MockFeeOnTransfer} from "./mock/MockFeeOnTransfer.sol";
@@ -54,8 +55,15 @@ contract StakingRewardsTest is Test {
         // Deploy mock HLG token
         hlg = new MockERC20("Test HLG", "HLG");
 
-        // Deploy staking contract
-        stakingRewards = new StakingRewards(address(hlg), owner);
+        // Deploy StakingRewards implementation
+        StakingRewards stakingImpl = new StakingRewards();
+
+        // Deploy proxy and initialize
+        ERC1967Proxy proxy =
+            new ERC1967Proxy(address(stakingImpl), abi.encodeCall(StakingRewards.initialize, (address(hlg), owner)));
+
+        // Cast proxy to StakingRewards interface
+        stakingRewards = StakingRewards(payable(address(proxy)));
         stakingRewards.setFeeRouter(feeRouter);
         stakingRewards.unpause();
 
@@ -97,12 +105,30 @@ contract StakingRewardsTest is Test {
         vm.startPrank(alice);
         hlg.approve(address(stakingRewards), STAKE_AMOUNT);
         stakingRewards.stake(STAKE_AMOUNT);
+        vm.stopPrank();
 
+        // Pause contract so emergency exit can be called
+        vm.prank(owner);
+        stakingRewards.pause();
+
+        vm.startPrank(alice);
         uint256 balanceBefore = hlg.balanceOf(alice);
         stakingRewards.emergencyExit();
 
         assertEq(stakingRewards.balanceOf(alice), 0);
         assertEq(hlg.balanceOf(alice), balanceBefore + STAKE_AMOUNT);
+        vm.stopPrank();
+    }
+
+    /// @notice Emergency exit reverts when contract is not paused (audit security requirement)
+    function testEmergencyExitRevertsWhenNotPaused() public {
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), STAKE_AMOUNT);
+        stakingRewards.stake(STAKE_AMOUNT);
+
+        // emergencyExit should revert when not paused
+        vm.expectRevert(); // EnforcedPause
+        stakingRewards.emergencyExit();
         vm.stopPrank();
     }
 
@@ -319,7 +345,12 @@ contract StakingRewardsTest is Test {
     /// @notice updateUser() reverts if unallocated rewards are corrupted below what is owed
     function testInsufficientUnallocatedReverts() public {
         // Deploy corrupted staking contract for this test
-        MockCorruptedStaking corruptedStaking = new MockCorruptedStaking(address(hlg), owner);
+        MockCorruptedStaking corruptedStakingImpl = new MockCorruptedStaking();
+        ERC1967Proxy corruptedProxy = new ERC1967Proxy(
+            address(corruptedStakingImpl), abi.encodeCall(StakingRewards.initialize, (address(hlg), owner))
+        );
+        MockCorruptedStaking corruptedStaking = MockCorruptedStaking(payable(address(corruptedProxy)));
+
         vm.prank(owner);
         corruptedStaking.setFeeRouter(feeRouter);
         vm.prank(owner);
@@ -364,7 +395,13 @@ contract StakingRewardsTest is Test {
     function testBurnHelperRevertsIfTransferToZeroDoesNotBurn() public {
         // Deploy zero-sink token that doesn't actually burn
         MockZeroSinkNoBurn noburn = new MockZeroSinkNoBurn();
-        StakingRewards noBurnStaking = new StakingRewards(address(noburn), owner);
+
+        // Deploy implementation and proxy
+        StakingRewards noBurnStakingImpl = new StakingRewards();
+        ERC1967Proxy noBurnProxy = new ERC1967Proxy(
+            address(noBurnStakingImpl), abi.encodeCall(StakingRewards.initialize, (address(noburn), owner))
+        );
+        StakingRewards noBurnStaking = StakingRewards(payable(address(noBurnProxy)));
 
         noburn.mint(owner, 1000 ether);
 
@@ -445,12 +482,48 @@ contract StakingRewardsTest is Test {
         stakingRewards.depositAndDistribute(REWARD_AMOUNT);
         vm.stopPrank();
 
-        // addRewards should revert
+        // addRewards should NOT revert when paused (audit change allows FeeRouter to work while paused)
         vm.startPrank(feeRouter);
         hlg.approve(address(stakingRewards), REWARD_AMOUNT);
-        vm.expectRevert();
+        // This should work (no expectRevert) since addRewards can be called while paused
         stakingRewards.addRewards(REWARD_AMOUNT);
         vm.stopPrank();
+    }
+
+    /// @notice addRewards distributes rewards correctly while paused (audit operational continuity)
+    function testAddRewardsDistributesCorrectlyWhilePaused() public {
+        // Set up staker first
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), STAKE_AMOUNT);
+        stakingRewards.stake(STAKE_AMOUNT);
+        vm.stopPrank();
+
+        // Pause contract
+        vm.prank(owner);
+        stakingRewards.pause();
+
+        // FeeRouter adds rewards while paused
+        uint256 rewardAmount = 200 ether;
+        vm.startPrank(feeRouter);
+        hlg.approve(address(stakingRewards), rewardAmount);
+        stakingRewards.addRewards(rewardAmount);
+        vm.stopPrank();
+
+        // Verify rewards were properly distributed (50% after burn)
+        uint256 expectedRewards = (rewardAmount * (10000 - stakingRewards.burnPercentage())) / 10000;
+        assertEq(stakingRewards.pendingRewards(alice), expectedRewards);
+
+        // User should be able to claim rewards after unpause
+        vm.prank(owner);
+        stakingRewards.unpause();
+
+        vm.warp(block.timestamp + 7 days + 1);
+        vm.prank(alice);
+        stakingRewards.unstake();
+
+        // Alice should receive original stake + compounded rewards
+        assertEq(stakingRewards.balanceOf(alice), 0);
+        assertGt(hlg.balanceOf(alice), STAKE_AMOUNT); // More than original stake due to rewards
     }
 
     /// @notice Reward accrual amount reflects configured burn percentage
@@ -480,7 +553,13 @@ contract StakingRewardsTest is Test {
     function testFeeOnTransferRejection() public {
         // Deploy fee-on-transfer token
         MockFeeOnTransfer feeToken = new MockFeeOnTransfer();
-        StakingRewards feeStaking = new StakingRewards(address(feeToken), owner);
+
+        // Deploy implementation and proxy
+        StakingRewards feeStakingImpl = new StakingRewards();
+        ERC1967Proxy feeProxy = new ERC1967Proxy(
+            address(feeStakingImpl), abi.encodeCall(StakingRewards.initialize, (address(feeToken), owner))
+        );
+        StakingRewards feeStaking = StakingRewards(payable(address(feeProxy)));
 
         vm.prank(owner);
         feeStaking.unpause();
@@ -624,6 +703,10 @@ contract StakingRewardsTest is Test {
         stakingRewards.depositAndDistribute(200 ether);
         vm.stopPrank();
 
+        // Pause contract so emergency exit can be called
+        vm.prank(owner);
+        stakingRewards.pause();
+
         // Alice emergency exits (forfeits pending rewards)
         vm.prank(alice);
         stakingRewards.emergencyExit();
@@ -763,7 +846,12 @@ contract StakingRewardsTest is Test {
         vm.createSelectFork("https://mainnet.base.org", 22_500_000);
 
         IERC20 realHLG = IERC20(HLG_ADDRESS);
-        StakingRewards forkStaking = new StakingRewards(HLG_ADDRESS, owner);
+
+        // Deploy implementation and proxy for fork test
+        StakingRewards forkStakingImpl = new StakingRewards();
+        ERC1967Proxy forkProxy =
+            new ERC1967Proxy(address(forkStakingImpl), abi.encodeCall(StakingRewards.initialize, (HLG_ADDRESS, owner)));
+        StakingRewards forkStaking = StakingRewards(payable(address(forkProxy)));
 
         vm.startPrank(owner);
         forkStaking.setFeeRouter(feeRouter);
@@ -1349,7 +1437,13 @@ contract StakingRewardsTest is Test {
         hlg.approve(address(stakingRewards), STAKE_AMOUNT);
         stakingRewards.stake(STAKE_AMOUNT);
         assertEq(stakingRewards.totalStakers(), 1);
+        vm.stopPrank();
 
+        // Pause contract so emergency exit can be called
+        vm.prank(owner);
+        stakingRewards.pause();
+
+        vm.startPrank(alice);
         stakingRewards.emergencyExit();
         assertEq(stakingRewards.totalStakers(), 0);
         vm.stopPrank();
@@ -1387,6 +1481,10 @@ contract StakingRewardsTest is Test {
         vm.prank(alice);
         stakingRewards.unstake();
         assertEq(stakingRewards.totalStakers(), 2);
+
+        // Pause contract so emergency exit can be called
+        vm.prank(owner);
+        stakingRewards.pause();
 
         // Bob exits
         vm.prank(bob);
@@ -1546,7 +1644,16 @@ contract StakingRewardsTest is Test {
                 vm.warp(block.timestamp + 7 days + 1);
                 stakingRewards.unstake();
             } else {
+                vm.stopPrank();
+                // Pause contract so emergency exit can be called
+                vm.prank(owner);
+                stakingRewards.pause();
+                vm.prank(alice);
                 stakingRewards.emergencyExit();
+
+                // Unpause for next iteration
+                vm.prank(owner);
+                stakingRewards.unpause();
             }
             assertEq(stakingRewards.totalStakers(), 0);
             vm.stopPrank();
@@ -1808,8 +1915,14 @@ contract StakingRewardsTest is Test {
 
         // Check that user cannot unstake immediately
         assertFalse(stakingRewards.canUnstake(alice));
+        vm.stopPrank();
+
+        // Pause contract so emergency exit can be called
+        vm.prank(owner);
+        stakingRewards.pause();
 
         // Emergency exit should work even during cooldown
+        vm.prank(alice);
         stakingRewards.emergencyExit();
 
         // Check balance is zero
@@ -1870,6 +1983,7 @@ contract StakingRewardsTest is Test {
         vm.stopPrank();
 
         // Both Alice and Bob unstake at same time - equal rewards (no gaming advantage)
+        vm.warp(block.timestamp + 7 days + 1); // Wait for cooldown
         vm.startPrank(alice);
         stakingRewards.unstake();
         vm.stopPrank();
@@ -2159,6 +2273,10 @@ contract StakingRewardsTest is Test {
         uint256 pendingBefore = stakingRewards.pendingRewards(alice);
         assertGt(pendingBefore, 0);
 
+        // Pause contract so emergency exit can be called
+        vm.prank(owner);
+        stakingRewards.pause();
+
         // Emergency exit should track forfeited rewards
         vm.expectEmit(true, false, false, true);
         emit RewardsForfeited(alice, pendingBefore);
@@ -2188,6 +2306,10 @@ contract StakingRewardsTest is Test {
         hlg.approve(address(stakingRewards), 300 ether);
         stakingRewards.depositAndDistribute(300 ether);
         vm.stopPrank();
+
+        // Pause contract so emergency exit can be called
+        vm.prank(owner);
+        stakingRewards.pause();
 
         // Alice emergency exits (forfeits pending rewards)
         uint256 alicePending = stakingRewards.pendingRewards(alice);
@@ -2239,6 +2361,10 @@ contract StakingRewardsTest is Test {
         uint256 alicePending = stakingRewards.pendingRewards(alice);
         uint256 bobPending = stakingRewards.pendingRewards(bob);
 
+        // Pause contract so emergency exit can be called
+        vm.prank(owner);
+        stakingRewards.pause();
+
         vm.prank(alice);
         stakingRewards.emergencyExit();
 
@@ -2263,8 +2389,14 @@ contract StakingRewardsTest is Test {
         vm.startPrank(alice);
         hlg.approve(address(stakingRewards), 1000 ether);
         stakingRewards.stake(1000 ether);
-        stakingRewards.emergencyExit(); // No pending rewards to forfeit
         vm.stopPrank();
+
+        // Pause contract so emergency exit can be called
+        vm.prank(owner);
+        stakingRewards.pause();
+
+        vm.prank(alice);
+        stakingRewards.emergencyExit(); // No pending rewards to forfeit
 
         // No forfeited rewards
         assertEq(stakingRewards.forfeitedRewards(), 0);
@@ -2292,6 +2424,10 @@ contract StakingRewardsTest is Test {
         // Manually reduce unallocated to simulate edge case
         uint256 pendingBefore = stakingRewards.pendingRewards(alice);
 
+        // Pause contract so emergency exit can be called
+        vm.prank(owner);
+        stakingRewards.pause();
+
         // Emergency exit
         vm.prank(alice);
         stakingRewards.emergencyExit();
@@ -2302,6 +2438,50 @@ contract StakingRewardsTest is Test {
         stakingRewards.reclaimUnallocatedRewards(owner);
 
         assertEq(stakingRewards.forfeitedRewards(), 0);
+    }
+
+    /// @notice Test getCooldownTimeRemaining function returns correct values
+    function testGetCooldownTimeRemaining() public {
+        // Test 1: User with no stake should return 0
+        assertEq(stakingRewards.getCooldownTimeRemaining(alice), 0);
+
+        // Test 2: User stakes and should have cooldown time remaining
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 10 ether);
+        stakingRewards.stake(10 ether);
+        vm.stopPrank();
+
+        // Should have full cooldown remaining (7 days)
+        assertEq(stakingRewards.getCooldownTimeRemaining(alice), 7 days);
+
+        // Test 3: Advance time partially and check remaining time
+        vm.warp(block.timestamp + 3 days);
+        assertEq(stakingRewards.getCooldownTimeRemaining(alice), 4 days);
+
+        // Test 4: Advance to just before cooldown ends
+        vm.warp(block.timestamp + 4 days - 1);
+        assertEq(stakingRewards.getCooldownTimeRemaining(alice), 1);
+
+        // Test 5: Advance past cooldown period, should return 0
+        vm.warp(block.timestamp + 2);
+        assertEq(stakingRewards.getCooldownTimeRemaining(alice), 0);
+
+        // Test 6: Owner staking should not set cooldown
+        vm.prank(owner);
+        stakingRewards.pause();
+
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 10 ether);
+        stakingRewards.stakeFor(bob, 10 ether);
+        vm.stopPrank();
+
+        // Bob should have 0 cooldown remaining (owner staking)
+        assertEq(stakingRewards.getCooldownTimeRemaining(bob), 0);
+
+        // Test 7: After unstaking, should return 0
+        vm.prank(alice);
+        stakingRewards.unstake();
+        assertEq(stakingRewards.getCooldownTimeRemaining(alice), 0);
     }
 
     /* -------------------------------------------------------------------------- */
@@ -2373,5 +2553,248 @@ contract StakingRewardsTest is Test {
 
         uint256 balanceAfter = testToken.balanceOf(alice);
         assertEq(balanceAfter - balanceBefore, tokenAmount, "Alice should receive the test tokens");
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /*                              Upgrade Tests                                */
+    /* -------------------------------------------------------------------------- */
+
+    function testUpgradeStakingRewards() public {
+        // Set up initial state with some stakes and rewards
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 100 ether);
+        stakingRewards.stake(100 ether);
+        vm.stopPrank();
+
+        vm.startPrank(bob);
+        hlg.approve(address(stakingRewards), 200 ether);
+        stakingRewards.stake(200 ether);
+        vm.stopPrank();
+
+        // Add some rewards (need to call as feeRouter, which is address(0x2))
+        hlg.mint(feeRouter, 50 ether);
+        vm.startPrank(feeRouter);
+        hlg.approve(address(stakingRewards), 50 ether);
+        stakingRewards.addRewards(50 ether);
+        vm.stopPrank();
+
+        // Record state before upgrade
+        uint256 aliceBalanceBefore = stakingRewards.balanceOf(alice);
+        uint256 bobBalanceBefore = stakingRewards.balanceOf(bob);
+        uint256 totalStakedBefore = stakingRewards.totalStaked();
+        uint256 totalStakersBefore = stakingRewards.totalStakers();
+        uint256 unallocatedBefore = stakingRewards.unallocatedRewards();
+        address hlgTokenBefore = address(stakingRewards.HLG());
+        address ownerBefore = stakingRewards.owner();
+
+        // Deploy new implementation
+        StakingRewards newImpl = new StakingRewards();
+
+        // Perform upgrade (only owner can do this)
+        vm.prank(owner);
+        stakingRewards.upgradeToAndCall(address(newImpl), "");
+
+        // Verify state preservation after upgrade
+        assertEq(stakingRewards.balanceOf(alice), aliceBalanceBefore, "Alice balance should be preserved");
+        assertEq(stakingRewards.balanceOf(bob), bobBalanceBefore, "Bob balance should be preserved");
+        assertEq(stakingRewards.totalStaked(), totalStakedBefore, "Total staked should be preserved");
+        assertEq(stakingRewards.totalStakers(), totalStakersBefore, "Total stakers should be preserved");
+        assertEq(stakingRewards.unallocatedRewards(), unallocatedBefore, "Unallocated rewards should be preserved");
+        assertEq(address(stakingRewards.HLG()), hlgTokenBefore, "HLG token address should be preserved");
+        assertEq(stakingRewards.owner(), ownerBefore, "Owner should be preserved");
+
+        // Verify functionality still works after upgrade
+        vm.startPrank(alice);
+        hlg.approve(address(stakingRewards), 50 ether);
+        stakingRewards.stake(50 ether);
+        vm.stopPrank();
+
+        // Verify the stake worked (Alice should have more than before due to potential reward distribution)
+        assertGe(
+            stakingRewards.balanceOf(alice),
+            aliceBalanceBefore + 50 ether,
+            "Alice should have at least the additional stake"
+        );
+
+        // Test that upgrade is owner-only
+        StakingRewards anotherImpl = new StakingRewards();
+        vm.prank(alice);
+        vm.expectRevert(); // Should revert due to unauthorized access
+        stakingRewards.upgradeToAndCall(address(anotherImpl), "");
+    }
+
+    function testOwnershipInitializationAtomic() public {
+        // Deploy implementation
+        StakingRewards impl = new StakingRewards();
+
+        // Deploy proxy with initialization - owner should be set atomically
+        ERC1967Proxy proxy =
+            new ERC1967Proxy(address(impl), abi.encodeCall(StakingRewards.initialize, (address(hlg), alice)));
+        StakingRewards stakingContract = StakingRewards(payable(address(proxy)));
+
+        // Owner should be set immediately
+        assertEq(stakingContract.owner(), alice);
+        assertEq(stakingContract.pendingOwner(), address(0));
+    }
+
+    function testCannotReinitializeProxy() public {
+        vm.expectRevert(abi.encodeWithSignature("InvalidInitialization()"));
+        stakingRewards.initialize(address(hlg), alice);
+    }
+
+    function testDirectImplementationCannotBeInitialized() public {
+        StakingRewards impl = new StakingRewards();
+        vm.expectRevert(abi.encodeWithSignature("InvalidInitialization()"));
+        impl.initialize(address(hlg), alice);
+    }
+
+    function testTwoStepOwnershipTransferStillWorks() public {
+        // Transfer ownership using two-step process
+        vm.prank(owner);
+        stakingRewards.transferOwnership(alice);
+
+        // Owner unchanged until accepted
+        assertEq(stakingRewards.owner(), owner);
+        assertEq(stakingRewards.pendingOwner(), alice);
+
+        // Alice accepts ownership
+        vm.prank(alice);
+        stakingRewards.acceptOwnership();
+
+        // Ownership transferred
+        assertEq(stakingRewards.owner(), alice);
+        assertEq(stakingRewards.pendingOwner(), address(0));
+    }
+
+    function testUpgradeToNonUUPSImplementation() public {
+        // Deploy a non-UUPS implementation (MockERC20 as example)
+        MockERC20 nonUUPSImpl = new MockERC20("Test", "TEST");
+
+        // Attempt to upgrade to non-UUPS implementation should fail
+        vm.prank(owner);
+        vm.expectRevert(); // OpenZeppelin will revert with ERC1967InvalidImplementation or similar
+        stakingRewards.upgradeToAndCall(address(nonUUPSImpl), "");
+    }
+
+    function testDirectUpgradeOnImplementationFails() public {
+        // Deploy a new implementation
+        StakingRewards newImpl = new StakingRewards();
+
+        // Attempting to call upgradeToAndCall directly on implementation should fail
+        vm.expectRevert(); // Should revert with UUPSUnauthorizedCallContext
+        newImpl.upgradeToAndCall(address(newImpl), "");
+    }
+
+    function testInitializerIdempotenceFreshProxy() public {
+        // Deploy fresh implementation and proxy
+        StakingRewards freshImpl = new StakingRewards();
+        ERC1967Proxy freshProxy =
+            new ERC1967Proxy(address(freshImpl), abi.encodeCall(StakingRewards.initialize, (address(hlg), alice)));
+        StakingRewards freshStaking = StakingRewards(payable(address(freshProxy)));
+
+        // Verify initialization worked
+        assertEq(freshStaking.owner(), alice);
+        assertEq(address(freshStaking.HLG()), address(hlg));
+
+        // Second initialization should fail
+        vm.expectRevert(abi.encodeWithSignature("InvalidInitialization()"));
+        freshStaking.initialize(address(hlg), bob);
+    }
+
+    /// @notice batchStakeFor only works when paused (bootstrap phase)
+    function testBatchStakeForOnlyWhenPaused() public {
+        // Prepare test data
+        address[] memory users = new address[](2);
+        uint256[] memory amounts = new uint256[](2);
+        users[0] = alice;
+        users[1] = bob;
+        amounts[0] = 100 ether;
+        amounts[1] = 200 ether;
+
+        // Fund owner with HLG
+        hlg.mint(owner, 300 ether);
+
+        // Test 1: batchStakeFor fails when unpaused
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), 300 ether);
+        vm.expectRevert(); // Reverts with ExpectedPause() from whenPaused modifier
+        stakingRewards.batchStakeFor(users, amounts, 0, 2);
+        vm.stopPrank();
+
+        // Test 2: batchStakeFor works when paused
+        vm.prank(owner);
+        stakingRewards.pause();
+
+        vm.startPrank(owner);
+        stakingRewards.batchStakeFor(users, amounts, 0, 2);
+        vm.stopPrank();
+
+        // Verify balances
+        assertEq(stakingRewards.balanceOf(alice), 100 ether);
+        assertEq(stakingRewards.balanceOf(bob), 200 ether);
+        assertEq(stakingRewards.totalStaked(), 300 ether);
+        assertEq(stakingRewards.totalStakers(), 2);
+
+        // Test 3: Users can't use batchStakeFor even when paused
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", alice));
+        stakingRewards.batchStakeFor(users, amounts, 0, 1);
+    }
+
+    /// @notice Test resume functionality by processing in two segments
+    function testBatchStakeForResumeScenario() public {
+        // Prepare test data for 6 users
+        address[] memory users = new address[](6);
+        uint256[] memory amounts = new uint256[](6);
+        for (uint256 i = 0; i < 6; i++) {
+            users[i] = address(uint160(0x1000 + i));
+            amounts[i] = (i + 1) * 100 ether; // 100, 200, 300, 400, 500, 600 HLG
+        }
+
+        // Fund owner with total HLG needed
+        uint256 totalHLG = 2100 ether; // Sum of all amounts
+        hlg.mint(owner, totalHLG);
+
+        // Pause contract for batch operations
+        vm.prank(owner);
+        stakingRewards.pause();
+
+        vm.startPrank(owner);
+        hlg.approve(address(stakingRewards), totalHLG);
+
+        // Segment 1: Process users 0-2 (first 3 users)
+        stakingRewards.batchStakeFor(users, amounts, 0, 3);
+
+        // Verify first segment
+        assertEq(stakingRewards.balanceOf(users[0]), 100 ether);
+        assertEq(stakingRewards.balanceOf(users[1]), 200 ether);
+        assertEq(stakingRewards.balanceOf(users[2]), 300 ether);
+        assertEq(stakingRewards.totalStaked(), 600 ether);
+        assertEq(stakingRewards.totalStakers(), 3);
+
+        // Segment 2: Process users 3-5 (resume from index 3)
+        stakingRewards.batchStakeFor(users, amounts, 3, 6);
+
+        // Verify second segment
+        assertEq(stakingRewards.balanceOf(users[3]), 400 ether);
+        assertEq(stakingRewards.balanceOf(users[4]), 500 ether);
+        assertEq(stakingRewards.balanceOf(users[5]), 600 ether);
+
+        // Verify total after both segments
+        assertEq(stakingRewards.totalStaked(), 2100 ether);
+        assertEq(stakingRewards.totalStakers(), 6);
+
+        vm.stopPrank();
+
+        // Verify no user was processed twice
+        for (uint256 i = 0; i < 6; i++) {
+            assertEq(stakingRewards.balanceOf(users[i]), (i + 1) * 100 ether);
+        }
+    }
+
+    /// @notice Test contract version returns correct semver string
+    function testContractVersion() public view {
+        string memory version = stakingRewards.contractVersion();
+        assertEq(version, "1.0.0");
     }
 }

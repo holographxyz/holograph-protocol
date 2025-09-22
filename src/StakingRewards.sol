@@ -16,11 +16,19 @@ pragma solidity ^0.8.30;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-import "@openzeppelin/contracts/access/Ownable2Step.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/Pausable.sol";
+import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
+contract StakingRewards is
+    Initializable,
+    Ownable2StepUpgradeable,
+    ReentrancyGuardUpgradeable,
+    PausableUpgradeable,
+    UUPSUpgradeable
+{
     using SafeERC20 for IERC20;
 
     /* -------------------------------------------------------------------------- */
@@ -60,7 +68,7 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
     uint256 public constant MAX_PERCENTAGE = 10000;
 
     /// @notice HLG token that users stake and receive as rewards
-    IERC20 public immutable HLG;
+    IERC20 public HLG;
 
     /// @notice Total HLG staked in the contract (includes compounded rewards)
     uint256 public totalStaked;
@@ -118,11 +126,28 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
     /* -------------------------------------------------------------------------- */
     /*                               Constructor                                  */
     /* -------------------------------------------------------------------------- */
-    constructor(address _hlg, address _owner) Ownable(_owner) {
+    constructor() {
+        _disableInitializers();
+    }
+
+    /**
+     * @notice Initialize the upgradeable StakingRewards contract
+     * @param _hlg HLG token address
+     * @param _owner Initial owner address
+     */
+    function initialize(address _hlg, address _owner) external initializer {
+        __ReentrancyGuard_init();
+        __Pausable_init();
+        __UUPSUpgradeable_init();
+        __Ownable_init(_owner);
+
         if (_hlg == address(0)) revert ZeroAddress();
+        if (_owner == address(0)) revert ZeroAddress();
+
         HLG = IERC20(_hlg);
         burnPercentage = 5000; // Default to 50% burn, 50% rewards
         stakingCooldown = 7 days; // Default to 7-day cooldown
+
         _pause(); // Start paused until ready
     }
 
@@ -138,7 +163,7 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
         if (amount == 0) revert ZeroAmount();
 
         uint256 actualAmount = _pullHLG(msg.sender, amount);
-        updateUser(msg.sender);
+        _updateUser(msg.sender);
 
         // Track new staker
         if (balanceOf[msg.sender] == 0) {
@@ -159,7 +184,7 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
      * @dev Auto-compounds first, then transfers full balance. Can be called while paused.
      */
     function unstake() external nonReentrant {
-        updateUser(msg.sender);
+        _updateUser(msg.sender);
 
         uint256 userBalance = balanceOf[msg.sender];
         if (userBalance == 0) revert NoStake();
@@ -184,7 +209,7 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
      * @notice Emergency exit without compounding pending rewards
      * @dev Does not call updateUser; returns current recorded balance. Can be called while paused.
      */
-    function emergencyExit() external nonReentrant {
+    function emergencyExit() external nonReentrant whenPaused {
         uint256 userBalance = balanceOf[msg.sender];
         if (userBalance == 0) revert NoStake();
 
@@ -244,7 +269,7 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
      * @dev Splits burn/reward and updates the index. If there are no stakers,
      *      rewards become extra tokens recoverable by owner.
      */
-    function addRewards(uint256 amount) external nonReentrant whenNotPaused {
+    function addRewards(uint256 amount) external nonReentrant {
         if (msg.sender != feeRouter) revert Unauthorized();
 
         // Pull tokens first to get the exact received amount
@@ -302,7 +327,7 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
      * @dev Sets the snapshot to the current index after compounding.
      * @param account Address to update rewards for
      */
-    function updateUser(address account) internal {
+    function _updateUser(address account) internal {
         uint256 userBalance = balanceOf[account];
         uint256 currentIndex = globalRewardIndex;
         uint256 snapshot = userIndexSnapshot[account];
@@ -428,6 +453,15 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
     }
 
     /**
+     * @notice The version of the contract
+     * @return Semantic version string
+     */
+    function contractVersion() external pure returns (string memory) {
+        return "1.0.0";
+    }
+
+    /**
+
      * @notice Get remaining cooldown time for a user in seconds
      * @param user Address to check
      * @return seconds remaining in cooldown period (0 if can unstake)
@@ -590,7 +624,7 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
         if (amount == 0) revert ZeroAmount();
 
         _pullHLG(msg.sender, amount);
-        updateUser(user);
+        _updateUser(user);
 
         // Track new staker
         if (balanceOf[user] == 0) {
@@ -638,7 +672,7 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
             address user = users[i];
             uint256 amount = amounts[i];
 
-            updateUser(user);
+            _updateUser(user);
 
             // Track new staker
             if (balanceOf[user] == 0) {
@@ -681,7 +715,7 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
         if (amount == 0) revert ZeroAmount();
 
         _pullHLG(msg.sender, amount);
-        updateUser(user);
+        _updateUser(user);
 
         // Track new staker
         if (balanceOf[user] == 0) {
@@ -694,6 +728,17 @@ contract StakingRewards is Ownable2Step, ReentrancyGuard, Pausable {
         emit Staked(user, amount);
         emit BoostedStake(msg.sender, user, amount);
     }
+
+    /* -------------------------------------------------------------------------- */
+    /*                                 Upgrades                                   */
+    /* -------------------------------------------------------------------------- */
+
+    /**
+     * @notice Authorize contract upgrades (UUPS pattern)
+     * @param newImplementation Address of the new implementation
+     * @dev Only the owner can authorize upgrades
+     */
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     /* -------------------------------------------------------------------------- */
     /*                                    Fallback                                */
