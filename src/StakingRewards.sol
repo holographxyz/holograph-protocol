@@ -374,8 +374,6 @@ contract StakingRewards is
      * @param rewardAmount Amount of HLG rewards to distribute to stakers
      */
     function _addRewards(uint256 rewardAmount) internal {
-        if (rewardAmount == 0) return;
-
         uint256 staked = _activeStaked();
         // index bump uses active stake
         globalRewardIndex += (rewardAmount * INDEX_PRECISION) / staked;
@@ -463,6 +461,7 @@ contract StakingRewards is
     }
 
     /**
+
      * @notice Get remaining cooldown time for a user in seconds
      * @param user Address to check
      * @return seconds remaining in cooldown period (0 if can unstake)
