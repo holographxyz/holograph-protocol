@@ -461,7 +461,6 @@ contract StakingRewards is
     }
 
     /**
-
      * @notice Get remaining cooldown time for a user in seconds
      * @param user Address to check
      * @return seconds remaining in cooldown period (0 if can unstake)
