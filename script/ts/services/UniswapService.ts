@@ -11,23 +11,25 @@
  */
 
 import { createPublicClient, http, parseAbi } from "viem";
-import { sepolia } from "viem/chains";
-import { 
-  UniswapQuoteResult, 
+import { sepolia, mainnet } from "viem/chains";
+import {
+  UniswapQuoteResult,
   UniswapQuoteParams,
   FEE_TIERS,
   UniswapQuoteError,
-  EnvironmentConfig 
+  EnvironmentConfig
 } from "../types/index.js";
 import { getEnvironmentConfig, validateFeeTier } from "../lib/config.js";
 import { formatCompactEther } from "../lib/format.js";
 
 export class UniswapService {
   private config: EnvironmentConfig;
-  private client = createPublicClient({ chain: sepolia, transport: http() });
+  private client;
 
   constructor() {
     this.config = getEnvironmentConfig();
+    const chain = this.config.chainId === 1 ? mainnet : sepolia;
+    this.client = createPublicClient({ chain, transport: http() });
   }
 
   /**
