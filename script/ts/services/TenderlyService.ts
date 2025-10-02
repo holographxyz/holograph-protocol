@@ -151,6 +151,97 @@ export class TenderlyService {
   }
 
   /**
+   * Simulate a batch of transactions as if executed by the Safe via multisend
+   * This simulates the actual transaction logic without signature validation
+   */
+  async simulateTransactionBundle(
+    safeAddress: string,
+    transactions: Array<{ to: string; value: string; data: string | null }>,
+    fundBalances?: Record<string, bigint>
+  ): Promise<TenderlyBundleResponse> {
+    if (!this.config) {
+      throw new TenderlySimulationError("Missing Tenderly credentials");
+    }
+
+    const simulateUrl = `https://api.tenderly.co/api/v1/account/${this.config.account}/project/${this.config.project}/simulate-bundle`;
+
+    const safeAddressLower = getAddress(safeAddress).toLowerCase();
+    const fundBalanceHex = parseEther("10").toString(16);
+    const safeStorageOverride = await this.createSafeStorageOverride(safeAddress);
+
+    const simulations = transactions.map((tx) => ({
+      from: safeAddressLower,
+      to: getAddress(tx.to),
+      input: tx.data || "0x",
+      gas: CONSTANTS.DEFAULT_GAS_LIMIT,
+      gas_price: CONSTANTS.DEFAULT_GAS_PRICE,
+      value: tx.value,
+      save: true,
+      save_if_fails: true,
+      network_id: this.chainId.toString(),
+      state_objects: {
+        [safeAddressLower]: {
+          balance: `0x${fundBalanceHex}`,
+          ...(safeStorageOverride ? { storage: safeStorageOverride } : {}),
+        },
+        ...(fundBalances ? Object.fromEntries(
+          Object.entries(fundBalances).map(([addr, bal]) => [
+            getAddress(addr as `0x${string}`).toLowerCase(),
+            { balance: `0x${bal.toString(16)}` }
+          ])
+        ) : {}),
+      },
+    }));
+
+    const body = {
+      simulations,
+    };
+
+    try {
+      const response = await fetch(simulateUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Access-Key": this.config.accessKey,
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new TenderlySimulationError(`Tenderly API Error ${response.status}: ${errorText}`);
+      }
+
+      const result = (await response.json()) as any;
+
+      // Tenderly bundle API returns { simulation_results: [...] } not { simulations: [...] }
+      const simulations = result.simulation_results || result.simulations || [];
+
+      if (simulations.length > 0) {
+        const firstSimId = simulations[0].simulation?.id || simulations[0].id;
+        console.log(`🔎 Tenderly bundle simulation: https://dashboard.tenderly.co/${this.config.account}/${this.config.project}/simulator/${firstSimId}`);
+      }
+
+      // Normalize response format
+      return {
+        simulations: simulations.map((sim: any) => ({
+          id: sim.simulation?.id || sim.id,
+          status: sim.simulation?.status ?? sim.status,
+          transaction: {
+            status: sim.transaction?.status ?? false,
+            error_message: sim.transaction?.error_message || sim.transaction?.error?.message,
+          }
+        }))
+      };
+    } catch (error) {
+      if (error instanceof TenderlySimulationError) {
+        throw error;
+      }
+      throw new TenderlySimulationError("Failed to simulate bundle", error as Error);
+    }
+  }
+
+  /**
    * Simulate a 3-step Safe bundle: ownerA.approveHash, ownerB.approveHash, then Safe.execTransaction
    */
   async simulateSafeBundle(

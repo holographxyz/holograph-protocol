@@ -622,39 +622,29 @@ Generates Safe transaction to unpause the StakingRewards contract. After unpausi
         // Non-fatal: continue with single simulation
       }
 
-      // Simulate each transaction individually with Safe as sender
+      // Simulate all transactions as a bundle with Safe as sender
       // This simulates what happens after signature validation without going through execTransaction
-      let simulationSuccess = true;
-      let simulationError = "";
-
-      // Fund the Safe with ETH for the simulation
       const fundedBalances: Record<string, bigint> = {
         [this.config.networkAddresses.WETH]: amount * 2n,
         [this.config.networkAddresses.HLG]: expectedHlgOut * 10n,
       };
 
-      // Simulate the first transaction (WETH deposit) to check basic flow
-      try {
-        const firstTx = batch.transactions[0];
-        const result = await this.tenderlyService.simulateTransaction(
-          multisigAddress,
-          firstTx.to,
-          firstTx.data || "0x",
-          firstTx.value,
-          multisigAddress,  // Simulate FROM the Safe itself
-          fundedBalances
-        );
+      const bundleResult = await this.tenderlyService.simulateTransactionBundle(
+        multisigAddress,
+        batch.transactions,
+        fundedBalances
+      );
 
-        if (!result.transaction.status) {
-          simulationSuccess = false;
-          simulationError = result.transaction.error_message || "Unknown error";
+      // Check if all simulations succeeded
+      const allSuccess = bundleResult.simulations.every(sim => sim.transaction.status);
+      const failedSim = bundleResult.simulations.find(sim => !sim.transaction.status);
+
+      const result = {
+        transaction: {
+          status: allSuccess,
+          error_message: failedSim?.transaction.error_message || ""
         }
-      } catch (error) {
-        simulationSuccess = false;
-        simulationError = (error as Error).message;
-      }
-
-      const result = { transaction: { status: simulationSuccess, error_message: simulationError } };
+      };
 
       if (result.transaction.status) {
         console.log("✅ Simulation SUCCESS!");
