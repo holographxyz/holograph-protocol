@@ -20,6 +20,7 @@ cp .env.example .env
 
 | Variable | Required | Description | Default |
 |----------|----------|-------------|---------|
+| `CHAIN_ID` | No | Network chain ID (1 = mainnet, 11155111 = Sepolia) | 11155111 |
 | `MULTISIG_ADDRESS` | Yes | Gnosis Safe contract address | |
 | `SAFE_OWNER_ADDRESS` | Yes | Primary Safe owner for simulation | |
 | `SAFE_OWNER_ADDRESS_2` | No | Secondary Safe owner | |
@@ -33,6 +34,9 @@ cp .env.example .env
 ### Example .env Configuration
 
 ```bash
+# Network Configuration
+CHAIN_ID=1  # 1 = Ethereum Mainnet, 11155111 = Sepolia (default)
+
 # Safe Configuration
 MULTISIG_ADDRESS=0x8FE61F653450051cEcbae12475BA2b8fbA628c7A
 SAFE_OWNER_ADDRESS=0x1ef43b825f6d1c3bfa93b3951e711f5d64550bda
@@ -53,8 +57,11 @@ PREFER_FEE_TIER=3000  # Prefer 0.3% pools
 ## Usage
 
 ```bash
-# Convert ETH to HLG and stake
+# Convert ETH to HLG and stake (uses CHAIN_ID from .env)
 npx tsx script/ts/multisig-cli.ts batch --eth 0.5
+
+# Mainnet operation (override .env)
+CHAIN_ID=1 npx tsx script/ts/multisig-cli.ts batch --eth 0.5
 
 # Direct HLG deposit
 npx tsx script/ts/multisig-cli.ts deposit --hlg 1000

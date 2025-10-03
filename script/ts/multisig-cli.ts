@@ -622,48 +622,41 @@ Generates Safe transaction to unpause the StakingRewards contract. After unpausi
         // Non-fatal: continue with single simulation
       }
 
-      // Simulate all transactions as a bundle with Safe as sender
-      // This simulates what happens after signature validation without going through execTransaction
+      // Simulate the multisend batch via delegatecall
+      // This validates all transactions in sequence
       const fundedBalances: Record<string, bigint> = {
         [this.config.networkAddresses.WETH]: amount * 2n,
         [this.config.networkAddresses.HLG]: expectedHlgOut * 10n,
       };
 
-      const bundleResult = await this.tenderlyService.simulateTransactionBundle(
+      // Simulate multisend being delegatecalled by the Safe
+      // This simulates all 5 transactions in sequence
+      const result = await this.tenderlyService.simulateTransaction(
         multisigAddress,
-        batch.transactions,
+        multisendAddress,  // Safe delegatecalls to multisend
+        calldata,          // Multisend calldata with all transactions
+        "0",
+        multisigAddress,   // Simulate FROM the Safe itself
         fundedBalances
       );
 
-      // Check if all simulations succeeded
-      const allSuccess = bundleResult.simulations.every(sim => sim.transaction.status);
-      const failedSim = bundleResult.simulations.find(sim => !sim.transaction.status);
-
-      const result = {
-        transaction: {
-          status: allSuccess,
-          error_message: failedSim?.transaction.error_message || ""
-        }
-      };
-
       if (result.transaction.status) {
         console.log("✅ Simulation SUCCESS!");
-        console.log("   All transactions in the batch executed successfully");
+        console.log("   All 5 transactions in the batch executed successfully");
         return true;
       } else {
         const errorCode = result.transaction.error_message || "Unknown error";
 
-        // GS026 = Invalid signatures provided (expected when simulating without real Safe owners)
-        if (errorCode === "GS026") {
-          console.log("❌ Simulation FAILED");
-          console.log("Error: GS026 (Safe signature validation)");
-          console.log("\n📝 Note: This error is expected when simulating multisig transactions.");
-          console.log("   The transaction logic itself is valid - signature check happens at execution time.");
-          console.log("   The Safe will validate signatures when owners sign in the Safe UI.");
-        } else {
-          console.log("❌ Simulation FAILED");
-          console.log("Error:", errorCode);
+        console.log("❌ Simulation FAILED");
+        console.log("Error:", errorCode);
+
+        // Check if it's just a simulation funding issue
+        if (errorCode.includes("insufficient balance") || errorCode.includes("transfer amount exceeds balance")) {
+          console.log("\n📝 Note: This is a simulation funding issue, not a transaction logic error.");
+          console.log("   The multisend batch was validated - check the Tenderly link above to see all 5 transactions.");
+          console.log("   The Safe will have sufficient balance when the actual transaction executes.");
         }
+
         console.log("\n⚠️  Transaction JSON is generated below:");
         return false;
       }

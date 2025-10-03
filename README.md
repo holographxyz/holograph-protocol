@@ -79,8 +79,11 @@ npm run create-token
 ### Multisig Operations
 
 ```bash
-# Convert ETH to HLG and stake
+# Convert ETH to HLG and stake (Sepolia by default)
 npx tsx script/ts/multisig-cli.ts batch --eth 0.5
+
+# Mainnet operation (set CHAIN_ID=1 in .env or as override)
+CHAIN_ID=1 npx tsx script/ts/multisig-cli.ts batch --eth 0.5
 
 # Direct HLG deposit
 npx tsx script/ts/multisig-cli.ts deposit --hlg 1000
