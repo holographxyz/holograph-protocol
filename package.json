@@ -17,6 +17,7 @@
     "multisig-cli:accept-ownership": "tsx script/ts/multisig-cli.ts accept-ownership",
     "multisig-cli:pause": "tsx script/ts/multisig-cli.ts pause",
     "multisig-cli:unpause": "tsx script/ts/multisig-cli.ts unpause",
+    "get-staking-balances": "tsx script/ts/get-staking-balances.ts",
     "type-check": "tsc --noEmit",
     "lint": "eslint script/*.ts",
     "lint:fix": "eslint script/*.ts --fix",

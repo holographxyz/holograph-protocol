@@ -17,8 +17,21 @@ import {
 } from "../types/index.js";
 
 // ============================================================================
-// Network Addresses (Ethereum Sepolia Testnet)
+// Network Addresses
 // ============================================================================
+
+/**
+ * Verified Uniswap V3 and protocol addresses on Ethereum Mainnet
+ * These addresses are from official Uniswap documentation and deployment.json
+ */
+export const MAINNET_ADDRESSES: NetworkAddresses = {
+  FACTORY: "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+  WETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+  SWAP_ROUTER: "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45", // SwapRouter02
+  QUOTER_V2: "0x61fFE014bA17989E743c5F6cB21bF9697530B21e",
+  HLG: "0x740df024CE73f589ACD5E8756b377ef8C6558BaB",
+  STAKING_REWARDS: "0x39F2750A754aDe33CE1786dA1419cD17a41E6900",
+};
 
 /**
  * Verified Uniswap V3 and protocol addresses on Sepolia testnet
@@ -30,8 +43,7 @@ export const SEPOLIA_ADDRESSES: NetworkAddresses = {
   SWAP_ROUTER: "0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E", // SwapRouter02
   QUOTER_V2: "0xEd1f6473345F45b75F8179591dd5bA1888cf2FB3",
   HLG: "0x5ff07042d14e60ec1de7a860bbe968344431baa1",
-  STAKING_REWARDS: "0xff5CEBc016f50d40D4C1eCaDB7427c5F3E3c3f97",  // Latest deployment
-  FEE_ROUTER: "0xA042bd2391a2756907AFf8e2837E30b70A2743C5",  // Latest deployment
+  STAKING_REWARDS: "0xff5CEBc016f50d40D4C1eCaDB7427c5F3E3c3f97",
 };
 
 // ============================================================================
@@ -152,18 +164,34 @@ export function getEnvironmentConfig(): EnvironmentConfig {
     const tenderly = parseTenderlyConfig();
     const multisig = parseMultisigConfig();
     const safe = parseSafeConfig();
-    
-    const requiredFeeTier = process.env.REQUIRED_FEE_TIER ? 
+
+    const requiredFeeTier = process.env.REQUIRED_FEE_TIER ?
       parseInt(process.env.REQUIRED_FEE_TIER, 10) : undefined;
-    
-    const preferFeeTier = process.env.PREFER_FEE_TIER ? 
+
+    const preferFeeTier = process.env.PREFER_FEE_TIER ?
       parseInt(process.env.PREFER_FEE_TIER, 10) : undefined;
 
     // Default to Sepolia testnet (chain ID 11155111)
     const chainId = parseInt(process.env.CHAIN_ID || "11155111", 10);
 
+    // Select network addresses based on chain ID
+    let networkAddresses: NetworkAddresses;
+    switch (chainId) {
+      case 1:
+        networkAddresses = MAINNET_ADDRESSES;
+        break;
+      case 11155111:
+        networkAddresses = SEPOLIA_ADDRESSES;
+        break;
+      default:
+        throw new MultisigCliError(
+          `Unsupported chain ID: ${chainId}. Supported: 1 (mainnet), 11155111 (sepolia)`,
+          "UNSUPPORTED_CHAIN_ID"
+        );
+    }
+
     return {
-      networkAddresses: SEPOLIA_ADDRESSES,
+      networkAddresses,
       tenderly,
       multisig,
       safe,
@@ -232,10 +260,12 @@ export function createManualTenderlyUrl(
   fromAddress: string,
   toAddress: string,
   value: string,
-  data: string
+  data: string,
+  chainId?: number
 ): string {
+  const networkId = chainId || parseInt(process.env.CHAIN_ID || "11155111", 10);
   const encodedData = encodeURIComponent(data);
-  return `https://dashboard.tenderly.co/simulator/new?network=11155111&from=${getAddress(fromAddress)}&to=${getAddress(toAddress)}&value=${value}&input=${encodedData}`;
+  return `https://dashboard.tenderly.co/simulator/new?network=${networkId}&from=${getAddress(fromAddress)}&to=${getAddress(toAddress)}&value=${value}&input=${encodedData}`;
 }
 
 // ============================================================================
@@ -243,8 +273,7 @@ export function createManualTenderlyUrl(
 // ============================================================================
 
 export const CONSTANTS = {
-  CHAIN_ID: "11155111", // Sepolia
-  MULTISEND_CALL_ONLY: "0x40A2aCCbd92BCA938b02010E17A5b8929b49130D", // Canonical Safe MultiSendCallOnly
+  MULTISEND_CALL_ONLY: "0x40A2aCCbd92BCA938b02010E17A5b8929b49130D", // Canonical Safe MultiSendCallOnly (same on all networks)
   INDEX_PRECISION: 1_000_000_000_000n, // 1e12 for staking calculations
   DEFAULT_GAS_LIMIT: 3_000_000,
   DEFAULT_GAS_PRICE: "1000000000", // 1 gwei
