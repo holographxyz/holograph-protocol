@@ -18,6 +18,12 @@
     "multisig-cli:pause": "tsx script/ts/multisig-cli.ts pause",
     "multisig-cli:unpause": "tsx script/ts/multisig-cli.ts unpause",
     "get-staking-balances": "tsx script/ts/get-staking-balances.ts",
+    "splits:create": "tsx script/ts/splits/create-pull-split.ts",
+    "splits:balances": "tsx script/ts/splits/get-balances.ts",
+    "splits:distribute": "tsx script/ts/splits/distribute.ts",
+    "splits:withdraw": "tsx script/ts/splits/withdraw.ts",
+    "splits:batch-withdraw": "tsx script/ts/splits/batch-withdraw.ts",
+    "splits:demo": "tsx script/ts/splits/demo.ts",
     "type-check": "tsc --noEmit",
     "lint": "eslint script/*.ts",
     "lint:fix": "eslint script/*.ts --fix",
@@ -28,6 +34,7 @@
     "prestart": "npm run build"
   },
   "dependencies": {
+    "@0xsplits/splits-sdk": "^6.1.0",
     "@safe-global/api-kit": "^4.0.0",
     "@safe-global/protocol-kit": "^6.1.0",
     "@safe-global/safe-core-sdk": "^3.3.5",
