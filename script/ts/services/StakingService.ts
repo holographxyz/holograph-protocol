@@ -11,22 +11,24 @@
  */
 
 import { createPublicClient, http, parseAbi, encodeFunctionData } from "viem";
-import { sepolia } from "viem/chains";
-import { 
-  StakingInfo, 
+import { sepolia, mainnet } from "viem/chains";
+import {
+  StakingInfo,
   RewardCalculation,
   StakingCalculationError,
-  EnvironmentConfig 
+  EnvironmentConfig
 } from "../types/index.js";
 import { getEnvironmentConfig, CONSTANTS } from "../lib/config.js";
 import { formatCompactEther, formatPercent } from "../lib/format.js";
 
 export class StakingService {
   private config: EnvironmentConfig;
-  private client = createPublicClient({ chain: sepolia, transport: http() });
+  private client;
 
   constructor() {
     this.config = getEnvironmentConfig();
+    const chain = this.config.chainId === 1 ? mainnet : sepolia;
+    this.client = createPublicClient({ chain, transport: http() });
   }
 
   /**

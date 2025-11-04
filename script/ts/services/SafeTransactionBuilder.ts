@@ -382,7 +382,7 @@ export class SafeTransactionBuilder {
 
     return {
       version: "1.0",
-      chainId: CONSTANTS.CHAIN_ID,
+      chainId: this.config.chainId.toString(),
       createdAt: Date.now(),
       meta: {
         name,

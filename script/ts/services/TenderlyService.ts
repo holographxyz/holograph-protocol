@@ -6,23 +6,26 @@
  */
 
 import { createPublicClient, http, parseAbi, encodeFunctionData, parseEther, getAddress } from "viem";
-import { sepolia } from "viem/chains";
-import { 
-  TenderlyResponse, 
+import { sepolia, mainnet } from "viem/chains";
+import {
+  TenderlyResponse,
   TenderlyBundleResponse,
   TenderlyConfig,
   TenderlySimulationError
 } from "../types/index.js";
-import { getTenderlyConfigOrFallback, createManualTenderlyUrl, CONSTANTS } from "../lib/config.js";
+import { getTenderlyConfigOrFallback, createManualTenderlyUrl, getEnvironmentConfig, CONSTANTS } from "../lib/config.js";
 
 export class TenderlyService {
   private config: TenderlyConfig | null;
   private fallbackAddress: string;
+  private chainId: number;
 
   constructor() {
     const { config, fallbackAddress } = getTenderlyConfigOrFallback();
+    const envConfig = getEnvironmentConfig();
     this.config = config;
     this.fallbackAddress = fallbackAddress;
+    this.chainId = envConfig.chainId;
   }
 
   /**
@@ -61,7 +64,7 @@ export class TenderlyService {
     const safeStorageOverride = await this.createSafeStorageOverride(safeAddress);
 
     const simulation = {
-      network_id: CONSTANTS.CHAIN_ID,
+      network_id: this.chainId.toString(),
       save: true,
       save_if_fails: true,
       from: fromAddressLower,
@@ -77,7 +80,7 @@ export class TenderlyService {
         ...(safeStorageOverride ? {
           [getAddress(safeAddress).toLowerCase()]: {
             storage: safeStorageOverride,
-            balance: `0x${parseEther("0").toString(16)}`, // Zero balance - rely on storage overrides
+            balance: `0x${fundBalanceHex}`, // Fund Safe with ETH for gas + value
           }
         } : {}),
         ...(fundBalances ? Object.fromEntries(
@@ -159,7 +162,8 @@ export class TenderlyService {
   ): Promise<string | undefined> {
     if (!this.config) return undefined;
 
-    const client = createPublicClient({ chain: sepolia, transport: http() });
+    const chain = this.chainId === 1 ? mainnet : sepolia;
+    const client = createPublicClient({ chain, transport: http() });
     
     // Read current Safe nonce
     const nonce = (await client.readContract({
@@ -197,7 +201,7 @@ export class TenderlyService {
 
     const simulateUrl = `https://api.tenderly.co/api/v1/account/${this.config.account}/project/${this.config.project}/simulate-bundle`;
     const body = {
-      network_id: CONSTANTS.CHAIN_ID,
+      network_id: this.chainId.toString(),
       save: true,
       save_if_fails: true,
       simulations: [
@@ -259,13 +263,20 @@ export class TenderlyService {
 
   /**
    * Create Safe storage override to bypass signature checks in simulation
+   *
+   * Safe storage layout (v1.3.0+):
+   * - slot 0x3: ownerCount (uint256)
+   * - slot 0x4: threshold (uint256)
+   *
+   * We override threshold to 1 so Tenderly simulation doesn't require actual signatures
    */
   private async createSafeStorageOverride(safeAddress: string): Promise<Record<string, string> | undefined> {
     const disableSigChecks = (process.env.SIM_DISABLE_SIG_CHECKS ?? "true").toLowerCase() !== "false";
     if (!disableSigChecks) return undefined;
 
     try {
-      const client = createPublicClient({ chain: sepolia, transport: http() });
+      const chain = this.chainId === 1 ? mainnet : sepolia;
+      const client = createPublicClient({ chain, transport: http() });
       const currentThreshold = (await client.readContract({
         address: safeAddress as `0x${string}`,
         abi: parseAbi(["function getThreshold() view returns (uint256)"]),
@@ -276,22 +287,44 @@ export class TenderlyService {
         return undefined;
       }
 
-      // Find storage slot that holds the threshold value by scanning early slots
-      const desiredHex = `0x${currentThreshold.toString(16)}`;
-      
-      for (let i = 0; i < 100; i += 1) {
-        const slot = `0x${i.toString(16).padStart(64, "0")}` as `0x${string}`;
-        const raw = await client.getStorageAt({ address: safeAddress as `0x${string}`, slot });
-        
-        if (raw && raw !== "0x" && raw.toLowerCase().replace(/^0x0+/, "0x") === desiredHex.toLowerCase()) {
-          // Override to 1 for simulation (32-byte padded)
+      // Safe v1.3.0+ stores threshold at slot 0x4
+      // Try known slot first, then fall back to scanning
+      const knownSlots = [
+        "0x0000000000000000000000000000000000000000000000000000000000000004", // Safe v1.3.0+
+        "0x0000000000000000000000000000000000000000000000000000000000000003", // Some Safe versions
+      ];
+
+      for (const slot of knownSlots) {
+        const raw = await client.getStorageAt({
+          address: safeAddress as `0x${string}`,
+          slot: slot as `0x${string}`
+        });
+
+        const slotValue = BigInt(raw || 0);
+        if (slotValue === currentThreshold) {
           const onePadded = `0x${(1n).toString(16).padStart(64, "0")}` as `0x${string}`;
+          console.log(`✅ Safe threshold override enabled (slot ${slot})`);
           return { [slot]: onePadded };
         }
       }
+
+      // If known slots don't work, scan (fallback)
+      console.log("🔍 Scanning for threshold storage slot...");
+      for (let i = 0; i < 20; i++) {
+        const slot = `0x${i.toString(16).padStart(64, "0")}` as `0x${string}`;
+        const raw = await client.getStorageAt({ address: safeAddress as `0x${string}`, slot });
+        const slotValue = BigInt(raw || 0);
+
+        if (slotValue === currentThreshold) {
+          const onePadded = `0x${(1n).toString(16).padStart(64, "0")}` as `0x${string}`;
+          console.log(`✅ Safe threshold override enabled (slot ${slot})`);
+          return { [slot]: onePadded };
+        }
+      }
+
+      console.log("⚠️  Could not find threshold storage slot, simulation may require signatures");
     } catch (error) {
       console.log("⚠️  Storage override failed:", (error as Error).message);
-      // Non-fatal: if we can't determine, we'll proceed without override
     }
 
     return undefined;
